@@ -1,0 +1,76 @@
+1-----------------MPU-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------		 
+	
+	 Write-Back: 		CPU zapisuje dane tylko do cache (nie czeka na wolny SDRAM).	
+	 Write-Through: 	Każdy zapis procesora trafia jednocześnie do cache i do fizycznego SDRAM.	
+	 Write-Allocate: 	Jeśli zapisujesz coś pod nowy adres, procesor najpierw ładuje całą linię z RAM do cache. Dzięki temu kolejne operacje na tym obszarze (np. pętla for) działają z prędkością procesora (setki MHz), a nie pamięci zewnętrznej (często tylko 100-200 MHz).	
+Brak Write-Allocate: 	Zapis pod nowy adres nie powoduje wciągnięcia linii do cache.	
+
+1. TEX Level 1 + Cacheable + Bufferable (C=1, B=1)		-> Jest to tryb Write-Back + Write-Allocate.	
+	- Zapis pod nowy adres: Jeśli procesor chce zapisać dane do SDRAM (a nie ma ich w cache), najpierw pobiera całą linię (32 bajty) z SDRAM do cache, a następnie wykonuje w nim zmianę.
+ 	- Zaleta: Gigantyczny wzrost wydajności w pętlach modyfikujących dane. Skoro cała linia jest już w cache, kolejne 31 zapisów (bajtów) odbędzie się z pełną prędkością procesora (400-480 MHz), a nie z prędkością szyny SDRAM (100-200 MHz).
+ 	- Wada:   Każdy zapis "zaśmieca" cache, wypychając z niego inne potencjalnie potrzebne dane.
+ 	- Zastosowanie: Przetwarzanie sygnałów, skomplikowane algorytmy, duże struktury danych.
+ 	- Cena: Musisz ręcznie używać SCB_CleanDCache_by_Addr() przed każdym startem DMA z tego obszaru.
+ 	
+2. TEX Level 0 + Cacheable + Bufferable (C=1, B=1)		-> Jest to tryb Write-Back + No Write-Allocate.
+	- Zapis pod nowy adres: Jeśli procesor chce zapisać dane (a nie ma ich w cache), zapisuje je bezpośrednio do SDRAM (omijając cache). Linia w cache zostanie utworzona dopiero wtedy, gdy najpierw wykonasz odczyt z tego adresu.
+	- Zaleta: Nie "zatyka" cache'u danymi, których tylko raz używasz do zapisu (np. kopiowanie dużego bloku danych). Oszczędza miejsce w L1 Cache dla ważniejszych zmiennych
+	- Wada: Znacznie wolniejsze operacje zapisu w pętlach, ponieważ każdy zapis musi fizycznie przejść przez powolną magistralę do SDRAM.
+	- Zastosowanie: Duże bufory, stałe, rzadkie zapisy
+
+3. TEX Level 1 + C=1 + B=0 		->		(Write-Through,  Brak Write-Allocate)
+	- Zaleta: Masz pewność, że SDRAM jest zawsze aktualny. Nie musisz używać SCB_CleanDCache() przed startem DMA.
+	- Zastosowanie: SDRAM przechowuje obraz wyświetlany na ekranie (np. przez LTDC).
+	
+4. TEX Level 0 + C=1 + B=0 		->		(Write-Through,  Brak Write-Allocate)
+	- Jest to jedno z najbezpieczniejszych ustawień dla SDRAM, gdy zależy Ci na wydajności odczytu, ale chcesz uniknąć problemów z DMA przy zapisie. Procesor czeka (przez Write Buffer), aż dane zostaną fizycznie wysłane na magistralę do SDRAM
+	- Każda instrukcja zapisu jest ograniczona prędkością szyny FMC.
+	
+TEX Level 1  ->  to pamięć jest typu "Normal Memory" z możliwością bardziej agresywnego spekulatywnego odczytu (procesor może sam z wyprzedzeniem pobrać dane do cache, zanim Twój kod o nie poprosi)
+TEX Level 0  ->  to pamięć najbardziej przewidywalna.	
+
+Włączona  (BUFFERABLE): 	Procesor "wysyła" dane do zapisu i natychmiast przechodzi do kolejnej instrukcji, nie czekając, aż dane fizycznie dotrą do RAM. Kontroler pamięci zajmie się tym w tle.
+Wyłączona (NOT_BUFFERABLE): Procesor czeka (robi "stall"), aż dane fizycznie znajdą się w pamięci RAM.
+
+Dla Fatfs:	(buff musi byc wyrównany do linii cache (32 bajty))
+	Jeśli ustawisz BUFFERABLE, Twój kod może wywołać funkcję f_write, a zaraz po niej uruchomić DMA.
+	Istnieje szansa, że DMA zacznie czytać z RAM, zanim bufor zapisu procesora zdąży tam fizycznie "wypchnąć" ostatnie bajty.
+	A jesli nie to Efekt: DMA wyśle na kartę SD stare dane, co doprowadzi do uszkodzenia plików lub błędu FR_INT_ERR.
+
+Zasada ogólna:
+	Przed uruchomieniem funkcji zapisu DMA stosuj 		SCB_CleanDCache_by_Addr() 		aby wszystkie dane z casha wypchnac na zewnatrz (do RAM, SDRAM zeby te pamieci mialy prawdziwe dane).
+	Zaraz po uruchomieniu funkcji odczytu DMA stosuj	SCB_InvalidateDCache_by_Addr() 	aby wyczyscic cashe i miec w niej aktualne dane z DMA, (wymuszając na CPU pobranie ich bezpośrednio z RAM, SDRAM... przy następnej próbie dostępu).
+
+Ciekawe (osobliwe) rozwiazanie w SD_write() dla ENABLE_SCRATCH_BUFFER mamy:
+{
+	SCB_InvalidateDCache_by_Addr((uint32_t*)scratch, BLOCKSIZE); 
+	memcpy((void *)scratch, buff, BLOCKSIZE);
+	ret = BSP_SD_WriteBlocks_DMA((uint32_t*)scratch, (uint32_t)sector++, 1);
+}
+
+
+2-----------ALIGN--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------		
+
+Wyrównanie buforów do 32 bajtów jest wymagane głównie w mikrokontrolerach z rdzeniem Cortex-M7 (np. serie STM32H7, STM32F7), gdy masz włączoną pamięć podręczną danych (D-Cache)
+Operacje na cache (SCB_CleanDCache_by_Addr, SCB_InvalidateDCache_by_Addr) działają na całych liniach. Jeśli bufor nie jest wyrównany do 32 bajtów i jego rozmiar nie jest wielokrotnością 32, operacja na cache może przypadkowo nadpisać lub usunąć inne dane znajdujące się w tej samej linii.	
+	
+Praca z peryferiami o dużej przepustowości:
+Wyrównanie do 32 bajtów jest standardem przy obsłudze:
+ - Ethernetu: 			Bufory ramek sieciowych muszą być wyrównane, aby uniknąć błędów przy współpracy z D-Cache.
+ - SDMMC (karty SD): 	Transfery blokowe często wymagają wyrównania dla poprawnego działania DMA i spójności danych.
+ - Wyświetlaczy (LTDC): Bufory ramek obrazu są bardzo duże i ich wyrównanie do linii cache znacząco poprawia wydajność odświeżania.
+	
+Niektóre zaawansowane tryby pracy DMA (np. w STM32H7) pozwalają na przesyłanie danych w "paczkach" (bursts). Aby DMA mogło w pełni wykorzystać magistralę i przesyłać dane najszybciej jak to możliwe, adresy buforów powinny być wyrównane do granic tych paczek, co często pokrywa się z wyrównaniem do 32 bajtów
+	
+Zmienne typu uint32_t, int, czy float są automatycznie wyrównywane do 4 bajtów przez kompilator.
+Zmienne typu uint8_t (char) domyślnie są wyrównywane tylko do 1 bajta.
+DMA: Większość kontrolerów DMA w STM32 wymaga, aby adresy (szczególnie przy transferach 32-bitowych) były wyrównane do 4 bajtów.	
+	
+	
+3---------WNIOSKI Z TESTOW SD_CARD------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------		
+
+W funkcji SD_read() nalezy dac poprawke: zamioast  'if (!((uint32_t)buff & 0x3))'  dac  'if (!((uint32_t)buff & 0x1F))'	 i dziala dla  MPU_ACCESS_BUFFERABLE.
+Cykl odczytu z pliku i zapisu do nowego pliku jest czasowo takie same dla  MPU_ACCESS_BUFFERABLE  jak i dla  MPU_ACCESS_NOT_BUFFERABLE  (nie ma roznicy).
+	
+	
+	
