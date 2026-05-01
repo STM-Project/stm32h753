@@ -26,6 +26,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "fatfs.h"
+#include "_debug.h"
+#include "sd_card.h"
+#include "tim.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -164,9 +167,7 @@ void MX_FREERTOS_Init(void) {
   * @retval None
   */
 ALIGN_32BYTES(static char buff[200*1024]);
-#include "_debug.h"
-#include "sd_card.h"
-#include "tim.h"
+
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
