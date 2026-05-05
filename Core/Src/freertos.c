@@ -166,7 +166,7 @@ void MX_FREERTOS_Init(void) {
   * @param  argument: Not used
   * @retval None
   */
-ALIGN_32BYTES(static char buff[200*1024]);
+
 
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
@@ -176,18 +176,7 @@ void StartDefaultTask(void const * argument)
 	MX_FATFS_Init();
 
 	osDelay(1000);
-	StartMeasureTime_us();
-	  SDCardFileOpen(0,"aaa.htm",FA_READ);
-	  int len = SDCardFileRead(0, buff, 200*1024);
-	  SDCardFileClose(0);
-	StopMeasureTime_us("\r\nJJJJJJJJJJJJJJ: ");
 
-
-	StartMeasureTime_us();
-	  SDCardFileOpen(0,"111111.htm",FA_CREATE_ALWAYS | FA_WRITE);
-	  int len2 = SDCardFileWrite(0, buff, len);
-	  SDCardFileClose(0);
-	StopMeasureTime_us("\r\nAAAAAAAAA: ");
 
 
 

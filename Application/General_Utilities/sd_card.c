@@ -8,6 +8,7 @@
 #include "errors_service.h"
 #include "sd_card.h"
 #include "fatfs.h"
+#include "tim.h"
 
 #define MAX_OPEN_FILE   10
 
@@ -239,4 +240,20 @@ int BOOT_ReadCodeToNewBinFile(char *Buff)
 	 SDCardFileClose(MAX_OPEN_FILE-2);
 
 	 return 0;
+}
+
+void SDCARD_WriteReadTest(char *openFile, char *writeFile, char *buffer, int bufferSize)		/* ALIGN_32BYTES(static char buff[200*1024]);	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff)); */
+{
+	StartMeasureTime_us();
+	  SDCardFileOpen(0,"aaa.htm",FA_READ);
+	  int len = SDCardFileRead(0, buffer, bufferSize);
+	  SDCardFileClose(0);
+	StopMeasureTime_us("\r\nOpen File: ");
+
+
+	StartMeasureTime_us();
+	  SDCardFileOpen(0,"111111.htm",FA_CREATE_ALWAYS | FA_WRITE);
+	  int len2 = SDCardFileWrite(0, buffer, len);
+	  SDCardFileClose(0);
+	StopMeasureTime_us("\r\nWrite File: ");
 }

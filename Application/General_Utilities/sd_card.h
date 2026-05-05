@@ -19,6 +19,7 @@ int SDCardFilePosition(uint8_t id, uint32_t offset);
 int SDCardOpenFileSize(uint8_t id);
 int SDCardFileInfo(char *name, uint32_t *fileSize);
 int SDCard_FileReadClose(uint8_t id, char *fileName, char *pReadBuff, int maxSize);
+void SDCARD_WriteReadTest(char *openFile, char *writeFile, char *buffer, int bufferSize);
 
 int BOOT_ReadCodeToNewBinFile(char *Buff);
 
