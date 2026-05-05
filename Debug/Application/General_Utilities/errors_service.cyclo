@@ -1,0 +1,16 @@
+../Application/General_Utilities/errors_service.c:17:14:CODESTR_SdCard	21
+../Application/General_Utilities/errors_service.c:87:6:ERROR_SDcardMount	1
+../Application/General_Utilities/errors_service.c:90:6:ERROR_SDcardOpen	1
+../Application/General_Utilities/errors_service.c:93:6:ERROR_SDcardRead	1
+../Application/General_Utilities/errors_service.c:96:6:ERROR_SDcardWrite	1
+../Application/General_Utilities/errors_service.c:99:6:ERROR_SDcardClose	1
+../Application/General_Utilities/errors_service.c:102:6:ERROR_SDcardLseek	1
+../Application/General_Utilities/errors_service.c:105:6:ERROR_SDcardInfo	1
+../Application/General_Utilities/errors_service.c:109:6:ERROR_NMIHandler	1
+../Application/General_Utilities/errors_service.c:113:6:ERROR_HardFaulHandler	1
+../Application/General_Utilities/errors_service.c:117:6:ERROR_MemManageHandler	1
+../Application/General_Utilities/errors_service.c:121:6:ERROR_BusFaultHandler	1
+../Application/General_Utilities/errors_service.c:125:6:ERROR_UsageFaultHandler	1
+../Application/General_Utilities/errors_service.c:129:6:ERROR_DebugMonHandler	1
+../Application/General_Utilities/errors_service.c:134:6:ERROR_Sdram	1
+../Application/General_Utilities/errors_service.c:137:6:ERROR_StrChangeColor	1

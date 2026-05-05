@@ -1,0 +1,15 @@
+../Application/General_Utilities/string_oper.c:31:6:_IsSign	16	static
+../Application/General_Utilities/string_oper.c:23:7:Int2Str	64	static
+../Application/General_Utilities/string_oper.c:137:6:_IsSign	16	static
+../Application/General_Utilities/string_oper.c:129:7:Float2Str	72	static
+../Application/General_Utilities/string_oper.c:235:7:StrAll	32	static
+../Application/General_Utilities/string_oper.c:262:6:SwapUint16	24	static
+../Application/General_Utilities/string_oper.c:270:5:STRING_GetTheLongestTxt	32	static
+../Application/General_Utilities/string_oper.c:284:5:STRING_CmpTxt	24	static
+../Application/General_Utilities/string_oper.c:292:7:DispLongNmb	72	static
+../Application/General_Utilities/string_oper.c:336:6:STRING_CopyBuff	32	static
+../Application/General_Utilities/string_oper.c:342:6:StrBuffCopy	24	static
+../Application/General_Utilities/string_oper.c:348:6:StrBuffCopylimit	32	static
+../Application/General_Utilities/string_oper.c:354:10:IPStr2Int	32	static
+../Application/General_Utilities/string_oper.c:361:10:MACStr2Int64	120	static
+../Application/General_Utilities/string_oper.c:375:7:IP2Str	48	static

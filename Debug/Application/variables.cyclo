@@ -1,0 +1,12 @@
+../Application/variables.c:18:22:VAR_GetMainPtr	1
+../Application/variables.c:19:22:VAR_GetMain	1
+../Application/variables.c:21:6:VAR_SetVal	8
+../Application/variables.c:44:6:VAR_DecrVal	1
+../Application/variables.c:48:6:VAR_IncrVal	1
+../Application/variables.c:53:5:VAR_GetVal	12
+../Application/variables.c:78:6:VAR_SetTabVal	23
+../Application/variables.c:151:5:VAR_GetTabVal	23
+../Application/variables.c:204:6:VAR_SetStr	16
+../Application/variables.c:261:7:VAR_GetStr	16
+../Application/variables.c:296:6:VAR_SetVal64	5
+../Application/variables.c:312:10:VAR_GetVal64	1

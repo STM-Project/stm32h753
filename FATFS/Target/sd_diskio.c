@@ -271,9 +271,7 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
   }
 
 #if defined(ENABLE_SCRATCH_BUFFER)
-  //if (0)
-  if (!((uint32_t)buff & 0x1F))
-//if (!((uint32_t)buff & 0x3))
+  if (!((uint32_t)buff & 0x3))
   {
 #endif
     /* Fast path cause destination buffer is correctly aligned */
@@ -436,8 +434,6 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
   }
 
 #if defined(ENABLE_SCRATCH_BUFFER)
-  //if (1)
- // if (!((uint32_t)buff & 0x1F))
   if (!((uint32_t)buff & 0x3))
   {
 #endif
@@ -506,8 +502,6 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
       {
         memcpy((void *)scratch, buff, BLOCKSIZE);
         buff += BLOCKSIZE;
-
-       // SCB_CleanDCache_by_Addr((uint32_t*)scratch, sector);
 
         ret = BSP_SD_WriteBlocks_DMA((uint32_t*)scratch, (uint32_t)sector++, 1);
         if (ret == MSD_OK )

@@ -1,0 +1,2 @@
+../Application/sntp_dns.c:17:6:DefaultSettingsDNS	1
+../Application/sntp_dns.c:25:6:DefaultSettingsSNTP	1

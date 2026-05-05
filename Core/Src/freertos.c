@@ -29,6 +29,7 @@
 #include "_debug.h"
 #include "sd_card.h"
 #include "tim.h"
+#include "esp32wroom.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -167,7 +168,7 @@ void MX_FREERTOS_Init(void) {
   * @retval None
   */
 
-
+//ALIGN_32BYTES(static char buff[200*1024]);
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
@@ -176,6 +177,11 @@ void StartDefaultTask(void const * argument)
 	MX_FATFS_Init();
 
 	osDelay(1000);
+//	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff));
+
+	CreateWifiTask();
+
+
 
 
 

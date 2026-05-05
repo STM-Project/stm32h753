@@ -22,6 +22,11 @@ typedef uint8_t u8;
 #define GET_CODE_LINE  __LINE__
 #define GET_CODE_FUNCTION  __FUNCTION__
 
+#define LWIP_MAKEU32(a,b,c,d) (((u32)((a) & 0xff) << 24) | \
+                               ((u32)((b) & 0xff) << 16) | \
+                               ((u32)((c) & 0xff) << 8)  | \
+                                (u32)((d) & 0xff))
+
 #define GET_CODE_PLACE 	StrAll(4,"\r\n", GET_CODE_FILE, ":", GET_CODE_LINE)
 
 #define TEXT2PRINT(message,type)		(type == 0 ? StrAll(9,"\r\n", GET_CODE_FILE, " : ", GET_CODE_FUNCTION, "() : ", Int2Str(GET_CODE_LINE,None,6,Sign_none), " \"", message,"\"") \

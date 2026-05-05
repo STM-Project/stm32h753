@@ -1,0 +1,11 @@
+../Application/General_Utilities/_debug.c:21:6:DEBUG_Init	8	static
+../Application/General_Utilities/_debug.c:27:6:Dbg	16	static
+../Application/General_Utilities/_debug.c:33:6:DbgMulti	24	static
+../Application/General_Utilities/_debug.c:43:6:DbgVar	24	static
+../Application/General_Utilities/_debug.c:57:6:DbgVar2	24	static
+../Application/General_Utilities/_debug.c:71:12:DEBUG_IsAnythingReceive	4	static
+../Application/General_Utilities/_debug.c:79:12:DEBUG_IsTxtReceive	16	static
+../Application/General_Utilities/_debug.c:91:6:DEBUG_RxFullBuffService	8	static
+../Application/General_Utilities/_debug.c:99:5:DEBUG_RcvStr	16	static
+../Application/General_Utilities/_debug.c:112:7:_Col	48	static
+../Application/General_Utilities/_debug.c:139:7:DEBUG_TestFunction	32	static

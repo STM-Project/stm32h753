@@ -1,0 +1,6 @@
+../Application/General_Utilities/mini_printf.c:11:14:mini_strlen	24	static
+../Application/General_Utilities/mini_printf.c:19:21:mini_itoa	48	static
+../Application/General_Utilities/mini_printf.c:70:6:_putc	16	static
+../Application/General_Utilities/mini_printf.c:64:5:mini_vsnprintf	88	static
+../Application/General_Utilities/mini_printf.c:79:6:_puts	32	static
+../Application/General_Utilities/mini_printf.c:154:5:mini_snprintf	24	static

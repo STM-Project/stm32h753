@@ -23,6 +23,7 @@
 /* USER CODE BEGIN 0 */
 #include "mini_printf.h"
 #include "_debug.h"
+#include "esp32wroom.h"
 //#include "esp32wroom.h"
 /* USER CODE END 0 */
 
@@ -98,7 +99,8 @@ void MX_USART6_UART_Init(void)
   huart6.Init.OverSampling = UART_OVERSAMPLING_16;
   huart6.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart6.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  huart6.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  huart6.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_SWAP_INIT;
+  huart6.AdvancedInit.Swap = UART_ADVFEATURE_SWAP_ENABLE;
   if (HAL_UART_Init(&huart6) != HAL_OK)
   {
     Error_Handler();
@@ -230,9 +232,16 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     PC6     ------> USART6_TX
     PC7     ------> USART6_RX
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+    GPIO_InitStruct.Pin = GPIO_PIN_6;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF7_USART6;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF7_USART6;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -364,7 +373,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	}
 	else if(huart->Instance==USART6)
 	{
-		//WIFI_RxCallbackService();
+		WIFI_RxCallbackService();
 	}
 }
 
@@ -376,7 +385,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 	}
 	else if(huart->Instance==USART6)
 	{
-		//WIFI_UartErrorService();
+		WIFI_UartErrorService();
 	}
 }
 
