@@ -131,10 +131,6 @@ void MX_USART6_UART_Init(void)
   /* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
   __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);
 
-  // 2. Włącz mechanizm RTO oraz przerwanie RTO
-  SET_BIT(huart6.Instance->CR2, USART_CR2_RTOEN);
-  SET_BIT(huart6.Instance->CR1, USART_CR1_RTOIE);
-
   /* USER CODE END USART6_Init 2 */
 
 }
@@ -390,11 +386,21 @@ void MODBUS_UartHandler(void)
 	}
 }
 
-void UART_ClearFlags(UART_HandleTypeDef *huart){
-	__HAL_UART_CLEAR_FEFLAG(huart);
-	__HAL_UART_CLEAR_PEFLAG(huart);
-	__HAL_UART_CLEAR_OREFLAG(huart);
-	__HAL_UART_FLUSH_DRREGISTER(huart);
+void UART_ClearFlags(UART_HandleTypeDef *huart){   // !!!!!!!!!czyścisz wszystkie flagi, które mogą blokować przerwanie i callbacki
+
+    // 1. Czyścimy flagi błędów (w H7 zapis do rejestru ICR)
+    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_FEF | UART_CLEAR_PEF | UART_CLEAR_OREF | UART_CLEAR_NEF);
+
+    // 2. Czyścimy flagę bezczynności i timeoutu (kluczowe dla RxEvent)
+    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_IDLEF | UART_CLEAR_RTOF);
+
+
+//	__HAL_UART_CLEAR_FEFLAG(huart);
+//	__HAL_UART_CLEAR_PEFLAG(huart);
+//	__HAL_UART_CLEAR_OREFLAG(huart);
+	__HAL_UART_FLUSH_DRREGISTER(huart); // czysci FIFO
+
+	//__HAL_UART_SEND_REQ(huart, UART_RXDATA_FLUSH_REQUEST);  //całkowicie czyści sprzętową kolejkę odbiorczą, zapobiegając przetwarzaniu "śmieciowych" bajtów po błędzie
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
