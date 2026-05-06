@@ -91,7 +91,7 @@ extern DMA_HandleTypeDef ESP_UART_DMA_RX;
 static xTaskHandle vtaskWifiHandle;
 static int resetDMA=0;
 
-char RecvBuffer[ESP_RECV_BUFF_SIZE] __attribute__((aligned (32)));
+RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];
 static char sendBuff[PACKET_SEND_LEN] __attribute__((aligned (32)));
 
 void DefaultSettingsWIFI(void)
@@ -169,6 +169,16 @@ static void StartDMA(void)
 	//SCB_InvalidateDCache_by_Addr((uint32_t *)RecvBuffer, ESP_RECV_BUFF_SIZE);
 
 	HAL_UART_Receive_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
+
+
+
+//	HAL_UART_AbortReceive(&huart6);
+//	__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
+//	__HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);
+//	HAL_UART_Receive_DMA(&huart6, ucRTUBuf, MB_SER_PDU_SIZE_MAX);
+//
+//  	__HAL_DMA_DISABLE_IT(huart6.hdmarx, DMA_IT_HT);
+//  	__HAL_DMA_DISABLE_IT(huart6.hdmarx, DMA_IT_TC);
 }
 
 static void RestartDMA(void)
