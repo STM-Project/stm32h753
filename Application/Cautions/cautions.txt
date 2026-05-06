@@ -73,4 +73,33 @@ W funkcji SD_read() nalezy dac poprawke: zamioast  'if (!((uint32_t)buff & 0x3))
 Cykl odczytu z pliku i zapisu do nowego pliku jest czasowo takie same dla  MPU_ACCESS_BUFFERABLE  jak i dla  MPU_ACCESS_NOT_BUFFERABLE  (nie ma roznicy).
 	
 	
+4---------MEMORY CPU------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------		
+	
+DTCMRAM:  			 Pamięć DTCM (Data Tightly Coupled Memory) jest podłączona bezpośrednio do rdzenia procesora Cortex-M7. Tylko dla procesora (zmienne krytyczne czasowo, stos). Brak dostępu dla DMA1/DMA2.
+
+RAM_D1 (AXI SRAM):	 Jeśli używasz DMA1 lub DMA2 (które zazwyczaj obsługują UARTy), mogą one bez problemu czytać i pisać do pamięci w domenie D1. Sygnał przechodzi wtedy przez specjalny mostek między domenami (Bus Matrix). 
+					 Zaleta: 	AXI SRAM jest największą i bardzo szybką pamięcią w STM32H7.
+					 Wada: 		Mostek między domenami wprowadza minimalne opóźnienie (latency) i obciąża szynę AXI, którą procesor komunikuje się z pamięcią Flash
+					 
+RAM_D2, RAM_D3:	     DMA1, DMA22 i UARTy są w tej samej domenie, co odciąża główną szynę systemową AXI. Jeśli nie brakuje Ci miejsca w SRAM1/2 (domena D2), lepiej trzymać bufory UART właśnie tam.
+					 Dzięki temu "ruch" związany z transmisją danych nie przeszkadza procesorowi w pobieraniu instrukcji i danych z domeny D1
+	
+	
+Adres bazowy regionu ( MPU_InitStruct.BaseAddress = address buffer ) musi być wielokrotnością jego rozmiaru ( MPU_InitStruct.Size = sizeof(buffer) ).
+Jeśli ustawisz MPU_REGION_SIZE_1KB, to adres bufora w pamięci RAM musi być podzielny przez 1024 (np. 0x30000000, 0x30000400, 0x30000800 itd.). Jeśli linker umieści bufor pod adresem np. 0x30000020, MPU nie zadziała prawidłowo dla całego bufora lub zgłosi błąd konfiguracji.
+	
+MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE:   	Stosuje się to głównie w systemach wieloprocesorowych lub przy bardzo specyficznych peryferiach (np. gdyby DMA miało własny cache, co w H7 nie występuje). Wymusza na procesorze zachowanie bardzo ścisłej kolejności operacji (tzw. memory barriers).
+MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE:  Procesor traktuje pamięć jako swoją własną. Wydajność jest wyższa (brak zbędnej synchronizacji na poziomie szyn sterujących cache'em). 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
