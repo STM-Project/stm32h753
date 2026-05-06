@@ -165,7 +165,7 @@ static void StartDMA(void)
 {
 	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE); //Za kazym razem nie za duzy bufor  i czasu dizo !!!!!
 	UART_ClearFlags(&ESP_UART_HANDLE);
-	SCB_CleanDCache_by_Addr((uint32_t *)RecvBuffer, ESP_RECV_BUFF_SIZE);
+	//SCB_CleanDCache_by_Addr((uint32_t *)RecvBuffer, ESP_RECV_BUFF_SIZE);
 	//SCB_InvalidateDCache_by_Addr((uint32_t *)RecvBuffer, ESP_RECV_BUFF_SIZE);
 
 	HAL_UART_Receive_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
@@ -813,6 +813,10 @@ void vtaskWifi(void *argument)
 	ResetTestTab(); //Do USUNIECIA !!!
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
+
+//	while(1){
+//		vTaskDelay(500);
+//	}
 
 	while (1)
 	{

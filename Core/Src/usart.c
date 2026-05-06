@@ -119,17 +119,21 @@ void MX_USART6_UART_Init(void)
   }
   /* USER CODE BEGIN USART6_Init 2 */
 
-//  /* 1. WYŁĄCZ niepotrzebne przerwania i WYCZYŚĆ flagi (Przygotowanie pola) */
-//  __HAL_UART_DISABLE_IT(&huart6, UART_IT_TXE | UART_IT_RXNE | UART_IT_TC);
-//  __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_TC | UART_FLAG_RTOF); // Wyczyść też RTOF na start!
-//  __HAL_DMA_DISABLE_IT(huart6.hdmatx, DMA_IT_HT);
-//
-//  /* 2. SKONFIGURUJ parametry sprzętowe */
-//  HAL_UART_ReceiverTimeout_Config(&huart6, 35); 	/* timeout for 3.5 bytes idle   ( 10 bytes - one frame and  TimeoutValue=10 ) */
-//  HAL_UART_EnableReceiverTimeout(&huart6);
-//
-//  /* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
-//  __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);
+  /* 1. WYŁĄCZ niepotrzebne przerwania i WYCZYŚĆ flagi (Przygotowanie pola) */
+  __HAL_UART_DISABLE_IT(&huart6, UART_IT_TXE | UART_IT_RXNE | UART_IT_TC);
+  __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_TC | UART_FLAG_RTOF); // Wyczyść też RTOF na start!
+  __HAL_DMA_DISABLE_IT(huart6.hdmatx, DMA_IT_HT);
+
+  /* 2. SKONFIGURUJ parametry sprzętowe */
+  HAL_UART_ReceiverTimeout_Config(&huart6, 35); 	/* timeout for 3.5 bytes idle   ( 10 bytes - one frame and  TimeoutValue=10 ) */
+  HAL_UART_EnableReceiverTimeout(&huart6);
+
+  /* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
+  __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);
+
+  // 2. Włącz mechanizm RTO oraz przerwanie RTO
+  SET_BIT(huart6.Instance->CR2, USART_CR2_RTOEN);
+  SET_BIT(huart6.Instance->CR1, USART_CR1_RTOIE);
 
   /* USER CODE END USART6_Init 2 */
 
@@ -358,6 +362,34 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
+void MODBUS_UartHandler(void)
+{
+//	uint8_t isError = 0;
+//
+//	if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_ORE)) { __HAL_UART_CLEAR_OREFLAG(&huart6); isError = 1;}
+//    if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_FE)) { __HAL_UART_CLEAR_FEFLAG(&huart6); isError = 1;}
+//    if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_NE)) { __HAL_UART_CLEAR_NEFLAG(&huart6); isError = 1;}
+//    if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_PE)) { __HAL_UART_CLEAR_PEFLAG(&huart6); isError = 1;}
+//
+//    if(isError)
+//	{
+//    	__HAL_UART_FLUSH_DRREGISTER(&huart6);
+//	}
+
+	if(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RTOF) != RESET && __HAL_UART_GET_IT_SOURCE(&huart6, UART_IT_RTO) != RESET)
+	{
+		__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
+		uint16_t len = 1024 - __HAL_DMA_GET_COUNTER(huart6.hdmarx);
+
+		HAL_UARTEx_RxEventCallback(&huart6,len);
+
+//		HAL_UART_DMAStop(&huart6);
+//		SCB_InvalidateDCache_by_Addr((void*)ucRTUBuf, MB_SER_PDU_SIZE_MAX);
+//		usRcvBufferPos = len;
+//		xMBPortEventPost(EV_FRAME_RECEIVED);
+	}
+}
+
 void UART_ClearFlags(UART_HandleTypeDef *huart){
 	__HAL_UART_CLEAR_FEFLAG(huart);
 	__HAL_UART_CLEAR_PEFLAG(huart);
@@ -377,11 +409,24 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)  /* Nie jest samoczynniewywolywany trzebasamemu!!!! */
 {
 	if (huart->Instance == USART6)
 	{
-		return;
+
+		HAL_UART_RxEventTypeTypeDef eventType = HAL_UARTEx_GetRxEventType(huart);
+		if (eventType == HAL_UART_RXEVENT_IDLE) {
+		    // Obsługa bezczynności (może to być IDLE lub RTO w zależności od serii)  //DAC   SWITCH() !!!!!!!!!!!!
+			asm("nop");
+		}
+		if (eventType == HAL_UART_RXEVENT_HT) {
+				    // Obsługa bezczynności (może to być IDLE lub RTO w zależności od serii)
+			asm("nop");
+		}
+		if (eventType == HAL_UART_RXEVENT_TC) {
+				    // Obsługa bezczynności (może to być IDLE lub RTO w zależności od serii)
+			asm("nop");
+		}
 	}
 }
 
