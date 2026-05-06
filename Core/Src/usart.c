@@ -119,6 +119,18 @@ void MX_USART6_UART_Init(void)
   }
   /* USER CODE BEGIN USART6_Init 2 */
 
+//  /* 1. WYŁĄCZ niepotrzebne przerwania i WYCZYŚĆ flagi (Przygotowanie pola) */
+//  __HAL_UART_DISABLE_IT(&huart6, UART_IT_TXE | UART_IT_RXNE | UART_IT_TC);
+//  __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_TC | UART_FLAG_RTOF); // Wyczyść też RTOF na start!
+//  __HAL_DMA_DISABLE_IT(huart6.hdmatx, DMA_IT_HT);
+//
+//  /* 2. SKONFIGURUJ parametry sprzętowe */
+//  HAL_UART_ReceiverTimeout_Config(&huart6, 35); 	/* timeout for 3.5 bytes idle   ( 10 bytes - one frame and  TimeoutValue=10 ) */
+//  HAL_UART_EnableReceiverTimeout(&huart6);
+//
+//  /* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
+//  __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);
+
   /* USER CODE END USART6_Init 2 */
 
 }
@@ -362,6 +374,14 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	else if(huart->Instance==USART6)
 	{
 		//UART_ClearFlags(&ESP_UART_HANDLE);
+	}
+}
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
+{
+	if (huart->Instance == USART6)
+	{
+		return;
 	}
 }
 
