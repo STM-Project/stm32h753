@@ -91,7 +91,7 @@ extern DMA_HandleTypeDef ESP_UART_DMA_RX;
 static xTaskHandle vtaskWifiHandle;
 static int resetDMA=0;
 
-RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];
+RAM_D2_ALIGN32 char RecvBuffer[ESP_RECV_BUFF_SIZE];
 static char sendBuff[PACKET_SEND_LEN] __attribute__((aligned (32)));
 
 void DefaultSettingsWIFI(void)

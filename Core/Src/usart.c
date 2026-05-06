@@ -125,7 +125,7 @@ void MX_USART6_UART_Init(void)
   __HAL_DMA_DISABLE_IT(huart6.hdmatx, DMA_IT_HT);
 
   /* 2. SKONFIGURUJ parametry sprzętowe */
-  HAL_UART_ReceiverTimeout_Config(&huart6, 35); 	/* timeout for 3.5 bytes idle   ( 10 bytes - one frame and  TimeoutValue=10 ) */
+  HAL_UART_ReceiverTimeout_Config(&huart6, 350); 	/* timeout for 3.5 bytes idle   ( 10 bytes - one frame and  TimeoutValue=10 ) */
   HAL_UART_EnableReceiverTimeout(&huart6);
 
   /* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
@@ -417,8 +417,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)  /* Nie jest samoczynniewywolywany trzebasamemu!!!! */
 {
+	extern char RecvBuffer[];
 	if (huart->Instance == USART6)
 	{
+
+		Dbg(1,"\r\nXXXXXXXXXXXXXXXXXXXXX:  ");    Dbg(1,RecvBuffer);  Dbg(1,"............\r\n");
 
 		HAL_UART_RxEventTypeTypeDef eventType = HAL_UARTEx_GetRxEventType(huart);
 		if (eventType == HAL_UART_RXEVENT_IDLE) {
