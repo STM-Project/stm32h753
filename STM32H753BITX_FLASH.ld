@@ -165,6 +165,13 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM_D1
+  
+  .d2_buffers (NOLOAD) :
+  {
+    . = ALIGN(32);
+    *(.d2_data)    /* To jest nazwa, której użyjemy w kodzie */
+    . = ALIGN(32);
+  } >RAM_D2
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
