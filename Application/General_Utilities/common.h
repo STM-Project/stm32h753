@@ -75,7 +75,10 @@ typedef uint8_t u8;
 #define BKCOPY(dst,src)	dst=src
 
 #define SDRAM 			__attribute__ ((section(".sdram")))
-#define SDRAM_ALIGN32 	__attribute__ ((section(".sdram"), aligned(32)));		/* ALIGN_32BYTES() */
+#define SDRAM_ALIGN32 	__attribute__ ((section(".sdram"), aligned(32)))		/* ALIGN_32BYTES() */
+
+#define RAM_D2 			__attribute__ ((section(".d2_data")))
+#define RAM_D2_ALIGN32 	__attribute__ ((section(".d2_data"), aligned(32)))		/* ALIGN_32BYTES() */
 
 #define PTR2CHAR(txt,ptr)	char *ptr
 #define PTR2INT(txt,ptr)	int *ptr
