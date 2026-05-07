@@ -92,8 +92,39 @@ MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE:   	Stosuje się to głównie 
 MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE:  Procesor traktuje pamięć jako swoją własną. Wydajność jest wyższa (brak zbędnej synchronizacji na poziomie szyn sterujących cache'em). 
 	
 	
+		
+4---------INFOs between THREADs or INTERRUPTs ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------		
 	
+W systemach RTOS na STM32 (najczęściej FreeRTOS) flagę z przerwania do wątku przesyła się za pomocą mechanizmów synchronizacji, unikając zwykłych zmiennych globalnych, które wymagają nieefektywnego odpytywania (pollingu).	
 	
+1. Direct-to-Task Notifications 
+   - Najszybsza i najefektywniejsza,  ok. 45% szybsze niż semafory binarne, 
+   - Oszczędność pamięci, Nie wymagają tworzenia dodatkowego obiektu w pamięci RAM (takiego jak struktura semafora). Flaga jest przechowywana bezpośrednio w strukturze zadania (TCB)):
+   - wysyła powiadomienie bezpośrednio do konkretnego wątku,  
+   - w przerwaniu uzyj vTaskNotifyGiveFromISR()(bardzo prosta) lub xTaskNotifyFromISR()(bardziej złożona)
+   - w watku 	  użyj ulTaskNotifyTake()	   (bardzo prosta) lub xTaskNotifyWait()   (bardziej złożona), aby przejść w stan uśpienia do czasu otrzymania flagi.
+   - Kiedy NIE używać tej metody:  Tylko wtedy, gdy musisz wysłać flagę do wielu wątków naraz (wtedy użyj Event Groups) lub gdy wielu nadawców musi wysyłać flagi do wielu odbiorców (wtedy użyj kolejek lub semaforów).
+   
+2. Binary Semaphore (Semafor binarny)	
+   - Klasyczne rozwiązanie, gdzie przerwanie(watek) "oddaje" semafor, a wątek na niego czeka     xSemaphoreGiveFromISR(xSemaphore, &pxHigherPriorityTaskWoken),     xSemaphoreTake(xSemaphore, portMAX_DELAY).
+   
+3. Event Groups (Grupy zdarzeń)	
+   - Idealne, gdy wątek musi czekać na kilka różnych flag (bitów)   xEventGroupSetBitsFromISR(),   xEventGroupWaitBits().
+   
+	
+Sufiks _ISR:   Funkcje te są nieblokujące i bezpieczne dla kontekstu przerwania.
+Wymuszenie:    Przełączenia kontekstu: Większość funkcji FromISR posiada parametr pxHigherPriorityTaskWoken. Jeśli zwróci on pdTRUE, należy wywołać portYIELD_FROM_ISR(), aby system natychmiast przełączył się na wybudzony wątek, zamiast czekać do następnego tyknięcia zegara systemowego
+	
+
+5---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+
+
+
+
+
+
+
 	
 	
 	
