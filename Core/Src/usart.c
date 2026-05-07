@@ -119,17 +119,14 @@ void MX_USART6_UART_Init(void)
   }
   /* USER CODE BEGIN USART6_Init 2 */
 
-  /* 1. WYŁĄCZ niepotrzebne przerwania i WYCZYŚĆ flagi (Przygotowanie pola) */
-  __HAL_UART_DISABLE_IT(&huart6, UART_IT_TXE | UART_IT_RXNE | UART_IT_TC);
-  __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_TC | UART_FLAG_RTOF); // Wyczyść też RTOF na start!
+  __HAL_UART_DISABLE_IT(&huart6, UART_IT_TXE | UART_IT_RXNE | UART_IT_TC);			/* 1. WYŁĄCZ niepotrzebne przerwania i WYCZYŚĆ flagi (Przygotowanie pola) */
+  __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_TC | UART_FLAG_RTOF);
   __HAL_DMA_DISABLE_IT(huart6.hdmatx, DMA_IT_HT);
 
-  /* 2. SKONFIGURUJ parametry sprzętowe */
-  HAL_UART_ReceiverTimeout_Config(&huart6, 350); 	/* timeout for 3.5 bytes idle   ( 10 bytes - one frame and  TimeoutValue=10 ) */
+  HAL_UART_ReceiverTimeout_Config(&huart6, 350); 									/* 2. SKONFIGURUJ parametry sprzętowe,   exmple: timeout for 3.5 bytes idle (10 bytes for one frame) and TimeoutValue=35 */
   HAL_UART_EnableReceiverTimeout(&huart6);
 
-  /* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
-  __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);
+  __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);										/* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
 
   /* USER CODE END USART6_Init 2 */
 
@@ -358,49 +355,35 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
-void MODBUS_UartHandler(void)
+void ESP32_UartHandler(void)
 {
-//	uint8_t isError = 0;
-//
-//	if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_ORE)) { __HAL_UART_CLEAR_OREFLAG(&huart6); isError = 1;}
-//    if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_FE)) { __HAL_UART_CLEAR_FEFLAG(&huart6); isError = 1;}
-//    if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_NE)) { __HAL_UART_CLEAR_NEFLAG(&huart6); isError = 1;}
-//    if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_PE)) { __HAL_UART_CLEAR_PEFLAG(&huart6); isError = 1;}
-//
-//    if(isError)
-//	{
-//    	__HAL_UART_FLUSH_DRREGISTER(&huart6);
-//	}
-
 	if(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RTOF) != RESET && __HAL_UART_GET_IT_SOURCE(&huart6, UART_IT_RTO) != RESET)
 	{
 		__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
 		uint16_t len = 1024 - __HAL_DMA_GET_COUNTER(huart6.hdmarx);
 
 		HAL_UARTEx_RxEventCallback(&huart6,len);
-
-//		HAL_UART_DMAStop(&huart6);
-//		SCB_InvalidateDCache_by_Addr((void*)ucRTUBuf, MB_SER_PDU_SIZE_MAX);
-//		usRcvBufferPos = len;
-//		xMBPortEventPost(EV_FRAME_RECEIVED);
 	}
 }
 
-void UART_ClearFlags(UART_HandleTypeDef *huart){   // !!!!!!!!!czyścisz wszystkie flagi, które mogą blokować przerwanie i callbacki
+void UART_ClearFlags(UART_HandleTypeDef *huart)
+{
+    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_FEF | UART_CLEAR_PEF | UART_CLEAR_OREF | UART_CLEAR_NEF);		/* Czyścimy flagi błędów, które mogą blokować przerwanie i callback */
+/*	__HAL_UART_CLEAR_FEFLAG(huart);
+	__HAL_UART_CLEAR_PEFLAG(huart);
+	__HAL_UART_CLEAR_OREFLAG(huart);
+	__HAL_UART_CLEAR_NEFLAG(huart);
+*/
+    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_IDLEF | UART_CLEAR_RTOF);										/* Czyścimy flagę bezczynności i timeoutu */
+	__HAL_UART_FLUSH_DRREGISTER(huart);																		/* Czyścimy FIFO */
+	__HAL_UART_SEND_REQ(huart, UART_RXDATA_FLUSH_REQUEST);  												/* Całkowicie czyści sprzętową kolejkę odbiorczą, zapobiegając przetwarzaniu "śmieciowych" bajtów po błędzie */
 
-    // 1. Czyścimy flagi błędów (w H7 zapis do rejestru ICR)
-    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_FEF | UART_CLEAR_PEF | UART_CLEAR_OREF | UART_CLEAR_NEF);
+}
 
-    // 2. Czyścimy flagę bezczynności i timeoutu (kluczowe dla RxEvent)
-    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_IDLEF | UART_CLEAR_RTOF);
-
-
-//	__HAL_UART_CLEAR_FEFLAG(huart);
-//	__HAL_UART_CLEAR_PEFLAG(huart);
-//	__HAL_UART_CLEAR_OREFLAG(huart);
-	__HAL_UART_FLUSH_DRREGISTER(huart); // czysci FIFO
-
-	//__HAL_UART_SEND_REQ(huart, UART_RXDATA_FLUSH_REQUEST);  //całkowicie czyści sprzętową kolejkę odbiorczą, zapobiegając przetwarzaniu "śmieciowych" bajtów po błędzie
+void UART_ClearFlags2(UART_HandleTypeDef *huart)
+{
+	__HAL_DMA_DISABLE_IT(huart6.hdmarx, DMA_IT_HT);				/* HAL_UART_Receive_DMA() automatycznie włącza oba te przerwania i mogą być zbędne i generować niepotrzebne obciążenie procesora */
+	__HAL_DMA_DISABLE_IT(huart6.hdmarx, DMA_IT_TC);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
@@ -415,27 +398,25 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)  /* Nie jest samoczynniewywolywany trzebasamemu!!!! */
-{
-	extern char RecvBuffer[];
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)				/* Obsługa bezczynności (może to być IDLE lub RTO) */
+{  																						/* Nie jest samoczynnie wywolywany trzeba samemu wywolac */
 	if (huart->Instance == USART6)
 	{
+		ESP32_Notify2EspThread();
 
-		Dbg(1,"\r\nXXXXXXXXXXXXXXXXXXXXX:  ");    Dbg(1,RecvBuffer);  Dbg(1,"............\r\n");
+/*		HAL_UART_RxEventTypeTypeDef eventType = HAL_UARTEx_GetRxEventType(huart);
+		switch(eventType)
+		{
+			case HAL_UART_RXEVENT_IDLE:
+				break;
 
-		HAL_UART_RxEventTypeTypeDef eventType = HAL_UARTEx_GetRxEventType(huart);
-		if (eventType == HAL_UART_RXEVENT_IDLE) {
-		    // Obsługa bezczynności (może to być IDLE lub RTO w zależności od serii)  //DAC   SWITCH() !!!!!!!!!!!!
-			asm("nop");
+			case HAL_UART_RXEVENT_HT:
+				break;
+
+			case HAL_UART_RXEVENT_TC:
+				break;
 		}
-		if (eventType == HAL_UART_RXEVENT_HT) {
-				    // Obsługa bezczynności (może to być IDLE lub RTO w zależności od serii)
-			asm("nop");
-		}
-		if (eventType == HAL_UART_RXEVENT_TC) {
-				    // Obsługa bezczynności (może to być IDLE lub RTO w zależności od serii)
-			asm("nop");
-		}
+*/
 	}
 }
 
