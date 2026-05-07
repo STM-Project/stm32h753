@@ -94,6 +94,16 @@ static int resetDMA=0;
 RAM_D2_ALIGN32 char RecvBuffer[ESP_RECV_BUFF_SIZE];
 static char sendBuff[PACKET_SEND_LEN] __attribute__((aligned (32)));
 
+
+void ESP32_Notify2EspThread(void)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    vTaskNotifyGiveFromISR(vtaskWifiHandle, &xHigherPriorityTaskWoken);			/* Wyślij powiadomienie bezpośrednio do wątku */
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);								/* Wymuś przełączenie kontekstu, jeśli wątek ma wyższy priorytet */
+}
+
+
 void DefaultSettingsWIFI(void)
 {
 	int i;
@@ -165,20 +175,9 @@ static void StartDMA(void)
 {
 	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE); //Za kazym razem nie za duzy bufor  i czasu dizo !!!!!
 	UART_ClearFlags(&ESP_UART_HANDLE);
-	//SCB_CleanDCache_by_Addr((uint32_t *)RecvBuffer, ESP_RECV_BUFF_SIZE);
-	//SCB_InvalidateDCache_by_Addr((uint32_t *)RecvBuffer, ESP_RECV_BUFF_SIZE);
-
+ /* SCB_CleanDCache_by_Addr((uint32_t *)RecvBuffer, ESP_RECV_BUFF_SIZE); */
 	HAL_UART_Receive_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
-
-
-
-//	HAL_UART_AbortReceive(&huart6);
-//	__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
-//	__HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);
-//	HAL_UART_Receive_DMA(&huart6, ucRTUBuf, MB_SER_PDU_SIZE_MAX);
-//
-//  	__HAL_DMA_DISABLE_IT(huart6.hdmarx, DMA_IT_HT);
-//  	__HAL_DMA_DISABLE_IT(huart6.hdmarx, DMA_IT_TC);
+	UART_ClearFlags2(&ESP_UART_HANDLE);
 }
 
 static void RestartDMA(void)
@@ -203,10 +202,20 @@ static int SendToEsp_DMA(char *pData, int lenData)
 
 static bool isAnythingRecv(void)
 {
-	if (RecvBuffer[0]>0)
-		return true;
-	else
-		return false;
+    uint32_t ulNotificationValue = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);		/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
+
+    if(ulNotificationValue > 0)
+    {
+    	return true;
+    }
+
+    return false;
+
+
+//	if (RecvBuffer[0]>0)
+//		return true;
+//	else
+//		return false;
 }
 
 static void DisplayRequestGET(char *pBuf, int bytesDisp)
@@ -1179,7 +1188,7 @@ void vtaskWifi(void *argument)
 
 void CreateWifiTask(void)
 {
-	xTaskCreate(vtaskWifi, "vtaskWifi", 1000, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
+	vtaskWifiHandle = xTaskCreate(vtaskWifi, "vtaskWifi", 1000, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
 }
 
 void CloseWifiTask(void)
