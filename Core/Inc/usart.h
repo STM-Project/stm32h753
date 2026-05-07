@@ -46,7 +46,7 @@ void DEBUG_ReceiveStop(void);
 
 void MX_UART7_Init(void);
 void MX_USART6_UART_Init(void);
-void MODBUS_UartHandler(void);
+void ESP32_UartHandler(void);
 
 /* USER CODE BEGIN Prototypes */
 
