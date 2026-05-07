@@ -74,6 +74,7 @@ typedef struct __attribute__ ((packed))
 
 }s_wifi_select;
 
+void ESP32_Notify2EspThread(void);
 void CreateWifiTask(void);
 void CloseWifiTask(void);
 void RestartWifiTask(void);
