@@ -973,7 +973,7 @@ void vtaskWifi(void *argument)
 				break;
 
 			case INIT_CONNECTION:
-				if (1/*RecvFromEsp("ready")*/)
+				if (RecvFromEsp("ready"))
 				{
 					SendToEsp("ATE0\r\n");
 					while (RecvFromEsp("\r\nOK")==0)
@@ -1188,7 +1188,7 @@ void vtaskWifi(void *argument)
 
 void CreateWifiTask(void)
 {
-	vtaskWifiHandle = xTaskCreate(vtaskWifi, "vtaskWifi", 1000, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
+	xTaskCreate(vtaskWifi, "vtaskWifi", 1000, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
 }
 
 void CloseWifiTask(void)
