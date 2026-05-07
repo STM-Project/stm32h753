@@ -807,6 +807,7 @@ static void vLoadTime(time_t timeSet)
 		vTaskDelay(10);
 }
 
+int nnnnr=0;
 void vtaskWifi(void *argument)
 {
 	char *pHttpGet;
@@ -823,9 +824,221 @@ void vtaskWifi(void *argument)
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
 
-//	while(1){
-//		vTaskDelay(500);
-//	}
+	while(1)
+	{
+		if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY))
+		{
+
+			_NNNEEXXTTT_:
+			if (nnnnr==0 && RecvFromEsp("ready"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_111_");
+				SendToEsp("ATE0\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==1 && RecvFromEsp("\r\nOK"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_222_");
+				mini_snprintf(sendBuff, sizeof(sendBuff), "AT+UART_CUR=%d,8,1,0,0\r\n", ESP_UART_BUADRATE);
+				SendToEsp(sendBuff);
+				nnnnr++;
+			}
+			else if (nnnnr==2 && RecvFromEsp("\r\nOK"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_333_");
+				vTaskDelay(10);
+				ChangeUartBuadRate(ESP_UART_BUADRATE);
+				SendToEsp("AT+GMR\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==3 && RecvFromEsp("\r\nOK"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_444_");
+				len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWMODE=%d\r\n",VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB));
+				SendToEsp_DMA(sendBuff,len);
+				//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==4 && RecvFromEsp("\r\nOK"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_555_");
+				if(WIFI_MODE_DISABLED==VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)){
+					Dbg(DBG, "\r\nWifi DISABLED ");
+					break;
+				}
+				SendToEsp("AT+CWLAPOPT=1,23\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==5 && RecvFromEsp("\r\nOK"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_666_");
+				SendToEsp("AT+CIPMUX=1\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==6 && RecvFromEsp("\r\nOK"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_777_");
+				SendToEsp("AT+CWDHCP=0,3\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==7 && RecvFromEsp("\r\nOK"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_888_");
+				if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
+					1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
+				{
+					SendToEsp("AT+CWDHCP=1,1\r\n");
+				}
+				else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
+						  0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
+				{
+					SendToEsp("AT+CWDHCP=1,2\r\n");
+				}
+				else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
+						  1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
+				{
+					SendToEsp("AT+CWDHCP=1,3\r\n");
+				}
+				nnnnr++;
+			}
+			else if (nnnnr==8 && RecvFromEsp("\r\nOK"))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_999_");
+				SendToEsp("AT+CWHOSTNAME=\"Elektronika_STM\"\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==9 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
+			{
+				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_AAA_");
+				if(RecvFromEsp("ERROR")) break;
+
+				Dbg(1,"KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK");
+
+//								switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+//								{
+//								case WIFI_MODE_STA:
+//								case WIFI_MODE_AP_STA:
+//									if(0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)))
+//									{
+//										len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTA=\"%s\",\"%s\",\"%s\"\r\n",
+//												IP2Str(VAR_GetTabVal(Const_wifiSTA_ip,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
+//												IP2Str(VAR_GetTabVal(Const_wifiSTA_gate,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
+//												IP2Str(VAR_GetTabVal(Const_wifiSTA_mask,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))));
+//										SendToEsp_DMA(sendBuff,len);
+//										DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+//									}
+//									break;
+//								}
+//								switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+//								{
+//								case WIFI_MODE_AP:
+//								case WIFI_MODE_AP_STA:
+//									if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)))
+//									{
+//										len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPAP=\"%s\",\"%s\",\"%s\"\r\n",
+//												IP2Str(VAR_GetTabVal(Const_wifiAP_ip,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
+//												IP2Str(VAR_GetTabVal(Const_wifiAP_gate,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
+//												IP2Str(VAR_GetTabVal(Const_wifiAP_mask,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))));
+//										SendToEsp_DMA(sendBuff,len);
+//										DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+//									}
+//									break;
+//								}
+//
+//								switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+//								{
+//								case WIFI_MODE_AP:
+//								case WIFI_MODE_AP_STA:
+//									len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWSAP=\"%s\",\"%s\",5,3\r\n",
+//											VAR_GetStr(Const_wifiAP_name,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)),
+//											VAR_GetStr(Const_wifiAP_pass,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)));
+//									SendToEsp_DMA(sendBuff,len);
+//									DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+//									break;
+//								}
+//								switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+//								{
+//								case WIFI_MODE_STA:
+//								case WIFI_MODE_AP_STA:
+//									len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWJAP=\"%s\",\"%s\"\r\n",
+//											VAR_GetStr(Const_wifiSTA_name,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)),
+//											VAR_GetStr(Const_wifiSTA_pass,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)));  // Timer do logowania !!!!!  i poprawic GetPort !! zamiast port na indeks
+//									SendToEsp_DMA(sendBuff,len);
+//									DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+//									result=vGetConnectionResultToSTA();
+//									if(ESP_CONNECTION_OK!=result)
+//										DbgVar(DBG,30,"\r\nERROR_ESP_CONNECTION: %d\r\n",result);
+//									break;
+//								}
+
+
+				nnnnr++;
+			}
+			else if (nnnnr==10 && RecvFromEsp("\r\nOK"))
+			{
+				nnnnr++;
+			}
+			else if (nnnnr==11 && RecvFromEsp("\r\nOK"))
+			{
+				nnnnr++;
+			}
+			else if (nnnnr==12 && RecvFromEsp("\r\nOK"))
+			{
+				nnnnr++;
+			}
+			else if (nnnnr==13 && RecvFromEsp("\r\nOK"))
+			{
+				nnnnr++;
+			}
+
+
+
+
+
+
+//######################################################################################
+
+
+
+
+
+
+//			SendToEsp("AT+CIFSR\r\n");
+//			while (RecvFromEsp("\r\nOK")==0)
+//				vTaskDelay(10);
+//			GetAddressesForConnection();
+//			Dbg(DBG, RecvBuffer);
+//
+//			SendToEsp("AT+CIPSERVERMAXCONN=1\r\n");
+//			while (RecvFromEsp("\r\nOK")==0)
+//				vTaskDelay(10);
+//
+//			len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
+//					IP2Str(VAR_GetTabVal(Const_dns_IP1,NO_TAB)),
+//					IP2Str(VAR_GetTabVal(Const_dns_IP2,NO_TAB)),
+//					IP2Str(VAR_GetTabVal(Const_dns_IP3,NO_TAB)));
+//			SendToEsp_DMA(sendBuff,len);
+//			DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+//			while (RecvFromEsp("\r\nOK")==0)
+//				vTaskDelay(1);
+//			Dbg(DBG, RecvBuffer);
+//
+//			len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",
+//					VAR_GetTabVal(Const_sntp_timezone,NO_TAB),
+//					VAR_GetStr(Const_sntp_nameServer1,NO_TAB),
+//					VAR_GetStr(Const_sntp_nameServer2,NO_TAB));
+//			SendToEsp_DMA(sendBuff,len);
+//			DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+//			while (RecvFromEsp("\r\nOK")==0)
+//				vTaskDelay(1);
+//			Dbg(DBG, RecvBuffer);
+//######################################################################################
+
+
+
+		}
+
+	}
 
 	while (1)
 	{
