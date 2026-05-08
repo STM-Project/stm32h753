@@ -360,9 +360,7 @@ void ESP32_UartHandler(void)
 	if(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RTOF) != RESET && __HAL_UART_GET_IT_SOURCE(&huart6, UART_IT_RTO) != RESET)
 	{
 		__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
-		uint16_t len = 1024 - __HAL_DMA_GET_COUNTER(huart6.hdmarx);
-
-		HAL_UARTEx_RxEventCallback(&huart6,len);
+		HAL_UARTEx_RxEventCallback(&huart6,__HAL_DMA_GET_COUNTER(huart6.hdmarx));		/* Rejestr COUNTER startuje z wartością, która podana jest w funkcji startującej (np. HAL_UART_Receive_DMA), i zmniejsza się o 1 po każdym odebranym bajcie */
 	}
 }
 
@@ -402,7 +400,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)				/* 
 {  																						/* Nie jest samoczynnie wywolywany trzeba samemu wywolac */
 	if (huart->Instance == USART6)
 	{
-		ESP32_Notify2EspThread();
+		ESP32_Notify2EspThread(size);
 
 /*		HAL_UART_RxEventTypeTypeDef eventType = HAL_UARTEx_GetRxEventType(huart);
 		switch(eventType)
