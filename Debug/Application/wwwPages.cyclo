@@ -1,7 +1,0 @@
-../Application/wwwPages.c:38:6:ResetTestTab	1
-../Application/wwwPages.c:46:5:IsValueInRangeLowHigh	3
-../Application/wwwPages.c:56:14:ParserPageHTTP	3
-../Application/wwwPages.c:72:13:ParserQueryHTTP	5
-../Application/wwwPages.c:91:17:ASP_Callback	9
-../Application/wwwPages.c:135:13:CGI_Callback	8
-../Application/wwwPages.c:185:15:GetPageWWW	1

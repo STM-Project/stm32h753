@@ -1,7 +1,0 @@
-../Application/wwwPages.c:38:6:ResetTestTab	4	static
-../Application/wwwPages.c:46:5:IsValueInRangeLowHigh	24	static
-../Application/wwwPages.c:56:14:ParserPageHTTP	24	static
-../Application/wwwPages.c:72:13:ParserQueryHTTP	40	static
-../Application/wwwPages.c:91:17:ASP_Callback	168	static
-../Application/wwwPages.c:135:13:CGI_Callback	232	static
-../Application/wwwPages.c:185:15:GetPageWWW	24	static

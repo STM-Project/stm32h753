@@ -1,3 +1,0 @@
-../Application/General_Utilities/double_float.c:16:7:dbl2stri	136	static
-../Application/General_Utilities/double_float.c:115:6:float2stri	136	static
-../Application/General_Utilities/double_float.c:212:7:GetNewfloatValue	24	static
