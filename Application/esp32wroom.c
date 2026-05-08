@@ -122,15 +122,15 @@ void DefaultSettingsWIFI(void)
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
 		VAR_SetVal64(Const_wifiSTA_mac, i, 0x1122334455);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,99));
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,1,99));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
-		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
+		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 0);
-//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -820,9 +820,14 @@ void vtaskWifi(void *argument)
 	connectionType=INIT_CONNECTION;
 	EmailSendParam.start=0;
 	DefaultSettingsWIFI();
+	DefaultSettingsEmail();
+	DefaultSettingsDNS();
+	DefaultSettingsSNTP();
+
 	ResetTestTab(); //Do USUNIECIA !!!
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
+	nnnnr=0;
 
 	while(1)
 	{
@@ -928,7 +933,7 @@ void vtaskWifi(void *argument)
 								IP2Str(VAR_GetTabVal(Const_wifiSTA_gate,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
 								IP2Str(VAR_GetTabVal(Const_wifiSTA_mask,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))));
 						SendToEsp_DMA(sendBuff,len);
-						DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+						//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
 						flag=0;
 					}
 					break;
@@ -938,6 +943,7 @@ void vtaskWifi(void *argument)
 			}
 			else if (nnnnr==10 && RecvFromEsp("\r\nOK"))
 			{
+				Dbg(DBG,RecvBuffer);
 				int flag=1;   Dbg(DBG,"_BBB_");
 				switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
 				{
@@ -950,7 +956,7 @@ void vtaskWifi(void *argument)
 								IP2Str(VAR_GetTabVal(Const_wifiAP_gate,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
 								IP2Str(VAR_GetTabVal(Const_wifiAP_mask,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))));
 						SendToEsp_DMA(sendBuff,len);
-						DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+						//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
 						flag=0;
 					}
 					break;
@@ -960,6 +966,7 @@ void vtaskWifi(void *argument)
 			}
 			else if (nnnnr==11 && RecvFromEsp("\r\nOK"))
 			{
+				Dbg(DBG,RecvBuffer);
 				int flag=1;   Dbg(DBG,"_CCC_");
 				switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
 				{
@@ -969,7 +976,7 @@ void vtaskWifi(void *argument)
 							VAR_GetStr(Const_wifiAP_name,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)),
 							VAR_GetStr(Const_wifiAP_pass,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)));
 					SendToEsp_DMA(sendBuff,len);
-					DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+					//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
 					flag=0;
 					break;
 				}
@@ -978,6 +985,7 @@ void vtaskWifi(void *argument)
 			}
 			else if (nnnnr==12 && RecvFromEsp("\r\nOK"))
 			{
+				Dbg(DBG,RecvBuffer);
 				int flag=1;   Dbg(DBG,"_DDD_");
 				switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
 				{
@@ -987,7 +995,7 @@ void vtaskWifi(void *argument)
 							VAR_GetStr(Const_wifiSTA_name,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)),
 							VAR_GetStr(Const_wifiSTA_pass,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)));  // Timer do logowania !!!!!  i poprawic GetPort !! zamiast port na indeks
 					SendToEsp_DMA(sendBuff,len);
-					DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+					//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
 					flag=0;
 					break;
 				}
@@ -996,6 +1004,7 @@ void vtaskWifi(void *argument)
 			}
 			else if (nnnnr==13 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
 			{
+				Dbg(DBG,RecvBuffer);
 				result=vGetConnectionResultToSTA();   Dbg(DBG,"_EEE_");
 				if(ESP_CONNECTION_OK!=result)
 					DbgVar(DBG,30,"\r\nERROR_ESP_CONNECTION: %d\r\n",result);
@@ -1004,18 +1013,19 @@ void vtaskWifi(void *argument)
 			}
 			else if (nnnnr==14 && RecvFromEsp("\r\nOK"))
 			{
+				Dbg(DBG,RecvBuffer);  Dbg(DBG,"_FFF_");
 				GetAddressesForConnection();
-				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_FFF_");
 				SendToEsp("AT+CIPSERVERMAXCONN=1\r\n");
 				nnnnr++;
 			}
 			else if (nnnnr==15 && RecvFromEsp("\r\nOK"))
-			{   Dbg(DBG,"_GGG_");
+			{
+				Dbg(DBG,RecvBuffer); Dbg(DBG,"_GGG_");
 				len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
 						IP2Str(VAR_GetTabVal(Const_dns_IP1,NO_TAB)),
 						IP2Str(VAR_GetTabVal(Const_dns_IP2,NO_TAB)),
 						IP2Str(VAR_GetTabVal(Const_dns_IP3,NO_TAB)));
-				DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+				//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
 				SendToEsp_DMA(sendBuff,len);   //!!!!!!!!!!!!!! Czekaj na flage z HAL_UART_TxCpltCallback() !!!!
 				nnnnr++;
 			}
@@ -1031,10 +1041,80 @@ void vtaskWifi(void *argument)
 			}
 			else if (nnnnr==17 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
 			{
-				Dbg(DBG, RecvBuffer);
-				Dbg(DBG, "\r\nKKKKOOONNIEECCCCCCCCCCCCCCCCC !!!!");
+				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_III_");
+				len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSERVER=1,%d\r\n", GetHttpPort());
+				SendToEsp_DMA(sendBuff,len);
 				nnnnr++;
+			}
+			else if (nnnnr==18 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
+			{
+				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_JJJ_");
+				len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S);
+				SendToEsp_DMA(sendBuff,len);
+				nnnnr++;
+			}
+			else if (nnnnr==19 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
+			{
+				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_KKK _");
+				int flag=1;
+				switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+				{
+					case WIFI_MODE_STA:
+					case WIFI_MODE_AP_STA:
+						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",VAR_GetStr(Const_emailSend_server,0/*i*/));			//!!!!!! for(i=0;i<MAX_EMAIL_SENDERS;++i)  !!!!!!!!
+						SendToEsp_DMA(sendBuff,len);  DbgMulti(DBG,"\r\n",sendBuff," ");
+						flag=0;
+						break;
+				}
+				if(flag) SendToEsp("AT\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==20 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
+			{
+				char *ptr;
+				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_LLL_");
+				if (RecvFromEsp("\r\nOK"))
+				{
+					if ((ptr=RecvFromEsp("+CIPDOMAIN:")))
+					{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
+						VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
+						DbgMulti(DBG,"\r\n",ptr,"  ");
+						SendToEsp("AT+SYSTIMESTAMP?\r\n");
+					}
+					else
+						break;
+				}
+				else if (RecvFromEsp("ERROR"))
+					return;
 
+				nnnnr++;
+			}
+			else if (nnnnr==21 && (RecvFromEsp("+TIME_UPDATED"/*"+SYSTIMESTAMP:"*/)||RecvFromEsp("ERROR")))
+			{
+				int itx=0;
+				char *ptr;
+				time_t getTime;
+				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_MMM_");
+				if ((ptr=RecvFromEsp("+SYSTIMESTAMP:")))
+				{
+					getTime=(time_t)atoi(ptr+14);
+					if(getTime>1565853509)
+					{
+						VAR_SetTabVal(Const_sntp_time,NO_TAB,getTime);
+						sntpTime=gmtime(&getTime);
+						DbgVar(1,50,"\r\nES TIME LOADED %d; %02d-%02d-%02d  %02d:%02d:%02d",
+								VAR_GetTabVal(Const_sntp_time,NO_TAB),
+								sntpTime->tm_year-100,
+								sntpTime->tm_mon+1,
+								sntpTime->tm_mday,
+								sntpTime->tm_hour,
+								sntpTime->tm_min,
+								sntpTime->tm_sec);
+					}
+
+				}
+
+				Dbg(DBG,"\r\nKKKKKKKKKKKOOOOOOOOOOOOOOOOOONNNNNNNNNNNNNIEEEEEEEEEECCCCCCC !!!!!");
 			}
 
 
@@ -1047,23 +1127,30 @@ void vtaskWifi(void *argument)
 
 
 
-
-
-
-
-
-//			DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-//			while (RecvFromEsp("\r\nOK")==0)
-//				vTaskDelay(1);
-//			Dbg(DBG, RecvBuffer);
-//######################################################################################
+//
+//			switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+//			{
+//				case WIFI_MODE_STA:
+//				case WIFI_MODE_AP_STA:
+//					vQueryAndReplaceEmailAddrName2AddrIP();
+//					if(0==vQueryAndLoadTimeFromSNTP())
+//						vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB));
+//					break;
+//				default:
+//					vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB));
+//					break;
+//			}
+//
+//			Dbg(DBG, "\r\nESP INIT OK ");
+//			RestartDMA();
+//			connectionType=HTTP_CONNECTION;
 
 
 
 		}
 
 	}
-
+/*
 	while (1)
 	{
 		if (true==isAnythingRecv())  //Cykliczne odpytatywanie czy nie zawieszony np AT
@@ -1420,7 +1507,7 @@ void vtaskWifi(void *argument)
 			EmailSendStart();
 
 		vTaskDelay(20);
-	}
+	}*/
 }
 
 void CreateWifiTask(void)
