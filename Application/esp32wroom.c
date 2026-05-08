@@ -95,7 +95,7 @@ RAM_D2_ALIGN32 char RecvBuffer[ESP_RECV_BUFF_SIZE];
 static char sendBuff[PACKET_SEND_LEN] __attribute__((aligned (32)));
 
 
-void ESP32_Notify2EspThread(void)
+void ESP32_Notify2EspThread(uint16_t size)		/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
@@ -122,15 +122,15 @@ void DefaultSettingsWIFI(void)
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
 		VAR_SetVal64(Const_wifiSTA_mac, i, 0x1122334455);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,1,99));
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,99));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
-		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
+		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 0);
-		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -175,7 +175,7 @@ static void StartDMA(void)
 {
 	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE); //Za kazym razem nie za duzy bufor  i czasu dizo !!!!!
 	UART_ClearFlags(&ESP_UART_HANDLE);
- /* SCB_CleanDCache_by_Addr((uint32_t *)RecvBuffer, ESP_RECV_BUFF_SIZE); */
+/*	SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE); */
 	HAL_UART_Receive_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
 	UART_ClearFlags2(&ESP_UART_HANDLE);
 }
@@ -829,7 +829,6 @@ void vtaskWifi(void *argument)
 		if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY))
 		{
 
-			_NNNEEXXTTT_:
 			if (nnnnr==0 && RecvFromEsp("ready"))
 			{
 				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_111_");
@@ -883,22 +882,27 @@ void vtaskWifi(void *argument)
 			}
 			else if (nnnnr==7 && RecvFromEsp("\r\nOK"))
 			{
+				int flag=1;
 				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_888_");
 				if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 					1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 				{
 					SendToEsp("AT+CWDHCP=1,1\r\n");
+					flag=0;
 				}
 				else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 						  0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 				{
 					SendToEsp("AT+CWDHCP=1,2\r\n");
+					flag=0;
 				}
 				else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 						  1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 				{
 					SendToEsp("AT+CWDHCP=1,3\r\n");
+					flag=0;
 				}
+				if(flag) SendToEsp("AT\r\n");
 				nnnnr++;
 			}
 			else if (nnnnr==8 && RecvFromEsp("\r\nOK"))
@@ -912,83 +916,125 @@ void vtaskWifi(void *argument)
 				Dbg(DBG,RecvBuffer);   Dbg(DBG,"_AAA_");
 				if(RecvFromEsp("ERROR")) break;
 
-				Dbg(1,"KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK");
-
-//								switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-//								{
-//								case WIFI_MODE_STA:
-//								case WIFI_MODE_AP_STA:
-//									if(0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)))
-//									{
-//										len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTA=\"%s\",\"%s\",\"%s\"\r\n",
-//												IP2Str(VAR_GetTabVal(Const_wifiSTA_ip,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
-//												IP2Str(VAR_GetTabVal(Const_wifiSTA_gate,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
-//												IP2Str(VAR_GetTabVal(Const_wifiSTA_mask,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))));
-//										SendToEsp_DMA(sendBuff,len);
-//										DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-//									}
-//									break;
-//								}
-//								switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-//								{
-//								case WIFI_MODE_AP:
-//								case WIFI_MODE_AP_STA:
-//									if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)))
-//									{
-//										len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPAP=\"%s\",\"%s\",\"%s\"\r\n",
-//												IP2Str(VAR_GetTabVal(Const_wifiAP_ip,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
-//												IP2Str(VAR_GetTabVal(Const_wifiAP_gate,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
-//												IP2Str(VAR_GetTabVal(Const_wifiAP_mask,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))));
-//										SendToEsp_DMA(sendBuff,len);
-//										DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-//									}
-//									break;
-//								}
-//
-//								switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-//								{
-//								case WIFI_MODE_AP:
-//								case WIFI_MODE_AP_STA:
-//									len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWSAP=\"%s\",\"%s\",5,3\r\n",
-//											VAR_GetStr(Const_wifiAP_name,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)),
-//											VAR_GetStr(Const_wifiAP_pass,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)));
-//									SendToEsp_DMA(sendBuff,len);
-//									DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-//									break;
-//								}
-//								switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-//								{
-//								case WIFI_MODE_STA:
-//								case WIFI_MODE_AP_STA:
-//									len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWJAP=\"%s\",\"%s\"\r\n",
-//											VAR_GetStr(Const_wifiSTA_name,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)),
-//											VAR_GetStr(Const_wifiSTA_pass,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)));  // Timer do logowania !!!!!  i poprawic GetPort !! zamiast port na indeks
-//									SendToEsp_DMA(sendBuff,len);
-//									DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-//									result=vGetConnectionResultToSTA();
-//									if(ESP_CONNECTION_OK!=result)
-//										DbgVar(DBG,30,"\r\nERROR_ESP_CONNECTION: %d\r\n",result);
-//									break;
-//								}
-
-
+				int flag=1;
+				switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+				{
+				case WIFI_MODE_STA:
+				case WIFI_MODE_AP_STA:
+					if(0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)))
+					{
+						len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTA=\"%s\",\"%s\",\"%s\"\r\n",
+								IP2Str(VAR_GetTabVal(Const_wifiSTA_ip,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
+								IP2Str(VAR_GetTabVal(Const_wifiSTA_gate,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
+								IP2Str(VAR_GetTabVal(Const_wifiSTA_mask,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))));
+						SendToEsp_DMA(sendBuff,len);
+						DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+						flag=0;
+					}
+					break;
+				}
+				if(flag) SendToEsp("AT\r\n");
 				nnnnr++;
 			}
 			else if (nnnnr==10 && RecvFromEsp("\r\nOK"))
 			{
+				int flag=1;   Dbg(DBG,"_BBB_");
+				switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+				{
+				case WIFI_MODE_AP:
+				case WIFI_MODE_AP_STA:
+					if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)))
+					{
+						len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPAP=\"%s\",\"%s\",\"%s\"\r\n",
+								IP2Str(VAR_GetTabVal(Const_wifiAP_ip,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
+								IP2Str(VAR_GetTabVal(Const_wifiAP_gate,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
+								IP2Str(VAR_GetTabVal(Const_wifiAP_mask,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))));
+						SendToEsp_DMA(sendBuff,len);
+						DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+						flag=0;
+					}
+					break;
+				}
+				if(flag) SendToEsp("AT\r\n");
 				nnnnr++;
 			}
 			else if (nnnnr==11 && RecvFromEsp("\r\nOK"))
 			{
+				int flag=1;   Dbg(DBG,"_CCC_");
+				switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+				{
+				case WIFI_MODE_AP:
+				case WIFI_MODE_AP_STA:
+					len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWSAP=\"%s\",\"%s\",5,3\r\n",
+							VAR_GetStr(Const_wifiAP_name,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)),
+							VAR_GetStr(Const_wifiAP_pass,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)));
+					SendToEsp_DMA(sendBuff,len);
+					DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+					flag=0;
+					break;
+				}
+				if(flag) SendToEsp("AT\r\n");
 				nnnnr++;
 			}
 			else if (nnnnr==12 && RecvFromEsp("\r\nOK"))
 			{
+				int flag=1;   Dbg(DBG,"_DDD_");
+				switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+				{
+				case WIFI_MODE_STA:
+				case WIFI_MODE_AP_STA:
+					len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWJAP=\"%s\",\"%s\"\r\n",
+							VAR_GetStr(Const_wifiSTA_name,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)),
+							VAR_GetStr(Const_wifiSTA_pass,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)));  // Timer do logowania !!!!!  i poprawic GetPort !! zamiast port na indeks
+					SendToEsp_DMA(sendBuff,len);
+					DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+					flag=0;
+					break;
+				}
+				if(flag) SendToEsp("AT\r\n");
 				nnnnr++;
 			}
-			else if (nnnnr==13 && RecvFromEsp("\r\nOK"))
+			else if (nnnnr==13 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
 			{
+				result=vGetConnectionResultToSTA();   Dbg(DBG,"_EEE_");
+				if(ESP_CONNECTION_OK!=result)
+					DbgVar(DBG,30,"\r\nERROR_ESP_CONNECTION: %d\r\n",result);
+				SendToEsp("AT+CIFSR\r\n");
 				nnnnr++;
+			}
+			else if (nnnnr==14 && RecvFromEsp("\r\nOK"))
+			{
+				GetAddressesForConnection();
+				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_FFF_");
+				SendToEsp("AT+CIPSERVERMAXCONN=1\r\n");
+				nnnnr++;
+			}
+			else if (nnnnr==15 && RecvFromEsp("\r\nOK"))
+			{   Dbg(DBG,"_GGG_");
+				len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
+						IP2Str(VAR_GetTabVal(Const_dns_IP1,NO_TAB)),
+						IP2Str(VAR_GetTabVal(Const_dns_IP2,NO_TAB)),
+						IP2Str(VAR_GetTabVal(Const_dns_IP3,NO_TAB)));
+				DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+				SendToEsp_DMA(sendBuff,len);   //!!!!!!!!!!!!!! Czekaj na flage z HAL_UART_TxCpltCallback() !!!!
+				nnnnr++;
+			}
+			else if (nnnnr==16 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
+			{
+				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_HHH_");
+				len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",
+						VAR_GetTabVal(Const_sntp_timezone,NO_TAB),
+						VAR_GetStr(Const_sntp_nameServer1,NO_TAB),
+						VAR_GetStr(Const_sntp_nameServer2,NO_TAB));
+				SendToEsp_DMA(sendBuff,len);
+				nnnnr++;
+			}
+			else if (nnnnr==17 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
+			{
+				Dbg(DBG, RecvBuffer);
+				Dbg(DBG, "\r\nKKKKOOONNIEECCCCCCCCCCCCCCCCC !!!!");
+				nnnnr++;
+
 			}
 
 
@@ -1003,31 +1049,9 @@ void vtaskWifi(void *argument)
 
 
 
-//			SendToEsp("AT+CIFSR\r\n");
-//			while (RecvFromEsp("\r\nOK")==0)
-//				vTaskDelay(10);
-//			GetAddressesForConnection();
-//			Dbg(DBG, RecvBuffer);
-//
-//			SendToEsp("AT+CIPSERVERMAXCONN=1\r\n");
-//			while (RecvFromEsp("\r\nOK")==0)
-//				vTaskDelay(10);
-//
-//			len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
-//					IP2Str(VAR_GetTabVal(Const_dns_IP1,NO_TAB)),
-//					IP2Str(VAR_GetTabVal(Const_dns_IP2,NO_TAB)),
-//					IP2Str(VAR_GetTabVal(Const_dns_IP3,NO_TAB)));
-//			SendToEsp_DMA(sendBuff,len);
-//			DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-//			while (RecvFromEsp("\r\nOK")==0)
-//				vTaskDelay(1);
-//			Dbg(DBG, RecvBuffer);
-//
-//			len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",
-//					VAR_GetTabVal(Const_sntp_timezone,NO_TAB),
-//					VAR_GetStr(Const_sntp_nameServer1,NO_TAB),
-//					VAR_GetStr(Const_sntp_nameServer2,NO_TAB));
-//			SendToEsp_DMA(sendBuff,len);
+
+
+
 //			DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
 //			while (RecvFromEsp("\r\nOK")==0)
 //				vTaskDelay(1);
