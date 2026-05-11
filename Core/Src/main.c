@@ -275,13 +275,13 @@ void MPU_Config(void)
 
 
 
-  MPU_InitStruct.Number = MPU_REGION_NUMBER5;
-  MPU_InitStruct.BaseAddress = 0x30000000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_1KB;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
+//  MPU_InitStruct.Number = MPU_REGION_NUMBER5;
+//  MPU_InitStruct.BaseAddress = 0x30000000;
+//  MPU_InitStruct.Size = MPU_REGION_SIZE_4KB;
+//  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+//  MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
+//
+//  HAL_MPU_ConfigRegion(&MPU_InitStruct);
 
 
 
