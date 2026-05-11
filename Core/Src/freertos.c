@@ -189,7 +189,7 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  Dbg(1,"i");
+	 // Dbg(1,"i");
     osDelay(500);
   }
   /* USER CODE END StartDefaultTask */

@@ -123,7 +123,7 @@ void MX_USART6_UART_Init(void)
   __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_TC | UART_FLAG_RTOF);
   __HAL_DMA_DISABLE_IT(huart6.hdmatx, DMA_IT_HT);
 
-  HAL_UART_ReceiverTimeout_Config(&huart6, 350); 									/* 2. SKONFIGURUJ parametry sprzętowe,   exmple: timeout for 3.5 bytes idle (10 bytes for one frame) and TimeoutValue=35 */
+  HAL_UART_ReceiverTimeout_Config(&huart6, 35); 									/* 2. SKONFIGURUJ parametry sprzętowe,   exmple: timeout for 3.5 bytes idle (10 bytes for one frame) and TimeoutValue=35 */
   HAL_UART_EnableReceiverTimeout(&huart6);
 
   __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);										/* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */

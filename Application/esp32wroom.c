@@ -118,15 +118,15 @@ void DefaultSettingsWIFI(void)
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
 		VAR_SetVal64(Const_wifiSTA_mac, i, 0x1122334455);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,99));
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,1,99));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
-		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
+		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 0);
-//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -1086,7 +1086,7 @@ void vtaskWifi(void *argument)
 
 				nnnnr++;
 			}
-			else if (nnnnr==21 && (RecvFromEsp("+TIME_UPDATED"/*"+SYSTIMESTAMP:"*/)||RecvFromEsp("ERROR")))  //||RecvFromEsp("\r\nOK")????
+			else if (nnnnr==21 && RecvFromEsp("\r\nOK"))  //(RecvFromEsp("+TIME_UPDATED")||RecvFromEsp("ERROR")||*/RecvFromEsp("\r\nOK"))
 			{
 				int itx=0;
 				char *ptr;
@@ -1111,7 +1111,15 @@ void vtaskWifi(void *argument)
 
 				}
 
-				Dbg(DBG,"\r\nKKKKKKKKKKKOOOOOOOOOOOOOOOOOONNNNNNNNNNNNNIEEEEEEEEEECCCCCCC !!!!!");
+				vTaskDelay(2000);
+				SendToEsp("AT+SYSTIMESTAMP?\r\n");
+
+
+				//Dbg(DBG,"\r\nKKKKKKKKKKKOOOOOOOOOOOOOOOOOONNNNNNNNNNNNNIEEEEEEEEEECCCCCCC !!!!!");
+			}
+			else
+			{
+				Dbg(DBG, "\r\nSTART:\r\n");  Dbg(DBG, RecvBuffer); Dbg(DBG, " KONIEC\r\n\r\n");
 			}
 
 
@@ -1145,6 +1153,7 @@ void vtaskWifi(void *argument)
 
 
 		}
+		Dbg(1," i ");
 
 	}
 /*
