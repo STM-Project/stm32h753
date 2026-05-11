@@ -22,6 +22,7 @@
 #include "stm32h7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "FreeRTOS.h"
 #include "usart.h"
 /* USER CODE END Includes */
 
@@ -258,11 +259,21 @@ void SDMMC1_IRQHandler(void)
 void USART6_IRQHandler(void)
 {
   /* USER CODE BEGIN USART6_IRQn 0 */
-	ESP32_UartHandler();
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+	ESP32_UartHandler(&xHigherPriorityTaskWoken);
+
   /* USER CODE END USART6_IRQn 0 */
   HAL_UART_IRQHandler(&huart6);
   /* USER CODE BEGIN USART6_IRQn 1 */
 
+  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);		/* Wymuś przełączenie kontekstu, jeśli wątek ma wyższy priorytet */
+
+  	  	  	  	  	  	  	  	  	  	  	  	  	/* Bezpieczeństwo:  Masz pewność, że cała logika sprzętowa (HAL) i programowa przerwania zakończyła się, zanim system odda procesor do wątku */
+  	  	  	  	  	  	  	  	  	  	  	  	  	/* Wydajność: 		Jeśli w przerwaniu wydarzyłoby się kilka rzeczy naraz (np. RTO i błąd UART), zrobisz tylko jedno przełączenie kontekstu na koniec, zamiast kilku "szarpnięć" systemem. */
+
+  	  	  	  	  	  	  	  	  	  	  	  	  	/* Problem:			Jesli portYIELD_FROM_ISR() znajdzie sie gdzies w srodku funkcji to portYIELD natychmiast przełączy kontekst na ten wątek (jesli ma wysoki priorytet). Wątek zacznie działać, mimo że przerwanie sprzętowe (USART6_IRQHandler) formalnie się jeszcze nie skończyło (pozostała funkcja HAL). W skrajnych przypadkach może to zaburzyć logikę flag przerwań w bibliotece HAL i może prowadzić do rzadkich, trudnych do zdebugowania błędów (tzw. race conditions), możesz doprowadzić do nieprzewidzianych zachowań lub opóźnień w przełączeniu zadań */
+  	  	  	  	  	  	  	  	  	  	  	  	  	/* 					Zgodnie z dobrą praktyką FreeRTOS, portYIELD_FROM_ISR powinno być ostatnią instrukcją w samym handlerze przerwania. */
   /* USER CODE END USART6_IRQn 1 */
 }
 
