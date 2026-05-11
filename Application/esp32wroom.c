@@ -92,7 +92,7 @@ static xTaskHandle vtaskWifiHandle;
 static int resetDMA=0;
 
 RAM_D2_ALIGN32 char RecvBuffer[ESP_RECV_BUFF_SIZE];
-static char sendBuff[PACKET_SEND_LEN] __attribute__((aligned (32)));
+RAM_D2_ALIGN32 char sendBuff[PACKET_SEND_LEN];
 
 
 void ESP32_Notify2EspThread(uint16_t size)		/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
@@ -122,15 +122,15 @@ void DefaultSettingsWIFI(void)
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
 		VAR_SetVal64(Const_wifiSTA_mac, i, 0x1122334455);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,1,99));
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,99));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
-		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
+		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 0);
-		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -173,9 +173,9 @@ static void ChangeUartBuadRate(int baudRate)
 
 static void StartDMA(void)
 {
-	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE); //Za kazym razem nie za duzy bufor  i czasu dizo !!!!!
+	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE);
+	SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);						/* Wypchnij bufor RecvBuffer z casha do RAMu by wyczyscic pamiec DMA */
 	UART_ClearFlags(&ESP_UART_HANDLE);
-/*	SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE); */
 	HAL_UART_Receive_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
 	UART_ClearFlags2(&ESP_UART_HANDLE);
 }
@@ -196,7 +196,7 @@ static int SendToEsp(char *txt)
 static int SendToEsp_DMA(char *pData, int lenData)
 {
 	RestartDMA();
-	SCB_CleanDCache_by_Addr((uint32_t*)pData, lenData);
+	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);							/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_CleanDCache_by_Addr() nie jest potrzebny */
 	return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) pData, lenData);
 }
 
@@ -833,6 +833,7 @@ void vtaskWifi(void *argument)
 	{
 		if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY))
 		{
+			SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);			/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_InvalidateDCache_by_Addr() nie jest potrzebny */
 
 			if (nnnnr==0 && RecvFromEsp("ready"))
 			{
@@ -1075,7 +1076,7 @@ void vtaskWifi(void *argument)
 				Dbg(DBG, RecvBuffer);   Dbg(DBG,"_LLL_");
 				if (RecvFromEsp("\r\nOK"))
 				{
-					if ((ptr=RecvFromEsp("+CIPDOMAIN:")))
+					if ((ptr=RecvFromEsp("+CIPDOMAIN:")))  //ZROB LISTE MOZLIWYCH ODPOWIEDZI JESLI NIE MA TAKIEJ TO WYSWIETL JA !!!!!!!
 					{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
 						VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
 						DbgMulti(DBG,"\r\n",ptr,"  ");
@@ -1089,7 +1090,7 @@ void vtaskWifi(void *argument)
 
 				nnnnr++;
 			}
-			else if (nnnnr==21 && (RecvFromEsp("+TIME_UPDATED"/*"+SYSTIMESTAMP:"*/)||RecvFromEsp("ERROR")))
+			else if (nnnnr==21 && (RecvFromEsp("+TIME_UPDATED"/*"+SYSTIMESTAMP:"*/)||RecvFromEsp("ERROR")))  //||RecvFromEsp("\r\nOK")????
 			{
 				int itx=0;
 				char *ptr;
