@@ -95,14 +95,10 @@ RAM_D2_ALIGN32 char RecvBuffer[ESP_RECV_BUFF_SIZE];
 RAM_D2_ALIGN32 char sendBuff[PACKET_SEND_LEN];
 
 
-void ESP32_Notify2EspThread(uint16_t size)		/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
+void ESP32_Notify2EspThread(uint16_t size, long *pxWoken)		/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
 {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    vTaskNotifyGiveFromISR(vtaskWifiHandle, &xHigherPriorityTaskWoken);			/* Wyślij powiadomienie bezpośrednio do wątku */
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);								/* Wymuś przełączenie kontekstu, jeśli wątek ma wyższy priorytet */
+    vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);			/* Wyślij powiadomienie bezpośrednio do wątku */
 }
-
 
 void DefaultSettingsWIFI(void)
 {
