@@ -825,6 +825,16 @@ void vtaskWifi(void *argument)
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
 	nnnnr=0;
 
+
+/*
+	AT+CWAUTOCONN=1: Włącza automatyczne łączenie z AP przy starcie (standardowo jest włączone).
+	AT+SYSSTORE=1:   Upewnia się, że zmiany w konfiguracji Wi-Fi (jak SSID i hasło) są zapisywane w pamięci flash, aby przetrwały restart.
+	AT+SYSMSG:       Pozwala na konfigurację dodatkowych komunikatów systemowych (np. o rozłączeniu), co jest dostępne w nowszych wersjach oprogramowania (powyżej v2.1.0.0).
+
+
+*/
+
+
 	while(1)
 	{
 		if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY))
@@ -1001,8 +1011,12 @@ void vtaskWifi(void *argument)
 			}
 			else if (nnnnr==13 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
 			{
+				if(RecvFromEsp("WIFI CONNECTED") && RecvFromEsp("WIFI GOT IP"))
+				{
+					Dbg(DBG, "----- MAM IP :) -----");
+				}
 				Dbg(DBG,RecvBuffer);
-				result=vGetConnectionResultToSTA();   Dbg(DBG,"_EEE_");
+				result=vGetConnectionResultToSTA();   Dbg(DBG,"_EEE_");   //vGetConnectionResultToSTA() w tej funkcji trzeba zmienic pozostalosc po poprzednim !!!!!!!!!!!!!!!
 				if(ESP_CONNECTION_OK!=result)
 					DbgVar(DBG,30,"\r\nERROR_ESP_CONNECTION: %d\r\n",result);
 				SendToEsp("AT+CIFSR\r\n");
@@ -1107,19 +1121,23 @@ void vtaskWifi(void *argument)
 								sntpTime->tm_hour,
 								sntpTime->tm_min,
 								sntpTime->tm_sec);
+
+						//vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB));
 					}
 
 				}
 
 				vTaskDelay(2000);
-				SendToEsp("AT+SYSTIMESTAMP?\r\n");
+				SendToEsp("AT+SYSTIMESTAMP?\r\n");  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
 
 
 				//Dbg(DBG,"\r\nKKKKKKKKKKKOOOOOOOOOOOOOOOOOONNNNNNNNNNNNNIEEEEEEEEEECCCCCCC !!!!!");
 			}
 			else
 			{
-				Dbg(DBG, "\r\nSTART:\r\n");  Dbg(DBG, RecvBuffer); Dbg(DBG, " KONIEC\r\n\r\n");
+
+					//Dbg(DBG, "\r\nSTART:\r\n");  Dbg(DBG, RecvBuffer); Dbg(DBG, " KONIEC\r\n\r\n");
+
 			}
 
 
