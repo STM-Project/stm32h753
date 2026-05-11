@@ -355,15 +355,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
-void ESP32_UartHandler(void)
-{
-	if(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RTOF) != RESET && __HAL_UART_GET_IT_SOURCE(&huart6, UART_IT_RTO) != RESET)
-	{
-		__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
-		HAL_UARTEx_RxEventCallback(&huart6,__HAL_DMA_GET_COUNTER(huart6.hdmarx));		/* Rejestr COUNTER startuje z wartością, która podana jest w funkcji startującej (np. HAL_UART_Receive_DMA), i zmniejsza się o 1 po każdym odebranym bajcie */
-	}
-}
-
 void UART_ClearFlags(UART_HandleTypeDef *huart)
 {
     __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_FEF | UART_CLEAR_PEF | UART_CLEAR_OREF | UART_CLEAR_NEF);		/* Czyścimy flagi błędów, które mogą blokować przerwanie i callback */
@@ -396,11 +387,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)				/* Obsługa bezczynności (może to być IDLE lub RTO) */
-{  																						/* Nie jest samoczynnie wywolywany trzeba samemu wywolac */
+void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long *pxWoken)			/* Obsługa bezczynności (może to być IDLE lub RTO) */
+{  																									/* Nie jest samoczynnie wywolywany trzeba samemu wywolac */
 	if (huart->Instance == USART6)
 	{
-		ESP32_Notify2EspThread(size);
+		ESP32_Notify2EspThread(size,pxWoken);
 
 /*		HAL_UART_RxEventTypeTypeDef eventType = HAL_UARTEx_GetRxEventType(huart);
 		switch(eventType)
@@ -415,6 +406,15 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)				/* 
 				break;
 		}
 */
+	}
+}
+
+void ESP32_UartHandler(long *pxWoken)
+{
+	if(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RTOF) != RESET && __HAL_UART_GET_IT_SOURCE(&huart6, UART_IT_RTO) != RESET)
+	{
+		__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
+		HAL_UARTEx_RxEventCallback_(&huart6, __HAL_DMA_GET_COUNTER(huart6.hdmarx), pxWoken);		/* Rejestr COUNTER startuje z wartością, która podana jest w funkcji startującej (np. HAL_UART_Receive_DMA), i zmniejsza się o 1 po każdym odebranym bajcie */
 	}
 }
 
