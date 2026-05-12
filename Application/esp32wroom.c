@@ -27,7 +27,7 @@
 #include "timer.h"
 #include "usart.h"
 
-#define ESP_RECV_BUFF_SIZE		1024
+#define ESP_RECV_BUFF_SIZE		2048
 #define PACKET_SEND_LEN 		2048
 
 #define HTTP_ANSWER_DELAY_MS		500
@@ -194,7 +194,7 @@ static int SendToEsp(char *txt)
 	return result;
 }
 
-static int SendToEsp2(char *pData, int lenData)
+static int SendToEsp2(char *pData, int lenData)  // to daj tuu z on lub OFF -> DbgMulti(DBG,"\r\n*** SEND: ",sendBuff," END SEND ***\r\n");
 {
 	if(pData != sendBuff){
 		strncpy(sendBuff,pData,lenData);
@@ -1144,19 +1144,13 @@ void vtaskWifi(void *argument)
 										sntpTime->tm_sec);
 
 								connectionType=HTTP_CONNECTION;  nnnnr=0;
+								RestartDMA();
 							}
-//							else{
-//								vTaskDelay(2000);
-//								int len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n", VAR_GetTabVal(Const_sntp_time,NO_TAB));
-//								SendToEsp2(sendBuff,len);
-//							}
-
-
+							else{
+								vTaskDelay(2000);
+								SendToEsp("AT+SYSTIMESTAMP?\r\n");  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
+							}
 						}
-
-						vTaskDelay(2000);
-						SendToEsp("AT+SYSTIMESTAMP?\r\n");  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
-
 
 						//Dbg(DBG,"\r\nKKKKKKKKKKKOOOOOOOOOOOOOOOOOONNNNNNNNNNNNNIEEEEEEEEEECCCCCCC !!!!!");
 					}
@@ -1171,78 +1165,91 @@ void vtaskWifi(void *argument)
 
 				case HTTP_CONNECTION:  //dac jesli HAL error!!!   if (HAL_OK!=SendToEsp2(tempBuff, commandLen)) return 1
 
-					if ((pHttpGet=RecvFromEsp(":GET /favicon.ico")))
-					{
-						Dbg(DBG, RecvBuffer);
-						GetSizeAndChannel(pHttpGet, &channel, &size);
-						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
-						SendToEsp2(sendBuff, len);
-					}
-					else if ((pHttpGet=RecvFromEsp(":GET /")))
-					{
-						Dbg(DBG, RecvBuffer);
-						GetSizeAndChannel(pHttpGet, &channel, &size);
+					DbgMulti(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
 
-						lenHTTP = mini_strlen("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
+					if ((pHttpGet=RecvFromEsp(",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+					{
+						if ((pHttpGet=RecvFromEsp("+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						{
+							if ((pHttpGet=RecvFromEsp(":GET / ")))
+							{
+								GetSizeAndChannel(pHttpGet, &channel, &size);
+								lenHTTP = mini_strlen("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
+								int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSEND=%d,%d\r\n", channel, lenHTTP);
+								DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
+								SendToEsp2(sendBuff, len );
+							}
+							else if ((pHttpGet=RecvFromEsp(":GET /favicon.ico")))
+							{
+								GetSizeAndChannel(pHttpGet, &channel, &size);
+								int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
+								DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
+								SendToEsp2(sendBuff, len);
+							}
+						}
+						else  //Tu srpadzaj cala tablice roznych dozwolonych odpowiedzi i podejmuj akcje
+						{
+							if ((pHttpGet=RecvFromEsp(",CLOSED\r\n")))
+							{
+								RestartDMA();
+							}
+						}
 
-						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSEND=%d,%d\r\n", channel, lenHTTP);
-						SendToEsp2(sendBuff, len );
+
 					}
-					else if ((pHttpGet=RecvFromEsp("\r\n>")))
+//					else if ((pHttpGet=RecvFromEsp(":GET /")))
+//					{
+//						GetSizeAndChannel(pHttpGet, &channel, &size);
+//						lenHTTP = mini_strlen("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
+//						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSEND=%d,%d\r\n", channel, lenHTTP);
+//						DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
+//						SendToEsp2(sendBuff, len );
+//					}
+					else if ((pHttpGet=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
 						//SendToEsp2("0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", 100);
 
 						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
+						DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
 						SendToEsp2(sendBuff, len);
 					}
-					else if ((pHttpGet=RecvFromEsp(",CLOSED")))
+					else if ((pHttpGet=RecvFromEsp(",CLOSED\r\n")))
 					{
-						Dbg(DBG, " ---- ,CLOSED ---- ");
-					}
-					else if ((pHttpGet=RecvFromEsp("CLOSED")))
-					{
-						Dbg(DBG, " ---- CLOSED ---- ");
-						RestartDMA();
+						if ((pHttpGet=RecvFromEsp("\r\nOK\r\n")))
+						{
+							Dbg(DBG, " ---- ,CLOSED ---- ");
+							RestartDMA();
+						}
 					}
 					else if ((pHttpGet=RecvFromEsp("ERROR")))
 					{
 						Dbg(DBG, " ---- ERROR ---- ");
+						RestartDMA();
 					}
-					else if ((pHttpGet=RecvFromEsp("\r\nSEND OK")))
+					else if ((pHttpGet=RecvFromEsp("\r\nRecv ")))		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes for ESP */
 					{
-						Dbg(DBG, " ---- SEND OK ---- ");
-						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
-						SendToEsp2(sendBuff, len);
+						if ((pHttpGet=RecvFromEsp(" bytes\r\n")))
+						{
+							if ((pHttpGet=RecvFromEsp("\r\nSEND OK")))
+							{
+								Dbg(DBG, " ---- SEND OK ---- ");
+								int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
+								DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
+								SendToEsp2(sendBuff, len);
+							}
+						}
 					}
-
-
-
-
-
-//					if ((pHttpGet=RecvFromEsp(":GET /")))
+//					else if ((pHttpGet=RecvFromEsp("\r\nSEND OK")))
 //					{
-//						GetSizeAndChannel(pHttpGet, &channel, &size);
-//
-//						while (GetDMACountByte()<size)
-//							vTaskDelay(1);
-//
-//						if (RecvFromEsp(":GET /TME.txt")==0)
-//							DisplayRequestGET(pHttpGet, 2000);
-//
-//						result=vSendDataHTTP(pHttpGet, channel);
-//						DbgVar(DBG, 20, "\r\nSend Code: %d ", result);
-//
-//						result2=vCloseConnection(channel);
-//						DbgVar(DBG, 20, "\r\nClose Code: %d ", result2);
-//
-//						if ((result==2)&&(result2==2))
-//							SendDummyData(100);
-//						RestartDMA();
+//						Dbg(DBG, " ---- SEND OK ---- ");
+//						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
+//						DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
+//						SendToEsp2(sendBuff, len);
 //					}
-
-
-
-					Dbg(DBG," XXXXXXXX ");
+					else
+					{
+						RestartDMA();
+					}
 					break;
 
 				case SMTP_CONNECTION:
@@ -1255,7 +1262,6 @@ void vtaskWifi(void *argument)
 
 
 		}
-		Dbg(1," i ");
 
 	}
 /*
