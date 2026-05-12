@@ -184,17 +184,24 @@ static void RestartDMA(void)
 
 static int SendToEsp(char *txt)
 {
+	int len = mini_strlen(txt);  // to trzeba zmienic koniecznie
+	if(txt != sendBuff){
+		strncpy(sendBuff,txt,len);
+	}
 	RestartDMA();
-	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);
-	int result= HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) txt, mini_strlen(txt));
+	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);  //POPRAW TO !!!!!!! n ie wiem czy szkoda czasu na caly bufor spradz pomiarem uS
+	int result= HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len);
 	return result;
 }
 
 static int SendToEsp2(char *pData, int lenData)
 {
+	if(pData != sendBuff){
+		strncpy(sendBuff,pData,lenData);
+	}
 	RestartDMA();
 	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);							/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_CleanDCache_by_Addr() nie jest potrzebny */
-	return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) pData, lenData);
+	return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, lenData);
 }
 
 static bool isAnythingRecv(void)
@@ -807,7 +814,7 @@ static void vLoadTime(time_t timeSet)
 int nnnnr=0;
 void vtaskWifi(void *argument)
 {
-	char *pHttpGet;
+	char *pHttpGet;   int lenHTTP=0;
 	int channel=0, size=0, len, result, result2;
 	int j;
 
@@ -1058,7 +1065,8 @@ void vtaskWifi(void *argument)
 					else if (nnnnr==17 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
 					{
 						Dbg(DBG, RecvBuffer);   Dbg(DBG,"_III_");
-						len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSERVER=1,%d\r\n", GetHttpPort());
+						//len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSERVER=1,%d\r\n", GetHttpPort());
+						len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSERVER=1,443,\"SSL\"\r\n");
 						SendToEsp2(sendBuff,len);
 						nnnnr++;
 					}
@@ -1161,7 +1169,79 @@ void vtaskWifi(void *argument)
 
 					break;
 
-				case HTTP_CONNECTION:
+				case HTTP_CONNECTION:  //dac jesli HAL error!!!   if (HAL_OK!=SendToEsp2(tempBuff, commandLen)) return 1
+
+					if ((pHttpGet=RecvFromEsp(":GET /favicon.ico")))
+					{
+						Dbg(DBG, RecvBuffer);
+						GetSizeAndChannel(pHttpGet, &channel, &size);
+						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
+						SendToEsp2(sendBuff, len);
+					}
+					else if ((pHttpGet=RecvFromEsp(":GET /")))
+					{
+						Dbg(DBG, RecvBuffer);
+						GetSizeAndChannel(pHttpGet, &channel, &size);
+
+						lenHTTP = mini_strlen("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
+
+						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSEND=%d,%d\r\n", channel, lenHTTP);
+						SendToEsp2(sendBuff, len );
+					}
+					else if ((pHttpGet=RecvFromEsp("\r\n>")))
+					{
+						//SendToEsp2("0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", 100);
+
+						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
+						SendToEsp2(sendBuff, len);
+					}
+					else if ((pHttpGet=RecvFromEsp(",CLOSED")))
+					{
+						Dbg(DBG, " ---- ,CLOSED ---- ");
+					}
+					else if ((pHttpGet=RecvFromEsp("CLOSED")))
+					{
+						Dbg(DBG, " ---- CLOSED ---- ");
+						RestartDMA();
+					}
+					else if ((pHttpGet=RecvFromEsp("ERROR")))
+					{
+						Dbg(DBG, " ---- ERROR ---- ");
+					}
+					else if ((pHttpGet=RecvFromEsp("\r\nSEND OK")))
+					{
+						Dbg(DBG, " ---- SEND OK ---- ");
+						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
+						SendToEsp2(sendBuff, len);
+					}
+
+
+
+
+
+//					if ((pHttpGet=RecvFromEsp(":GET /")))
+//					{
+//						GetSizeAndChannel(pHttpGet, &channel, &size);
+//
+//						while (GetDMACountByte()<size)
+//							vTaskDelay(1);
+//
+//						if (RecvFromEsp(":GET /TME.txt")==0)
+//							DisplayRequestGET(pHttpGet, 2000);
+//
+//						result=vSendDataHTTP(pHttpGet, channel);
+//						DbgVar(DBG, 20, "\r\nSend Code: %d ", result);
+//
+//						result2=vCloseConnection(channel);
+//						DbgVar(DBG, 20, "\r\nClose Code: %d ", result2);
+//
+//						if ((result==2)&&(result2==2))
+//							SendDummyData(100);
+//						RestartDMA();
+//					}
+
+
+
 					Dbg(DBG," XXXXXXXX ");
 					break;
 
