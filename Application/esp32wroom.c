@@ -45,6 +45,8 @@
 #define ESP_ON 		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_SET)
 #define ESP_OFF		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_RESET)
 
+#define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>"
+
 #define RecvFromEsp(txt)   strstr(RecvBuffer,txt)
 
 typedef enum
@@ -171,7 +173,7 @@ static void ChangeUartBuadRate(int baudRate)
 
 static void StartDMA(void)
 {
-	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE);
+	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE);												/* memset() takes 18us */
 	SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);						/* Wypchnij bufor RecvBuffer z casha do RAMu by wyczyscic pamiec DMA */
 	UART_ClearFlags(&ESP_UART_HANDLE);
 	HAL_UART_Receive_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
@@ -184,46 +186,19 @@ static void RestartDMA(void)
 	StartDMA();
 }
 
-static int SendToEsp____(char *data, int len)
-{
-	if(NULL != data)
-	{
-		int len_ = CONDITION( 0==len, len_=mini_strlen(data), len );	if(len_>=PACKET_SEND_LEN-1) len_=PACKET_SEND_LEN-1;
-		if(data != sendBuff){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;
 
-		if (ESP_UART_HANDLE.gState != HAL_UART_STATE_READY)  return HAL_BUSY;
-		else
-		{
-			RestartDMA();
-		StartMeasureTime_us();
-			SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);  //POPRAW TO !!!!!!! n ie wiem czy szkoda czasu na caly bufor spradz pomiarem uS
-		StopMeasureTime_us("\r\nTEST: ");
-			return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
-		}
-	}
-	return HAL_ERROR;
-}
-
-static int SendToEsp(char *txt)
+// to daj tuu z on lub OFF -> DbgMulti(DBG,"\r\n*** SEND: ",sendBuff," END SEND ***\r\n");
+static int SendToEsp32(int len, char *data)		/* if data=NULL we use buffer 'sendBuff' as default. 		if len=0 we calculate length text. */
 {
-	int len = mini_strlen(txt);  // to trzeba zmienic koniecznie
-	if(txt != sendBuff){
-		strncpy(sendBuff,txt,len);
-	}
-	RestartDMA();
-	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);  //POPRAW TO !!!!!!! n ie wiem czy szkoda czasu na caly bufor spradz pomiarem uS
-	int result= HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len);
-	return result;
-}
+	int len_ = CONDITION( 0==len, mini_strlen(CONDITION(NULL==data,sendBuff,data)), len );		 if(len_>PACKET_SEND_LEN-1) len_=PACKET_SEND_LEN-1;
+	if(data != sendBuff && data != NULL){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;
 
-static int SendToEsp2(char *pData, int lenData)  // to daj tuu z on lub OFF -> DbgMulti(DBG,"\r\n*** SEND: ",sendBuff," END SEND ***\r\n");
-{
-	if(pData != sendBuff){
-		strncpy(sendBuff,pData,lenData);
+	if (ESP_UART_HANDLE.gState != HAL_UART_STATE_READY) return HAL_BUSY;				/* alternatively:  'if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) return HAL_BUSY'   in HAL_UART_TxCpltCallback() put vTaskNotifyGiveFromISR(vtaskWifiHandle,pxWoken) */
+	else{
+		RestartDMA();
+		SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);					/* SCB_CleanDCache_by_Addr() takes only 4us */		/* Jesli w MPU ustawimy adres bufora 'sendBuff' w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_CleanDCache_by_Addr() nie jest potrzebny */
+		return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	}
-	RestartDMA();
-	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);							/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_CleanDCache_by_Addr() nie jest potrzebny */
-	return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, lenData);
 }
 
 static bool isAnythingRecv(void)
@@ -922,6 +897,10 @@ void vtaskWifi(void *argument)
 
 
 
+//	StartMeasureTime_us();
+//	StopMeasureTime_us("\r\nTEST: ");
+
+
 	while(1)
 	{
 		if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY))
@@ -935,15 +914,13 @@ void vtaskWifi(void *argument)
 					if (nnnnr==0 && RecvFromEsp("ready"))
 					{
 						Dbg(DBG,RecvBuffer);   Dbg(DBG,"_111_");
-						//SendToEsp("ATE0\r\n");
-						SendToEsp____("ATE0\r\n",0);
+						SendToEsp32(0,"ATE0\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==1 && RecvFromEsp("\r\nOK"))
 					{
 						Dbg(DBG,RecvBuffer);   Dbg(DBG,"_222_");
-						mini_snprintf(sendBuff, sizeof(sendBuff), "AT+UART_CUR=%d,8,1,0,0\r\n", ESP_UART_BUADRATE);
-						SendToEsp(sendBuff);
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+UART_CUR=%d,8,1,0,0\r\n",ESP_UART_BUADRATE), NULL );
 						nnnnr++;
 					}
 					else if (nnnnr==2 && RecvFromEsp("\r\nOK"))
@@ -951,15 +928,13 @@ void vtaskWifi(void *argument)
 						Dbg(DBG,RecvBuffer);   Dbg(DBG,"_333_");
 						vTaskDelay(10);
 						ChangeUartBuadRate(ESP_UART_BUADRATE);
-						SendToEsp("AT+GMR\r\n");
+						SendToEsp32(0,"AT+GMR\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==3 && RecvFromEsp("\r\nOK"))
 					{
 						Dbg(DBG,RecvBuffer);   Dbg(DBG,"_444_");
-						len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWMODE=%d\r\n",VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB));
-						SendToEsp2(sendBuff,len);
-						//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+						SendToEsp32(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CWMODE=%d\r\n",VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)), NULL);
 						nnnnr++;
 					}
 					else if (nnnnr==4 && RecvFromEsp("\r\nOK"))
@@ -969,19 +944,19 @@ void vtaskWifi(void *argument)
 							Dbg(DBG, "\r\nWifi DISABLED ");
 							break;
 						}
-						SendToEsp("AT+CWLAPOPT=1,23\r\n");
+						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==5 && RecvFromEsp("\r\nOK"))
 					{
 						Dbg(DBG,RecvBuffer);   Dbg(DBG,"_666_");
-						SendToEsp("AT+CIPMUX=1\r\n");
+						SendToEsp32(0,"AT+CIPMUX=1\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==6 && RecvFromEsp("\r\nOK"))
 					{
 						Dbg(DBG,RecvBuffer);   Dbg(DBG,"_777_");
-						SendToEsp("AT+CWDHCP=0,3\r\n");
+						SendToEsp32(0,"AT+CWDHCP=0,3\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==7 && RecvFromEsp("\r\nOK"))
@@ -991,28 +966,28 @@ void vtaskWifi(void *argument)
 						if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 							1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 						{
-							SendToEsp("AT+CWDHCP=1,1\r\n");
+							SendToEsp32(0,"AT+CWDHCP=1,1\r\n");
 							flag=0;
 						}
 						else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 								  0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 						{
-							SendToEsp("AT+CWDHCP=1,2\r\n");
+							SendToEsp32(0,"AT+CWDHCP=1,2\r\n");
 							flag=0;
 						}
 						else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 								  1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 						{
-							SendToEsp("AT+CWDHCP=1,3\r\n");
+							SendToEsp32(0,"AT+CWDHCP=1,3\r\n");
 							flag=0;
 						}
-						if(flag) SendToEsp("AT\r\n");
+						if(flag) SendToEsp32(0,"AT\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==8 && RecvFromEsp("\r\nOK"))
 					{
 						Dbg(DBG,RecvBuffer);   Dbg(DBG,"_999_");
-						SendToEsp("AT+CWHOSTNAME=\"Elektronika_STM\"\r\n");
+						SendToEsp32(0,"AT+CWHOSTNAME=\"Elektronika_STM\"\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==9 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
@@ -1031,13 +1006,12 @@ void vtaskWifi(void *argument)
 										IP2Str(VAR_GetTabVal(Const_wifiSTA_ip,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
 										IP2Str(VAR_GetTabVal(Const_wifiSTA_gate,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
 										IP2Str(VAR_GetTabVal(Const_wifiSTA_mask,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))));
-								SendToEsp2(sendBuff,len);
-								//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+								SendToEsp32(len,NULL);	 	/* SendToEsp32(len,sendBuff) is the same */
 								flag=0;
 							}
 							break;
 						}
-						if(flag) SendToEsp("AT\r\n");
+						if(flag) SendToEsp32(0,"AT\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==10 && RecvFromEsp("\r\nOK"))
@@ -1054,13 +1028,12 @@ void vtaskWifi(void *argument)
 										IP2Str(VAR_GetTabVal(Const_wifiAP_ip,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
 										IP2Str(VAR_GetTabVal(Const_wifiAP_gate,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
 										IP2Str(VAR_GetTabVal(Const_wifiAP_mask,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))));
-								SendToEsp2(sendBuff,len);
-								//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+								SendToEsp32(len,sendBuff);	 	/* SendToEsp32(len,NULL) is the same */
 								flag=0;
 							}
 							break;
 						}
-						if(flag) SendToEsp("AT\r\n");
+						if(flag) SendToEsp32(0,"AT\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==11 && RecvFromEsp("\r\nOK"))
@@ -1074,12 +1047,11 @@ void vtaskWifi(void *argument)
 							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWSAP=\"%s\",\"%s\",5,3\r\n",
 									VAR_GetStr(Const_wifiAP_name,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)),
 									VAR_GetStr(Const_wifiAP_pass,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)));
-							SendToEsp2(sendBuff,len);
-							//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+							SendToEsp32(len,NULL);
 							flag=0;
 							break;
 						}
-						if(flag) SendToEsp("AT\r\n");
+						if(flag) SendToEsp32(0,"AT\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==12 && RecvFromEsp("\r\nOK"))
@@ -1093,12 +1065,11 @@ void vtaskWifi(void *argument)
 							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWJAP=\"%s\",\"%s\"\r\n",
 									VAR_GetStr(Const_wifiSTA_name,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)),
 									VAR_GetStr(Const_wifiSTA_pass,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)));  // Timer do logowania !!!!!  i poprawic GetPort !! zamiast port na indeks
-							SendToEsp2(sendBuff,len);
-							//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
+							SendToEsp32(len,NULL);
 							flag=0;
 							break;
 						}
-						if(flag) SendToEsp("AT\r\n");
+						if(flag) SendToEsp32(0,"AT\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==13 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
@@ -1111,14 +1082,14 @@ void vtaskWifi(void *argument)
 						result=vGetConnectionResultToSTA();   Dbg(DBG,"_EEE_");   //vGetConnectionResultToSTA() w tej funkcji trzeba zmienic pozostalosc po poprzednim !!!!!!!!!!!!!!!
 						if(ESP_CONNECTION_OK!=result)
 							DbgVar(DBG,30,"\r\nERROR_ESP_CONNECTION: %d\r\n",result);
-						SendToEsp("AT+CIFSR\r\n");
+						SendToEsp32(0,"AT+CIFSR\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==14 && RecvFromEsp("\r\nOK"))
 					{
 						Dbg(DBG,RecvBuffer);  Dbg(DBG,"_FFF_");
 						GetAddressesForConnection();
-						SendToEsp("AT+CIPSERVERMAXCONN=1\r\n");
+						SendToEsp32(0,"AT+CIPSERVERMAXCONN=1\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==15 && RecvFromEsp("\r\nOK"))
@@ -1128,8 +1099,7 @@ void vtaskWifi(void *argument)
 								IP2Str(VAR_GetTabVal(Const_dns_IP1,NO_TAB)),
 								IP2Str(VAR_GetTabVal(Const_dns_IP2,NO_TAB)),
 								IP2Str(VAR_GetTabVal(Const_dns_IP3,NO_TAB)));
-						//DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-						SendToEsp2(sendBuff,len);   //!!!!!!!!!!!!!! Czekaj na flage z HAL_UART_TxCpltCallback() !!!!
+						SendToEsp32(len,NULL);
 						nnnnr++;
 					}
 					else if (nnnnr==16 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
@@ -1139,22 +1109,20 @@ void vtaskWifi(void *argument)
 								VAR_GetTabVal(Const_sntp_timezone,NO_TAB),
 								VAR_GetStr(Const_sntp_nameServer1,NO_TAB),
 								VAR_GetStr(Const_sntp_nameServer2,NO_TAB));
-						SendToEsp2(sendBuff,len);
+						SendToEsp32(len,NULL);
 						nnnnr++;
 					}
 					else if (nnnnr==17 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
 					{
 						Dbg(DBG, RecvBuffer);   Dbg(DBG,"_III_");
-						//len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSERVER=1,%d\r\n", GetHttpPort());
-						len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSERVER=1,443,\"SSL\"\r\n");
-						SendToEsp2(sendBuff,len);
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"), NULL );
+					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n", GetHttpPort()), NULL ); */
 						nnnnr++;
 					}
 					else if (nnnnr==18 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
 					{
 						Dbg(DBG, RecvBuffer);   Dbg(DBG,"_JJJ_");
-						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S);
-						SendToEsp2(sendBuff,len);
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S), NULL );
 						nnnnr++;
 					}
 					else if (nnnnr==19 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
@@ -1165,12 +1133,12 @@ void vtaskWifi(void *argument)
 						{
 							case WIFI_MODE_STA:
 							case WIFI_MODE_AP_STA:
-								len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",VAR_GetStr(Const_emailSend_server,0/*i*/));			//!!!!!! for(i=0;i<MAX_EMAIL_SENDERS;++i)  !!!!!!!!
-								SendToEsp2(sendBuff,len);  DbgMulti(DBG,"\r\n",sendBuff," ");
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",VAR_GetStr(Const_emailSend_server,0/*i*/)), NULL );  //!!!!!! for(i=0;i<MAX_EMAIL_SENDERS;++i)  !!!!!!!!
+								DbgMulti(DBG,"\r\n",sendBuff," ");
 								flag=0;
 								break;
 						}
-						if(flag) SendToEsp("AT\r\n");
+						if(flag) SendToEsp32(0,"AT\r\n");
 						nnnnr++;
 					}
 					else if (nnnnr==20 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
@@ -1187,7 +1155,7 @@ void vtaskWifi(void *argument)
 							{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
 								VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
 								DbgMulti(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
-								SendToEsp("AT+SYSTIMESTAMP?\r\n");
+								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n");
 							}
 							else
 								break;
@@ -1231,7 +1199,7 @@ void vtaskWifi(void *argument)
 							}
 							else{
 								vTaskDelay(2000);
-								SendToEsp("AT+SYSTIMESTAMP?\r\n");  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
+								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n");  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
 
 								//jesli NIE to uzyj vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB)); !!!!!!!
 
@@ -1253,29 +1221,26 @@ void vtaskWifi(void *argument)
 
 					DbgMulti(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
 
-					if ((pHttpGet=RecvFromEsp(",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+					if ((pHttpGet=strstr(RecvBuffer,",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
 					{
-						if ((pHttpGet=RecvFromEsp("+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						if ((pHttpGet=strstr(pHttpGet,"+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
-							if ((pHttpGet=RecvFromEsp(":GET / ")))
+							if ((pHttpGet=strstr(pHttpGet,":GET / ")))
 							{
 								GetSizeAndChannel(pHttpGet, &channel, &size);
-								lenHTTP = mini_strlen("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
-								int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSEND=%d,%d\r\n", channel, lenHTTP);
 								DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
-								SendToEsp2(sendBuff, len );
+								SendToEsp32(  mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL );
 							}
-							else if ((pHttpGet=RecvFromEsp(":GET /favicon.ico")))
+							else if ((pHttpGet=strstr(pHttpGet,":GET /favicon.ico")))
 							{
 								GetSizeAndChannel(pHttpGet, &channel, &size);
-								int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
 								DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
-								SendToEsp2(sendBuff, len);
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL );
 							}
 						}
 						else  //Tu srpadzaj cala tablice roznych dozwolonych odpowiedzi i podejmuj akcje
 						{
-							if ((pHttpGet=RecvFromEsp(",CLOSED\r\n")))
+							if ((pHttpGet=strstr(pHttpGet,",CLOSED\r\n")))
 							{
 								RestartDMA();
 							}
@@ -1283,21 +1248,10 @@ void vtaskWifi(void *argument)
 
 
 					}
-//					else if ((pHttpGet=RecvFromEsp(":GET /")))
-//					{
-//						GetSizeAndChannel(pHttpGet, &channel, &size);
-//						lenHTTP = mini_strlen("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
-//						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSEND=%d,%d\r\n", channel, lenHTTP);
-//						DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
-//						SendToEsp2(sendBuff, len );
-//					}
 					else if ((pHttpGet=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
-						//SendToEsp2("0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", 100);
-
-						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>");
 						DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
-						SendToEsp2(sendBuff, len);
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL );
 					}
 					else if ((pHttpGet=RecvFromEsp(",CLOSED\r\n")))
 					{
@@ -1319,19 +1273,11 @@ void vtaskWifi(void *argument)
 							if ((pHttpGet=RecvFromEsp("\r\nSEND OK")))
 							{
 								Dbg(DBG, " ---- SEND OK ---- ");
-								int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
 								DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
-								SendToEsp2(sendBuff, len);
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL);
 							}
 						}
 					}
-//					else if ((pHttpGet=RecvFromEsp("\r\nSEND OK")))
-//					{
-//						Dbg(DBG, " ---- SEND OK ---- ");
-//						int len = mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
-//						DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
-//						SendToEsp2(sendBuff, len);
-//					}
 					else
 					{
 						RestartDMA();
