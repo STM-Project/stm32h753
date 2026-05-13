@@ -27,6 +27,8 @@
 #include "timer.h"
 #include "usart.h"
 
+#include "tim.h"
+
 #define ESP_RECV_BUFF_SIZE		2048
 #define PACKET_SEND_LEN 		2048
 
@@ -180,6 +182,30 @@ static void RestartDMA(void)
 {
 	HAL_UART_DMAStop(&ESP_UART_HANDLE);
 	StartDMA();
+}
+
+static int SendToEsp____(char *data, int len)
+{
+
+
+	StopMeasureTime_us("\r\nTEST: ");
+
+	if(NULL != data)
+	{
+		int len_ = CONDITION( 0==len, len_=mini_strlen(data), len );	if(len_>PACKET_SEND_LEN) len_=PACKET_SEND_LEN-1;
+		if(data != sendBuff){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;
+
+		if (ESP_UART_HANDLE.gState != HAL_UART_STATE_READY)  return HAL_BUSY;
+		else
+		{
+			RestartDMA();
+		StartMeasureTime_us();
+			SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);  //POPRAW TO !!!!!!! n ie wiem czy szkoda czasu na caly bufor spradz pomiarem uS
+		StopMeasureTime_us("\r\nTEST: ");
+			return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
+		}
+	}
+	return HAL_ERROR;
 }
 
 static int SendToEsp(char *txt)
@@ -422,7 +448,7 @@ static int vSendCommandSMTP(char *pCommand, int commandLen)
 	return result;
 }
 
-static int GetRecvCodeEmail(char *pBuf)
+static int GetRecvCodeEmail(char *pBuf)  // dac jako strcat !!!!!
 {
 	int i=1, j, code=0;
 	char *ptr=pBuf;
@@ -621,7 +647,7 @@ static void EmailSendStart(void)
 //						buftemp,
 //						VAR_GetTabVal(Const_emailSend_port, EmailSendParam.whichSender));
 				SendToEsp2(sendBuff, len);
-				Dbg(DBG,"\r\n"); Dbg(DBG,sendBuff);
+				DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
 			}
 
 			break;
@@ -811,6 +837,62 @@ static void vLoadTime(time_t timeSet)
 		vTaskDelay(10);
 }
 
+static bool CheckEmailAnswer(int emailCode)
+{
+
+
+//	int main() {
+//	    char tekst[] = "Programowanie,w,jezyku,C";
+//	    char *separatory = ",";
+//	    char *saveptr; // Bufor na stan funkcji
+//
+//	    // Pierwsze wywołanie: przekazujemy pełny string
+//	    char *token = strtok_r(tekst, separatory, &saveptr);
+//
+//	    // Kolejne wywołania w pętli: przekazujemy NULL
+//	    while (token != NULL) {
+//	        printf("Token: %s\n", token);
+//	        token = strtok_r(NULL, separatory, &saveptr);
+//	    }
+//
+//	    return 0;
+//	}
+
+
+
+	char *pSmtp = NULL;
+	int channel=0, size=0;
+
+	if ((pSmtp=RecvFromEsp(",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+	{
+		if ((pSmtp=RecvFromEsp("+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+		{
+			if ((pSmtp=RecvFromEsp(":")))
+			{
+				GetSizeAndChannel(pSmtp, &channel, &size);
+				if(channel == ESP_EMAIL_CHANNEL)
+				{
+					int codeE=GetRecvCodeEmail(pSmtp);
+					SetEmailCode(codeE);
+
+					if (codeE==emailCode)
+					{
+						SetEmailState(SMTP_INPROGRESS);
+						return true;
+					}
+					else
+					{
+						SetEmailState(SMTP_FAIL);
+						vTaskDelay(200);
+						return false;
+					}
+				}
+			}
+		}
+	}
+}
+
+
 int nnnnr=0;
 void vtaskWifi(void *argument)
 {
@@ -843,6 +925,7 @@ void vtaskWifi(void *argument)
 */
 
 
+
 	while(1)
 	{
 		if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY))
@@ -856,7 +939,8 @@ void vtaskWifi(void *argument)
 					if (nnnnr==0 && RecvFromEsp("ready"))
 					{
 						Dbg(DBG,RecvBuffer);   Dbg(DBG,"_111_");
-						SendToEsp("ATE0\r\n");
+						//SendToEsp("ATE0\r\n");
+						SendToEsp____("ATE0\r\n",0);
 						nnnnr++;
 					}
 					else if (nnnnr==1 && RecvFromEsp("\r\nOK"))
@@ -1106,7 +1190,7 @@ void vtaskWifi(void *argument)
 							if ((ptr=RecvFromEsp("+CIPDOMAIN:")))  //ZROB LISTE MOZLIWYCH ODPOWIEDZI JESLI NIE MA TAKIEJ TO WYSWIETL JA !!!!!!!
 							{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
 								VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
-								DbgMulti(DBG,"\r\n",ptr,"  ");
+								DbgMulti(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
 								SendToEsp("AT+SYSTIMESTAMP?\r\n");
 							}
 							else
@@ -1117,7 +1201,7 @@ void vtaskWifi(void *argument)
 
 						nnnnr++;
 					}
-					else if (nnnnr==21 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))
+					else if (nnnnr==21 && (RecvFromEsp("\r\nOK")||RecvFromEsp("ERROR")))   //Czy przpadkiem nie lepiej !!!! (RecvFromEsp("\r\nOK\r\n")
 					{
 						if(RecvFromEsp("+TIME_UPDATED"))
 						{
@@ -1145,10 +1229,16 @@ void vtaskWifi(void *argument)
 
 								connectionType=HTTP_CONNECTION;  nnnnr=0;
 								RestartDMA();
+
+//								SendEmail(0, 1<<1, EMAIL_MEASURE);  //musi byc 0 bo sprawdza w Const_emailSend_IP w pozycjo 0 !!!!! do poprawki
+//								EmailSendStart();
 							}
 							else{
 								vTaskDelay(2000);
 								SendToEsp("AT+SYSTIMESTAMP?\r\n");  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
+
+								//jesli NIE to uzyj vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB)); !!!!!!!
+
 							}
 						}
 
@@ -1162,7 +1252,7 @@ void vtaskWifi(void *argument)
 					}
 
 					break;
-
+//SPRAWDZ czy nie mozna szybsze jeszcze uart speed dla tego nowego systemu !!!!!!!!!!!!!!!!!!!
 				case HTTP_CONNECTION:  //dac jesli HAL error!!!   if (HAL_OK!=SendToEsp2(tempBuff, commandLen)) return 1
 
 					DbgMulti(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
@@ -1252,7 +1342,19 @@ void vtaskWifi(void *argument)
 					}
 					break;
 
+
 				case SMTP_CONNECTION:
+					DbgMulti(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
+
+//					if (false==CheckEmailAnswer(220))
+//					{
+//
+//					}
+					//EmailSendParam.start=4;
+
+
+
+
 					break;
 
 
