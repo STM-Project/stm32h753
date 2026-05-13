@@ -186,10 +186,6 @@ static void RestartDMA(void)
 
 static int SendToEsp____(char *data, int len)
 {
-
-
-	StopMeasureTime_us("\r\nTEST: ");
-
 	if(NULL != data)
 	{
 		int len_ = CONDITION( 0==len, len_=mini_strlen(data), len );	if(len_>PACKET_SEND_LEN) len_=PACKET_SEND_LEN-1;
