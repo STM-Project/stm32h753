@@ -188,7 +188,7 @@ static int SendToEsp____(char *data, int len)
 {
 	if(NULL != data)
 	{
-		int len_ = CONDITION( 0==len, len_=mini_strlen(data), len );	if(len_>PACKET_SEND_LEN) len_=PACKET_SEND_LEN-1;
+		int len_ = CONDITION( 0==len, len_=mini_strlen(data), len );	if(len_>=PACKET_SEND_LEN-1) len_=PACKET_SEND_LEN-1;
 		if(data != sendBuff){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;
 
 		if (ESP_UART_HANDLE.gState != HAL_UART_STATE_READY)  return HAL_BUSY;
