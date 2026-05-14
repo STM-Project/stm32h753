@@ -192,6 +192,8 @@ typedef enum{
 	_YES
 }GENERAL_PARAM;
 
+typedef enum{ noArch, arch } ARCHIVING_TYPE;
+
 typedef enum{
 	LoadWholeScreen,
 	LoadPartScreen,
