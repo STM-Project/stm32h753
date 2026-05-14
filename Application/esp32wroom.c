@@ -122,15 +122,15 @@ void DefaultSettingsWIFI(void)
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
 		VAR_SetVal64(Const_wifiSTA_mac, i, 0x1122334455);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,99));
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,1,99));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
-		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
+		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 0);
-//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -191,7 +191,7 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	int len_ = CONDITION( 0==len, mini_strlen(CONDITION(NULL==data,sendBuff,data)), len );
 	if(len_ > PACKET_SEND_LEN-1)  len_=PACKET_SEND_LEN-1;
 	if(data != sendBuff && data != NULL){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;		/* memcpy(sendBuff, data, len_)  jest szybsze niż strncpy */
-	if(arch==archType){ DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND_STOP\r\n"); }
+	if(arch==archType){ DbgMulti(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_" SEND_STOP\r\n"_X_); }
 
 	if (ESP_UART_HANDLE.gState != HAL_UART_STATE_READY) return HAL_BUSY;							/* alternatively:  'if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) return HAL_BUSY'   in HAL_UART_TxCpltCallback() put vTaskNotifyGiveFromISR(vtaskWifiHandle,pxWoken) */
 	else{
@@ -849,8 +849,18 @@ static bool CheckEmailAnswer(int emailCode)
 	}
 }
 
+#define _S_		Ita_ Gr1_
+#define _E_		_X_
 
+//URUCHOM PRZEZ DMA dla Dbg !!!!!!!!!!!!!!!
+void DbgInfo(const char* txt){ 	DbgVar(DBG,500,Ita_ Gr1_"%s"_X_,txt);  }
+/* strcpy(src,dest)   kopiuje cały napis z src do dest, włącznie ze znakiem '\0' i zwraca ptr do src na dest    analogicznie dziala   strncpy(src,dest,n) */
 
+//void DbgVarInfo(const char *fmt, ...){
+//	memset(sendBuff,0,sizeof(sendBuff));
+//	strcat(strcpy(sendBuff,Ita_ Gr1_),fmt);
+//	DbgVar2(DBG,sizeof(sendBuff),sendBuff);
+//}
 
 int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL)  set new nr case */
 {																								/* CASE_Service(2,"","") 	 only return 3 in case 2 and only enter to this case */
@@ -864,7 +874,8 @@ int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYP
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; }
-	    if(flag){	if(arch==archType){ DbgMulti(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n"); }	  }
+	    if(flag){	if(arch==archType){ DbgVar(DBG,100,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); Dbg(DBG,RecvBuffer); Dbg(DBG,CoG3_" RECV_STOP\r\n"_X_); }
+	    	  else if(arch2==archType){ DbgMulti(DBG,"\r\n",RecvBuffer,"\r\n");	}	} //NIEROB MULTIEDIT bo dasz przez _DMA i musi byc jednym ciagiem wyslane !!!!!
 	}
 	return flag;
 }
@@ -875,6 +886,9 @@ void vtaskWifi(void *argument)
 	int channel=0, size=0, len, result, result2;
 	int j;
 	int nrCaseTemp=0;
+
+	int typeSendArch = arch;
+	int typeRecvArch = arch;
 
 	StartDMA();
 	ESP_ON;
@@ -915,68 +929,68 @@ void vtaskWifi(void *argument)
 			{
 				case INIT_CONNECTION:
 
-					if (CASE_Service(0,"ready",NULL,arch))
+					if (CASE_Service(0,"ready",NULL,typeRecvArch))
 					{
-						SendToEsp32(0,"ATE0\r\n",noArch);
+						SendToEsp32(0,"ATE0\r\n",typeSendArch);
 					}
-					else if (CASE_Service(1,"\r\nOK",NULL,arch))
+					else if (CASE_Service(1,"\r\nOK",NULL,typeRecvArch))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+UART_CUR=%d,8,1,0,0\r\n",ESP_UART_BUADRATE), NULL, noArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+UART_CUR=%d,8,1,0,0\r\n",ESP_UART_BUADRATE), NULL, typeSendArch );
 					}
-					else if (CASE_Service(2,"\r\nOK",NULL,arch))
+					else if (CASE_Service(2,"\r\nOK",NULL,typeRecvArch))
 					{
 						vTaskDelay(10);
 						ChangeUartBuadRate(ESP_UART_BUADRATE);
-						SendToEsp32(0,"AT+GMR\r\n",noArch);
+						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
 					}
-					else if (CASE_Service(3,"\r\nOK",NULL,arch))
+					else if (CASE_Service(3,"\r\nOK",NULL,typeRecvArch))
 					{
-						SendToEsp32(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CWMODE=%d\r\n",VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)), NULL, noArch);
+						SendToEsp32(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CWMODE=%d\r\n",VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)), NULL, typeSendArch);
 					}
-					else if (CASE_Service(4,"\r\nOK",NULL,arch))
+					else if (CASE_Service(4,"\r\nOK",NULL,typeRecvArch))
 					{
 						if(WIFI_MODE_DISABLED==VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)){
-							Dbg(DBG, "\r\nWifi DISABLED ");
+							DbgInfo("\r\nWifi DISABLED ");
 							break;
 						}
-						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",noArch);
+						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",typeSendArch);
 					}
-					else if (CASE_Service(5,"\r\nOK",NULL,arch))
+					else if (CASE_Service(5,"\r\nOK",NULL,typeRecvArch))
 					{
-						SendToEsp32(0,"AT+CIPMUX=1\r\n",noArch);
+						SendToEsp32(0,"AT+CIPMUX=1\r\n",typeSendArch);
 					}
-					else if (CASE_Service(6,"\r\nOK",NULL,arch))
+					else if (CASE_Service(6,"\r\nOK",NULL,typeRecvArch))
 					{
-						SendToEsp32(0,"AT+CWDHCP=0,3\r\n",noArch);
+						SendToEsp32(0,"AT+CWDHCP=0,3\r\n",typeSendArch);
 					}
-					else if (CASE_Service(7,"\r\nOK",NULL,arch))
+					else if (CASE_Service(7,"\r\nOK",NULL,typeRecvArch))
 					{
 						int flag=1;
 						if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 							1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 						{
-							SendToEsp32(0,"AT+CWDHCP=1,1\r\n",noArch);
+							SendToEsp32(0,"AT+CWDHCP=1,1\r\n",typeSendArch);
 							flag=0;
 						}
 						else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 								  0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 						{
-							SendToEsp32(0,"AT+CWDHCP=1,2\r\n",noArch);
+							SendToEsp32(0,"AT+CWDHCP=1,2\r\n",typeSendArch);
 							flag=0;
 						}
 						else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
 								  1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
 						{
-							SendToEsp32(0,"AT+CWDHCP=1,3\r\n",noArch);
+							SendToEsp32(0,"AT+CWDHCP=1,3\r\n",typeSendArch);
 							flag=0;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",noArch);
+						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
 					}
-					else if (CASE_Service(8,"\r\nOK",NULL,arch))
+					else if (CASE_Service(8,"\r\nOK",NULL,typeRecvArch))
 					{
-						SendToEsp32(0,"AT+CWHOSTNAME=\"Elektronika_STM\"\r\n",noArch);
+						SendToEsp32(0,"AT+CWHOSTNAME=\"Elektronika_STM\"\r\n",typeSendArch);
 					}
-					else if ((nrCaseTemp=CASE_Service(9,"\r\nOK","ERROR",arch)))
+					else if ((nrCaseTemp=CASE_Service(9,"\r\nOK","ERROR",typeRecvArch)))
 					{
 						if(2==nrCaseTemp) break;
 
@@ -991,14 +1005,14 @@ void vtaskWifi(void *argument)
 										IP2Str(VAR_GetTabVal(Const_wifiSTA_ip,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
 										IP2Str(VAR_GetTabVal(Const_wifiSTA_gate,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
 										IP2Str(VAR_GetTabVal(Const_wifiSTA_mask,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))));
-								SendToEsp32(len,NULL,noArch);	 	/* SendToEsp32(len,sendBuff) is the same */
+								SendToEsp32(len,NULL,typeSendArch);	 	/* SendToEsp32(len,sendBuff) is the same */
 								flag=0;
 							}
 							break;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",noArch);
+						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
 					}
-					else if (CASE_Service(10,"\r\nOK",NULL,arch))
+					else if (CASE_Service(10,"\r\nOK",NULL,typeRecvArch))
 					{
 						int flag=1;
 						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
@@ -1011,15 +1025,15 @@ void vtaskWifi(void *argument)
 										IP2Str(VAR_GetTabVal(Const_wifiAP_ip,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
 										IP2Str(VAR_GetTabVal(Const_wifiAP_gate,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
 										IP2Str(VAR_GetTabVal(Const_wifiAP_mask,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))));
-								SendToEsp32(len,sendBuff,noArch);	 	/* SendToEsp32(len,NULL) is the same */
+								SendToEsp32(len,sendBuff,typeSendArch);	 	/* SendToEsp32(len,NULL) is the same */
 								flag=0;
 							}
 							break;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",noArch);
+						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(11,"\r\nOK",NULL,arch))
+					else if (CASE_Service(11,"\r\nOK",NULL,typeRecvArch))
 					{
 						int flag=1;
 						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
@@ -1029,14 +1043,14 @@ void vtaskWifi(void *argument)
 							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWSAP=\"%s\",\"%s\",5,3\r\n",
 									VAR_GetStr(Const_wifiAP_name,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)),
 									VAR_GetStr(Const_wifiAP_pass,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)));
-							SendToEsp32(len,NULL,noArch);
+							SendToEsp32(len,NULL,typeSendArch);
 							flag=0;
 							break;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",noArch);
+						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(12,"\r\nOK",NULL,arch))
+					else if (CASE_Service(12,"\r\nOK",NULL,typeRecvArch))
 					{
 						int flag=1;
 						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
@@ -1046,80 +1060,82 @@ void vtaskWifi(void *argument)
 							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWJAP=\"%s\",\"%s\"\r\n",
 									VAR_GetStr(Const_wifiSTA_name,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)),
 									VAR_GetStr(Const_wifiSTA_pass,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)));  // Timer do logowania !!!!!  i poprawic GetPort !! zamiast port na indeks
-							SendToEsp32(len,NULL,noArch);
+							SendToEsp32(len,NULL,typeSendArch);
 							flag=0;
 							break;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",noArch);
+						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(13,"\r\nOK","ERROR",arch))
+					else if (CASE_Service(13,"\r\nOK","ERROR",typeRecvArch))
 					{
 						if(RecvFromEsp("WIFI CONNECTED") && RecvFromEsp("WIFI GOT IP"))  //tablica wolnych odpowiedzi
 						{
-							Dbg(DBG, "----- MAM IP :) -----");
+							int abc=123;
+							char ddd[]="mamusia";
+							DbgVar2(1,500,_S_"----- MAM IP :)%d %s %d %s -----"_E_,abc,ddd,abc,ddd);
 						}
 						result=vGetConnectionResultToSTA();     //vGetConnectionResultToSTA() w tej funkcji trzeba zmienic pozostalosc po poprzednim !!!!!!!!!!!!!!!
 						if(ESP_CONNECTION_OK!=result)
-							DbgVar(DBG,30,"\r\nERROR_ESP_CONNECTION: %d\r\n",result);
-						SendToEsp32(0,"AT+CIFSR\r\n",noArch);
+							DbgVar(DBG,500,_S_"\r\nERROR_ESP_CONNECTION: %d\r\n"_E_,result);
+						SendToEsp32(0,"AT+CIFSR\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(14,"\r\nOK",NULL,arch))
+					else if (CASE_Service(14,"\r\nOK",NULL,typeRecvArch))
 					{
 						GetAddressesForConnection();
-						SendToEsp32(0,"AT+CIPSERVERMAXCONN=1\r\n",noArch);
+						SendToEsp32(0,"AT+CIPSERVERMAXCONN=1\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(15,"\r\nOK",NULL,arch))
+					else if (CASE_Service(15,"\r\nOK",NULL,typeRecvArch))
 					{
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
 								IP2Str(VAR_GetTabVal(Const_dns_IP1,NO_TAB)),
 								IP2Str(VAR_GetTabVal(Const_dns_IP2,NO_TAB)),
 								IP2Str(VAR_GetTabVal(Const_dns_IP3,NO_TAB)));
-						SendToEsp32(len,NULL,noArch);
+						SendToEsp32(len,NULL,typeSendArch);
 
 					}
-					else if (CASE_Service(16,"\r\nOK","ERROR",arch))
+					else if (CASE_Service(16,"\r\nOK","ERROR",typeRecvArch))
 					{
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",
 								VAR_GetTabVal(Const_sntp_timezone,NO_TAB),
 								VAR_GetStr(Const_sntp_nameServer1,NO_TAB),
 								VAR_GetStr(Const_sntp_nameServer2,NO_TAB));
-						SendToEsp32(len,NULL,noArch);
+						SendToEsp32(len,NULL,typeSendArch);
 
 					}
-					else if (CASE_Service(17,"\r\nOK","ERROR",arch))
+					else if (CASE_Service(17,"\r\nOK","ERROR",typeRecvArch))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"), NULL, noArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"), NULL, typeSendArch );
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n", GetHttpPort()), NULL ); */
 
 					}
-					else if (CASE_Service(18,"\r\nOK","ERROR",arch))
+					else if (CASE_Service(18,"\r\nOK","ERROR",typeRecvArch))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S), NULL, noArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S), NULL, typeSendArch );
 
 					}
-					else if (CASE_Service(19,"\r\nOK","ERROR",arch))
+					else if (CASE_Service(19,"\r\nOK","ERROR",typeRecvArch))
 					{
 						int flag=1;
 						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
 						{
 							case WIFI_MODE_STA:
 							case WIFI_MODE_AP_STA:
-								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",VAR_GetStr(Const_emailSend_server,0/*i*/)), NULL, noArch );  //!!!!!! for(i=0;i<MAX_EMAIL_SENDERS;++i)  !!!!!!!!
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",VAR_GetStr(Const_emailSend_server,0/*i*/)), NULL, typeSendArch );  //!!!!!! for(i=0;i<MAX_EMAIL_SENDERS;++i)  !!!!!!!!
 								DbgMulti(DBG,"\r\n",sendBuff," ");
 								flag=0;
 								break;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",noArch);
+						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(20,"\r\nOK","ERROR",arch))
+					else if (CASE_Service(20,"\r\nOK","ERROR",typeRecvArch))
 					{
 						if(RecvFromEsp("+TIME_UPDATED"))  ///UTWORZ TABLICE WOLNYCH ODPOWIEDZI Z ESP32 np DISCONNECTED itd !!!!!!!!!!!!!
 						{
-							Dbg(DBG," ---- Czas Zaladowany :) ---- ");
+							Dbg(DBG,_S_" ---- Czas Zaladowany :) ---- "_E_);
 						}
 						char *ptr;
 						if (RecvFromEsp("\r\nOK"))
@@ -1128,7 +1144,7 @@ void vtaskWifi(void *argument)
 							{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
 								VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
 								DbgMulti(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
-								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",noArch);
+								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
 							}
 							else
 								break;
@@ -1137,11 +1153,11 @@ void vtaskWifi(void *argument)
 							return;
 
 					}
-					else if (CASE_Service(21,"\r\nOK","ERROR",arch))   //Czy przpadkiem nie lepiej !!!! (RecvFromEsp("\r\nOK\r\n")
+					else if (CASE_Service(21,"\r\nOK","ERROR",typeRecvArch))   //Czy przpadkiem nie lepiej !!!! (RecvFromEsp("\r\nOK\r\n")
 					{
 						if(RecvFromEsp("+TIME_UPDATED"))
 						{
-							Dbg(DBG," ---- Czas Zaladowany22222 :) ---- ");
+							Dbg(DBG,_S_" ---- Czas Zaladowany22222 :) ---- "_E_);
 						}
 						int itx=0;
 						char *ptr;
@@ -1153,7 +1169,7 @@ void vtaskWifi(void *argument)
 							{
 								VAR_SetTabVal(Const_sntp_time,NO_TAB,getTime);
 								sntpTime=gmtime(&getTime);
-								DbgVar(1,50,"\r\nES TIME LOADED %d; %02d-%02d-%02d  %02d:%02d:%02d",
+								DbgVar(1,500,_S_"\r\nES TIME LOADED %d; %02d-%02d-%02d  %02d:%02d:%02d"_E_,
 										VAR_GetTabVal(Const_sntp_time,NO_TAB),
 										sntpTime->tm_year-100,
 										sntpTime->tm_mon+1,
@@ -1170,7 +1186,7 @@ void vtaskWifi(void *argument)
 							}
 							else{
 								vTaskDelay(2000);
-								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",noArch);  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
+								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
 								CASE_Service(21,NULL,NULL,unUsed);
 
 								//jesli NIE to uzyj vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB)); !!!!!!!
