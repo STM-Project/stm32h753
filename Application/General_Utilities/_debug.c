@@ -54,7 +54,7 @@ void AAAAAAAAAAAAA(void)
 		dbg_dma_busy = 0;
 }
 
-static void DbgSendDma(char *txt)
+static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex */
 {
     while (*txt)								/* zapis do bufora kolowego */
     {
@@ -69,7 +69,7 @@ static void DbgSendDma(char *txt)
     if (!dbg_dma_busy && dbg_head != dbg_tail)
     {
         uint16_t size;
-        dbg_dma_busy = 1;						/* funkcja ta wywolywana z roznych watkow, lepszy mutex niz zwykla zmienna */
+        dbg_dma_busy = 1;
 
         if (dbg_head > dbg_tail)
         {
@@ -104,11 +104,18 @@ void Dbg(int on, char *txt)
 
 void DbgMulti(int on, char *startTxt, char *txt, char *endTxt)
 {
+//	if(on)
+//	{
+//		DEBUG_Send(startTxt);
+//		DEBUG_Send(txt);
+//		DEBUG_Send(endTxt);
+//	}
+
 	if(on)
 	{
-		DEBUG_Send(startTxt);
-		DEBUG_Send(txt);
-		DEBUG_Send(endTxt);
+		DbgSendDma(startTxt);
+		DbgSendDma(txt);
+		DbgSendDma(endTxt);
 	}
 }
 
@@ -124,6 +131,17 @@ void DbgMultiDma(int on, char *startTxt, char *txt, char *endTxt)
 
 void DbgVar(int on, unsigned int buffLen, const char *fmt, ...)
 {
+//	if(on)
+//	{
+//		char *temp = (char*)pvPortMalloc(buffLen);
+//		va_list va;
+//		va_start(va, fmt);
+//		mini_vsnprintf(temp, buffLen, fmt, va);
+//		va_end(va);
+//		DEBUG_Send(temp);
+//		vPortFree(temp);
+//	}
+
 	if(on)
 	{
 		char *temp = (char*)pvPortMalloc(buffLen);
@@ -131,7 +149,7 @@ void DbgVar(int on, unsigned int buffLen, const char *fmt, ...)
 		va_start(va, fmt);
 		mini_vsnprintf(temp, buffLen, fmt, va);
 		va_end(va);
-		DEBUG_Send(temp);
+		DbgSendDma(temp);
 		vPortFree(temp);
 	}
 }
@@ -152,6 +170,17 @@ void DbgVarDma(int on, unsigned int buffLen, const char *fmt, ...)
 
 void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...)
 {
+//	if(on)
+//	{
+//		char *temp = (char*)pvPortMalloc(buffLen);
+//		va_list va;
+//		va_start(va, fmt);
+//		vsnprintf(temp,buffLen, fmt, va);
+//		va_end(va);
+//		DEBUG_Send(temp);
+//		vPortFree(temp);
+//	}
+
 	if(on)
 	{
 		char *temp = (char*)pvPortMalloc(buffLen);
@@ -159,7 +188,7 @@ void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...)
 		va_start(va, fmt);
 		vsnprintf(temp,buffLen, fmt, va);
 		va_end(va);
-		DEBUG_Send(temp);
+		DbgSendDma(temp);
 		vPortFree(temp);
 	}
 }
