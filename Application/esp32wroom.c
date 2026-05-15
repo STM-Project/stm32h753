@@ -41,6 +41,8 @@
 #define DNS_SERVER_TIMEOUT_MS		15000
 
 #define DBG		1
+#define _S_		Ita_ Gr1_
+#define _E_		_X_
 
 #define ESP_ON 		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_SET)
 #define ESP_OFF		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_RESET)
@@ -849,11 +851,10 @@ static bool CheckEmailAnswer(int emailCode)
 	}
 }
 
-#define _S_		Ita_ Gr1_
-#define _E_		_X_
+
 
 //URUCHOM PRZEZ DMA dla Dbg !!!!!!!!!!!!!!!
-void DbgInfo(const char* txt){ 	DbgVar(DBG,500,Ita_ Gr1_"%s"_X_,txt);  }
+
 /* strcpy(src,dest)   kopiuje cały napis z src do dest, włącznie ze znakiem '\0' i zwraca ptr do src na dest    analogicznie dziala   strncpy(src,dest,n) */
 
 //void DbgVarInfo(const char *fmt, ...){
@@ -950,7 +951,7 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(4,"\r\nOK",NULL,typeRecvArch))
 					{
 						if(WIFI_MODE_DISABLED==VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)){
-							DbgInfo("\r\nWifi DISABLED ");
+							Dbg(DBG,_S_"\r\nWifi DISABLED "_E_);
 							break;
 						}
 						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",typeSendArch);
