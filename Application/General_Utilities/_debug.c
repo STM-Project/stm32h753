@@ -14,9 +14,15 @@
 #include "FreeRTOS.h"
 
 #define RECV_BUFF_SIZE	128
+#define SEND_BUFF_SIZE	2048
 #define DEBUG_DEBUG		1
 
 static char ALIGN_32BYTES(dbgRecvBuffer[RECV_BUFF_SIZE]);
+static char ALIGN_32BYTES(dbgSendBuffer[SEND_BUFF_SIZE]);
+
+static uint16_t dbg_head = 0;
+static uint16_t dbg_tail = 0;
+static uint8_t dbg_dma_busy = 0;
 
 void DEBUG_Init(void)
 {
@@ -24,10 +30,76 @@ void DEBUG_Init(void)
 	DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 }
 
-void Dbg(int on, char *txt)
+void AAAAAAAAAAAAA(void)
+{
+	if (dbg_head != dbg_tail)
+	{
+        uint16_t size;
+        if (dbg_head > dbg_tail)
+        {
+            size = dbg_head - dbg_tail;
+            SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE);
+            HAL_UART_Transmit_DMA(&huart7, (uint8_t*)&dbgSendBuffer[dbg_tail], size);
+            dbg_tail = dbg_head;
+        }
+        else
+        {
+            size = SEND_BUFF_SIZE - dbg_tail;
+            SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE);
+            HAL_UART_Transmit_DMA(&huart7, (uint8_t*)&dbgSendBuffer[dbg_tail], size);
+            dbg_tail = 0;
+        }
+    }
+	else
+		dbg_dma_busy = 0;
+}
+
+static void DbgSendDma(char *txt)
+{
+    while (*txt)								/* zapis do bufora kolowego */
+    {
+        uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
+
+        if (next_head == dbg_tail) break;		/* bufor pelny, niedapisujemy */
+
+        dbgSendBuffer[dbg_head] = (uint8_t)*txt++;
+        dbg_head = next_head;
+    }
+
+    if (!dbg_dma_busy && dbg_head != dbg_tail)
+    {
+        uint16_t size;
+        dbg_dma_busy = 1;						/* funkcja ta wywolywana z roznych watkow, lepszy mutex niz zwykla zmienna */
+
+        if (dbg_head > dbg_tail)
+        {
+            size = dbg_head - dbg_tail;
+            SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE);
+            HAL_UART_Transmit_DMA(&huart7, (uint8_t*)&dbgSendBuffer[dbg_tail], size);
+            dbg_tail = dbg_head;
+        }
+        else
+        {
+            size = SEND_BUFF_SIZE - dbg_tail;
+            SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE);
+            HAL_UART_Transmit_DMA(&huart7, (uint8_t*)&dbgSendBuffer[dbg_tail], size);
+            dbg_tail = 0; 		/* Reszta danych pójdzie w callbacku */
+        }
+    }
+}
+
+void DbgDma(int on, char *txt)
 {
 	if(on)
-		DEBUG_Send(txt);
+		DbgSendDma(txt);
+}
+
+void Dbg(int on, char *txt)
+{
+//	if(on)
+//		DEBUG_Send(txt);
+	if(on)
+		DbgSendDma(txt);
 }
 
 void DbgMulti(int on, char *startTxt, char *txt, char *endTxt)
@@ -37,6 +109,16 @@ void DbgMulti(int on, char *startTxt, char *txt, char *endTxt)
 		DEBUG_Send(startTxt);
 		DEBUG_Send(txt);
 		DEBUG_Send(endTxt);
+	}
+}
+
+void DbgMultiDma(int on, char *startTxt, char *txt, char *endTxt)
+{
+	if(on)
+	{
+		DbgSendDma(startTxt);
+		DbgSendDma(txt);
+		DbgSendDma(endTxt);
 	}
 }
 
@@ -54,6 +136,20 @@ void DbgVar(int on, unsigned int buffLen, const char *fmt, ...)
 	}
 }
 
+void DbgVarDma(int on, unsigned int buffLen, const char *fmt, ...)
+{
+	if(on)
+	{
+		char *temp = (char*)pvPortMalloc(buffLen);
+		va_list va;
+		va_start(va, fmt);
+		mini_vsnprintf(temp, buffLen, fmt, va);
+		va_end(va);
+		DbgSendDma(temp);
+		vPortFree(temp);
+	}
+}
+
 void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...)
 {
 	if(on)
@@ -64,6 +160,20 @@ void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...)
 		vsnprintf(temp,buffLen, fmt, va);
 		va_end(va);
 		DEBUG_Send(temp);
+		vPortFree(temp);
+	}
+}
+
+void DbgVarDma2(int on, unsigned int buffLen, const char *fmt, ...)
+{
+	if(on)
+	{
+		char *temp = (char*)pvPortMalloc(buffLen);
+		va_list va;
+		va_start(va, fmt);
+		vsnprintf(temp,buffLen, fmt, va);
+		va_end(va);
+		DbgSendDma(temp);
 		vPortFree(temp);
 	}
 }
