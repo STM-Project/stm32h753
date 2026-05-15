@@ -380,6 +380,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	if(huart->Instance==UART7)
 	{
 		//UART_ClearFlags(&huart7);
+		AAAAAAAAAAAAA();
 	}
 	else if(huart->Instance==USART6)
 	{
@@ -445,11 +446,20 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 void DEBUG_Send(char *txt){
 	HAL_UART_Transmit(&huart7, (uint8_t*)txt, mini_strlen(txt),300);
 }
+
+void DEBUG_SendDma(char *txt){
+	HAL_UART_Transmit(&huart7, (uint8_t*)txt, mini_strlen(txt),300);
+}
+
 void DEBUG_ReceiveStart(uint8_t* buffer, uint16_t len)
 {
 	__HAL_UART_FLUSH_DRREGISTER(&huart7);
 	SCB_CleanDCache_by_Addr((uint32_t *)buffer, len);
 	HAL_UART_Receive_DMA(&huart7, buffer, len-1);
+
+//	 __HAL_UART_CLEAR_FLAG(&huart7, UART_CLEAR_OREF | UART_CLEAR_NEF | UART_CLEAR_FEF | UART_CLEAR_PEF);  //to chyba lepsze
+//	 HAL_UART_Receive_DMA(&huart7, buffer, len);
+
 }
 void DEBUG_ReceiveStop(void){
 	HAL_UART_DMAStop(&huart7);
