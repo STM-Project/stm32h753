@@ -38,11 +38,11 @@ void DBG_EndSendInterrupt(void)
     }
 	else{
 		dbg_dma_busy = 0;
-		/* Give Mutex (in future) */
+		/* Give SemaphorFromISR (in future) */
 	}
 }
 
-static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex, ktory jest zwalniany  dopiero w przerwaniu  przy wyjsciu) a najlepiej kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
+static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
 {
 	/* Take Mutex (in future) */
     while (*txt){								/* zapis do bufora kolowego */
@@ -69,26 +69,17 @@ void DbgDma(int on, char *txt)
 
 void Dbg(int on, char *txt)
 {
-//	if(on)
-//		DEBUG_Send(txt);
 	if(on)
-		DbgSendDma(txt);
+		DEBUG_Send(txt);
 }
 
 void DbgMulti(int on, char *startTxt, char *txt, char *endTxt)
 {
-//	if(on)
-//	{
-//		DEBUG_Send(startTxt);
-//		DEBUG_Send(txt);
-//		DEBUG_Send(endTxt);
-//	}
-
 	if(on)
 	{
-		DbgSendDma(startTxt);
-		DbgSendDma(txt);
-		DbgSendDma(endTxt);
+		DEBUG_Send(startTxt);
+		DEBUG_Send(txt);
+		DEBUG_Send(endTxt);
 	}
 }
 
@@ -104,17 +95,6 @@ void DbgMultiDma(int on, char *startTxt, char *txt, char *endTxt)
 
 void DbgVar(int on, unsigned int buffLen, const char *fmt, ...)
 {
-//	if(on)
-//	{
-//		char *temp = (char*)pvPortMalloc(buffLen);
-//		va_list va;
-//		va_start(va, fmt);
-//		mini_vsnprintf(temp, buffLen, fmt, va);
-//		va_end(va);
-//		DEBUG_Send(temp);
-//		vPortFree(temp);
-//	}
-
 	if(on)
 	{
 		char *temp = (char*)pvPortMalloc(buffLen);
@@ -122,7 +102,7 @@ void DbgVar(int on, unsigned int buffLen, const char *fmt, ...)
 		va_start(va, fmt);
 		mini_vsnprintf(temp, buffLen, fmt, va);
 		va_end(va);
-		DbgSendDma(temp);
+		DEBUG_Send(temp);
 		vPortFree(temp);
 	}
 }
@@ -143,17 +123,6 @@ void DbgVarDma(int on, unsigned int buffLen, const char *fmt, ...)
 
 void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...)
 {
-//	if(on)
-//	{
-//		char *temp = (char*)pvPortMalloc(buffLen);
-//		va_list va;
-//		va_start(va, fmt);
-//		vsnprintf(temp,buffLen, fmt, va);
-//		va_end(va);
-//		DEBUG_Send(temp);
-//		vPortFree(temp);
-//	}
-
 	if(on)
 	{
 		char *temp = (char*)pvPortMalloc(buffLen);
@@ -161,7 +130,7 @@ void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...)
 		va_start(va, fmt);
 		vsnprintf(temp,buffLen, fmt, va);
 		va_end(va);
-		DbgSendDma(temp);
+		DEBUG_Send(temp);
 		vPortFree(temp);
 	}
 }

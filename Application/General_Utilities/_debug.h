@@ -70,6 +70,10 @@ void Dbg(int on, char *txt);
 void DbgMulti(int on, char *startTxt, char *txt, char *endTxt);
 void DbgVar(int on, unsigned int buffLen, const char *fmt, ...);
 void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...);
+void DbgDma(int on, char *txt);
+void DbgMultiDma(int on, char *startTxt, char *txt, char *endTxt);
+void DbgVarDma(int on, unsigned int buffLen, const char *fmt, ...);
+void DbgVarDma2(int on, unsigned int buffLen, const char *fmt, ...);
 void DEBUG_RxFullBuffService(void);
 int DEBUG_RcvStr(char *txt);
 
