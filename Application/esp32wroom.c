@@ -193,7 +193,9 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	int len_ = CONDITION( 0==len, mini_strlen(CONDITION(NULL==data,sendBuff,data)), len );
 	if(len_ > PACKET_SEND_LEN-1)  len_=PACKET_SEND_LEN-1;
 	if(data != sendBuff && data != NULL){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;		/* memcpy(sendBuff, data, len_)  jest szybsze niż strncpy */
-	if(arch==archType){ DbgMulti(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_" SEND_STOP\r\n"_X_); }
+
+		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_" SEND_STOP\r\n"_X_); }
+	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",sendBuff,"\r\n"); }
 
 	if (ESP_UART_HANDLE.gState != HAL_UART_STATE_READY) return HAL_BUSY;							/* alternatively:  'if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) return HAL_BUSY'   in HAL_UART_TxCpltCallback() put vTaskNotifyGiveFromISR(vtaskWifiHandle,pxWoken) */
 	else{
@@ -875,8 +877,8 @@ int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYP
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; }
-	    if(flag){	if(arch==archType){ DbgVar(DBG,100,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); Dbg(DBG,RecvBuffer); Dbg(DBG,CoG3_" RECV_STOP\r\n"_X_); }
-	    	  else if(arch2==archType){ DbgMulti(DBG,"\r\n",RecvBuffer,"\r\n");	}	} //NIEROB MULTIEDIT bo dasz przez _DMA i musi byc jednym ciagiem wyslane !!!!!
+	    if(flag){  if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,RecvBuffer); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
+	    	  else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",RecvBuffer,"\r\n");	}	}
 	}
 	return flag;
 }
@@ -951,7 +953,7 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(4,"\r\nOK",NULL,typeRecvArch))
 					{
 						if(WIFI_MODE_DISABLED==VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)){
-							Dbg(DBG,_S_"\r\nWifi DISABLED "_E_);
+							DbgDma(DBG,_S_"\r\nWifi DISABLED "_E_);
 							break;
 						}
 						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",typeSendArch);
@@ -1074,11 +1076,11 @@ void vtaskWifi(void *argument)
 						{
 							int abc=123;
 							char ddd[]="mamusia";
-							DbgVar2(1,500,_S_"----- MAM IP :)%d %s %d %s -----"_E_,abc,ddd,abc,ddd);
+							DbgVarDma2(1,500,_S_"----- MAM IP :)%d %s %d %s -----"_E_,abc,ddd,abc,ddd);
 						}
 						result=vGetConnectionResultToSTA();     //vGetConnectionResultToSTA() w tej funkcji trzeba zmienic pozostalosc po poprzednim !!!!!!!!!!!!!!!
 						if(ESP_CONNECTION_OK!=result)
-							DbgVar(DBG,500,_S_"\r\nERROR_ESP_CONNECTION: %d\r\n"_E_,result);
+							DbgVarDma(DBG,500,_S_"\r\nERROR_ESP_CONNECTION: %d\r\n"_E_,result);
 						SendToEsp32(0,"AT+CIFSR\r\n",typeSendArch);
 
 					}
@@ -1125,7 +1127,7 @@ void vtaskWifi(void *argument)
 							case WIFI_MODE_STA:
 							case WIFI_MODE_AP_STA:
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",VAR_GetStr(Const_emailSend_server,0/*i*/)), NULL, typeSendArch );  //!!!!!! for(i=0;i<MAX_EMAIL_SENDERS;++i)  !!!!!!!!
-								DbgMulti(DBG,"\r\n",sendBuff," ");
+								DbgMultiDma(DBG,"\r\n",sendBuff," ");
 								flag=0;
 								break;
 						}
@@ -1136,7 +1138,7 @@ void vtaskWifi(void *argument)
 					{
 						if(RecvFromEsp("+TIME_UPDATED"))  ///UTWORZ TABLICE WOLNYCH ODPOWIEDZI Z ESP32 np DISCONNECTED itd !!!!!!!!!!!!!
 						{
-							Dbg(DBG,_S_" ---- Czas Zaladowany :) ---- "_E_);
+							DbgDma(DBG,_S_" ---- Czas Zaladowany :) ---- "_E_);
 						}
 						char *ptr;
 						if (RecvFromEsp("\r\nOK"))
@@ -1144,7 +1146,7 @@ void vtaskWifi(void *argument)
 							if ((ptr=RecvFromEsp("+CIPDOMAIN:")))  //ZROB LISTE MOZLIWYCH ODPOWIEDZI JESLI NIE MA TAKIEJ TO WYSWIETL JA !!!!!!!
 							{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
 								VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
-								DbgMulti(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
+								DbgMultiDma(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
 								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
 							}
 							else
@@ -1158,7 +1160,7 @@ void vtaskWifi(void *argument)
 					{
 						if(RecvFromEsp("+TIME_UPDATED"))
 						{
-							Dbg(DBG,_S_" ---- Czas Zaladowany22222 :) ---- "_E_);
+							DbgDma(DBG,_S_" ---- Czas Zaladowany22222 :) ---- "_E_);
 						}
 						int itx=0;
 						char *ptr;
@@ -1170,7 +1172,7 @@ void vtaskWifi(void *argument)
 							{
 								VAR_SetTabVal(Const_sntp_time,NO_TAB,getTime);
 								sntpTime=gmtime(&getTime);
-								DbgVar(1,500,_S_"\r\nES TIME LOADED %d; %02d-%02d-%02d  %02d:%02d:%02d"_E_,
+								DbgVarDma(1,500,_S_"\r\nES TIME LOADED %d; %02d-%02d-%02d  %02d:%02d:%02d"_E_,
 										VAR_GetTabVal(Const_sntp_time,NO_TAB),
 										sntpTime->tm_year-100,
 										sntpTime->tm_mon+1,
@@ -1208,7 +1210,7 @@ void vtaskWifi(void *argument)
 //SPRAWDZ czy nie mozna szybsze jeszcze uart speed dla tego nowego systemu !!!!!!!!!!!!!!!!!!!
 				case HTTP_CONNECTION:  //dac jesli HAL error!!!   if (HAL_OK!=SendToEsp2(tempBuff, commandLen)) return 1
 
-					DbgMulti(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
+					DbgMultiDma(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
 
 					if ((pHttpGet=strstr(RecvBuffer,",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
 					{
@@ -1243,13 +1245,13 @@ void vtaskWifi(void *argument)
 					{
 						if ((pHttpGet=RecvFromEsp("\r\nOK\r\n")))
 						{
-							Dbg(DBG, " ---- ,CLOSED ---- ");
+							DbgDma(DBG, " ---- ,CLOSED ---- ");
 							RestartDMA();
 						}
 					}
 					else if ((pHttpGet=RecvFromEsp("ERROR")))
 					{
-						Dbg(DBG, " ---- ERROR ---- ");
+						DbgDma(DBG, " ---- ERROR ---- ");
 						RestartDMA();
 					}
 					else if ((pHttpGet=RecvFromEsp("\r\nRecv ")))		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes for ESP */
@@ -1258,7 +1260,7 @@ void vtaskWifi(void *argument)
 						{
 							if ((pHttpGet=RecvFromEsp("\r\nSEND OK")))
 							{
-								Dbg(DBG, " ---- SEND OK ---- ");
+								DbgDma(DBG, " ---- SEND OK ---- ");
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);
 							}
 						}
@@ -1271,7 +1273,7 @@ void vtaskWifi(void *argument)
 
 
 				case SMTP_CONNECTION:
-					DbgMulti(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
+					DbgMultiDma(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
 
 //					if (false==CheckEmailAnswer(220))
 //					{
