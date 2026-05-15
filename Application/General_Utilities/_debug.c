@@ -30,62 +30,35 @@ void DEBUG_Init(void)
 	DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 }
 
-void AAAAAAAAAAAAA(void)
+void DBG_EndSendInterrupt(void)
 {
-	if (dbg_head != dbg_tail)
-	{
-        uint16_t size;
-        if (dbg_head > dbg_tail)
-        {
-            size = dbg_head - dbg_tail;
-            SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE);
-            HAL_UART_Transmit_DMA(&huart7, (uint8_t*)&dbgSendBuffer[dbg_tail], size);
-            dbg_tail = dbg_head;
-        }
-        else
-        {
-            size = SEND_BUFF_SIZE - dbg_tail;
-            SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE);
-            HAL_UART_Transmit_DMA(&huart7, (uint8_t*)&dbgSendBuffer[dbg_tail], size);
-            dbg_tail = 0;
-        }
+	if (dbg_head != dbg_tail){
+        if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head-dbg_tail 	   );	 dbg_tail = dbg_head;	}
+        else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE-dbg_tail );	 dbg_tail = 0;			}
     }
-	else
+	else{
 		dbg_dma_busy = 0;
+		/* Give Mutex (in future) */
+	}
 }
 
-static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex */
+static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex, ktory jest zwalniany  dopiero w przerwaniu  przy wyjsciu) a najlepiej kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
 {
-    while (*txt)								/* zapis do bufora kolowego */
-    {
+	/* Take Mutex (in future) */
+    while (*txt){								/* zapis do bufora kolowego */
         uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
-
         if (next_head == dbg_tail) break;		/* bufor pelny, niedapisujemy */
-
-        dbgSendBuffer[dbg_head] = (uint8_t)*txt++;
+        dbgSendBuffer[dbg_head] = *txt++;
         dbg_head = next_head;
     }
 
-    if (!dbg_dma_busy && dbg_head != dbg_tail)
-    {
-        uint16_t size;
+    if (!dbg_dma_busy && dbg_head != dbg_tail){
         dbg_dma_busy = 1;
-
-        if (dbg_head > dbg_tail)
-        {
-            size = dbg_head - dbg_tail;
-            SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE);
-            HAL_UART_Transmit_DMA(&huart7, (uint8_t*)&dbgSendBuffer[dbg_tail], size);
-            dbg_tail = dbg_head;
-        }
-        else
-        {
-            size = SEND_BUFF_SIZE - dbg_tail;
-            SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE);
-            HAL_UART_Transmit_DMA(&huart7, (uint8_t*)&dbgSendBuffer[dbg_tail], size);
-            dbg_tail = 0; 		/* Reszta danych pójdzie w callbacku */
-        }
+        if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head-dbg_tail 	   );	 dbg_tail = dbg_head;	}
+        else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE-dbg_tail );	 dbg_tail = 0;			} 		/* Reszta danych pójdzie w callbacku */
     }
+    /* Wait for Semaphor (in future) */
+    /* Give Mutex 		 (in future) */
 }
 
 void DbgDma(int on, char *txt)

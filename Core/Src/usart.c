@@ -379,12 +379,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance==UART7)
 	{
-		//UART_ClearFlags(&huart7);
-		AAAAAAAAAAAAA();
+		DBG_EndSendInterrupt();
 	}
 	else if(huart->Instance==USART6)
 	{
-		//UART_ClearFlags(&ESP_UART_HANDLE);
+
 	}
 }
 
@@ -444,11 +443,15 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 }
 
 void DEBUG_Send(char *txt){
+	/* Take Mutex (in future) */
 	HAL_UART_Transmit(&huart7, (uint8_t*)txt, mini_strlen(txt),300);
+	/* Give Mutex (in future) */
 }
 
-void DEBUG_SendDma(char *txt){
-	HAL_UART_Transmit(&huart7, (uint8_t*)txt, mini_strlen(txt),300);
+void DEBUG_SendDma(uint8_t *txt, int size){
+ /* SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE); */
+    SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size));
+    HAL_UART_Transmit_DMA(&huart7, txt, size);
 }
 
 void DEBUG_ReceiveStart(uint8_t* buffer, uint16_t len)

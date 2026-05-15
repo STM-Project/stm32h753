@@ -116,13 +116,20 @@ Sufiks _ISR:   Funkcje te są nieblokujące i bezpieczne dla kontekstu przerwani
 Wymuszenie:    Przełączenia kontekstu: Większość funkcji FromISR posiada parametr pxHigherPriorityTaskWoken. Jeśli zwróci on pdTRUE, należy wywołać portYIELD_FROM_ISR(), aby system natychmiast przełączył się na wybudzony wątek, zamiast czekać do następnego tyknięcia zegara systemowego
 	
 
-5---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+5------------- MUTEX  SEMAFOR--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
+Mutex    to klucz do łazienki: Może go wziąć tylko jedna osoba. Dopóki nie wyjdzie i nie odda klucza, nikt inny nie wejdzie.
+Semafor  to zielone/czerwone światło: Służy do dawania sygnału "teraz twoja kolej", często między przerwaniem sprzętowym a wątkiem.
 
+ - Mechanizm własności (Ownership) – Najważniejsza różnica:
+	Mutex 	 ma właściciela. Jeśli Wątek A pobierze Mutex, system zapisuje, że to Wątek A go kontroluje. Żaden inny wątek ani przerwanie nie może tego Mutexu oddać. Tylko Wątek A ma prawo go zwolnić.Semafor nie ma właściciela. 
+	Semafor  to po prostu licznik (w przypadku binarnego: 0 lub 1). Jeśli Wątek A pobierze semafor (zmniejszy licznik do 0), to Wątek B lub przerwanie sprzętowe może go oddać (zwiększyć do 1).
 
+ - Dziedziczenie priorytetów (Priority Inheritance):
+ 	Mutex 	 posiada ten mechanizm. Zapobiega on zawieszeniu systemu (inwersji priorytetów). Jeśli wątek o niskim priorytecie blokuje Mutex, a wątek o wysokim priorytecie spróbuje go pobrać, system sztucznie i na chwilę podniesie priorytet tego pierwszego, aby jak najszybciej skończył pracę i zwolnił zasób.
+ 	Semafor  nie posiada tego mechanizmu. Jeśli wątek o wysokim priorytecie zablokuje się na semaforze, system nie pomoże wątkowi, który ma ten semafor zwolnić.
 
-
-
+Semafory sa binarne albo licznikowe.
 
 
 	

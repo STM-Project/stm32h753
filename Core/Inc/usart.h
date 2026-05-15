@@ -41,6 +41,7 @@ extern UART_HandleTypeDef huart6;
 void UART_ClearFlags(UART_HandleTypeDef *huart);
 void UART_ClearFlags2(UART_HandleTypeDef *huart);
 void DEBUG_Send(char *txt);
+void DEBUG_SendDma(uint8_t *txt, int size);
 void DEBUG_ReceiveStart(uint8_t* buffer, uint16_t len);
 void DEBUG_ReceiveStop(void);
 /* USER CODE END Private defines */

@@ -65,6 +65,7 @@ typedef enum{
 char* _Col(FONT_BKG_COLOR background, uint8_t red, uint8_t green, uint8_t blue);
 
 void DEBUG_Init(void);
+void DBG_EndSendInterrupt(void);
 void Dbg(int on, char *txt);
 void DbgMulti(int on, char *startTxt, char *txt, char *endTxt);
 void DbgVar(int on, unsigned int buffLen, const char *fmt, ...);

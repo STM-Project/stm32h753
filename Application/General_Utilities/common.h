@@ -14,6 +14,9 @@ typedef uint32_t u32;
 typedef uint16_t u16;
 typedef uint8_t u8;
 
+#define CACHE_LINE_BYTES		32
+#define CACHE_ALLIGN_LEN(len)	(((len) + ((CACHE_LINE_BYTES) - 1)) & ~((CACHE_LINE_BYTES) - 1))
+
 #define EXAMPLE(x)  TEST_##x
 
 #define GET_DATE_COMPILATION  __DATE__

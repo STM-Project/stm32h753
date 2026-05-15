@@ -28,7 +28,7 @@ static portTickType timeVar[MAX_COUNT_TIME];
 static portTickType measurTime[MAX_MEASURE_TIME];
 
 void InitAllMutex(void){
-	xSemphr_pLcd 	 = xSemaphoreCreateMutex();
+	xSemphr_pLcd 	= xSemaphoreCreateMutex();
 	xSemphr_fontImg = xSemaphoreCreateMutex();
 	xSemphr_cardSD  = xSemaphoreCreateMutex();
 }
@@ -36,7 +36,7 @@ uint32_t TakeMutex(SEMPHR_ID ID, uint32_t timeout){
 	switch((int)ID){
 	 case Semphr_sdram:		if(xSemaphoreTake(xSemphr_pLcd,	 timeout)==pdTRUE) return 1; 	else return 0;
 	 case Semphr_fontImg:	if(xSemaphoreTake(xSemphr_fontImg,timeout)==pdTRUE) return 1; 	else return 0;
-	 case Semphr_cardSD:		if(xSemaphoreTake(xSemphr_cardSD, timeout)==pdTRUE) return 1; 	else return 0;
+	 case Semphr_cardSD:	if(xSemaphoreTake(xSemphr_cardSD, timeout)==pdTRUE) return 1; 	else return 0;
 	 default:
 		 return 0;
 }}
@@ -44,7 +44,7 @@ void GiveMutex(SEMPHR_ID ID){
 	switch((int)ID){
 	 case Semphr_sdram:		xSemaphoreGive(xSemphr_pLcd); 	break;
 	 case Semphr_fontImg:	xSemaphoreGive(xSemphr_fontImg); break;
-	 case Semphr_cardSD:		xSemaphoreGive(xSemphr_cardSD);  break;
+	 case Semphr_cardSD:	xSemaphoreGive(xSemphr_cardSD);  break;
 }}
 uint32_t TakeMutex2(SEMPHR_ID ID1,SEMPHR_ID ID2, uint32_t timeout){
 	if(TakeMutex(ID1,timeout)&&TakeMutex(ID2,timeout)) return 1;
