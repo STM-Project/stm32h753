@@ -128,7 +128,7 @@ void DefaultSettingsWIFI(void)
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
 		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
-		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 0);
+		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
 		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
 		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
 //		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
@@ -934,79 +934,84 @@ void vtaskWifi(void *argument)
 					if (CASE_Service(0,"ready",NULL,typeRecvArch))
 					{
 						SendToEsp32(0,"ATE0\r\n",typeSendArch);
+
 					}
 					else if (CASE_Service(1,"\r\nOK",NULL,typeRecvArch))
 					{
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+UART_CUR=%d,8,1,0,0\r\n",ESP_UART_BUADRATE), NULL, typeSendArch );
+
 					}
 					else if (CASE_Service(2,"\r\nOK",NULL,typeRecvArch))
 					{
-						vTaskDelay(10);
+						//vTaskDelay(10);
 						ChangeUartBuadRate(ESP_UART_BUADRATE);
 						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
+
 					}
 					else if (CASE_Service(3,"\r\nOK",NULL,typeRecvArch))
 					{
-						SendToEsp32(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CWMODE=%d\r\n",VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)), NULL, typeSendArch);
+						SendToEsp32(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CWMODE=%d\r\n",Const.wifiGeneral.mode), NULL, typeSendArch);
+
 					}
 					else if (CASE_Service(4,"\r\nOK",NULL,typeRecvArch))
 					{
-						if(WIFI_MODE_DISABLED==VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB)){
+						if(WIFI_MODE_DISABLED==Const.wifiGeneral.mode){
 							DbgDma(DBG,_S_"\r\nWifi DISABLED "_E_);
 							break;
 						}
 						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",typeSendArch);
+
 					}
 					else if (CASE_Service(5,"\r\nOK",NULL,typeRecvArch))
 					{
 						SendToEsp32(0,"AT+CIPMUX=1\r\n",typeSendArch);
+
 					}
 					else if (CASE_Service(6,"\r\nOK",NULL,typeRecvArch))
 					{
 						SendToEsp32(0,"AT+CWDHCP=0,3\r\n",typeSendArch);
+
 					}
 					else if (CASE_Service(7,"\r\nOK",NULL,typeRecvArch))
 					{
-						int flag=1;
-						if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
-							1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
+						if( 0 == Const.wifiAP [ Const.wifiGeneral.nrAP ].dhcp &&
+							1 == Const.wifiSTA[ Const.wifiGeneral.nrSTA].dhcp )
 						{
 							SendToEsp32(0,"AT+CWDHCP=1,1\r\n",typeSendArch);
-							flag=0;
 						}
-						else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
-								  0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
+						else if( 1 == Const.wifiAP [ Const.wifiGeneral.nrAP ].dhcp &&
+								 0 == Const.wifiSTA[ Const.wifiGeneral.nrSTA].dhcp )
 						{
 							SendToEsp32(0,"AT+CWDHCP=1,2\r\n",typeSendArch);
-							flag=0;
 						}
-						else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
-								  1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
+						else if( 1 == Const.wifiAP [ Const.wifiGeneral.nrAP ].dhcp &&
+								 1 == Const.wifiSTA[ Const.wifiGeneral.nrSTA].dhcp )
 						{
 							SendToEsp32(0,"AT+CWDHCP=1,3\r\n",typeSendArch);
-							flag=0;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
+						else SendToEsp32(0,"AT\r\n",typeSendArch);
+
 					}
 					else if (CASE_Service(8,"\r\nOK",NULL,typeRecvArch))
 					{
 						SendToEsp32(0,"AT+CWHOSTNAME=\"Elektronika_STM\"\r\n",typeSendArch);
+
 					}
 					else if ((nrCaseTemp=CASE_Service(9,"\r\nOK","ERROR",typeRecvArch)))
 					{
 						if(2==nrCaseTemp) break;
 
 						int flag=1;
-						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+						switch(Const.wifiGeneral.mode)
 						{
 						case WIFI_MODE_STA:
 						case WIFI_MODE_AP_STA:
-							if(0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)))
+							if( 0 == Const.wifiSTA[ Const.wifiGeneral.nrSTA ].dhcp )
 							{
 								len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTA=\"%s\",\"%s\",\"%s\"\r\n",
-										IP2Str(VAR_GetTabVal(Const_wifiSTA_ip,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
-										IP2Str(VAR_GetTabVal(Const_wifiSTA_gate,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
-										IP2Str(VAR_GetTabVal(Const_wifiSTA_mask,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))));
+										IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].ip),
+										IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].gate),
+										IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].mask));
 								SendToEsp32(len,NULL,typeSendArch);	 	/* SendToEsp32(len,sendBuff) is the same */
 								flag=0;
 							}
@@ -1021,12 +1026,12 @@ void vtaskWifi(void *argument)
 						{
 						case WIFI_MODE_AP:
 						case WIFI_MODE_AP_STA:
-							if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)))
+							if( 0 == Const.wifiAP[ Const.wifiGeneral.nrAP ].dhcp )
 							{
 								len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPAP=\"%s\",\"%s\",\"%s\"\r\n",
-										IP2Str(VAR_GetTabVal(Const_wifiAP_ip,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
-										IP2Str(VAR_GetTabVal(Const_wifiAP_gate,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
-										IP2Str(VAR_GetTabVal(Const_wifiAP_mask,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))));
+										IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].ip),
+										IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].gate),
+										IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].mask));
 								SendToEsp32(len,sendBuff,typeSendArch);	 	/* SendToEsp32(len,NULL) is the same */
 								flag=0;
 							}

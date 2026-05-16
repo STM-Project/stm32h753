@@ -34,7 +34,7 @@ void DEBUG_Init(void)
 void DBG_EndSendInterrupt(void)
 {
 	if (dbg_head != dbg_tail){
-        if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head-dbg_tail 	   );	 dbg_tail = dbg_head;	}
+        if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head-dbg_tail 	   );	 dbg_tail = dbg_head;	}	/* to nic NIE szkodzi ze w przerwaniu 'dbg_tail' modyfikuje a w watku odczyuje i na odwrot z inna zmienna */
         else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE-dbg_tail );	 dbg_tail = 0;			}
     }
 	else{
@@ -53,7 +53,7 @@ static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, 
         dbg_head = next_head;
     }
 
-    if (!dbg_dma_busy && dbg_head != dbg_tail){		/* Ta czesc jes twykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
+    if (!dbg_dma_busy && dbg_head != dbg_tail){		/* Ta czesc jes wykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
         dbg_dma_busy = 1;
         if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head-dbg_tail 	   );	 dbg_tail = dbg_head;	}
         else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE-dbg_tail );	 dbg_tail = 0;			} 		/* Reszta danych pójdzie w callbacku */
