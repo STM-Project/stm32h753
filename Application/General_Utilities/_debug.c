@@ -12,17 +12,18 @@
 #include "usart.h"
 #include "mini_printf.h"
 #include "FreeRTOS.h"
+#include "task.h"
 
 #define RECV_BUFF_SIZE	128
-#define SEND_BUFF_SIZE	2048
+#define SEND_BUFF_SIZE	1024		/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
 #define DEBUG_DEBUG		1
 
 static char ALIGN_32BYTES(dbgRecvBuffer[RECV_BUFF_SIZE]);
 static char ALIGN_32BYTES(dbgSendBuffer[SEND_BUFF_SIZE]);
 
-static uint16_t dbg_head = 0;
-static uint16_t dbg_tail = 0;
-static uint8_t dbg_dma_busy = 0;
+static volatile uint16_t dbg_head = 0;		/* Uzywaj volatile jesli sa modyfikowane w przerwaniach i korzystane w petli w watku */
+static volatile uint16_t dbg_tail = 0;
+static volatile uint8_t dbg_dma_busy = 0;
 
 void DEBUG_Init(void)
 {
@@ -43,21 +44,21 @@ void DBG_EndSendInterrupt(void)
 }
 
 static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
-{
+{												/* Jeśli zablokujesz Mutex, a potem uśpisz wątek semaforem oczekującym na koniec DMA, zablokujesz możliwość logowania innym wątkom na bardzo długi czas (czas transmisji UART/DMA). Logowanie stanie się operacją blokującą, co przeczy idei używania bufora kołowego i DMA */
 	/* Take Mutex (in future) */
     while (*txt){								/* zapis do bufora kolowego */
         uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
-        if (next_head == dbg_tail) break;		/* bufor pelny, niedapisujemy */
+        if (next_head == dbg_tail) vTaskDelay(1);			/* bufor pelny, niedapisujemy, mozemy tez poczekac az zwolni sie bufor w DBG_EndSendInterrupt() */
         dbgSendBuffer[dbg_head] = *txt++;
         dbg_head = next_head;
     }
 
-    if (!dbg_dma_busy && dbg_head != dbg_tail){
+    if (!dbg_dma_busy && dbg_head != dbg_tail){		/* Ta czesc jes twykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
         dbg_dma_busy = 1;
         if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head-dbg_tail 	   );	 dbg_tail = dbg_head;	}
         else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE-dbg_tail );	 dbg_tail = 0;			} 		/* Reszta danych pójdzie w callbacku */
     }
-    /* Wait for Semaphor (in future) */
+    /* Wait for Semaphor (in future) */		/* Tu zasyiam i oddaje czas innym watkom */
     /* Give Mutex 		 (in future) */
 }
 
@@ -243,3 +244,98 @@ void* DEBUG_TestFunction(void *a, DATA_TYPE dataType, DATA_ACTION dataAction, vo
 
 	#undef _OPERAT
 }
+
+/* --- Najbezpiecznaiejsza wersja logów BEZ sekcji krytycznych  --- */
+/*
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
+
+#define LOG_QUEUE_SIZE 20
+QueueHandle_t xLogQueue = NULL;
+TaskHandle_t xLogTaskHandle = NULL; // Uchwyt wątku, potrzebny dla przerwania
+
+// 1. Funkcja wywoływana z dowolnego wątku (Thread-Safe)
+void DbgSend(const char *txt)		// DbgSend("Text example") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje.
+{
+    if (xLogQueue != NULL) {
+        xQueueSend(xLogQueue, &txt, portMAX_DELAY);
+    }
+}
+
+// 2. Dedykowany wątek obsługi logów
+void vLogTask(void *pvParameters)
+{
+    const char *txt_ptr;
+    xLogQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(char *));
+    xLogTaskHandle = xTaskGetCurrentTaskHandle();
+
+    for (;;) {
+        if (xQueueReceive(xLogQueue, &txt_ptr, portMAX_DELAY) == pdTRUE) {
+
+            // 1. ZAPAMIĘTUJEMY STAN: Czy przed dodaniem TEKSTU bufor był pusty?
+            // Jeśli dbg_head == dbg_tail, to znaczy, że DMA na pewno stoi.
+            BaseType_t dma_was_idle = (dbg_head == dbg_tail);
+
+            // 2. WPISUJEMY CAŁY STRING DO BUFORA KOŁOWEGO (Wiele bajtów)
+            while (*txt_ptr) {
+                uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
+
+                if (next_head == dbg_tail) {
+                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                    continue;
+                }
+
+                dbgSendBuffer[dbg_head] = *txt_ptr++;
+                dbg_head = next_head;
+            }
+
+            // 3. DOPIERO PO WPISANIU CAŁEGO TEKSTU DECYDUJEMY O DMA
+            // Jeśli przed pętlą bufor był pusty (dma_was_idle), to teraz, po wpisaniu
+            // całego stringa, odpalamy DMA RAZ dla całej zgromadzonej paczki danych.
+            if (dma_was_idle && (dbg_head != dbg_tail)) {
+                if (dbg_head > dbg_tail) {
+                    DEBUG_SendDma((uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head - dbg_tail);
+                    dbg_tail = dbg_head;
+                } else {
+                    DEBUG_SendDma((uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE - dbg_tail);
+                    dbg_tail = 0;
+                }
+            }
+            // Jeśli dma_was_idle było fałszywe, to znaczy, że DMA już działało w tle
+            // i przerwanie samo zgarnie nowo dopisane znaki. Nic tu nie robimy.
+        }
+    }
+}
+
+
+// 3. Callback z przerwania DMA (ISR)
+void DBG_EndSendInterrupt(void)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Przerwanie sprawdza, czy w buforze kołowym są kolejne dane do wysłania
+    if (dbg_head != dbg_tail) {
+        if (dbg_head > dbg_tail) {
+            DEBUG_SendDma((uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head - dbg_tail);
+            dbg_tail = dbg_head;
+        } else {
+            DEBUG_SendDma((uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE - dbg_tail);
+            dbg_tail = 0;
+        }
+
+        // Ponieważ właśnie przesunęliśmy dbg_tail (zwolniliśmy miejsce),
+        // wysyłamy sygnał wybudzenia do wątku logującego na wypadek, gdyby spał z powodu pełnego bufora.
+        if (xLogTaskHandle != NULL) {
+            vTaskNotifyGiveFromISR(xLogTaskHandle, &xHigherPriorityTaskWoken);
+        }
+    } else {
+        // Bufor jest pusty. Nie robimy nic. DMA odpocznie, dopóki wątek vLogTask
+        // nie wpisze nowego znaku i sam go ponownie nie uruchomi.
+    }
+
+    // Jeśli wybudzony wątek ma wyższy priorytet, przełącz kontekst od razu
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+*/
+

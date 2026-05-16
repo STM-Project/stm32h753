@@ -132,11 +132,43 @@ Semafor  to zielone/czerwone światło: Służy do dawania sygnału "teraz twoja
 Semafory sa binarne albo licznikowe.
 
 
+6------------- VOLATILE --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
+Słowo kluczowe volatile informuje kompilator, że wartość danej zmiennej może zmienić się w nieoczekiwany sposób poza aktualnym kontekstem programu, przez co blokuje optymalizacje polegające na zapamiętywaniu tej wartości w rejestrach procesora lub pamięci podręcznej. 
+W efekcie każde odczytanie lub zapisanie zmiennej zadeklarowanej jako volatile skutkuje bezpośrednim i fizycznym odwołaniem do pamięci RAM lub rejestru sprzętowego	
 	
-	
-	
-	
+Zastosowanie:
+ - 	Rejestry układów peryferyjnych (MMIO): Sprzęt (np. licznik, timer lub stan portu GPIO) może samoczynnie zmienić wartość komórki pamięci. Bez volatile kompilator uznałby, że wartość się nie zmienia i pobrałby ją tylko raz.
+ -  Obsługa przerwań (ISR): Flagi globalne modyfikowane wewnątrz funkcji obsługi przerwania, a odczytywane w pętli głównej programu, muszą być volatile, aby pętla zauważyła ich zmianę.
+ -  Puste pętle opóźniające: Zapobiega wycięciu przez kompilator "pustych" pętli typu for(int i=0; i<1000; i++);, które bez volatile zostałyby całkowicie usunięte podczas optymalizacji kodu.
+ 
+ 
+7------------- -taskENTER_CRITICAL() (fromISR) --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 	
+Zapewnia atomowość operacji (Read-Modify-Write). DLATEGO lepiej sosowac mutexy, semafory, kolejki, ktore zapewniaja atomowosc z założenia RTOS. 	
+Dla programisty linia dbg_dma_busy = 1; to jedna operacja. Dla procesora (np. ARM Cortex-M) są to trzy osobne instrukcje asemblera:
+   LDR 	     – Odczytaj wartość zmiennej z pamięci RAM do rejestru procesora.
+   ORR / MOV – Zmień wartość w rejestrze na 1.
+   STR 		 – Zapisz nową wartość z rejestru z powrotem do pamięci RAM.
+Jeżeli dowolne przerwanie (nawet niezwiązane z UARTEM) wejdzie pomiędzy krok 1 a krok 3, to inny wątek odczyta z pamięci RAM starą wartość (0), ponieważ nowa wartość (1) znajduje się na razie tylko w rejestrze procesora pierwszego wątku i nie została jeszcze zapisana do pamięci.	
+ 	
+ 	
+8------------- EVENT GROUP , SEMAFOR , EVENT_GROUP -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  	
+ -  Brak liczenia zdarzeń (Brak semantyki zliczającej):Flagi w Event Group działają jak zwykłe bity (0 lub 1). Jeśli przerwanie DMA wywoła się trzy razy i za każdym razem wstawi flagę EVENT_SPACE_AVAILABLE, to w grupie zdarzeń ten bit nadal będzie miał wartość 1. Wątek logujący, po wybudzeniu, skasuje ten bit. Jeśli w międzyczasie bufor zapełnił się i opróżnił wielokrotnie, stracisz informację o dokładnej liczbie "wybudzeń". Task Notifications działają jak szybki semafor zliczający – zapamiętują, ile dokładnie razy przerwanie wysłało sygnał.
+ -  Większy narzut procesora (Overhead):Event Groups są strukturami dość ciężkimi. Każda zmiana bitu z poziomu przerwania (xEventGroupSetBitsFromISR) nie dzieje się natychmiast. FreeRTOS pod maską wysyła wiadomość do dedykowanego wątku systemowego (Timer Task), który dopiero potem budzi Twój wątek. Wprowadza to spore opóźnienie (jitter) w transmisji UART.	
+ -  Problem z czyszczeniem bitów (Race Condition):Gdy wątek odczyta flagę z Event Group, musi ją wyczyścić. Jeśli przerwanie ustawi flagę dokładnie w tym samym momencie, w którym wątek ją odczytuje i automatycznie czyści (parametr pdTRUE w xEventGroupWaitBits), może dojść do sytuacji, w której sygnał od przerwania zostanie bezpowrotnie skasowany, zanim wątek go przetworzy. To zmusiłoby Cię do powrotu do... sekcji krytycznych.	
+ 		
+ 	- Task Notifications (Najlepsze): Najszybsze, zużywają najmniej RAM-u (0 dodatkowych bajtów, mechanizm wbudowany w TCB wątku), bezpieczne, posiadają tryb zliczający (działają jak semafor).
+ 	- Semafory binarne / zliczające (Dobre): Bezpieczne, czytelne w kodzie, ale zużywające więcej pamięci i wolniejsze niż Task Notifications.
+ 	- Event Groups (Najgorsze w tym przypadku): Wolne wywołanie z ISR (przez Timer Task), ryzyko utraty impulsów wybudzenia ze względu na brak zliczania, brak atomowości operacji na bitach w specyficznych sytuacjach wywłaszczan.
+
+
+9-------------   -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 	
+ 	
+ 	
+ 	
 	
 	
 	

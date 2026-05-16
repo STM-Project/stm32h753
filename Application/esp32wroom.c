@@ -116,7 +116,7 @@ void DefaultSettingsWIFI(void)
 		VAR_SetTabVal(Const_wifiAP_mask, i, LWIP_MAKEU32(255,255,255,0));
 		VAR_SetTabVal(Const_wifiAP_gate, i, LWIP_MAKEU32(192,168,7,1));
 		VAR_SetTabVal(Const_wifiAP_port, i, 80);  //WYprobowac port 8080 !!!!!
-		VAR_SetTabVal(Const_wifiAP_dhcp, i, 0);
+		VAR_SetTabVal(Const_wifiAP_dhcp, i, 1);
 		VAR_SetStr(Const_wifiAP_name, i, "NazwaAPPPPX");
 		VAR_SetStr(Const_wifiAP_pass, i, "markielowski123");
 	}
@@ -136,7 +136,7 @@ void DefaultSettingsWIFI(void)
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
-	VAR_SetTabVal(Const_wifiGeneral_mode,NO_TAB,WIFI_MODE_STA);
+	VAR_SetTabVal(Const_wifiGeneral_mode,NO_TAB,WIFI_MODE_AP_STA);
 }
 
 static int GetAnswerDelay(void)
@@ -915,7 +915,6 @@ void vtaskWifi(void *argument)
 
 
 */
-
 
 
 //	StartMeasureTime_us();
