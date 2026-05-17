@@ -42,6 +42,7 @@
 
 #define DBG		1
 #define _S_		Ita_ Gr1_
+#define _SE_	Ita_ Cya_
 #define _E_		_X_
 
 #define ESP_ON 		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_SET)
@@ -89,6 +90,16 @@ typedef enum
 	ESPANSWER_TIMEOUT_FOR_SMTPCOMM_TO_GET_SIGN=102
 
 }ESP_ANSWER;
+
+typedef enum
+{
+	ESP_WIFI_CONNECTED,
+	ESP_WIFI_DISCONNECT,
+	ESP_WIFI_GOT_IP,
+	ESP_WIFI_GOT_IPv6_LL,
+	ESP_WIFI_GOT_IPv6_GL,
+	ESP_WIFI_FORCE_RESTART
+}ESP32_FREE_ANSWER;
 
 static uint8_t connectionType;
 
@@ -883,9 +894,15 @@ int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYP
 	return flag;
 }
 
+int ESP32_FreeAnswers(void){
+		 if(RecvFromEsp("WIFI CONNECTED")) 	      return ESP_WIFI_CONNECTED;
+	else if(RecvFromEsp("WIFI DISCONNECT")) 	  return ESP_WIFI_DISCONNECT;
+	else if(RecvFromEsp("Will force to restart")) return ESP_WIFI_FORCE_RESTART;
+}
+
 void vtaskWifi(void *argument)
 {
-	char *pHttpGet;   int lenHTTP=0;
+	char *pHttpGet, *ptr;   int lenHTTP=0;
 	int channel=0, size=0, len, result, result2;
 	int j;
 	int nrCaseTemp=0;
@@ -999,93 +1016,93 @@ void vtaskWifi(void *argument)
 					}
 					else if ((nrCaseTemp=CASE_Service(9,"\r\nOK","ERROR",typeRecvArch)))
 					{
-						if(2==nrCaseTemp) break;
+						if(2==nrCaseTemp){ DbgDma(1,_SE_"\r\n!!! BREAK !!!"_E_); break; }
 
-						int flag=1;
-						switch(Const.wifiGeneral.mode)
+						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
+							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode) && 0 == Const.wifiSTA[ Const.wifiGeneral.nrSTA ].dhcp )
 						{
-						case WIFI_MODE_STA:
-						case WIFI_MODE_AP_STA:
-							if( 0 == Const.wifiSTA[ Const.wifiGeneral.nrSTA ].dhcp )
-							{
-								len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTA=\"%s\",\"%s\",\"%s\"\r\n",
-										IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].ip),
-										IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].gate),
-										IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].mask));
-								SendToEsp32(len,NULL,typeSendArch);	 	/* SendToEsp32(len,sendBuff) is the same */
-								flag=0;
-							}
-							break;
+							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTA=\"%s\",\"%s\",\"%s\"\r\n",
+									IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].ip),
+									IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].gate),
+									IP2Str(Const.wifiSTA[ Const.wifiGeneral.nrSTA ].mask));
+							SendToEsp32(len,NULL,typeSendArch);	 	/* SendToEsp32(len,sendBuff) is the same */
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
+						else SendToEsp32(0,"AT\r\n",typeSendArch);
+
 					}
 					else if (CASE_Service(10,"\r\nOK",NULL,typeRecvArch))
 					{
-						int flag=1;
-						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+						if( (WIFI_MODE_AP 	 == Const.wifiGeneral.mode ||
+							WIFI_MODE_AP_STA == Const.wifiGeneral.mode) && 0 == Const.wifiAP[ Const.wifiGeneral.nrAP ].dhcp )
 						{
-						case WIFI_MODE_AP:
-						case WIFI_MODE_AP_STA:
-							if( 0 == Const.wifiAP[ Const.wifiGeneral.nrAP ].dhcp )
-							{
-								len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPAP=\"%s\",\"%s\",\"%s\"\r\n",
-										IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].ip),
-										IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].gate),
-										IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].mask));
-								SendToEsp32(len,sendBuff,typeSendArch);	 	/* SendToEsp32(len,NULL) is the same */
-								flag=0;
-							}
-							break;
+							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPAP=\"%s\",\"%s\",\"%s\"\r\n",
+									IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].ip),
+									IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].gate),
+									IP2Str(Const.wifiAP[ Const.wifiGeneral.nrAP ].mask));
+							SendToEsp32(len,sendBuff,typeSendArch);	 	/* SendToEsp32(len,NULL) is the same */
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
+						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
 					else if (CASE_Service(11,"\r\nOK",NULL,typeRecvArch))
 					{
-						int flag=1;
-						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+						if( WIFI_MODE_AP 	 == Const.wifiGeneral.mode ||
+							WIFI_MODE_AP_STA == Const.wifiGeneral.mode )
 						{
-						case WIFI_MODE_AP:
-						case WIFI_MODE_AP_STA:
 							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWSAP=\"%s\",\"%s\",5,3\r\n",
-									VAR_GetStr(Const_wifiAP_name,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)),
-									VAR_GetStr(Const_wifiAP_pass,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)));
+									Const.wifiAP[ Const.wifiGeneral.nrAP ].name,
+									Const.wifiAP[ Const.wifiGeneral.nrAP ].pass);
 							SendToEsp32(len,NULL,typeSendArch);
-							flag=0;
-							break;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
+						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(12,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(12,"\r\nOK","ERROR",typeRecvArch))
 					{
-						int flag=1;
-						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+						if(2==nrCaseTemp){ DbgDma(1,_SE_"\r\n!!! BREAK !!!"_E_); break; }
+
+						if( WIFI_MODE_STA 	 == Const.wifiGeneral.mode ||
+							WIFI_MODE_AP_STA == Const.wifiGeneral.mode )
 						{
-						case WIFI_MODE_STA:
-						case WIFI_MODE_AP_STA:
 							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWJAP=\"%s\",\"%s\"\r\n",
-									VAR_GetStr(Const_wifiSTA_name,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)),
-									VAR_GetStr(Const_wifiSTA_pass,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)));  // Timer do logowania !!!!!  i poprawic GetPort !! zamiast port na indeks
+									Const.wifiSTA[ Const.wifiGeneral.nrSTA ].name,
+									Const.wifiSTA[ Const.wifiGeneral.nrSTA ].pass);
 							SendToEsp32(len,NULL,typeSendArch);
-							flag=0;
-							break;
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
+						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(13,"\r\nOK","ERROR",typeRecvArch))
+					else if ((nrCaseTemp=CASE_Service(13,"\r\nOK","ERROR",typeRecvArch)))
 					{
-						if(RecvFromEsp("WIFI CONNECTED") && RecvFromEsp("WIFI GOT IP"))  //tablica wolnych odpowiedzi
+						result=0;
+							 if(1==nrCaseTemp) result=ESP_CONNECTION_OK;
+						else if(2==nrCaseTemp)
 						{
-							int abc=123;
-							char ddd[]="mamusia";
-							DbgVarDma2(1,500,_S_"----- MAM IP :)%d %s %d %s -----"_E_,abc,ddd,abc,ddd);
+							if ((ptr=RecvFromEsp("+CWJAP:"))){
+								switch(atoi(ptr+7)){
+									case 1:  result=ESP_CONNECTION_TIMEOUT; 		break;
+									case 2:  result=ESP_WRONG_PASSWORD;				break;
+									case 3:  result=ESP_CANNOT_FIND_THE_TARGET_AP;	break;
+									case 4:  result=ESP_CONNECTION_FAILED;			break;
+									default: result=ESP_UNKNOW_ERROR_OCCURRED;		break;
+							}}
+							else result=ESP_UNKNOW_ERROR_OCCURRED;
 						}
-						result=vGetConnectionResultToSTA();     //vGetConnectionResultToSTA() w tej funkcji trzeba zmienic pozostalosc po poprzednim !!!!!!!!!!!!!!!
-						if(ESP_CONNECTION_OK!=result)
-							DbgVarDma(DBG,500,_S_"\r\nERROR_ESP_CONNECTION: %d\r\n"_E_,result);
+						if(RecvFromEsp("WIFI DISCONNECT"))  							 DbgDma(1,_S_"\r\nWIFI_DISCONNECT "_E_);
+						if(RecvFromEsp("WIFI CONNECTED") && RecvFromEsp("WIFI GOT IP"))  DbgDma(1,_SE_"\r\nWIFI_CONNECTED  ---  WIFI_GOT_IP "_E_);
+						DbgVarDma2(DBG,100,_S_"\r\nESP_CONNECTION status: %d\r\n"_E_,result);
 						SendToEsp32(0,"AT+CIFSR\r\n",typeSendArch);
+
+
+
+
+
+
+
+
+
+
+
 
 					}
 					else if (CASE_Service(14,"\r\nOK",NULL,typeRecvArch))
