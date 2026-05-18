@@ -49,13 +49,16 @@
 #define ESP_OFF		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_RESET)
 
 #define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>"
-#define ESP32_TXT_ERROR 	"\r\n!!! ESP32_ERROR !!!"
+#define ESP32_INIT_ERROR 	"\r\n!!! ESP32_INIT_ERROR !!!"
+#define ESP32_DOMAIN_ERROR 	"\r\n!!! ESP32_DOMAIN_ERROR !!!"
 #define RecvFromEsp(txt)   strstr(RecvBuffer,txt)
 
 #define _GET_ACTUAL_CASE_		CASE_Service(-1,NULL,NULL,0)
-#define _SET_NEW_CASE_(x)		CASE_Service(x,NULL,NULL,0)
+#define _SET_NEW_CASE_(x)		CASE_Service(x,NULL,NULL,0)					/* Attention:  _SET_NEW_CASE_() increment repeat case !!! and you must call _CLR_REP_CASE_ after _SET_NEW_CASE_() */
 #define _SET_NEXT_CASE_			CASE_Service(-2,NULL,NULL,0)
 #define _THE_SAME_CASE_			_SET_NEW_CASE_(_GET_ACTUAL_CASE_-1)			/* CASE_Service() increment actual case */
+#define _GET_REP_CASE_			CASE_Service(-3,NULL,NULL,0)-1
+#define _CLR_REP_CASE_			CASE_Service(-4,NULL,NULL,0)
 
 typedef enum
 {
@@ -879,10 +882,11 @@ static bool CheckEmailAnswer(int emailCode)
 int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL,0)   set new nr case */
 {																								/* CASE_Service(2,"","",0) 	     only return 3 in case 2 and only enter to this case */
 	static int actualCase = 0;		if(-1==nrCase) return actualCase;							/* CASE_Service(-1,NULL,NULL,0)  get number of the actual case */
-	static int repeatCase = 0;		if(-2==nrCase) return ++actualCase;							/* CASE_Service(-2,NULL,NULL,0)  set next nr case */
+	static int repeatCase = 0;		if(-2==nrCase){ repeatCase = 0; return ++actualCase; }		/* CASE_Service(-2,NULL,NULL,0)  set next nr case */
+									if(-3==nrCase) return repeatCase;							/* CASE_Service(-3,NULL,NULL,0)  get repat case for this case (nmbr of repeat this case) */
+									if(-4==nrCase) return (repeatCase=0);						/* CASE_Service(-4,NULL,NULL,0)  clera repeat case */
 	int flag = 0;
-
-	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase; }
+	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase;  }
 	if( nrCase == actualCase ){
 		int hasRecv1 = (recv1 != NULL) && (strstr(RecvBuffer, recv1) != NULL);
 		int hasRecv2 = (recv2 != NULL) && (strstr(RecvBuffer, recv2) != NULL);
@@ -891,7 +895,6 @@ int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYP
 	    if (hasRecv1) 			 { actualCase++; flag=1; }
 	    if(flag){  if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,RecvBuffer); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
 	    	  else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",RecvBuffer,"\r\n");	}
-	    	repeatCase = 0;
 	    }
 	}
 	return flag;
@@ -1019,7 +1022,7 @@ void vtaskWifi(void *argument)
 					}
 					else if ((nrCaseTemp=CASE_Service(9,"\r\nOK","ERROR",typeRecvArch)))
 					{
-						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_TXT_ERROR _E_); break; }
+						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_INIT_ERROR _E_); break; }
 
 						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
 							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode) && 0 == Const.wifiSTA[ Const.wifiGeneral.nrSTA ].dhcp )
@@ -1062,7 +1065,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(12,"\r\nOK","ERROR",typeRecvArch))
 					{
-						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_TXT_ERROR _E_); break; }
+						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_INIT_ERROR _E_); break; }
 
 						if( WIFI_MODE_STA 	 == Const.wifiGeneral.mode ||
 							WIFI_MODE_AP_STA == Const.wifiGeneral.mode )
@@ -1075,7 +1078,7 @@ void vtaskWifi(void *argument)
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if ((nrCaseTemp=CASE_Service(13,"\r\nOK","ERROR",typeRecvArch)))
+					else if ((nrCaseTemp=CASE_Service(13,"\r\nOK","ERROR",typeRecvArch)))		/* albo  nrCaseTemp = _GET_ACTUAL_CASE_ */
 					{
 						result=0;
 							 if(1==nrCaseTemp) result=ESP_CONNECTION_OK;
@@ -1129,48 +1132,43 @@ void vtaskWifi(void *argument)
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S), NULL, typeSendArch );
 
 					}
-					else if (CASE_Service(19,"\r\nOK","ERROR",typeRecvArch))
+					else if ((nrCaseTemp=CASE_Service(19,"\r\nOK","ERROR",typeRecvArch)))
 					{
-						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_TXT_ERROR _E_); break; }    //tu jak ERROR to nie wychodz calkowicei bo moze z sici nie odebrac IP !!!!!!!!!!!!!
+						_THE_SAME_CASE_;		/* przewidujemy w tym case cykliczne powtarzanie */
 
-						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
-							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode))
+						/* Obsługa odpowiedzi */
 						{
-							int repeatCase = _THE_SAME_CASE_;
-
-							if(IS_RANGE(repeatCase,2,MAX_EMAIL_SENDERS))
+							if(_GET_REP_CASE_ == 0)
+							{
+								if(2==nrCaseTemp){ DbgDma(1,_SE_ "\r\nCIPSTO_ERROR\r\n" _E_); }    //tu jak ERROR to nie wychodz calkowicei bo moze z sici nie odebrac IP !!!!!!!!!!!!!  // DAJ ZAPAMIETANA POPRZEDNIA KOMENDE i OD AZU ze ERRORR !!!!
+							}
+							else if(IS_RANGE(_GET_REP_CASE_,1,MAX_EMAIL_SENDERS-1))
 							{
 								if (RecvFromEsp("\r\nOK"))
 								{
 									if ((ptr=RecvFromEsp("+CIPDOMAIN:")))  //ZROB LISTE MOZLIWYCH ODPOWIEDZI JESLI NIE MA TAKIEJ TO WYSWIETL JA !!!!!!!
 									{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
-										VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
+										Const.emailSend[_GET_REP_CASE_].IP = IPStr2Int(ptr+12); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
 										DbgMultiDma(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
 
 									}
-									else
-										break;
 								}
 							}
-
-							 if(repeatCase == MAX_EMAIL_SENDERS)  SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
-							 else								  SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",Const.emailSend[repeatCase-1].server), NULL, typeSendArch );
-
-
-
-
-							if( MAX_EMAIL_SENDERS == repeatCase) _SET_NEXT_CASE_;
-
 						}
-						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
-
-
-
-
-
-
-
+						/* Obsługa wysylania i iteracji */
+						{
+							if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
+								 WIFI_MODE_AP_STA == Const.wifiGeneral.mode))
+							{
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",Const.emailSend[_GET_REP_CASE_].server), NULL, typeSendArch );
+								if(_GET_REP_CASE_ == MAX_EMAIL_SENDERS-1)  _SET_NEXT_CASE_;
+							}
+							else
+							{
+								SendToEsp32(0,"AT\r\n",typeSendArch);  _SET_NEXT_CASE_;
+							}
+						}
 
 					}
 					else if (CASE_Service(20,"\r\nOK","ERROR",typeRecvArch))
@@ -1184,15 +1182,15 @@ void vtaskWifi(void *argument)
 						{
 							if ((ptr=RecvFromEsp("+CIPDOMAIN:")))  //ZROB LISTE MOZLIWYCH ODPOWIEDZI JESLI NIE MA TAKIEJ TO WYSWIETL JA !!!!!!!
 							{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
-								VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
+								Const.emailSend[MAX_EMAIL_SENDERS-1].IP = IPStr2Int(ptr+12); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
 								DbgMultiDma(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
-								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
 							}
-							else
-								break;
+							SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
 						}
 						else if (RecvFromEsp("ERROR"))
 							return;
+
+
 
 
 
@@ -1221,7 +1219,7 @@ void vtaskWifi(void *argument)
 							{
 								VAR_SetTabVal(Const_sntp_time,NO_TAB,getTime);
 								sntpTime=gmtime(&getTime);
-								DbgVarDma(1,500,_S_"\r\nES TIME LOADED %d; %02d-%02d-%02d  %02d:%02d:%02d"_E_,
+								DbgVarDma(1,500,_S_"\r\nESP32 TIME LOADED %d: %02d-%02d-%02d  %02d:%02d:%02d"_E_,
 										VAR_GetTabVal(Const_sntp_time,NO_TAB),
 										sntpTime->tm_year-100,
 										sntpTime->tm_mon+1,
