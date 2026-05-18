@@ -33,7 +33,7 @@
 #define PACKET_SEND_LEN 		2048
 
 #define HTTP_ANSWER_DELAY_MS		500
-#define SMTP_CONNECTION_DELAY_MS		15000
+#define SMTP_CONNECTION_DELAY_MS	15000
 #define SMTP_ANSWER_DELAY_MS		10000
 #define CONNECTION_TIMEOUT_MS		30000
 #define TCP_SERVER_TIMEOUT_S		10
@@ -51,6 +51,11 @@
 #define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>"
 
 #define RecvFromEsp(txt)   strstr(RecvBuffer,txt)
+
+#define _GET_ACTUAL_CASE_		CASE_Service(-1,NULL,NULL,0)
+#define _SET_NEW_CASE_(x)		CASE_Service(x,NULL,NULL,0)
+#define _SET_NEXT_CASE_			CASE_Service(-2,NULL,NULL,0)
+#define _THE_SAME_CASE_			_SET_NEW_CASE_(_GET_ACTUAL_CASE_-1)			/* CASE_Service() increment actual case */
 
 typedef enum
 {
@@ -693,21 +698,16 @@ static int vGetConnectionResultToSTA(void)
 
 static void GetAddressesForConnection(void)
 {
-	char *ptr;
-	int nrAP=VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB);
-	int nrSTA=VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB);
+	char *ptr=NULL;
+	char rcv1[]="+CIFSR:APIP,\"";
+	char rcv2[]="+CIFSR:APMAC,\"";
+	char rcv3[]="+CIFSR:STAIP,\"";
+	char rcv4[]="+CIFSR:STAMAC,\"";
 
-	if ((ptr=RecvFromEsp("+CIFSR:APIP,\"")))
-		VAR_SetTabVal(Const_wifiAP_ip, nrAP, IPStr2Int(ptr+13));
-
-	if ((ptr=RecvFromEsp("+CIFSR:APMAC,\"")))
-		VAR_SetVal64(Const_wifiAP_mac, nrAP, MACStr2Int64(ptr+14));
-
-	if ((ptr=RecvFromEsp("+CIFSR:STAIP,\"")))
-		VAR_SetTabVal(Const_wifiSTA_ip, nrSTA, IPStr2Int(ptr+14));
-
-	if ((ptr=RecvFromEsp("+CIFSR:STAMAC,\"")))
-		VAR_SetVal64(Const_wifiSTA_mac, nrSTA, MACStr2Int64(ptr+15));
+	if ((ptr=RecvFromEsp(rcv1)))  Const.wifiAP[ Const.wifiGeneral.nrAP ].ip    = IPStr2Int	  (ptr+mini_strlen(rcv1));  //Powinno zapisywac do zmiennych niezapisywalnych a nie di zapisywalnych !!!!
+	if ((ptr=RecvFromEsp(rcv2)))  Const.wifiAP[ Const.wifiGeneral.nrAP ].mac   = MACStr2Int64 (ptr+mini_strlen(rcv2));
+	if ((ptr=RecvFromEsp(rcv3)))  Const.wifiAP[ Const.wifiGeneral.nrSTA ].ip   = IPStr2Int	  (ptr+mini_strlen(rcv3));
+	if ((ptr=RecvFromEsp(rcv4)))  Const.wifiSTA[ Const.wifiGeneral.nrSTA ].mac = MACStr2Int64 (ptr+mini_strlen(rcv4));
 }
 
 static void vQueryAndReplaceEmailAddrName2AddrIP(void)
@@ -876,12 +876,13 @@ static bool CheckEmailAnswer(int emailCode)
 //	DbgVar2(DBG,sizeof(sendBuff),sendBuff);
 //}
 
-int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL)  set new nr case */
-{																								/* CASE_Service(2,"","") 	 only return 3 in case 2 and only enter to this case */
-	static int actualCase = 0;
+int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL,0)   set new nr case */
+{																								/* CASE_Service(2,"","",0) 	     only return 3 in case 2 and only enter to this case */
+	static int actualCase = 0;		if(-1==nrCase) return actualCase;							/* CASE_Service(-1,NULL,NULL,0)  get number of the actual case */
+	static int repeatCase = 0;		if(-2==nrCase) return ++actualCase;							/* CASE_Service(-2,NULL,NULL,0)  set next nr case */
 	int flag = 0;
 
-	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return 0; }
+	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase; }
 	if( nrCase == actualCase ){
 		int hasRecv1 = (recv1 != NULL) && (strstr(RecvBuffer, recv1) != NULL);
 		int hasRecv2 = (recv2 != NULL) && (strstr(RecvBuffer, recv2) != NULL);
@@ -889,7 +890,9 @@ int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYP
 	    if (hasRecv2)  			 { actualCase++; flag=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; }
 	    if(flag){  if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,RecvBuffer); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
-	    	  else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",RecvBuffer,"\r\n");	}	}
+	    	  else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",RecvBuffer,"\r\n");	}
+	    	repeatCase = 0;
+	    }
 	}
 	return flag;
 }
@@ -960,7 +963,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(2,"\r\nOK",NULL,typeRecvArch))
 					{
-						//vTaskDelay(10);
+						vTaskDelay(10);
 						ChangeUartBuadRate(ESP_UART_BUADRATE);
 						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
 
@@ -1093,17 +1096,6 @@ void vtaskWifi(void *argument)
 						DbgVarDma2(DBG,100,_S_"\r\nESP_CONNECTION status: %d\r\n"_E_,result);
 						SendToEsp32(0,"AT+CIFSR\r\n",typeSendArch);
 
-
-
-
-
-
-
-
-
-
-
-
 					}
 					else if (CASE_Service(14,"\r\nOK",NULL,typeRecvArch))
 					{
@@ -1114,18 +1106,15 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(15,"\r\nOK",NULL,typeRecvArch))
 					{
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
-								IP2Str(VAR_GetTabVal(Const_dns_IP1,NO_TAB)),
-								IP2Str(VAR_GetTabVal(Const_dns_IP2,NO_TAB)),
-								IP2Str(VAR_GetTabVal(Const_dns_IP3,NO_TAB)));
+								IP2Str(Const.dns.IP1),
+								IP2Str(Const.dns.IP2),
+								IP2Str(Const.dns.IP3));
 						SendToEsp32(len,NULL,typeSendArch);
 
 					}
 					else if (CASE_Service(16,"\r\nOK","ERROR",typeRecvArch))
 					{
-						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",
-								VAR_GetTabVal(Const_sntp_timezone,NO_TAB),
-								VAR_GetStr(Const_sntp_nameServer1,NO_TAB),
-								VAR_GetStr(Const_sntp_nameServer2,NO_TAB));
+						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",Const.sntp.timezone, Const.sntp.nameServer1, Const.sntp.nameServer2);
 						SendToEsp32(len,NULL,typeSendArch);
 
 					}
@@ -1142,17 +1131,17 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(19,"\r\nOK","ERROR",typeRecvArch))
 					{
-						int flag=1;
-						switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
+						if(2==nrCaseTemp){ DbgDma(1,_SE_"\r\n!!! BREAK !!!"_E_); break; }  //INFO jako BREAK !!!!!!
+
+						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
+							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode))
 						{
-							case WIFI_MODE_STA:
-							case WIFI_MODE_AP_STA:
-								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",VAR_GetStr(Const_emailSend_server,0/*i*/)), NULL, typeSendArch );  //!!!!!! for(i=0;i<MAX_EMAIL_SENDERS;++i)  !!!!!!!!
-								DbgMultiDma(DBG,"\r\n",sendBuff," ");
-								flag=0;
-								break;
+							int repeatCase = _THE_SAME_CASE_;
+							SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",Const.emailSend[repeatCase-1].server), NULL, typeSendArch );
+							if( MAX_EMAIL_SENDERS == repeatCase) _SET_NEXT_CASE_;
+
 						}
-						if(flag) SendToEsp32(0,"AT\r\n",typeSendArch);
+						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
 					else if (CASE_Service(20,"\r\nOK","ERROR",typeRecvArch))
@@ -1175,6 +1164,16 @@ void vtaskWifi(void *argument)
 						}
 						else if (RecvFromEsp("ERROR"))
 							return;
+
+
+
+
+
+
+
+
+
+
 
 					}
 					else if (CASE_Service(21,"\r\nOK","ERROR",typeRecvArch))   //Czy przpadkiem nie lepiej !!!! (RecvFromEsp("\r\nOK\r\n")
