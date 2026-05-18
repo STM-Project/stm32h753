@@ -49,7 +49,7 @@
 #define ESP_OFF		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_RESET)
 
 #define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>"
-
+#define ESP32_TXT_ERROR 	"\r\n!!! ESP32_ERROR !!!"
 #define RecvFromEsp(txt)   strstr(RecvBuffer,txt)
 
 #define _GET_ACTUAL_CASE_		CASE_Service(-1,NULL,NULL,0)
@@ -1019,7 +1019,7 @@ void vtaskWifi(void *argument)
 					}
 					else if ((nrCaseTemp=CASE_Service(9,"\r\nOK","ERROR",typeRecvArch)))
 					{
-						if(2==nrCaseTemp){ DbgDma(1,_SE_"\r\n!!! BREAK !!!"_E_); break; }
+						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_TXT_ERROR _E_); break; }
 
 						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
 							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode) && 0 == Const.wifiSTA[ Const.wifiGeneral.nrSTA ].dhcp )
@@ -1062,7 +1062,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(12,"\r\nOK","ERROR",typeRecvArch))
 					{
-						if(2==nrCaseTemp){ DbgDma(1,_SE_"\r\n!!! BREAK !!!"_E_); break; }
+						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_TXT_ERROR _E_); break; }
 
 						if( WIFI_MODE_STA 	 == Const.wifiGeneral.mode ||
 							WIFI_MODE_AP_STA == Const.wifiGeneral.mode )
@@ -1131,17 +1131,46 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(19,"\r\nOK","ERROR",typeRecvArch))
 					{
-						if(2==nrCaseTemp){ DbgDma(1,_SE_"\r\n!!! BREAK !!!"_E_); break; }  //INFO jako BREAK !!!!!!
+						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_TXT_ERROR _E_); break; }    //tu jak ERROR to nie wychodz calkowicei bo moze z sici nie odebrac IP !!!!!!!!!!!!!
 
 						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
 							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode))
 						{
 							int repeatCase = _THE_SAME_CASE_;
-							SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",Const.emailSend[repeatCase-1].server), NULL, typeSendArch );
+
+							if(IS_RANGE(repeatCase,2,MAX_EMAIL_SENDERS))
+							{
+								if (RecvFromEsp("\r\nOK"))
+								{
+									if ((ptr=RecvFromEsp("+CIPDOMAIN:")))  //ZROB LISTE MOZLIWYCH ODPOWIEDZI JESLI NIE MA TAKIEJ TO WYSWIETL JA !!!!!!!
+									{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
+										VAR_SetTabVal(Const_emailSend_IP,0/*i*/,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
+										DbgMultiDma(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
+
+									}
+									else
+										break;
+								}
+							}
+
+							 if(repeatCase == MAX_EMAIL_SENDERS)  SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
+							 else								  SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",Const.emailSend[repeatCase-1].server), NULL, typeSendArch );
+
+
+
+
 							if( MAX_EMAIL_SENDERS == repeatCase) _SET_NEXT_CASE_;
 
 						}
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
+
+
+
+
+
+
+
+
 
 					}
 					else if (CASE_Service(20,"\r\nOK","ERROR",typeRecvArch))
