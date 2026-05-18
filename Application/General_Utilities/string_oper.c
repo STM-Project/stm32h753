@@ -353,9 +353,11 @@ void StrBuffCopylimit(char *dest, char *src, int lenSrc){
 
 uint32_t IPStr2Int(char *str)
 {
+/*	struct _reent *lokalny_reent = _REENT; */		/* good for RTOS */
 	char *ptr;
 	StrBuffCopylimit(strBuff,str,16);
-	return IPDOT(strtoll(strBuff,&ptr,10),strtoll(ptr+1,&ptr,10),strtoll(ptr+1,&ptr,10),strtoll(ptr+1,NULL,10));
+	return IPDOT(strtol(strBuff,&ptr,10),strtol(ptr+1,&ptr,10),strtol(ptr+1,&ptr,10),strtol(ptr+1,NULL,10));
+/*	return IPDOT(_strtol_r(lokalny_reent,strBuff,&ptr,10),_strtol_r(lokalny_reent,ptr+1,&ptr,10),_strtol_r(lokalny_reent,ptr+1,&ptr,10),_strtol_r(lokalny_reent,ptr+1,NULL,10)); */
 }
 
 uint64_t MACStr2Int64(char *str)
