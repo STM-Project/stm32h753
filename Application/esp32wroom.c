@@ -39,6 +39,7 @@
 #define TCP_SERVER_TIMEOUT_S		10
 #define SNTP_SERVER_TIMEOUT_MS		5000
 #define DNS_SERVER_TIMEOUT_MS		15000
+#define SNTP_NMBR_QUERY			5
 
 #define DBG		1
 #define _S_		Ita_ Gr1_
@@ -51,19 +52,38 @@
 #define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>"
 #define ESP32_INIT_ERROR 	"\r\n!!! ESP32_INIT_ERROR !!!"
 #define ESP32_DOMAIN_ERROR 	"\r\n!!! ESP32_DOMAIN_ERROR !!!"
-#define RecvFromEsp(txt)   strstr(RecvBuffer,txt)
+const static char txt_OK[]="\r\nOK\r\n";
+const static char txt_ERROR[]="ERROR";
+#define RecvFromEsp(txt)   strstr(RecvBuffer,txt) 		/* alternatywnie memcmp() strnstr()  */
 
-#define _GET_ACTUAL_CASE_		CASE_Service(-1,NULL,NULL,0)
-#define _SET_NEW_CASE_(x)		CASE_Service(x,NULL,NULL,0)					/* Attention:  _SET_NEW_CASE_() increment repeat case !!! and you must call _CLR_REP_CASE_ after _SET_NEW_CASE_() */
-#define _SET_NEXT_CASE_			CASE_Service(-2,NULL,NULL,0)
-#define _THE_SAME_CASE_			_SET_NEW_CASE_(_GET_ACTUAL_CASE_-1)			/* CASE_Service() increment actual case */
 #define _GET_REP_CASE_			CASE_Service(-3,NULL,NULL,0)-1
 #define _CLR_REP_CASE_			CASE_Service(-4,NULL,NULL,0)
+#define _GET_ACTUAL_CASE_		CASE_Service(-1,NULL,NULL,0)
+#define _SET_NEW_CASE_(x)		CASE_Service(x,NULL,NULL,0); _CLR_REP_CASE_			/* _SET_NEW_CASE_() increment repeat case so we must call _CLR_REP_CASE_ after _SET_NEW_CASE_() */
+#define _SET_NEXT_CASE_			CASE_Service(-2,NULL,NULL,0)
+#define _THE_SAME_CASE_			CASE_Service((_GET_ACTUAL_CASE_-1),NULL,NULL,0)		/* CASE_Service() increment actual case */
+
+typedef enum
+{
+	_OK=1, _ERROR
+} ANSWER_TYPE;
 
 typedef enum
 {
 	INIT_CONNECTION, HTTP_CONNECTION, SMTP_CONNECTION
 } CONNECTION_TYPE;
+
+typedef enum
+{
+	ESP_WIFI_CONNECTED,
+	ESP_WIFI_DISCONNECT,
+	ESP_WIFI_GOT_IP,
+	ESP_WIFI_GOT_IPv6_LL,
+	ESP_WIFI_GOT_IPv6_GL,
+	ESP_WIFI_FORCE_RESTART,
+	ESP_PLUS_TIME_UPDATED,
+	ESP_READY
+}ESP32_FREE_ANSWER;			/* asynchroniczne komunikaty */
 
 typedef enum
 {
@@ -98,16 +118,6 @@ typedef enum
 	ESPANSWER_TIMEOUT_FOR_SMTPCOMM_TO_GET_SIGN=102
 
 }ESP_ANSWER;
-
-typedef enum
-{
-	ESP_WIFI_CONNECTED,
-	ESP_WIFI_DISCONNECT,
-	ESP_WIFI_GOT_IP,
-	ESP_WIFI_GOT_IPv6_LL,
-	ESP_WIFI_GOT_IPv6_GL,
-	ESP_WIFI_FORCE_RESTART
-}ESP32_FREE_ANSWER;
 
 static uint8_t connectionType;
 
@@ -226,6 +236,22 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 
 		return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	}
+}
+
+static char* COMMAND_Service(GET_SET type, char* comm)
+{
+	static char commBuff[200]={0};
+
+	switch((int)type){
+		case _SET:
+			if(NULL!=comm) strncpy(commBuff,comm,sizeof(commBuff));		/* strcpy(dest,src)   kopiuje cały napis z src do dest, włącznie ze znakiem '\0' i zwraca ptr do dest na src    analogicznie dziala   strncpy(src,dest,n) */
+			commBuff[sizeof(commBuff)]='\0';							/* na wszelki wypadek gdy sizeof(comm) > sizeof(commBuff)-1 wtedy funkcja nie skopiuje zera do commBuff */
+			break;
+
+		case _GET:
+			break;
+	}
+	return commBuff;
 }
 
 static void DisplayRequestGET(char *pBuf, int bytesDisp)
@@ -807,7 +833,7 @@ static int vQueryAndLoadTimeFromSNTP(void)
 static void vLoadTime(time_t timeSet)
 {
 	int len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",timeSet);
-	SendToEsp2(sendBuff,len);
+	SendToEsp32(sendBuff,len);
 	while (RecvFromEsp("\r\nOK")==0)
 		vTaskDelay(10);
 }
@@ -869,15 +895,32 @@ static bool CheckEmailAnswer(int emailCode)
 
 
 
-//URUCHOM PRZEZ DMA dla Dbg !!!!!!!!!!!!!!!
 
-/* strcpy(src,dest)   kopiuje cały napis z src do dest, włącznie ze znakiem '\0' i zwraca ptr do src na dest    analogicznie dziala   strncpy(src,dest,n) */
 
-//void DbgVarInfo(const char *fmt, ...){
-//	memset(sendBuff,0,sizeof(sendBuff));
-//	strcat(strcpy(sendBuff,Ita_ Gr1_),fmt);
-//	DbgVar2(DBG,sizeof(sendBuff),sendBuff);
-//}
+
+void ESP32_FreeAnswers(void)
+{
+	if(RecvFromEsp("WIFI CONNECTED"))
+	{
+		DbgDma(DBG,_SE_"\r\nWIFI_CONNECTED "_E_);
+	}
+	if(RecvFromEsp("WIFI GOT IP"))
+	{
+		DbgDma(DBG,_SE_"\r\nWIFI_GOT_IP "_E_);
+	}
+	if(RecvFromEsp("WIFI DISCONNECT"))
+	{
+		DbgDma(DBG,_SE_"\r\nWIFI_DISCONNECT "_E_);
+	}
+	if(RecvFromEsp("Will force to restart"))
+	{
+		DbgDma(DBG,_SE_"\r\nRESTART "_E_);
+	}
+	if(RecvFromEsp("+TIME_UPDATED"))
+	{
+		DbgDma(DBG,_SE_"\r\nTIME_UPDATED "_E_);
+	}
+}
 
 int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL,0)   set new nr case */
 {																								/* CASE_Service(2,"","",0) 	     only return 3 in case 2 and only enter to this case */
@@ -896,14 +939,9 @@ int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYP
 	    if(flag){  if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,RecvBuffer); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
 	    	  else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",RecvBuffer,"\r\n");	}
 	    }
+	    ESP32_FreeAnswers();
 	}
 	return flag;
-}
-
-int ESP32_FreeAnswers(void){
-		 if(RecvFromEsp("WIFI CONNECTED")) 	      return ESP_WIFI_CONNECTED;
-	else if(RecvFromEsp("WIFI DISCONNECT")) 	  return ESP_WIFI_DISCONNECT;
-	else if(RecvFromEsp("Will force to restart")) return ESP_WIFI_FORCE_RESTART;
 }
 
 void vtaskWifi(void *argument)
@@ -956,46 +994,46 @@ void vtaskWifi(void *argument)
 
 					if (CASE_Service(0,"ready",NULL,typeRecvArch))
 					{
-						SendToEsp32(0,"ATE0\r\n",typeSendArch);
+						SendToEsp32(0,"ATE0\r\n",typeSendArch);				/* propozycja:  if (HAL_OK!=SendToEsp32(0,"ATE0\r\n",typeSendArch)) return; */
 
 					}
-					else if (CASE_Service(1,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(1,txt_OK,NULL,typeRecvArch))
 					{
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+UART_CUR=%d,8,1,0,0\r\n",ESP_UART_BUADRATE), NULL, typeSendArch );
 
 					}
-					else if (CASE_Service(2,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(2,txt_OK,NULL,typeRecvArch))
 					{
 						vTaskDelay(10);
 						ChangeUartBuadRate(ESP_UART_BUADRATE);
 						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(3,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(3,txt_OK,NULL,typeRecvArch))
 					{
 						SendToEsp32(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CWMODE=%d\r\n",Const.wifiGeneral.mode), NULL, typeSendArch);
 
 					}
-					else if (CASE_Service(4,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(4,txt_OK,NULL,typeRecvArch))
 					{
 						if(WIFI_MODE_DISABLED==Const.wifiGeneral.mode){
-							DbgDma(DBG,_S_"\r\nWifi DISABLED "_E_);
+							DbgDma(DBG,_SE_"\r\nWifi DISABLED "_E_);
 							break;
 						}
 						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(5,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(5,txt_OK,NULL,typeRecvArch))
 					{
 						SendToEsp32(0,"AT+CIPMUX=1\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(6,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(6,txt_OK,NULL,typeRecvArch))
 					{
 						SendToEsp32(0,"AT+CWDHCP=0,3\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(7,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(7,txt_OK,NULL,typeRecvArch))
 					{
 						if( 0 == Const.wifiAP [ Const.wifiGeneral.nrAP ].dhcp &&
 							1 == Const.wifiSTA[ Const.wifiGeneral.nrSTA].dhcp )
@@ -1015,14 +1053,14 @@ void vtaskWifi(void *argument)
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(8,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(8,txt_OK,NULL,typeRecvArch))
 					{
 						SendToEsp32(0,"AT+CWHOSTNAME=\"Elektronika_STM\"\r\n",typeSendArch);
 
 					}
-					else if ((nrCaseTemp=CASE_Service(9,"\r\nOK","ERROR",typeRecvArch)))
+					else if ((nrCaseTemp=CASE_Service(9,txt_OK,txt_ERROR,typeRecvArch)))
 					{
-						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_INIT_ERROR _E_); break; }
+						if(nrCaseTemp==_ERROR){ DbgDma(1,_SE_ ESP32_INIT_ERROR _E_); break; }
 
 						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
 							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode) && 0 == Const.wifiSTA[ Const.wifiGeneral.nrSTA ].dhcp )
@@ -1036,7 +1074,7 @@ void vtaskWifi(void *argument)
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(10,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(10,txt_OK,NULL,typeRecvArch))  //ZASTANOW SIE CZY W KASDZYM CASE NIE DAC ERRORR !!!!!!!!!!!!
 					{
 						if( (WIFI_MODE_AP 	 == Const.wifiGeneral.mode ||
 							WIFI_MODE_AP_STA == Const.wifiGeneral.mode) && 0 == Const.wifiAP[ Const.wifiGeneral.nrAP ].dhcp )
@@ -1050,7 +1088,7 @@ void vtaskWifi(void *argument)
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(11,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(11,txt_OK,NULL,typeRecvArch))
 					{
 						if( WIFI_MODE_AP 	 == Const.wifiGeneral.mode ||
 							WIFI_MODE_AP_STA == Const.wifiGeneral.mode )
@@ -1063,9 +1101,9 @@ void vtaskWifi(void *argument)
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(12,"\r\nOK","ERROR",typeRecvArch))
+					else if ((nrCaseTemp=CASE_Service(12,txt_OK,txt_ERROR,typeRecvArch)))
 					{
-						if(2==nrCaseTemp){ DbgDma(1,_SE_ ESP32_INIT_ERROR _E_); break; }
+						if(nrCaseTemp==_ERROR){ DbgDma(1,_SE_ ESP32_INIT_ERROR _E_); break; }
 
 						if( WIFI_MODE_STA 	 == Const.wifiGeneral.mode ||
 							WIFI_MODE_AP_STA == Const.wifiGeneral.mode )
@@ -1078,14 +1116,15 @@ void vtaskWifi(void *argument)
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
 
 					}
-					else if ((nrCaseTemp=CASE_Service(13,"\r\nOK","ERROR",typeRecvArch)))		/* albo  nrCaseTemp = _GET_ACTUAL_CASE_ */
+					else if ((nrCaseTemp=CASE_Service(13,txt_OK,txt_ERROR,typeRecvArch)))		/* albo  nrCaseTemp = _GET_ACTUAL_CASE_-1 */
 					{
-						result=0;
-							 if(1==nrCaseTemp) result=ESP_CONNECTION_OK;
-						else if(2==nrCaseTemp)
+							 if(nrCaseTemp==_OK) result=ESP_CONNECTION_OK;
+						else if(nrCaseTemp==_ERROR)
 						{
-							if ((ptr=RecvFromEsp("+CWJAP:"))){
-								switch(atoi(ptr+7)){
+							INIT_BUFF(answer,"+CWJAP:");
+							if ((ptr=RecvFromEsp(answer))){
+								result=0;
+								switch(atoi(ptr+mini_strlen(answer)+1)){
 									case 1:  result=ESP_CONNECTION_TIMEOUT; 		break;
 									case 2:  result=ESP_WRONG_PASSWORD;				break;
 									case 3:  result=ESP_CANNOT_FIND_THE_TARGET_AP;	break;
@@ -1094,19 +1133,17 @@ void vtaskWifi(void *argument)
 							}}
 							else result=ESP_UNKNOW_ERROR_OCCURRED;
 						}
-						if(RecvFromEsp("WIFI DISCONNECT"))  							 DbgDma(1,_S_"\r\nWIFI_DISCONNECT "_E_);
-						if(RecvFromEsp("WIFI CONNECTED") && RecvFromEsp("WIFI GOT IP"))  DbgDma(1,_SE_"\r\nWIFI_CONNECTED  ---  WIFI_GOT_IP "_E_);
 						DbgVarDma2(DBG,100,_S_"\r\nESP_CONNECTION status: %d\r\n"_E_,result);
 						SendToEsp32(0,"AT+CIFSR\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(14,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(14,txt_OK,NULL,typeRecvArch))
 					{
 						GetAddressesForConnection();
 						SendToEsp32(0,"AT+CIPSERVERMAXCONN=1\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(15,"\r\nOK",NULL,typeRecvArch))
+					else if (CASE_Service(15,txt_OK,NULL,typeRecvArch))
 					{
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
 								IP2Str(Const.dns.IP1),
@@ -1115,24 +1152,25 @@ void vtaskWifi(void *argument)
 						SendToEsp32(len,NULL,typeSendArch);
 
 					}
-					else if (CASE_Service(16,"\r\nOK","ERROR",typeRecvArch))
+					else if (CASE_Service(16,txt_OK,txt_ERROR,typeRecvArch))
 					{
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",Const.sntp.timezone, Const.sntp.nameServer1, Const.sntp.nameServer2);
 						SendToEsp32(len,NULL,typeSendArch);
 
 					}
-					else if (CASE_Service(17,"\r\nOK","ERROR",typeRecvArch))
+					else if (CASE_Service(17,txt_OK,txt_ERROR,typeRecvArch))
 					{
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"), NULL, typeSendArch );
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n", GetHttpPort()), NULL ); */
 
 					}
-					else if (CASE_Service(18,"\r\nOK","ERROR",typeRecvArch))
+					else if (CASE_Service(18,txt_OK,txt_ERROR,typeRecvArch))
 					{
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S), NULL, typeSendArch );
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if ((nrCaseTemp=CASE_Service(19,"\r\nOK","ERROR",typeRecvArch)))
+					else if ((nrCaseTemp=CASE_Service(19,txt_OK,txt_ERROR,typeRecvArch)))
 					{
 						_THE_SAME_CASE_;		/* przewidujemy w tym case cykliczne powtarzanie */
 
@@ -1140,19 +1178,16 @@ void vtaskWifi(void *argument)
 						{
 							if(_GET_REP_CASE_ == 0)
 							{
-								if(2==nrCaseTemp){ DbgDma(1,_SE_ "\r\nCIPSTO_ERROR\r\n" _E_); }    //tu jak ERROR to nie wychodz calkowicei bo moze z sici nie odebrac IP !!!!!!!!!!!!!  // DAJ ZAPAMIETANA POPRZEDNIA KOMENDE i OD AZU ze ERRORR !!!!
+								if(nrCaseTemp==_ERROR){ DbgVarDma(1,200,_SE_ "\r\n%s\r\n" _E_,COMMAND_Service(_GET,NULL)); }    /* z tym błędem nic nie rob */
 							}
 							else if(IS_RANGE(_GET_REP_CASE_,1,MAX_EMAIL_SENDERS-1))
 							{
-								if (RecvFromEsp("\r\nOK"))
+								if(nrCaseTemp==_OK)
 								{
-									if ((ptr=RecvFromEsp("+CIPDOMAIN:")))  //ZROB LISTE MOZLIWYCH ODPOWIEDZI JESLI NIE MA TAKIEJ TO WYSWIETL JA !!!!!!!
-									{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
-										Const.emailSend[_GET_REP_CASE_].IP = IPStr2Int(ptr+12); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
-										DbgMultiDma(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
-
-									}
+									INIT_BUFF(answer,"+CIPDOMAIN:");
+									if ((ptr=RecvFromEsp(answer)))  Const.emailSend[_GET_REP_CASE_].IP = IPStr2Int(ptr+mini_strlen(answer)+1);
 								}
+								else DbgDma(1,_SE_ ESP32_DOMAIN_ERROR _E_);
 							}
 						}
 
@@ -1164,63 +1199,35 @@ void vtaskWifi(void *argument)
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",Const.emailSend[_GET_REP_CASE_].server), NULL, typeSendArch );
 								if(_GET_REP_CASE_ == MAX_EMAIL_SENDERS-1)  _SET_NEXT_CASE_;
 							}
-							else
-							{
-								SendToEsp32(0,"AT\r\n",typeSendArch);  _SET_NEXT_CASE_;
-							}
+							else{  SendToEsp32(0,"AT\r\n",typeSendArch);  _SET_NEXT_CASE_;  }
 						}
 
 					}
-					else if (CASE_Service(20,"\r\nOK","ERROR",typeRecvArch))
+					else if ((nrCaseTemp=CASE_Service(20,txt_OK,txt_ERROR,typeRecvArch)))
 					{
-						if(RecvFromEsp("+TIME_UPDATED"))  ///UTWORZ TABLICE WOLNYCH ODPOWIEDZI Z ESP32 np DISCONNECTED itd !!!!!!!!!!!!!
+						if(nrCaseTemp==_OK)
 						{
-							DbgDma(DBG,_S_" ---- Czas Zaladowany :) ---- "_E_);
+							INIT_BUFF(answer,"+CIPDOMAIN:");
+							if ((ptr=RecvFromEsp(answer)))  Const.emailSend[MAX_EMAIL_SENDERS-1].IP = IPStr2Int(ptr+mini_strlen(answer)+1);
 						}
-						char *ptr;
-						if (RecvFromEsp("\r\nOK"))
-						{
-							if ((ptr=RecvFromEsp("+CIPDOMAIN:")))  //ZROB LISTE MOZLIWYCH ODPOWIEDZI JESLI NIE MA TAKIEJ TO WYSWIETL JA !!!!!!!
-							{																	//for(i=0;i<MAX_EMAIL_SENDERS;++i) !!!!!!!!
-								Const.emailSend[MAX_EMAIL_SENDERS-1].IP = IPStr2Int(ptr+12); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
-								DbgMultiDma(DBG,"\r\n",ptr,"  ");				// do tablicy wszedzie pod i wpisuje domeny a nie tylko do 0 w Const_emailSend_IP !!!!!!!!!!!!!!!!!
-							}
-							SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
-						}
-						else if (RecvFromEsp("ERROR"))
-							return;
+						else DbgDma(1,_SE_ ESP32_DOMAIN_ERROR _E_);
 
-
-
-
-
-
-
-
-
-
-
-
+						SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
 
 					}
-					else if (CASE_Service(21,"\r\nOK","ERROR",typeRecvArch))   //Czy przpadkiem nie lepiej !!!! (RecvFromEsp("\r\nOK\r\n")
+					else if (CASE_Service(21,txt_OK,txt_ERROR,typeRecvArch))
 					{
-						if(RecvFromEsp("+TIME_UPDATED"))
-						{
-							DbgDma(DBG,_S_" ---- Czas Zaladowany22222 :) ---- "_E_);
-						}
-						int itx=0;
-						char *ptr;
 						time_t getTime;
-						if ((ptr=RecvFromEsp("+SYSTIMESTAMP:")))
+						INIT_BUFF(answer,"+SYSTIMESTAMP:");
+						if ((ptr=RecvFromEsp(answer)))
 						{
-							getTime=(time_t)atoi(ptr+14);
+							getTime=(time_t)atoi(ptr+mini_strlen(answer));
 							if(getTime>1565853509)
 							{
-								VAR_SetTabVal(Const_sntp_time,NO_TAB,getTime);
-								sntpTime=gmtime(&getTime);
+								gmtime_r(&getTime,sntpTime);			/* lepsze dla wielowatkowosci niz  sntpTime=gmtime(&getTime) */
+								Const.sntp.time = getTime;
 								DbgVarDma(1,500,_S_"\r\nESP32 TIME LOADED %d: %02d-%02d-%02d  %02d:%02d:%02d"_E_,
-										VAR_GetTabVal(Const_sntp_time,NO_TAB),
+										Const.sntp.time,
 										sntpTime->tm_year-100,
 										sntpTime->tm_mon+1,
 										sntpTime->tm_mday,
@@ -1228,34 +1235,42 @@ void vtaskWifi(void *argument)
 										sntpTime->tm_min,
 										sntpTime->tm_sec);
 
-								connectionType=HTTP_CONNECTION;  CASE_Service(0,NULL,NULL,unUsed);
+								connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 								RestartDMA();
-
-//								SendEmail(0, 1<<1, EMAIL_MEASURE);  //musi byc 0 bo sprawdza w Const_emailSend_IP w pozycjo 0 !!!!! do poprawki
-//								EmailSendStart();
 							}
-							else{
+							else
+							{
 								vTaskDelay(2000);
 								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
-								CASE_Service(21,NULL,NULL,unUsed);
 
-								//jesli NIE to uzyj vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB)); !!!!!!!
-
+								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY)
+								{
+									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",Const.sntp.time), NULL,typeSendArch );
+									while(0==RecvFromEsp(txt_OK)) vTaskDelay(10);
+									RestartDMA();
+								}
+								else _THE_SAME_CASE_;
 							}
 						}
 
-						//Dbg(DBG,"\r\nKKKKKKKKKKKOOOOOOOOOOOOOOOOOONNNNNNNNNNNNNIEEEEEEEEEECCCCCCC !!!!!");
 					}
 					else
 					{
-
-							//Dbg(DBG, "\r\nSTART:\r\n");  Dbg(DBG, RecvBuffer); Dbg(DBG, " KONIEC\r\n\r\n");
-
+						ESP32_FreeAnswers();
 					}
 
 					break;
+
+
+
+					//SendEmail(0, 1<<1, EMAIL_MEASURE);  //musi byc 0 bo sprawdza w Const_emailSend_IP w pozycjo 0 !!!!! do poprawki
+					//EmailSendStart();
+
+
+
 //SPRAWDZ czy nie mozna szybsze jeszcze uart speed dla tego nowego systemu !!!!!!!!!!!!!!!!!!!
-				case HTTP_CONNECTION:  //dac jesli HAL error!!!   if (HAL_OK!=SendToEsp2(tempBuff, commandLen)) return 1
+				case HTTP_CONNECTION:
 
 					DbgMultiDma(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
 
