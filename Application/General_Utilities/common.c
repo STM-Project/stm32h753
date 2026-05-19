@@ -14,21 +14,21 @@
 SHAPE_PARAMS SHAPE_PARAMS_Zero={0};
 structPosition structPos_Zero = {0};
 
-int* 			_Int		(int val)		{ static int 		_intVal[_BUFF_VAL_SIZE]={0};	  static int _incIntBuffVal=-1; 	   _incIntBuffVal+1	 >=_BUFF_VAL_SIZE ? _incIntBuffVal=0	 :_incIntBuffVal++;    _intVal[_incIntBuffVal]=val; 		 return &_intVal[_incIntBuffVal]; 		 };
-uint8_t*		_Uint8	(uint8_t val)	{ static uint8_t 	_uint8val[_BUFF_VAL_SIZE]={0};  static int _incUint8BuffVal=-1;   _incUint8BuffVal+1 >=_BUFF_VAL_SIZE ? _incUint8BuffVal=0  :_incUint8BuffVal++;  _uint8val[_incUint8BuffVal]=val; 	 return &_uint8val[_incUint8BuffVal]; 	 };
+int* 		_Int		(int val)	{ static int 	  _intVal[_BUFF_VAL_SIZE]={0};	  static int _incIntBuffVal=-1; 	_incIntBuffVal+1   >=_BUFF_VAL_SIZE ? _incIntBuffVal=0	  :_incIntBuffVal++;    _intVal[_incIntBuffVal]=val; 	   return &_intVal[_incIntBuffVal]; 	  };
+uint8_t*	_Uint8	(uint8_t val)	{ static uint8_t  _uint8val[_BUFF_VAL_SIZE]={0};  static int _incUint8BuffVal=-1;   _incUint8BuffVal+1 >=_BUFF_VAL_SIZE ? _incUint8BuffVal=0  :_incUint8BuffVal++;  _uint8val[_incUint8BuffVal]=val;   return &_uint8val[_incUint8BuffVal];   };
 uint16_t*	_Uint16	(uint16_t val)	{ static uint16_t _uint16val[_BUFF_VAL_SIZE]={0}; static int _incUint16BuffVal=-1;  _incUint16BuffVal+1>=_BUFF_VAL_SIZE ? _incUint16BuffVal=0 :_incUint16BuffVal++; _uint16val[_incUint16BuffVal]=val; return &_uint16val[_incUint16BuffVal]; };
 uint32_t* 	_Uint32	(uint32_t val)	{ static uint32_t _uint32val[_BUFF_VAL_SIZE]={0}; static int _incUint32BuffVal=-1;  _incUint32BuffVal+1>=_BUFF_VAL_SIZE ? _incUint32BuffVal=0 :_incUint32BuffVal++; _uint32val[_incUint32BuffVal]=val; return &_uint32val[_incUint32BuffVal]; };
-int16_t*		_Int16	(int16_t val)	{ static int16_t  _int16val[_BUFF_VAL_SIZE]={0};  static int _incInt16BuffVal=-1;   _incInt16BuffVal+1 >=_BUFF_VAL_SIZE ? _incInt16BuffVal=0  :_incInt16BuffVal++;  _int16val[_incInt16BuffVal]=val; 	 return &_int16val[_incInt16BuffVal]; 	 };
-int32_t* 	_Int32	(int32_t val)	{ static int32_t  _int32val[_BUFF_VAL_SIZE]={0};  static int _incInt32BuffVal=-1;   _incInt32BuffVal+1 >=_BUFF_VAL_SIZE ? _incInt32BuffVal=0  :_incInt32BuffVal++;  _int32val[_incInt32BuffVal]=val; 	 return &_int32val[_incInt32BuffVal]; 	 };
-float*		_Float	(float val)		{ static float 	_floatVal[_BUFF_VAL_SIZE]={0};  static int _incFloatBuffVal=-1;   _incFloatBuffVal+1 >=_BUFF_VAL_SIZE ? _incFloatBuffVal=0  :_incFloatBuffVal++;  _floatVal[_incFloatBuffVal]=val; 	 return &_floatVal[_incFloatBuffVal]; 	 };
-double*		_Double	(double val)	{ static double 	_doubleVal[_BUFF_VAL_SIZE]={0}; static int _incDoubleBuffVal=-1;  _incDoubleBuffVal+1 >=_BUFF_VAL_SIZE ? _incDoubleBuffVal=0:_incDoubleBuffVal++; _doubleVal[_incDoubleBuffVal]=val; return &_doubleVal[_incDoubleBuffVal]; };
+int16_t*	_Int16	(int16_t val)	{ static int16_t  _int16val[_BUFF_VAL_SIZE]={0};  static int _incInt16BuffVal=-1;   _incInt16BuffVal+1 >=_BUFF_VAL_SIZE ? _incInt16BuffVal=0  :_incInt16BuffVal++;  _int16val[_incInt16BuffVal]=val;   return &_int16val[_incInt16BuffVal];   };
+int32_t* 	_Int32	(int32_t val)	{ static int32_t  _int32val[_BUFF_VAL_SIZE]={0};  static int _incInt32BuffVal=-1;   _incInt32BuffVal+1 >=_BUFF_VAL_SIZE ? _incInt32BuffVal=0  :_incInt32BuffVal++;  _int32val[_incInt32BuffVal]=val;   return &_int32val[_incInt32BuffVal];   };
+float*		_Float	(float val)		{ static float 	  _floatVal[_BUFF_VAL_SIZE]={0};  static int _incFloatBuffVal=-1;   _incFloatBuffVal+1 >=_BUFF_VAL_SIZE ? _incFloatBuffVal=0  :_incFloatBuffVal++;  _floatVal[_incFloatBuffVal]=val;   return &_floatVal[_incFloatBuffVal];   };
+double*		_Double	(double val)	{ static double   _doubleVal[_BUFF_VAL_SIZE]={0}; static int _incDoubleBuffVal=-1;  _incDoubleBuffVal+1>=_BUFF_VAL_SIZE ? _incDoubleBuffVal=0: _incDoubleBuffVal++; _doubleVal[_incDoubleBuffVal]=val; return &_doubleVal[_incDoubleBuffVal]; };
 
-int _ReturnVal (int val, int in)							{ return val; };
+int _ReturnVal (int val, int in)					{ return val; };
 int _ReturnVal2(int val, int in1, int in2)			{ return val; };
 int _ReturnVal3(int val, int in1, int in2,int in3)	{ return val; };
 
-int _RetVal	(int in, 						int val)	{ return val; };
-int _RetVal2(int in1,int in2, 			int val)	{ return val; };
+int _RetVal	(int in, 					 int val)	{ return val; };
+int _RetVal2(int in1,int in2, 			 int val)	{ return val; };
 int _RetVal3(int in1,int in2,	int in3, int val)	{ return val; };
 
 structPosition RetStructPos(int x, int y){  structPosition temp={x,y};  return temp;  }
