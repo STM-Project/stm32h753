@@ -69,10 +69,11 @@ typedef uint8_t u8;
 #define RST_bit(allBits,bitNr)	((allBits) &= ~(1<<(bitNr)))
 #define CHECK_bit(allBits,bitNr) (((allBits)>>((bitNr)>31?31:(bitNr))) & 0x00000001)
 
-#define INIT_MAXVAL(ptr,nmb,minVal,maxValCalc)	 int maxValCalc=0; 	for(int i=0,j=(minVal); i<(nmb); (ptr[i]>j ? j=ptr[i] : 0), (maxValCalc)=j, ++i);
+#define INIT_MAXVAL(ptr,nmb,minVal,maxValCalc)	int maxValCalc=0; 	for(int i=0,j=(minVal); i<(nmb); (ptr[i]>j ? j=ptr[i] : 0), (maxValCalc)=j, ++i);
 #define MAXVAL(ptr,nmb,minVal,maxValCalc)		for(int i=0,j=(minVal); i<(nmb); (ptr[i]>j ? j=ptr[i] : 0), (maxValCalc)=j, ++i);
-#define INIT_INCVAL(nmb,val,valinc)		int val=0; for(int i=0; i<nmb; val+=valinc[i++])
-#define INCVAL(nmb,val,valinc)				 val=0; for(int i=0; i<nmb; val+=valinc[i++])
+#define INIT_INCVAL(nmb,val,valinc)	 int val=0; for(int i=0; i<nmb; val+=valinc[i++])
+#define INCVAL(nmb,val,valinc)			 val=0; for(int i=0; i<nmb; val+=valinc[i++])
+#define INIT_BUFF(x,txt)			char x[]=txt
 
 #define BKCOPY_VAL(dst,src,val)	dst=src; src=val
 #define BKCOPY(dst,src)	dst=src
@@ -312,14 +313,14 @@ typedef void TIMER_FUNC(int,int,int);
 typedef void* (*VOID_FUNCTION_TEST)(void*,void*);
 /* --------- End Functions Definitations ----------- */
 
-int* 			_Int		(int 	val);
+int* 		_Int	(int 	val);
 uint8_t* 	_Uint8	(uint8_t val);
 uint16_t* 	_Uint16	(uint16_t val);
 uint32_t* 	_Uint32	(uint32_t val);
 int16_t* 	_Int16	(int16_t val);
 int32_t* 	_Int32	(int32_t val);
 float* 		_Float	(float val);
-double* 		_Double	(double val);
+double* 	_Double	(double val);
 
 int _ReturnVal(int val, int in);
 int _ReturnVal2(int val, int in1,int in2);
@@ -339,9 +340,9 @@ int FV(VARIABLE_ACTIONS type, int nrMem, int val);							/* global access to mem
 int FV2(char* descr, VARIABLE_ACTIONS type, int nrMem, int val);
 
 struct_MATH CALCULATE_MinMaxAvr (GET_SET operType, int nr, void *value, DATA_TYPE dataType);
-int 			COMPARE_2Struct	  (void *struct1, void *struct2, int structSize, DATA_TYPE dataType);
-void 			SORT_Bubble			  (int tab[], int n);
-void 			AVR_Calc				  (int numbersOfSamples, int *pSamplesIn, int *pSamplesOut, int coeff);
+int 		COMPARE_2Struct		(void *struct1, void *struct2, int structSize, DATA_TYPE dataType);
+void 		SORT_Bubble			(int tab[], int n);
+void 		AVR_Calc			(int numbersOfSamples, int *pSamplesIn, int *pSamplesOut, int coeff);
 
 
 
