@@ -129,9 +129,10 @@ static int resetDMA=0;
 RAM_D2_ALIGN32 char RecvBuffer[ESP_RECV_BUFF_SIZE];
 RAM_D2_ALIGN32 char sendBuff[PACKET_SEND_LEN];
 
-
+static int ssssssiiiizzzeee=0;
 void ESP32_Notify2EspThread(uint16_t size, long *pxWoken)		/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
 {
+	ssssssiiiizzzeee = size;
     vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);			/* Wyślij powiadomienie bezpośrednio do wątku */
 }
 
@@ -244,8 +245,8 @@ static char* COMMAND_Service(GET_SET type, char* comm)
 
 	switch((int)type){
 		case _SET:
-			if(NULL!=comm) strncpy(commBuff,comm,sizeof(commBuff));		/* strcpy(dest,src)   kopiuje cały napis z src do dest, włącznie ze znakiem '\0' i zwraca ptr do dest na src    analogicznie dziala   strncpy(src,dest,n) */
-			commBuff[sizeof(commBuff)]='\0';							/* na wszelki wypadek gdy sizeof(comm) > sizeof(commBuff)-1 wtedy funkcja nie skopiuje zera do commBuff */
+			if(NULL!=comm) strncpy(commBuff,comm,sizeof(commBuff)-1);		/* strcpy(dest,src)   kopiuje cały napis z src do dest, włącznie ze znakiem '\0' i zwraca ptr do dest na src    analogicznie dziala   strncpy(src,dest,n) */
+			commBuff[sizeof(commBuff)-1]='\0';								/* na wszelki wypadek gdy sizeof(comm) > sizeof(commBuff)-1 wtedy funkcja nie skopiuje zera do commBuff */
 			break;
 
 		case _GET:
@@ -830,13 +831,13 @@ static int vQueryAndLoadTimeFromSNTP(void)
 	}
 }
 
-static void vLoadTime(time_t timeSet)
-{
-	int len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",timeSet);
-	SendToEsp32(sendBuff,len);
-	while (RecvFromEsp("\r\nOK")==0)
-		vTaskDelay(10);
-}
+//static void vLoadTime(time_t timeSet)
+//{
+//	int len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",timeSet);
+//	SendToEsp32(sendBuff,len);
+//	while (RecvFromEsp("\r\nOK")==0)
+//		vTaskDelay(10);
+//}
 
 static bool CheckEmailAnswer(int emailCode)
 {
@@ -900,26 +901,44 @@ static bool CheckEmailAnswer(int emailCode)
 
 void ESP32_FreeAnswers(void)
 {
-	if(RecvFromEsp("WIFI CONNECTED"))
+	char *ptr[10]={NULL};
+
+	if((ptr[0]=RecvFromEsp("WIFI CONNECTED")))
 	{
-		DbgDma(DBG,_SE_"\r\nWIFI_CONNECTED "_E_);
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_CONNECTED -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[0],' ',14);
 	}
-	if(RecvFromEsp("WIFI GOT IP"))
+	if((ptr[1]=RecvFromEsp("WIFI GOT IP")))
 	{
-		DbgDma(DBG,_SE_"\r\nWIFI_GOT_IP "_E_);
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_GOT_IP -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[1],' ',11);
 	}
-	if(RecvFromEsp("WIFI DISCONNECT"))
+	if((ptr[2]=RecvFromEsp("WIFI DISCONNECT")))
 	{
-		DbgDma(DBG,_SE_"\r\nWIFI_DISCONNECT "_E_);
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_DISCONNECT -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[2],' ',15);
 	}
-	if(RecvFromEsp("Will force to restart"))
+	if((ptr[3]=RecvFromEsp("Will force to restart")))
 	{
-		DbgDma(DBG,_SE_"\r\nRESTART "_E_);
+		DbgDma(DBG,_SE_"\r\nRESTART "_E_);   memset(ptr[3],' ',21);
 	}
-	if(RecvFromEsp("+TIME_UPDATED"))
+	if((ptr[4]=RecvFromEsp("+TIME_UPDATED")))
 	{
-		DbgDma(DBG,_SE_"\r\nTIME_UPDATED "_E_);
+		DbgVarDma(DBG,100,_SE_"\r\nTIME_UPDATED  -%d- "_E_,ssssssiiiizzzeee);   memset(ptr[4],' ',13);
 	}
+/*
+	RECV_START: WIFI DISCONNECT
+	 RECV_STOP
+
+	RECV_START: +STA_CONNECTED:"a4:45:19:6a:7f:5a"
+	 RECV_STOP
+
+	RECV_START: +DIST_STA_IP:"a4:45:19:6a:7f:5a","192.168.7.2"
+	 RECV_STOP
+
+	RECV_START: WIFI CONNECTED
+	 RECV_STOP
+
+	RECV_START: WIFI GOT IP
+	 RECV_STOP
+*/
 }
 
 int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL,0)   set new nr case */
@@ -939,7 +958,6 @@ int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYP
 	    if(flag){  if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,RecvBuffer); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
 	    	  else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",RecvBuffer,"\r\n");	}
 	    }
-	    ESP32_FreeAnswers();
 	}
 	return flag;
 }
