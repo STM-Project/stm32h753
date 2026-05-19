@@ -16,7 +16,7 @@
 #define SIZE_STRBUFF		200
 #define SIZE_STRBUFF_OUT	150
 
-static char strBuff[SIZE_STRBUFF]={0};
+static char strBuff[SIZE_STRBUFF]={0};					/* Jeśli wiele watkow korzysta z funkcji operujacych na tych buforach to trzeba te funkcje zabezpieczec przez np. mutexy */
 static char strBuffOut[SIZE_STRBUFF_OUT]={0};
 static int idx=0;
 
