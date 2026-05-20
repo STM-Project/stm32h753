@@ -50,8 +50,7 @@
 #define ESP_OFF		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_RESET)
 
 #define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>"
-#define ESP32_INIT_ERROR 	"\r\n!!! ESP32_INIT_ERROR !!!"
-#define ESP32_DOMAIN_ERROR 	"\r\n!!! ESP32_DOMAIN_ERROR !!!"
+#define ESP32_DOMAIN_ERROR 	"\r\nNOT updated email Server IP "
 const static char txt_OK[]="\r\nOK\r\n";
 const static char txt_ERR[]="ERROR";
 #define RecvFromEsp(txt)   strstr(RecvBuffer,txt) 		/* alternatywnie memcmp() strnstr()  */
@@ -167,7 +166,7 @@ void DefaultSettingsWIFI(void)
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
-	VAR_SetTabVal(Const_wifiGeneral_mode,NO_TAB,WIFI_MODE_STA);
+	VAR_SetTabVal(Const_wifiGeneral_mode,NO_TAB,WIFI_MODE_AP_STA);
 }
 
 static int GetAnswerDelay(void)
@@ -907,7 +906,7 @@ void ESP32_FreeAnswers(void)
 
 	if((ptr[0]=RecvFromEsp("WIFI CONNECTED")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_CONNECTED -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[0],' ',14);  flag=1;
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_CONNECTED -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[0],' ',14);  flag=1;  //Jezeli znaki po \r\n to tez usun !!!
 	}
 	if((ptr[1]=RecvFromEsp("WIFI GOT IP")))
 	{
@@ -1010,7 +1009,7 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
-	    if(flag) DispRecvBuff(nrCase,archType);
+	    if(flag){ DispRecvBuff(nrCase,archType); ESP32_FreeAnswers(); }
 	}
 	return flag;
 }
@@ -1067,8 +1066,8 @@ static int ErrorAnswerService(void)
 
 void vtaskWifi(void *argument)
 {
-	char *pHttpGet, *ptr;   int lenHTTP=0;
-	int channel=0, size=0, len, result, result2;
+	char *pHttpGet,*pHttpGet2,  *ptr;   int lenHTTP=0;
+	int channel=0, size=0, len, result, result2;   int nrHTTP=0;
 	int j;
 
 	int typeSendArch = arch;
@@ -1110,7 +1109,7 @@ void vtaskWifi(void *argument)
 
 			switch (connectionType)
 			{
-				case INIT_CONNECTION:  //PRZEANALIZUJ KOLEJNOSC JESZCZE RAZ !!!!!!!!!!!!!!!!
+				case INIT_CONNECTION:
 
 					if (CASE_Service(0,"ready",NULL,typeRecvArch))
 					{
@@ -1345,8 +1344,8 @@ void vtaskWifi(void *argument)
 								else
 								{
 									INIT_BUFF(answer,"+CIPDOMAIN:");
-									if ((ptr=RecvFromEsp(answer)))  Const.emailSend[_GET_REP_CASE_].IP = IPStr2Int(ptr+mini_strlen(answer)+1);
-									else{ ; }
+									if ((ptr=RecvFromEsp(answer))){  Const.emailSend[_GET_REP_CASE_].IP = IPStr2Int(ptr+mini_strlen(answer)+1);  }
+									else  						  {  DbgDma(1,_S_ ESP32_DOMAIN_ERROR);  }
 								}
 							}
 						}
@@ -1378,8 +1377,8 @@ void vtaskWifi(void *argument)
 							else
 							{
 								INIT_BUFF(answer,"+CIPDOMAIN:");
-								if ((ptr=RecvFromEsp(answer)))  Const.emailSend[MAX_EMAIL_SENDERS-1].IP = IPStr2Int(ptr+mini_strlen(answer)+1);
-								else{ ; }	// Const.emailSend[MAX_EMAIL_SENDERS-1].IP  not UPDATED !!!! takie info dac
+								if ((ptr=RecvFromEsp(answer))){  Const.emailSend[MAX_EMAIL_SENDERS-1].IP = IPStr2Int(ptr+mini_strlen(answer)+1);  }
+								else  						  {  DbgDma(1,_S_ ESP32_DOMAIN_ERROR);  }
 							}
 						}
 						else
@@ -1450,63 +1449,72 @@ void vtaskWifi(void *argument)
 
 					//SendEmail(0, 1<<1, EMAIL_MEASURE);  //musi byc 0 bo sprawdza w Const_emailSend_IP w pozycjo 0 !!!!! do poprawki
 					//EmailSendStart();
+/*
+    if (colonPtr != NULL) {
+        // Właściwe dane zaczynają się tuż za dwukropkiem
+        dataPtr = colonPtr + 1;
 
+        // Szukamy czy przed dwukropkiem jest przecinek (tryb wielopołączeniowy: +IPD,id,len:)
+        char* commaPtr = strchr(parsePtr, ',');
 
-
+        if (commaPtr != NULL && commaPtr < colonPtr) {
+            // Jeśli jest przecinek i jest przed dwukropkiem, długość jest PO przecinku
+            dataLen = atoi(commaPtr + 1);
+        } else {
+            // Brak przecinka (tryb pojedynczy: +IPD,len:), długość jest bezpośrednio po "+IPD,"
+            dataLen = atoi(parsePtr);
+        }
+    }
+*/
 //SPRAWDZ czy nie mozna szybsze jeszcze uart speed dla tego nowego systemu !!!!!!!!!!!!!!!!!!!
+
+
+
 				case HTTP_CONNECTION:
 
-					DbgMultiDma(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
+					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
 
 					if ((pHttpGet=strstr(RecvBuffer,",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
 					{
-						if ((pHttpGet=strstr(pHttpGet,"+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						if ((pHttpGet=strstr(pHttpGet,"+IPD,")))			/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
-							if ((pHttpGet=strstr(pHttpGet,":GET / ")))
+							if ((pHttpGet2=strstr(pHttpGet,":GET / ")))
 							{
-								GetSizeAndChannel(pHttpGet, &channel, &size);
+								GetSizeAndChannel(pHttpGet2, &channel, &size);
 								SendToEsp32(  mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, arch );
 							}
-							else if ((pHttpGet=strstr(pHttpGet,":GET /favicon.ico")))
+							else if ((pHttpGet2=strstr(pHttpGet,":GET /favicon.ico")))
 							{
-								GetSizeAndChannel(pHttpGet, &channel, &size);
+								GetSizeAndChannel(pHttpGet2, &channel, &size);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch );
 							}
+							else RestartDMA();
 						}
-						else  //Tu srpadzaj cala tablice roznych dozwolonych odpowiedzi i podejmuj akcje
-						{
-							if ((pHttpGet=strstr(pHttpGet,",CLOSED\r\n")))
-							{
-								RestartDMA();
-							}
-						}
-
-
 					}
-					else if ((pHttpGet=RecvFromEsp("\r\nOK\r\n\r\n>")))
+					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, arch );
 					}
-					else if ((pHttpGet=RecvFromEsp(",CLOSED\r\n")))
+					else if (RecvFromEsp(",CLOSED\r\n"))
 					{
-						if ((pHttpGet=RecvFromEsp("\r\nOK\r\n")))
+						if (RecvFromEsp("\r\nOK\r\n"))
 						{
-							DbgDma(DBG, " ---- ,CLOSED ---- ");
+							DbgDma(DBG, _S_" ---- ,CLOSED ---- "_E_);
 							RestartDMA();
 						}
 					}
-					else if ((pHttpGet=RecvFromEsp("ERROR")))
+					else if (RecvFromEsp("ERROR"))
 					{
-						DbgDma(DBG, " ---- ERROR ---- ");
+						DbgDma(DBG, _S_" ---- ERROR ---- "_E_);
 						RestartDMA();
 					}
-					else if ((pHttpGet=RecvFromEsp("\r\nRecv ")))		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes for ESP */
+					else if (RecvFromEsp("\r\nRecv "))		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes for ESP */
 					{
-						if ((pHttpGet=RecvFromEsp(" bytes\r\n")))
+						if (RecvFromEsp(" bytes\r\n"))  //Tu mozess wyparsowac to 88 bytes !!!
 						{
-							if ((pHttpGet=RecvFromEsp("\r\nSEND OK")))
+							if (RecvFromEsp("\r\nSEND OK"))
 							{
-								DbgDma(DBG, " ---- SEND OK ---- ");
+								DbgDma(DBG, _S_" ---- SEND OK ---- "_E_);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);
 							}
 						}
@@ -1516,6 +1524,87 @@ void vtaskWifi(void *argument)
 						RestartDMA();
 					}
 					break;
+
+
+
+//				case HTTP_CONNECTION:
+//
+//					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
+//
+//					if ((pHttpGet=strstr(RecvBuffer,",CONNECT\r\n")))			/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+//					{
+//						if ((pHttpGet=strstr(pHttpGet,"+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+//						{
+//							if ((pHttpGet2=strstr(pHttpGet,":GET / ")))
+//							{
+//								GetSizeAndChannel(pHttpGet2, &channel, &size);
+//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, arch );
+//							}
+//							else if ((pHttpGet2=strstr(pHttpGet,":GET /favicon.ico")))
+//							{
+//								GetSizeAndChannel(pHttpGet2, &channel, &size);
+//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch );
+//							}
+//							else RestartDMA();
+//						}
+//						else  //Tu srpadzaj cala tablice roznych dozwolonych odpowiedzi i podejmuj akcje
+//						{
+////							if ((pHttpGet=strstr(pHttpGet,",CLOSED\r\n")))
+////							{
+////								RestartDMA();
+////							}
+//							RestartDMA();
+//						}
+//
+//
+//					}
+//					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
+//					{
+//						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, arch ); //policz jak dlugo SendToEsp32()
+//					}
+//					else if (RecvFromEsp(",CLOSED\r\n"))
+//					{
+//						if (RecvFromEsp("\r\nOK\r\n"))
+//						{
+//							DbgDma(DBG, _S_"---- ,CLOSED ----"_E_);
+//						}
+//						RestartDMA();
+//
+//					}
+//					else if (RecvFromEsp("ERROR"))
+//					{
+//						DbgDma(DBG, _SE_" ---- ERROR ---- "_E_);
+//						RestartDMA();
+//					}
+//					else if (RecvFromEsp("\r\nRecv "))		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes for ESP */
+//					{
+//						if (RecvFromEsp(" bytes\r\n"))
+//						{
+//							if (RecvFromEsp("\r\nSEND OK"))
+//							{
+//								DbgDma(DBG, _S_" ---- SEND OK ---- "_E_);
+//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);
+//							}
+//							else RestartDMA();
+//						}
+//						else RestartDMA();
+//					}
+//					else
+//					{
+//						RestartDMA();
+//					}
+//
+//					break;
+
+
+
+
+
+
+
+
+
+
 
 
 				case SMTP_CONNECTION:
