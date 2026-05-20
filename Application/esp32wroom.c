@@ -53,7 +53,7 @@
 #define ESP32_INIT_ERROR 	"\r\n!!! ESP32_INIT_ERROR !!!"
 #define ESP32_DOMAIN_ERROR 	"\r\n!!! ESP32_DOMAIN_ERROR !!!"
 const static char txt_OK[]="\r\nOK\r\n";
-const static char txt_ERROR[]="ERROR";
+const static char txt_ERR[]="ERROR";
 #define RecvFromEsp(txt)   strstr(RecvBuffer,txt) 		/* alternatywnie memcmp() strnstr()  */
 
 #define _GET_REP_CASE_			CASE_Service(-3,NULL,NULL,0)-1
@@ -62,6 +62,7 @@ const static char txt_ERROR[]="ERROR";
 #define _SET_NEW_CASE_(x)		CASE_Service(x,NULL,NULL,0); _CLR_REP_CASE_			/* _SET_NEW_CASE_() increment repeat case so we must call _CLR_REP_CASE_ after _SET_NEW_CASE_() */
 #define _SET_NEXT_CASE_			CASE_Service(-2,NULL,NULL,0)
 #define _THE_SAME_CASE_			CASE_Service((_GET_ACTUAL_CASE_-1),NULL,NULL,0)		/* CASE_Service() increment actual case */
+#define _GET_ANSW_CASE_			CASE_Service(-5,NULL,NULL,0)
 
 typedef enum
 {
@@ -927,6 +928,7 @@ void ESP32_FreeAnswers(void)
 
 	if(flag)
 	{
+		//SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size));
 		uint32_t clean_size = ((ESP_RECV_BUFF_SIZE-ssssssiiiizzzeee) + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 //		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
 		SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, clean_size);
 	}
@@ -949,20 +951,24 @@ void ESP32_FreeAnswers(void)
 */
 }
 
-int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL,0)   set new nr case */
-{																								/* CASE_Service(2,"","",0) 	     only return 3 in case 2 and only enter to this case */
-	static int actualCase = 0;		if(-1==nrCase) return actualCase;							/* CASE_Service(-1,NULL,NULL,0)  get number of the actual case */
-	static int repeatCase = 0;		if(-2==nrCase){ repeatCase = 0; return ++actualCase; }		/* CASE_Service(-2,NULL,NULL,0)  set next nr case */
-									if(-3==nrCase) return repeatCase;							/* CASE_Service(-3,NULL,NULL,0)  get repat case for this case (nmbr of repeat this case) */
-									if(-4==nrCase) return (repeatCase=0);						/* CASE_Service(-4,NULL,NULL,0)  clera repeat case */
-	int flag = 0;
+static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL,0)   set new nr case */
+{																										/* CASE_Service(2,"","",0) 	     only return 3 in case 2 and only enter to this case */
+	static int actualCase=0, repeatCase=0, flagCase=0;
+
+		 if(-1==nrCase) return actualCase;							/* CASE_Service(-1,NULL,NULL,0)  get number of the actual case */
+	else if(-2==nrCase){ repeatCase = 0; return ++actualCase; }		/* CASE_Service(-2,NULL,NULL,0)  set next nr case */
+	else if(-3==nrCase) return repeatCase;							/* CASE_Service(-3,NULL,NULL,0)  get repat case for this case (nmbr of repeat this case) */
+	else if(-4==nrCase) return (repeatCase=0);						/* CASE_Service(-4,NULL,NULL,0)  clera repeat case */
+	else if(-5==nrCase) return flagCase;							/* CASE_Service(-5,NULL,NULL,0)  get last flag case for answer */
+
+	int flag=0;
 	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase;  }
 	if( nrCase == actualCase ){
 		int hasRecv1 = (recv1 != NULL) && (strstr(RecvBuffer, recv1) != NULL);
 		int hasRecv2 = (recv2 != NULL) && (strstr(RecvBuffer, recv2) != NULL);
-	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; }
-	    if (hasRecv2)  			 { actualCase++; flag=2; }
-	    if (hasRecv1) 			 { actualCase++; flag=1; }
+	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
+	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
+	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
 	    if(flag){  if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,RecvBuffer); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
 	    	  else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",RecvBuffer,"\r\n");	}
 	    }
@@ -970,12 +976,61 @@ int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYP
 	return flag;
 }
 
+/*
+
+// Przerwanie nr 1 (np. UART)
+void HAL_UART_RxCptCallback(UART_HandleTypeDef *huart) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Ustawia bit 0 w powiadomieniu zadania
+    xTaskNotifyFromISR(xTaskHandle, (1 << 0), eSetBits, &xHigherPriorityTaskWoken);
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+// Przerwanie nr 2 (np. Timer)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Ustawia bit 1 w powiadomieniu zadania
+    xTaskNotifyFromISR(xTaskHandle, (1 << 1), eSetBits, &xHigherPriorityTaskWoken);
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+// Wątek odbiorczy (Task)
+void vOdbiorcaTask(void *pvParameters) {
+    uint32_t ulNotifiedValue;
+
+    for(;;) {
+        // Oczekiwanie na jakikolwiek bit
+        xTaskNotifyWait(0x00, 0xFFFFFFFF, &ulNotifiedValue, portMAX_DELAY);
+
+        if (ulNotifiedValue & (1 << 0)) {
+            // Obsługa przerwania UART
+        }
+        if (ulNotifiedValue & (1 << 1)) {
+            // Obsługa przerwania Timera
+        }
+    }
+}
+
+
+
+
+*/
+
+static int ErrorAnswerService(void)
+{
+	if(_GET_ANSW_CASE_==_ERROR){  DbgVarDma(1,200,_SE_"\r\nCMD_ERROR: %s\r\n"_E_,COMMAND_Service(_GET,NULL));  return 1; }
+	return 0;
+}
+
 void vtaskWifi(void *argument)
 {
 	char *pHttpGet, *ptr;   int lenHTTP=0;
 	int channel=0, size=0, len, result, result2;
 	int j;
-	int nrCaseTemp=0;
 
 	int typeSendArch = arch;
 	int typeRecvArch = arch;
@@ -1020,47 +1075,61 @@ void vtaskWifi(void *argument)
 
 					if (CASE_Service(0,"ready",NULL,typeRecvArch))
 					{
-						SendToEsp32(0,"ATE0\r\n",typeSendArch);				/* propozycja:  if (HAL_OK!=SendToEsp32(0,"ATE0\r\n",typeSendArch)) return; */
+						if(SendToEsp32(0,"ATE0\r\n",typeSendArch) != HAL_OK){  DbgDma(DBG,_SE_"\r\nHAL_ERROR "_E_);  break;  }
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(1,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(1,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+UART_CUR=%d,8,1,0,0\r\n",ESP_UART_BUADRATE), NULL, typeSendArch );
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(2,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(2,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						vTaskDelay(10);
 						ChangeUartBuadRate(ESP_UART_BUADRATE);
 						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(3,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(3,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						SendToEsp32(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CWMODE=%d\r\n",Const.wifiGeneral.mode), NULL, typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(4,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(4,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						if(WIFI_MODE_DISABLED==Const.wifiGeneral.mode){
 							DbgDma(DBG,_SE_"\r\nWifi DISABLED "_E_);
 							break;
 						}
 						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(5,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(5,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						SendToEsp32(0,"AT+CIPMUX=1\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(6,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(6,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						SendToEsp32(0,"AT+CWDHCP=0,3\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(7,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(7,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						if( 0 == Const.wifiAP [ Const.wifiGeneral.nrAP ].dhcp &&
 							1 == Const.wifiSTA[ Const.wifiGeneral.nrSTA].dhcp )
 						{
@@ -1077,17 +1146,19 @@ void vtaskWifi(void *argument)
 							SendToEsp32(0,"AT+CWDHCP=1,3\r\n",typeSendArch);
 						}
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(8,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(8,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						SendToEsp32(0,"AT+CWHOSTNAME=\"Elektronika_STM\"\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if ((nrCaseTemp=CASE_Service(9,txt_OK,txt_ERROR,typeRecvArch)))
+					else if (CASE_Service(9,txt_OK,txt_ERR,typeRecvArch))
 					{
-						if(nrCaseTemp==_ERROR){ DbgDma(1,_SE_ ESP32_INIT_ERROR _E_); break; }
-
+						if(ErrorAnswerService()) break;
 						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
 							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode) && 0 == Const.wifiSTA[ Const.wifiGeneral.nrSTA ].dhcp )
 						{
@@ -1098,10 +1169,12 @@ void vtaskWifi(void *argument)
 							SendToEsp32(len,NULL,typeSendArch);	 	/* SendToEsp32(len,sendBuff) is the same */
 						}
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(10,txt_OK,NULL,typeRecvArch))  //ZASTANOW SIE CZY W KASDZYM CASE NIE DAC ERRORR !!!!!!!!!!!!
+					else if (CASE_Service(10,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						if( (WIFI_MODE_AP 	 == Const.wifiGeneral.mode ||
 							WIFI_MODE_AP_STA == Const.wifiGeneral.mode) && 0 == Const.wifiAP[ Const.wifiGeneral.nrAP ].dhcp )
 						{
@@ -1112,10 +1185,12 @@ void vtaskWifi(void *argument)
 							SendToEsp32(len,sendBuff,typeSendArch);	 	/* SendToEsp32(len,NULL) is the same */
 						}
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(11,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(11,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						if( WIFI_MODE_AP 	 == Const.wifiGeneral.mode ||
 							WIFI_MODE_AP_STA == Const.wifiGeneral.mode )
 						{
@@ -1125,12 +1200,12 @@ void vtaskWifi(void *argument)
 							SendToEsp32(len,NULL,typeSendArch);
 						}
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if ((nrCaseTemp=CASE_Service(12,txt_OK,txt_ERROR,typeRecvArch)))
+					else if (CASE_Service(12,txt_OK,txt_ERR,typeRecvArch))
 					{
-						if(nrCaseTemp==_ERROR){ DbgDma(1,_SE_ ESP32_INIT_ERROR _E_); break; }
-
+						if(ErrorAnswerService()) break;
 						if( WIFI_MODE_STA 	 == Const.wifiGeneral.mode ||
 							WIFI_MODE_AP_STA == Const.wifiGeneral.mode )
 						{
@@ -1140,12 +1215,13 @@ void vtaskWifi(void *argument)
 							SendToEsp32(len,NULL,typeSendArch);
 						}
 						else SendToEsp32(0,"AT\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if ((nrCaseTemp=CASE_Service(13,txt_OK,txt_ERROR,typeRecvArch)))		/* albo  nrCaseTemp = _GET_ACTUAL_CASE_-1 */
+					else if (CASE_Service(13,txt_OK,txt_ERR,typeRecvArch))
 					{
-							 if(nrCaseTemp==_OK) result=ESP_CONNECTION_OK;
-						else if(nrCaseTemp==_ERROR)
+						if(_GET_ANSW_CASE_==_OK) result=ESP_CONNECTION_OK;
+						else
 						{
 							INIT_BUFF(answer,"+CWJAP:");
 							if ((ptr=RecvFromEsp(answer))){
@@ -1159,44 +1235,54 @@ void vtaskWifi(void *argument)
 							}}
 							else result=ESP_UNKNOW_ERROR_OCCURRED;
 						}
-						DbgVarDma2(DBG,100,_S_"\r\nESP_CONNECTION status: %d\r\n"_E_,result);
+						DbgVarDma2(DBG,100,_S_"\r\nSTA_CONNECTION status: %d\r\n"_E_,result);
 						SendToEsp32(0,"AT+CIFSR\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(14,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(14,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						GetAddressesForConnection();
 						SendToEsp32(0,"AT+CIPSERVERMAXCONN=1\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(15,txt_OK,NULL,typeRecvArch))
+					else if (CASE_Service(15,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
 								IP2Str(Const.dns.IP1),
 								IP2Str(Const.dns.IP2),
 								IP2Str(Const.dns.IP3));
 						SendToEsp32(len,NULL,typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(16,txt_OK,txt_ERROR,typeRecvArch))
+					else if (CASE_Service(16,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",Const.sntp.timezone, Const.sntp.nameServer1, Const.sntp.nameServer2);
 						SendToEsp32(len,NULL,typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(17,txt_OK,txt_ERROR,typeRecvArch))
+					else if (CASE_Service(17,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"), NULL, typeSendArch );
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n", GetHttpPort()), NULL ); */
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(18,txt_OK,txt_ERROR,typeRecvArch))
+					else if (CASE_Service(18,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S), NULL, typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if ((nrCaseTemp=CASE_Service(19,txt_OK,txt_ERROR,typeRecvArch)))
+					else if (CASE_Service(19,txt_OK,txt_ERR,typeRecvArch))
 					{
 						_THE_SAME_CASE_;		/* przewidujemy w tym case cykliczne powtarzanie */
 
@@ -1204,16 +1290,16 @@ void vtaskWifi(void *argument)
 						{
 							if(_GET_REP_CASE_ == 0)
 							{
-								if(nrCaseTemp==_ERROR){ DbgVarDma(1,200,_SE_ "\r\n%s\r\n" _E_,COMMAND_Service(_GET,NULL)); }    /* z tym błędem nic nie rob */
+								if(ErrorAnswerService()){ ; }    /* z tym błędem nic nie rob */
 							}
 							else if(IS_RANGE(_GET_REP_CASE_,1,MAX_EMAIL_SENDERS-1))
 							{
-								if(nrCaseTemp==_OK)
+								if(ErrorAnswerService()){ ; }
+								else
 								{
 									INIT_BUFF(answer,"+CIPDOMAIN:");
 									if ((ptr=RecvFromEsp(answer)))  Const.emailSend[_GET_REP_CASE_].IP = IPStr2Int(ptr+mini_strlen(answer)+1);
 								}
-								else DbgDma(1,_SE_ ESP32_DOMAIN_ERROR _E_);
 							}
 						}
 
@@ -1223,26 +1309,33 @@ void vtaskWifi(void *argument)
 								 WIFI_MODE_AP_STA == Const.wifiGeneral.mode))
 							{
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",Const.emailSend[_GET_REP_CASE_].server), NULL, typeSendArch );
-								if(_GET_REP_CASE_ == MAX_EMAIL_SENDERS-1)  _SET_NEXT_CASE_;
+								if(_GET_REP_CASE_ == MAX_EMAIL_SENDERS-1)
+									_SET_NEXT_CASE_;
 							}
-							else{  SendToEsp32(0,"AT\r\n",typeSendArch);  _SET_NEXT_CASE_;  }
+							else
+							{
+								SendToEsp32(0,"AT\r\n",typeSendArch);
+								_SET_NEXT_CASE_;
+							}
+							COMMAND_Service(_SET,sendBuff);
 						}
 
 					}
-					else if ((nrCaseTemp=CASE_Service(20,txt_OK,txt_ERROR,typeRecvArch)))
+					else if (CASE_Service(20,txt_OK,txt_ERR,typeRecvArch))
 					{
-						if(nrCaseTemp==_OK)
+						if(ErrorAnswerService()){ ; }
+						else
 						{
 							INIT_BUFF(answer,"+CIPDOMAIN:");
 							if ((ptr=RecvFromEsp(answer)))  Const.emailSend[MAX_EMAIL_SENDERS-1].IP = IPStr2Int(ptr+mini_strlen(answer)+1);
 						}
-						else DbgDma(1,_SE_ ESP32_DOMAIN_ERROR _E_);
-
 						SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(21,txt_OK,txt_ERROR,typeRecvArch))
+					else if (CASE_Service(21,txt_OK,txt_ERR,typeRecvArch))
 					{
+						if(ErrorAnswerService()) break;
 						time_t getTime;
 						INIT_BUFF(answer,"+SYSTIMESTAMP:");
 						if ((ptr=RecvFromEsp(answer)))
@@ -1267,16 +1360,20 @@ void vtaskWifi(void *argument)
 							else
 							{
 								vTaskDelay(2000);
-								SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);  //zrobic cykliczne odpytywanie az bedzie czas SNTP_SERVER_TIMEOUT_MS jak nie za jakis czas to zero wpisac
 
 								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY)
 								{
 									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",Const.sntp.time), NULL,typeSendArch );
-									while(0==RecvFromEsp(txt_OK)) vTaskDelay(10);
+									while( NULL==RecvFromEsp(txt_OK) && NULL==RecvFromEsp(txt_ERR) ) vTaskDelay(10);
 									RestartDMA();
 								}
-								else _THE_SAME_CASE_;
+								else
+								{
+									SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",typeSendArch);
+									COMMAND_Service(_SET,sendBuff);
+									_THE_SAME_CASE_;
+								}
 							}
 						}
 
