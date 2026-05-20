@@ -902,27 +902,35 @@ static bool CheckEmailAnswer(int emailCode)
 void ESP32_FreeAnswers(void)
 {
 	char *ptr[10]={NULL};
+	int flag=0;
 
 	if((ptr[0]=RecvFromEsp("WIFI CONNECTED")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_CONNECTED -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[0],' ',14);
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_CONNECTED -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[0],' ',14);  flag=1;
 	}
 	if((ptr[1]=RecvFromEsp("WIFI GOT IP")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_GOT_IP -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[1],' ',11);
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_GOT_IP -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[1],' ',11);  flag=1;
 	}
 	if((ptr[2]=RecvFromEsp("WIFI DISCONNECT")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_DISCONNECT -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[2],' ',15);
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_DISCONNECT -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[2],' ',15);  flag=1;
 	}
 	if((ptr[3]=RecvFromEsp("Will force to restart")))
 	{
-		DbgDma(DBG,_SE_"\r\nRESTART "_E_);   memset(ptr[3],' ',21);
+		DbgDma(DBG,_SE_"\r\nRESTART "_E_);   memset(ptr[3],' ',21);  flag=1;
 	}
 	if((ptr[4]=RecvFromEsp("+TIME_UPDATED")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nTIME_UPDATED  -%d- "_E_,ssssssiiiizzzeee);   memset(ptr[4],' ',13);
+		DbgVarDma(DBG,100,_SE_"\r\nTIME_UPDATED  -%d- "_E_,ssssssiiiizzzeee);   memset(ptr[4],' ',13);  flag=1;
 	}
+
+	if(flag)
+	{
+		uint32_t clean_size = ((ESP_RECV_BUFF_SIZE-ssssssiiiizzzeee) + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 //		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
+		SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, clean_size);
+	}
+
 /*
 	RECV_START: WIFI DISCONNECT
 	 RECV_STOP
