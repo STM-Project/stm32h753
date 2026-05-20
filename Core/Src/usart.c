@@ -105,7 +105,7 @@ void MX_USART6_UART_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart6, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart6, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)		//Sprobowac z FIFIO enable !!!!!
   {
     Error_Handler();
   }
@@ -113,7 +113,7 @@ void MX_USART6_UART_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_UARTEx_DisableFifoMode(&huart6) != HAL_OK)
+  if (HAL_UARTEx_DisableFifoMode(&huart6) != HAL_OK)		/* Dzięki FIFO masz pewność, że w momencie wywołania przerwania RTO, absolutnie wszystkie bajty wysłane przez drugie urządzenie zostały bezpiecznie odebrane sprzętowo i albo już są w RAM-ie (dzięki DMA), albo bezpiecznie czekają w kolejce FIFO na zwolnienie szyny przez DMA.*/
   {
     Error_Handler();
   }
