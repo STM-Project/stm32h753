@@ -129,7 +129,7 @@ void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...)
 		char *temp = (char*)pvPortMalloc(buffLen);
 		va_list va;
 		va_start(va, fmt);
-		vsnprintf(temp,buffLen, fmt, va);
+		vsnprintf(temp,buffLen, fmt, va);			/* W niektórych implementacjach standardowej biblioteki C (szczególnie pełnej newlib), vsnprintf może pod spodem niejawnie wywołać malloc(). W systemie wielowątkowym klasyczny malloc bez odpowiednich wrapperów nitkowych (np. malloc_r lub mutexów) nie jest bezpieczny i prowadzi do uszkodzenia pamięci heap */
 		va_end(va);
 		DEBUG_Send(temp);
 		vPortFree(temp);
