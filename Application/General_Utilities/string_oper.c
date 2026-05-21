@@ -365,8 +365,8 @@ uint64_t MACStr2Int64(char *str)
 	char *ptr;
 	uint64_t mac[6];
 	StrBuffCopylimit(strBuff,str,40);
-	mac[0]=strtoll(strBuff,&ptr,16);
-	mac[1]=strtoll(ptr+1,&ptr,16);
+	mac[0]=strtoll(strBuff,&ptr,16);			/* strtoll: 	Wykorzystuje mechanizm TLS (Thread-Local Storage). Kiedy funkcja musi zgłosić błąd (np. przepełnienie zakresu ERANGE), zapisuje go w systemowej zmiennej errno. System operacyjny dba o to, aby każdy wątek miał swoją prywatną kopię errno. */
+	mac[1]=strtoll(ptr+1,&ptr,16);				/* _strtoll_r:  Jest funkcją wielowejściową (reentrant) [2]. Nie ufa systemowi operacyjnemu w kwestii zarządzania pamięcią wątków, ponieważ proste mikrokontrolery często w ogóle nie obsługują mechanizmu TLS. Zamiast tego wymaga od Ciebie jawnego przekazania struktury kontekstu danego wątku (struct _reent *) jako pierwszego argumentu [2]. Ewentualny błąd errno jest zapisywany wewnątrz tej przekazanej struktury */
 	mac[2]=strtoll(ptr+1,&ptr,16);
 	mac[3]=strtoll(ptr+1,&ptr,16);
 	mac[4]=strtoll(ptr+1,&ptr,16);
@@ -385,3 +385,13 @@ char* IP2Str(uint32_t value)
 	return strBuff+idx-len;
 }
 
+int STRING_GetInt(char* txt, char seperator){
+	int value=-1;
+	char* ptr=strchr(txt,seperator);
+	if(ptr!=NULL) value=atoi(ptr+1);
+	return value;
+
+/*	char *readPtr;
+	atoi(strtok_r(txt, seperator, &readPtr));	//modyfikuje txt !
+*/
+}
