@@ -4,10 +4,10 @@
  *  Created on: 11.12.2020
  *      Author: RafalMar
  */
+#include "esp32wroom.h"
 #include "wwwPages.h"
 #include <string.h> /* memset */
 #include <stdlib.h> /* atoi */
-#include "esp32wroom.h"
 #include "stm32h7xx_hal.h"
 #include <string.h>
 #include <stdbool.h>
@@ -41,7 +41,6 @@
 #define DNS_SERVER_TIMEOUT_MS		15000
 #define SNTP_NMBR_QUERY			5
 
-#define DBG		1
 #define _S_		Ita_ Gr1_
 #define _SE_	Ita_ Cya_
 #define _E_		_X_
@@ -119,7 +118,9 @@ typedef enum
 
 }ESP_ANSWER;
 
-static uint8_t connectionType;
+static int DBG = 1;
+static uint8_t connectionType = INIT_CONNECTION;
+static int recvByteFromEsp = 0;
 
 extern UART_HandleTypeDef ESP_UART_HANDLE;
 extern DMA_HandleTypeDef ESP_UART_DMA_RX;
@@ -129,11 +130,13 @@ static int resetDMA=0;
 RAM_D2_ALIGN32 char RecvBuffer[ESP_RECV_BUFF_SIZE];
 RAM_D2_ALIGN32 char sendBuff[PACKET_SEND_LEN];
 
-static int ssssssiiiizzzeee=0;
-void ESP32_Notify2EspThread(uint16_t size, long *pxWoken)		/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
+
+void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken)					/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
 {
-	ssssssiiiizzzeee = size;
-    vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);			/* Wyślij powiadomienie bezpośrednio do wątku */
+	recvByteFromEsp = ESP_RECV_BUFF_SIZE - size;
+/*  vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);	*/					/* Wyślij powiadomienie bezpośrednio do wątku */
+    if(interruptSrc==0) xTaskNotifyFromISR(vtaskWifiHandle,(1<<0),eSetBits,pxWoken);
+    else				xTaskNotifyFromISR(vtaskWifiHandle,(1<<1),eSetBits,pxWoken);
 }
 
 void DefaultSettingsWIFI(void)
@@ -841,27 +844,6 @@ static int vQueryAndLoadTimeFromSNTP(void)
 
 static bool CheckEmailAnswer(int emailCode)
 {
-
-
-//	int main() {
-//	    char tekst[] = "Programowanie,w,jezyku,C";
-//	    char *separatory = ",";
-//	    char *saveptr; // Bufor na stan funkcji
-//
-//	    // Pierwsze wywołanie: przekazujemy pełny string
-//	    char *token = strtok_r(tekst, separatory, &saveptr);
-//
-//	    // Kolejne wywołania w pętli: przekazujemy NULL
-//	    while (token != NULL) {
-//	        printf("Token: %s\n", token);
-//	        token = strtok_r(NULL, separatory, &saveptr);
-//	    }
-//
-//	    return 0;
-//	}
-
-
-
 	char *pSmtp = NULL;
 	int channel=0, size=0;
 
@@ -906,15 +888,15 @@ void ESP32_FreeAnswers(void)
 
 	if((ptr[0]=RecvFromEsp("WIFI CONNECTED")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_CONNECTED -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[0],' ',14);  flag=1;  //Jezeli znaki po \r\n to tez usun !!!
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_CONNECTED -%d- "_E_,recvByteFromEsp);  memset(ptr[0],' ',14);  flag=1;  //Jezeli znaki po \r\n to tez usun !!!
 	}
 	if((ptr[1]=RecvFromEsp("WIFI GOT IP")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_GOT_IP -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[1],' ',11);  flag=1;
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_GOT_IP -%d- "_E_,recvByteFromEsp);  memset(ptr[1],' ',11);  flag=1;
 	}
 	if((ptr[2]=RecvFromEsp("WIFI DISCONNECT")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_DISCONNECT -%d- "_E_,ssssssiiiizzzeee);  memset(ptr[2],' ',15);  flag=1;
+		DbgVarDma(DBG,100,_SE_"\r\nWIFI_DISCONNECT -%d- "_E_,recvByteFromEsp);  memset(ptr[2],' ',15);  flag=1;
 	}
 	if((ptr[3]=RecvFromEsp("Will force to restart")))
 	{
@@ -922,13 +904,13 @@ void ESP32_FreeAnswers(void)
 	}
 	if((ptr[4]=RecvFromEsp("+TIME_UPDATED")))
 	{
-		DbgVarDma(DBG,100,_SE_"\r\nTIME_UPDATED  -%d- "_E_,ssssssiiiizzzeee);   memset(ptr[4],' ',13);  flag=1;
+		DbgVarDma(DBG,100,_SE_"\r\nTIME_UPDATED  -%d- "_E_,recvByteFromEsp);   memset(ptr[4],' ',13);  flag=1;
 	}
 
 	if(flag)
 	{
 		//SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size));
-		uint32_t clean_size = ((ESP_RECV_BUFF_SIZE-ssssssiiiizzzeee) + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 //		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
+		uint32_t clean_size = (recvByteFromEsp + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 //		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
 		SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, clean_size);
 	}
 
@@ -984,6 +966,14 @@ RECV_START: 0,CONNECT
 
 }
 
+static int WaitForRcvEsp(const char* recv1, const char* recv2)
+{
+	SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);
+	 	 if( NULL!=RecvFromEsp(recv1) && NULL==RecvFromEsp(recv2) ) return 1;
+	else if( NULL==RecvFromEsp(recv1) && NULL!=RecvFromEsp(recv2) ) return 2;
+	else if( NULL!=RecvFromEsp(recv1) && NULL!=RecvFromEsp(recv2) ) return 3;
+	else 															return 0;		/* if( NULL==RecvFromEsp(recv1) && NULL==RecvFromEsp(recv2) ) */
+}
 
 static void DispRecvBuff(int nrCase, ARCHIVING_TYPE archType)
 {
@@ -1014,61 +1004,19 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	return flag;
 }
 
-/*
-
-// Przerwanie nr 1 (np. UART)
-void HAL_UART_RxCptCallback(UART_HandleTypeDef *huart) {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    // Ustawia bit 0 w powiadomieniu zadania
-    xTaskNotifyFromISR(xTaskHandle, (1 << 0), eSetBits, &xHigherPriorityTaskWoken);
-
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-// Przerwanie nr 2 (np. Timer)
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    // Ustawia bit 1 w powiadomieniu zadania
-    xTaskNotifyFromISR(xTaskHandle, (1 << 1), eSetBits, &xHigherPriorityTaskWoken);
-
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-// Wątek odbiorczy (Task)
-void vOdbiorcaTask(void *pvParameters) {
-    uint32_t ulNotifiedValue;
-
-    for(;;) {
-        // Oczekiwanie na jakikolwiek bit
-        xTaskNotifyWait(0x00, 0xFFFFFFFF, &ulNotifiedValue, portMAX_DELAY);
-
-        if (ulNotifiedValue & (1 << 0)) {
-            // Obsługa przerwania UART
-        }
-        if (ulNotifiedValue & (1 << 1)) {
-            // Obsługa przerwania Timera
-        }
-    }
-}
-
-
-
-
-*/
-
 static int ErrorAnswerService(void)
 {
-	if(_GET_ANSW_CASE_==_ERROR){  DbgVarDma(1,200,_SE_"\r\nCMD_ERROR: %s "_E_,COMMAND_Service(_GET,NULL));  return 1; }
+	if(_GET_ANSW_CASE_==_ERROR){  DbgVarDma(DBG,200,_SE_"\r\nCMD_ERROR: %s "_E_,COMMAND_Service(_GET,NULL));  return 1; }
 	return 0;
 }
 
 void vtaskWifi(void *argument)
 {
-	char *pHttpGet,*pHttpGet2,  *ptr;   int lenHTTP=0;
+	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
 	int channel=0, size=0, len, result, result2;   int nrHTTP=0;
 	int j;
+
+	uint32_t ulNotifiedValue;
 
 	int typeSendArch = arch;
 	int typeRecvArch = arch;
@@ -1076,7 +1024,6 @@ void vtaskWifi(void *argument)
 	StartDMA();
 	ESP_ON;
 
-	connectionType=INIT_CONNECTION;
 	EmailSendParam.start=0;
 	DefaultSettingsWIFI();
 	DefaultSettingsEmail();
@@ -1103,7 +1050,11 @@ void vtaskWifi(void *argument)
 
 	while(1)
 	{
-		if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY))											/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
+
+	  if(xTaskNotifyWait(0x00, 0xFFFFFFFF, &ulNotifiedValue, portMAX_DELAY) == pdPASS)		/* xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu. */
+	  {
+	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
+		if (ulNotifiedValue & (1 << 0))
 		{
 			SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);		/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_InvalidateDCache_by_Addr() nie jest potrzebny */
 
@@ -1345,7 +1296,7 @@ void vtaskWifi(void *argument)
 								{
 									INIT_BUFF(answer,"+CIPDOMAIN:");
 									if ((ptr=RecvFromEsp(answer))){  Const.emailSend[_GET_REP_CASE_].IP = IPStr2Int(ptr+mini_strlen(answer)+1);  }
-									else  						  {  DbgDma(1,_S_ ESP32_DOMAIN_ERROR);  }
+									else  						  {  DbgDma(DBG,_S_ ESP32_DOMAIN_ERROR);  }
 								}
 							}
 						}
@@ -1378,7 +1329,7 @@ void vtaskWifi(void *argument)
 							{
 								INIT_BUFF(answer,"+CIPDOMAIN:");
 								if ((ptr=RecvFromEsp(answer))){  Const.emailSend[MAX_EMAIL_SENDERS-1].IP = IPStr2Int(ptr+mini_strlen(answer)+1);  }
-								else  						  {  DbgDma(1,_S_ ESP32_DOMAIN_ERROR);  }
+								else  						  {  DbgDma(DBG,_S_ ESP32_DOMAIN_ERROR);  }
 							}
 						}
 						else
@@ -1391,8 +1342,8 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(21,txt_OK,txt_ERR,typeRecvArch))
 					{
-						_THE_SAME_CASE_;		/* przewidujemy w tym case cykliczne powtarzanie */
 						if(ErrorAnswerService()) break;
+						_THE_SAME_CASE_;		/* przewidujemy w tym case cykliczne powtarzanie */
 						time_t getTime;
 						INIT_BUFF(answer,"+SYSTIMESTAMP:");
 						if ((ptr=RecvFromEsp(answer)))
@@ -1402,7 +1353,7 @@ void vtaskWifi(void *argument)
 							{
 								gmtime_r(&getTime,sntpTime);			/* lepsze dla wielowatkowosci niz  sntpTime=gmtime(&getTime) */
 								Const.sntp.time = getTime;
-								DbgVarDma(1,500,_S_"\r\nESP32 TIME LOADED %d: %02d-%02d-%02d  %02d:%02d:%02d"_E_,
+								DbgVarDma(DBG,500,_S_"\r\nESP32 TIME LOADED %d: %02d-%02d-%02d  %02d:%02d:%02d"_E_,
 										Const.sntp.time,
 										sntpTime->tm_year-100,
 										sntpTime->tm_mon+1,
@@ -1420,11 +1371,7 @@ void vtaskWifi(void *argument)
 								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY-1)
 								{
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",Const.sntp.time), NULL,typeSendArch );
-
-									while( NULL==RecvFromEsp(txt_OK) && NULL==RecvFromEsp(txt_ERR) ){
-										vTaskDelay(10);
-										SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);
-									}
+									while(WaitForRcvEsp(txt_OK,txt_ERR)==0) vTaskDelay(10);
 									DispRecvBuff(_GET_ACTUAL_CASE_,typeSendArch);
 									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 									RestartDMA();
@@ -1449,23 +1396,7 @@ void vtaskWifi(void *argument)
 
 					//SendEmail(0, 1<<1, EMAIL_MEASURE);  //musi byc 0 bo sprawdza w Const_emailSend_IP w pozycjo 0 !!!!! do poprawki
 					//EmailSendStart();
-/*
-    if (colonPtr != NULL) {
-        // Właściwe dane zaczynają się tuż za dwukropkiem
-        dataPtr = colonPtr + 1;
 
-        // Szukamy czy przed dwukropkiem jest przecinek (tryb wielopołączeniowy: +IPD,id,len:)
-        char* commaPtr = strchr(parsePtr, ',');
-
-        if (commaPtr != NULL && commaPtr < colonPtr) {
-            // Jeśli jest przecinek i jest przed dwukropkiem, długość jest PO przecinku
-            dataLen = atoi(commaPtr + 1);
-        } else {
-            // Brak przecinka (tryb pojedynczy: +IPD,len:), długość jest bezpośrednio po "+IPD,"
-            dataLen = atoi(parsePtr);
-        }
-    }
-*/
 //SPRAWDZ czy nie mozna szybsze jeszcze uart speed dla tego nowego systemu !!!!!!!!!!!!!!!!!!!
 
 
@@ -1474,18 +1405,18 @@ void vtaskWifi(void *argument)
 
 					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
 
-					if ((pHttpGet=strstr(RecvBuffer,",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+					if ((pHttp=strstr(RecvBuffer,",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
 					{
-						if ((pHttpGet=strstr(pHttpGet,"+IPD,")))			/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						if ((pHttp=strstr(pHttp,"+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
-							if ((pHttpGet2=strstr(pHttpGet,":GET / ")))
+							if ((pHttp2=strstr(pHttp,":GET / ")))
 							{
-								GetSizeAndChannel(pHttpGet2, &channel, &size);
+								GetSizeAndChannel(pHttp2, &channel, &size);
 								SendToEsp32(  mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, arch );
 							}
-							else if ((pHttpGet2=strstr(pHttpGet,":GET /favicon.ico")))
+							else if ((pHttp2=strstr(pHttp,":GET /favicon.ico")))
 							{
-								GetSizeAndChannel(pHttpGet2, &channel, &size);
+								GetSizeAndChannel(pHttp2, &channel, &size);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch );
 							}
 							else RestartDMA();
@@ -1499,23 +1430,24 @@ void vtaskWifi(void *argument)
 					{
 						if (RecvFromEsp("\r\nOK\r\n"))
 						{
-							DbgDma(DBG, _S_" ---- ,CLOSED ---- "_E_);
+							DbgDma(DBG, _S_" --- CLOSED --- "_E_);
 							RestartDMA();
 						}
 					}
 					else if (RecvFromEsp("ERROR"))
 					{
-						DbgDma(DBG, _S_" ---- ERROR ---- "_E_);
+						DbgDma(DBG, _S_" --- ERROR --- "_E_);
 						RestartDMA();
 					}
-					else if (RecvFromEsp("\r\nRecv "))		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes for ESP */
+					else if ((pHttp=RecvFromEsp("\r\nRecv ")))			/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
 					{
-						if (RecvFromEsp(" bytes\r\n"))  //Tu mozess wyparsowac to 88 bytes !!!
-						{
-							if (RecvFromEsp("\r\nSEND OK"))
-							{
+						int val = STRING_GetInt(pHttp,' ');
+						DbgVarDma(DBG,30,_S_"\r\n%d received bytes by ESP32 "_E_,val);
+
+						if (strstr(pHttp," bytes\r\n")){
+							if (strstr(pHttp,"\r\nSEND OK")){
 								DbgDma(DBG, _S_" ---- SEND OK ---- "_E_);
-								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);  //sprawdz ja kdlugo trwa SendToEsp32() !!!!
 							}
 						}
 					}
@@ -1531,25 +1463,25 @@ void vtaskWifi(void *argument)
 //
 //					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
 //
-//					if ((pHttpGet=strstr(RecvBuffer,",CONNECT\r\n")))			/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+//					if ((pHttp=strstr(RecvBuffer,",CONNECT\r\n")))			/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
 //					{
-//						if ((pHttpGet=strstr(pHttpGet,"+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+//						if ((pHttp=strstr(pHttp,"+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 //						{
-//							if ((pHttpGet2=strstr(pHttpGet,":GET / ")))
+//							if ((pHttp2=strstr(pHttp,":GET / ")))
 //							{
-//								GetSizeAndChannel(pHttpGet2, &channel, &size);
+//								GetSizeAndChannel(pHttp2, &channel, &size);
 //								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, arch );
 //							}
-//							else if ((pHttpGet2=strstr(pHttpGet,":GET /favicon.ico")))
+//							else if ((pHttp2=strstr(pHttp,":GET /favicon.ico")))
 //							{
-//								GetSizeAndChannel(pHttpGet2, &channel, &size);
+//								GetSizeAndChannel(pHttp2, &channel, &size);
 //								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch );
 //							}
 //							else RestartDMA();
 //						}
 //						else  //Tu srpadzaj cala tablice roznych dozwolonych odpowiedzi i podejmuj akcje
 //						{
-////							if ((pHttpGet=strstr(pHttpGet,",CLOSED\r\n")))
+////							if ((pHttp=strstr(pHttp,",CLOSED\r\n")))
 ////							{
 ////								RestartDMA();
 ////							}
@@ -1628,7 +1560,7 @@ void vtaskWifi(void *argument)
 
 
 		}
-
+	  }
 	}
 /*
 	while (1)
@@ -1638,17 +1570,17 @@ void vtaskWifi(void *argument)
 			switch (connectionType)
 			{
 			case HTTP_CONNECTION:
-				if ((pHttpGet=RecvFromEsp(":GET /")))
+				if ((pHttp=RecvFromEsp(":GET /")))
 				{
-					GetSizeAndChannel(pHttpGet, &channel, &size);
+					GetSizeAndChannel(pHttp, &channel, &size);
 
 					while (GetDMACountByte()<size)
 						vTaskDelay(1);
 
 					if (RecvFromEsp(":GET /TME.txt")==0)
-						DisplayRequestGET(pHttpGet, 2000);
+						DisplayRequestGET(pHttp, 2000);
 
-					result=vSendDataHTTP(pHttpGet, channel);
+					result=vSendDataHTTP(pHttp, channel);
 					DbgVar(DBG, 20, "\r\nSend Code: %d ", result);
 
 					result2=vCloseConnection(channel);
