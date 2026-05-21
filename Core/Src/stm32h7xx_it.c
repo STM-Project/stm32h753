@@ -284,9 +284,15 @@ void UART7_IRQHandler(void)
 {
   /* USER CODE BEGIN UART7_IRQn 0 */
 
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+	DEBUG_UartHandler(&xHigherPriorityTaskWoken);
+
   /* USER CODE END UART7_IRQn 0 */
   HAL_UART_IRQHandler(&huart7);
   /* USER CODE BEGIN UART7_IRQn 1 */
+
+  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 
   /* USER CODE END UART7_IRQn 1 */
 }

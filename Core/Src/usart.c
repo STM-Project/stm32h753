@@ -74,6 +74,15 @@ void MX_UART7_Init(void)
   }
   /* USER CODE BEGIN UART7_Init 2 */
 
+  __HAL_UART_DISABLE_IT(&huart7, UART_IT_TXE | UART_IT_RXNE | UART_IT_TC);			/* 1. WYŁĄCZ niepotrzebne przerwania i WYCZYŚĆ flagi (Przygotowanie pola) */
+  __HAL_UART_CLEAR_FLAG(&huart7, UART_FLAG_TC | UART_FLAG_RTOF);
+  __HAL_DMA_DISABLE_IT(huart7.hdmatx, DMA_IT_HT);
+
+  HAL_UART_ReceiverTimeout_Config(&huart7, 35); 									/* 2. SKONFIGURUJ parametry sprzętowe,   exmple: timeout for 3.5 bytes idle (10 bytes for one frame) and TimeoutValue=35 */
+  HAL_UART_EnableReceiverTimeout(&huart7);
+
+  __HAL_UART_ENABLE_IT(&huart7, UART_IT_RTO);										/* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
+
   /* USER CODE END UART7_Init 2 */
 
 }
@@ -371,8 +380,8 @@ void UART_ClearFlags(UART_HandleTypeDef *huart)
 
 void UART_ClearFlags2(UART_HandleTypeDef *huart)
 {
-	__HAL_DMA_DISABLE_IT(huart6.hdmarx, DMA_IT_HT);				/* HAL_UART_Receive_DMA() automatycznie włącza oba te przerwania i mogą być zbędne i generować niepotrzebne obciążenie procesora */
-	__HAL_DMA_DISABLE_IT(huart6.hdmarx, DMA_IT_TC);
+	__HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);				/* HAL_UART_Receive_DMA() automatycznie włącza oba te przerwania i mogą być zbędne i generować niepotrzebne obciążenie procesora */
+	__HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_TC);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
@@ -383,7 +392,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 	else if(huart->Instance==USART6)
 	{
-
+		asm("nop");
 	}
 }
 
@@ -407,6 +416,10 @@ void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long 
 		}
 */
 	}
+	else if (huart->Instance == UART7)
+	{
+		ESP32_Notify2EspThread(1,size,pxWoken);
+	}
 }
 
 void ESP32_UartHandler(long *pxWoken)
@@ -415,6 +428,15 @@ void ESP32_UartHandler(long *pxWoken)
 	{
 		__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
 		HAL_UARTEx_RxEventCallback_(&huart6, __HAL_DMA_GET_COUNTER(huart6.hdmarx), pxWoken);		/* Rejestr COUNTER startuje z wartością, która podana jest w funkcji startującej (np. HAL_UART_Receive_DMA), i zmniejsza się o 1 po każdym odebranym bajcie */
+	}
+}
+
+void DEBUG_UartHandler(long *pxWoken)
+{
+	if(__HAL_UART_GET_FLAG(&huart7, UART_FLAG_RTOF) != RESET && __HAL_UART_GET_IT_SOURCE(&huart7, UART_IT_RTO) != RESET)
+	{
+		__HAL_UART_CLEAR_FLAG(&huart7, UART_FLAG_RTOF);
+		HAL_UARTEx_RxEventCallback_(&huart7, __HAL_DMA_GET_COUNTER(huart7.hdmarx), pxWoken);
 	}
 }
 
@@ -434,11 +456,12 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance==UART7)
 	{
-
+		Dbg(1,"\r\n!! UART7 ERROR !!");
 	}
 	else if(huart->Instance==USART6)
 	{
-		WIFI_UartErrorService();
+		//WIFI_UartErrorService();
+		Dbg(1,"\r\n!! UART6 ERROR !!");
 	}
 }
 
@@ -456,14 +479,13 @@ void DEBUG_SendDma(uint8_t *txt, int size){
 
 void DEBUG_ReceiveStart(uint8_t* buffer, uint16_t len)
 {
-	__HAL_UART_FLUSH_DRREGISTER(&huart7);
-	SCB_CleanDCache_by_Addr((uint32_t *)buffer, len);
-	HAL_UART_Receive_DMA(&huart7, buffer, len-1);
-
-//	 __HAL_UART_CLEAR_FLAG(&huart7, UART_CLEAR_OREF | UART_CLEAR_NEF | UART_CLEAR_FEF | UART_CLEAR_PEF);  //to chyba lepsze
-//	 HAL_UART_Receive_DMA(&huart7, buffer, len);
-
+	memset(buffer,0,len);														/* memset() takes 18us */
+	SCB_CleanDCache_by_Addr((uint32_t*)buffer, CACHE_ALLIGN_LEN(len));			/* Wypchnij bufor RecvBuffer z casha do RAMu by wyczyscic pamiec DMA */
+	UART_ClearFlags(&huart7);
+	HAL_UART_Receive_DMA(&huart7,buffer,len);
+	UART_ClearFlags2(&huart7);
 }
+
 void DEBUG_ReceiveStop(void){
 	HAL_UART_DMAStop(&huart7);
 }

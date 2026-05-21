@@ -158,12 +158,15 @@ static int DEBUG_IsAnythingReceive(void)
 		return 0;
 }
 
-static int DEBUG_IsTxtReceive(char *txt)
+void DEBUG_InvalidateDCache(void){
+	SCB_InvalidateDCache_by_Addr((uint32_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
+}
+
+int DEBUG_IsTxtReceive(char *txt)
 {
 	if(strstr(dbgRecvBuffer,txt))
 	{
 		DEBUG_ReceiveStop();
-		memset(dbgRecvBuffer,0,RECV_BUFF_SIZE);
 		DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 		return 1;
 	}
@@ -172,10 +175,9 @@ static int DEBUG_IsTxtReceive(char *txt)
 
 void DEBUG_RxFullBuffService(void)
 {
-	DEBUG_Send(dbgRecvBuffer);
-	memset(dbgRecvBuffer,0,RECV_BUFF_SIZE);
-	DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 	Dbg(DEBUG_DEBUG,"\r\n -----  DEBUG_RxFullBuffService -------  ");
+	DEBUG_ReceiveStop();
+	DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 }
 
 int DEBUG_RcvStr(char *txt)

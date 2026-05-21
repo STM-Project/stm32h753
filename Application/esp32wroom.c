@@ -124,7 +124,7 @@ static int recvByteFromEsp = 0;
 
 extern UART_HandleTypeDef ESP_UART_HANDLE;
 extern DMA_HandleTypeDef ESP_UART_DMA_RX;
-static xTaskHandle vtaskWifiHandle;
+static xTaskHandle vtaskWifiHandle=NULL;
 static int resetDMA=0;
 
 RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];
@@ -135,8 +135,10 @@ void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken)					
 {
 	recvByteFromEsp = ESP_RECV_BUFF_SIZE - size;
 /*  vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);	*/					/* Wyślij powiadomienie bezpośrednio do wątku */
-    if(interruptSrc==0) xTaskNotifyFromISR(vtaskWifiHandle,(1<<0),eSetBits,pxWoken);
-    else				xTaskNotifyFromISR(vtaskWifiHandle,(1<<1),eSetBits,pxWoken);
+    if(interruptSrc==0){
+    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,(1<<0),eSetBits,pxWoken);  }
+    else{
+    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,(1<<1),eSetBits,pxWoken);  }
 }
 
 void DefaultSettingsWIFI(void)
@@ -1267,8 +1269,8 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(17,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()) break;
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"), NULL, typeSendArch );
-					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n", GetHttpPort()), NULL ); */
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeSendArch );
+						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
 
 					}
@@ -1566,13 +1568,26 @@ void vtaskWifi(void *argument)
 
 		if (ulNotifiedValue & (1 << 1))
 		{
+			DEBUG_InvalidateDCache();
 
+			if(DEBUG_IsTxtReceive("abc"))
+			{
+				DbgDma(DBG, _S_" Rafal Markielowski"_E_);
+			}
+			else if(DEBUG_IsTxtReceive("x"))
+			{
+				DbgDma(DBG, _S_"x"_E_);
+			}
+			else if(DEBUG_IsTxtReceive("z"))
+			{
+				DbgDma(DBG, _S_"z"_E_);
+			}
 
 
 
 
 			uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue);
-			if ((ulPoprzedniaWartosc & (1<<0)) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
+			if ((ulPoprzedniaWartosc & (1<<1)) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
 
 				asm("nop");
 			}
@@ -1946,7 +1961,7 @@ void CreateWifiTask(void)
 
 void CloseWifiTask(void)
 {
-	vTaskDelete(vtaskWifiHandle);
+	vTaskDelete(vtaskWifiHandle);	vtaskWifiHandle=NULL;
 	ESP_OFF;
 	ChangeUartBuadRate(115200);
 }
@@ -1965,8 +1980,8 @@ void WIFI_UartErrorService(void)
 
 void WIFI_RxCallbackService(void)
 {
-	RestartDMA();
 	Dbg(DBG, "\r\n -----  USART6  HAL_UART_RxCpltCallback -------  ");
+	RestartDMA();
 }
 
 //------------- ATTENTIONS ------------------------------

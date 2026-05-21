@@ -76,6 +76,8 @@ void DbgVarDma(int on, unsigned int buffLen, const char *fmt, ...);
 void DbgVarDma2(int on, unsigned int buffLen, const char *fmt, ...);
 void DEBUG_RxFullBuffService(void);
 int DEBUG_RcvStr(char *txt);
+int DEBUG_IsTxtReceive(char *txt);
+void DEBUG_InvalidateDCache(void);
 
 void* DEBUG_TestFunction(void *a, DATA_TYPE dataType, DATA_ACTION dataAction, void *step, void *min, void *max, char *descr, VOID_FUNCTION_TEST xfunc, VOID_FUNCTION_TEST xfunc2);
 

@@ -175,6 +175,7 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN StartDefaultTask */
 	Dbg(1,"\r\nHello Tu nowy STM32H753BIT6 Rafal Markielowski 123456789 ");
 	MX_FATFS_Init();
+	DEBUG_Init();
 
 	osDelay(1000);
 //	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff));
