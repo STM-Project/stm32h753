@@ -127,8 +127,8 @@ extern DMA_HandleTypeDef ESP_UART_DMA_RX;
 static xTaskHandle vtaskWifiHandle;
 static int resetDMA=0;
 
-RAM_D2_ALIGN32 char RecvBuffer[ESP_RECV_BUFF_SIZE];
-RAM_D2_ALIGN32 char sendBuff[PACKET_SEND_LEN];
+RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];
+RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];
 
 
 void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken)					/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
@@ -206,7 +206,7 @@ static void ChangeUartBuadRate(int baudRate)
 	}
 }
 
-static void StartDMA(void)
+static void StartDMA(void)																	/* Jesli w tym momencie przyjdzie jakis komunikat asynchroniczny z ESP32 to NIGDY go nie odczytam bo wyczyszcze go. Rozwiazaniem jest Circle DMA */
 {
 	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE);												/* memset() takes 18us */
 	SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);						/* Wypchnij bufor RecvBuffer z casha do RAMu by wyczyscic pamiec DMA */

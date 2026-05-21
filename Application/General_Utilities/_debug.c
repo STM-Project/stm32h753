@@ -18,8 +18,8 @@
 #define SEND_BUFF_SIZE	1024		/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
 #define DEBUG_DEBUG		1
 
-static char ALIGN_32BYTES(dbgRecvBuffer[RECV_BUFF_SIZE]);
-static char ALIGN_32BYTES(dbgSendBuffer[SEND_BUFF_SIZE]);
+RAM_D2_ALIGN32 static char dbgRecvBuffer[RECV_BUFF_SIZE];
+RAM_D2_ALIGN32 static char dbgSendBuffer[SEND_BUFF_SIZE];
 
 static volatile uint16_t dbg_head = 0;		/* Uzywaj volatile jesli sa modyfikowane w przerwaniach i korzystane w petli w watku */
 static volatile uint16_t dbg_tail = 0;
