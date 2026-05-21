@@ -1051,7 +1051,7 @@ void vtaskWifi(void *argument)
 	while(1)
 	{
 
-	  if(xTaskNotifyWait(0x00, 0x00, &ulNotifiedValue, portMAX_DELAY) == pdPASS)		/* xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu. */
+	  if(xTaskNotifyWait(0x00, 0x00, &ulNotifiedValue, portMAX_DELAY) == pdPASS)			/* xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu.   Problem: Jeśli w tym samym momencie (ułamek sekundy po wybudzeniu zadania, ale przed zakończeniem tej funkcji) inne zadanie lub przerwanie (ISR) przyśle nowy bit, zostanie on bezpowrotnie skasowany i utracony. Dlatego najbezpieczniejsze jest uzycie pod koniec obslugi tego zdarzenia reczne czyszczenie aktualnego bitu funkcją ulTaskNotifyValueClear(NULL, ulNotifiedValue) */
 	  {
 	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
 		if (ulNotifiedValue & (1 << 0))
@@ -1264,7 +1264,7 @@ void vtaskWifi(void *argument)
 						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(17,txt_OK,txt_ERR,typeRecvArch))//zrobic CELOWE TESTY Z BLEDAMI BY ZOBACZYC ICH OBSLUGE !!!!!!
+					else if (CASE_Service(17,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()) break;
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"), NULL, typeSendArch );
@@ -1281,7 +1281,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(19,txt_OK,txt_ERR,typeRecvArch))
 					{
-						_THE_SAME_CASE_;		/* przewidujemy w tym case cykliczne powtarzanie */
+						_THE_SAME_CASE_;								/* przewidujemy w tym case cykliczne powtarzanie */
 
 						/* Obsługa odpowiedzi */
 						{
@@ -1291,7 +1291,7 @@ void vtaskWifi(void *argument)
 							}
 							else if(IS_RANGE(_GET_REP_CASE_,1,MAX_EMAIL_SENDERS-1))
 							{
-								if(ErrorAnswerService()){ ; }    /* z tym błędem nic nie rob */
+								if(ErrorAnswerService()){ ; }   		/* z tym błędem nic nie rob */
 								else
 								{
 									INIT_BUFF(answer,"+CIPDOMAIN:");
@@ -1324,7 +1324,7 @@ void vtaskWifi(void *argument)
 						if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode ||
 							 WIFI_MODE_AP_STA == Const.wifiGeneral.mode))
 						{
-							if(ErrorAnswerService()){ ; }   	 /* z tym błędem nic nie rob */
+							if(ErrorAnswerService()){ ; }   	 		/* z tym błędem nic nie rob */
 							else
 							{
 								INIT_BUFF(answer,"+CIPDOMAIN:");
@@ -1343,7 +1343,7 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(21,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()) break;
-						_THE_SAME_CASE_;		/* przewidujemy w tym case cykliczne powtarzanie */
+						_THE_SAME_CASE_;								/* przewidujemy w tym case cykliczne powtarzanie */
 						time_t getTime;
 						INIT_BUFF(answer,"+SYSTIMESTAMP:");
 						if ((ptr=RecvFromEsp(answer)))
@@ -1405,9 +1405,9 @@ void vtaskWifi(void *argument)
 
 					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
 
-					if ((pHttp=strstr(RecvBuffer,",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+					if ((pHttp=strstr(RecvBuffer,",CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
 					{
-						if ((pHttp=strstr(pHttp,"+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						if ((pHttp=strstr(pHttp,"+IPD,")))							/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
 							if ((pHttp2=strstr(pHttp,":GET / ")))
 							{
@@ -1439,14 +1439,14 @@ void vtaskWifi(void *argument)
 						DbgDma(DBG, _S_" --- ERROR --- "_E_);
 						RestartDMA();
 					}
-					else if ((pHttp=RecvFromEsp("\r\nRecv ")))			/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
+					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
 					{
-						int val = STRING_GetInt(pHttp,' ');
-						DbgVarDma(DBG,30,_S_"\r\n%d received bytes by ESP32 "_E_,val);
-
 						if (strstr(pHttp," bytes\r\n")){
-							if (strstr(pHttp,"\r\nSEND OK")){
-								DbgDma(DBG, _S_" ---- SEND OK ---- "_E_);
+							if (strstr(pHttp,"\r\nSEND OK"))
+							{
+								int val = STRING_GetInt(pHttp,' ');
+								DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
+								DbgDma(DBG, _S_" --- SEND OK --- "_E_);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);  //sprawdz ja kdlugo trwa SendToEsp32() !!!!
 							}
 						}
@@ -1557,8 +1557,25 @@ void vtaskWifi(void *argument)
 			}
 
 
-			ulTaskNotifyValueClear(NULL, ulNotifiedValue);
+			uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue);
+			if ((ulPoprzedniaWartosc & (1<<0)) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
 
+				asm("nop");
+			}
+		}
+
+		if (ulNotifiedValue & (1 << 1))
+		{
+
+
+
+
+
+			uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue);
+			if ((ulPoprzedniaWartosc & (1<<0)) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
+
+				asm("nop");
+			}
 		}
 	  }
 	}

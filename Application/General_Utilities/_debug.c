@@ -308,7 +308,6 @@ void vLogTask(void *pvParameters)
     }
 }
 
-
 // 3. Callback z przerwania DMA (ISR)
 void DBG_EndSendInterrupt(void)
 {
