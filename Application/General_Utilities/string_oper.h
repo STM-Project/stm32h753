@@ -50,5 +50,6 @@ void StrBuffCopylimit(char *dest, char *src, int lenSrc);
 uint32_t IPStr2Int(char *str);
 uint64_t MACStr2Int64(char *str);
 char* IP2Str(uint32_t value);
+int STRING_GetInt(char* txt, char seperator);
 
 #endif /* GENERAL_UTILITIES_STRING_OPER_H_ */
