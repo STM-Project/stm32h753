@@ -391,7 +391,7 @@ void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long 
 {  																									/* Nie jest samoczynnie wywolywany trzeba samemu wywolac */
 	if (huart->Instance == USART6)
 	{
-		ESP32_Notify2EspThread(size,pxWoken);
+		ESP32_Notify2EspThread(0,size,pxWoken);
 
 /*		HAL_UART_RxEventTypeTypeDef eventType = HAL_UARTEx_GetRxEventType(huart);
 		switch(eventType)
