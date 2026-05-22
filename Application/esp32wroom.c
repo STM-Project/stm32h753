@@ -62,6 +62,9 @@ const static char txt_ERR[]="ERROR";
 #define _THE_SAME_CASE_			CASE_Service((_GET_ACTUAL_CASE_-1),NULL,NULL,0)		/* CASE_Service() increment actual case */
 #define _GET_ANSW_CASE_			CASE_Service(-5,NULL,NULL,0)
 
+#define BIT_ESP_SRV			(1<<0)
+#define BIT_DBG_SRV			(1<<1)
+
 typedef enum
 {
 	_OK=1, _ERROR
@@ -136,9 +139,9 @@ void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken)					
 	recvByteFromEsp = ESP_RECV_BUFF_SIZE - size;
 /*  vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);	*/					/* Wyślij powiadomienie bezpośrednio do wątku */
     if(interruptSrc==0){
-    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,(1<<0),eSetBits,pxWoken);  }
+    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_ESP_SRV,eSetBits,pxWoken);  }
     else{
-    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,(1<<1),eSetBits,pxWoken);  }
+    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_DBG_SRV,eSetBits,pxWoken);  }
 }
 
 void DefaultSettingsWIFI(void)
@@ -159,15 +162,15 @@ void DefaultSettingsWIFI(void)
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
 		VAR_SetVal64(Const_wifiSTA_mac, i, 0x1122334455);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,1,99));
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,99));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
-		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
+		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
-		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -240,7 +243,9 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	/*	uint32_t clean_size = (len_ + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
 		SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, clean_size);	*/
 
-		return HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
+		int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
+		if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
+		return result;
 	}
 }
 
@@ -1056,7 +1061,7 @@ void vtaskWifi(void *argument)
 	  if(xTaskNotifyWait(0x00, 0x00, &ulNotifiedValue, portMAX_DELAY) == pdPASS)			/* xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu.   Problem: Jeśli w tym samym momencie (ułamek sekundy po wybudzeniu zadania, ale przed zakończeniem tej funkcji) inne zadanie lub przerwanie (ISR) przyśle nowy bit, zostanie on bezpowrotnie skasowany i utracony. Dlatego najbezpieczniejsze jest uzycie pod koniec obslugi tego zdarzenia reczne czyszczenie aktualnego bitu funkcją ulTaskNotifyValueClear(NULL, ulNotifiedValue) */
 	  {
 	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
-		if (ulNotifiedValue & (1 << 0))
+		if (ulNotifiedValue & BIT_ESP_SRV)
 		{
 			SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);		/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_InvalidateDCache_by_Addr() nie jest potrzebny */
 
@@ -1064,9 +1069,9 @@ void vtaskWifi(void *argument)
 			{
 				case INIT_CONNECTION:
 
-					if (CASE_Service(0,"ready",NULL,typeRecvArch))
+					if (CASE_Service(0,"ready",NULL,typeRecvArch))				//Zrobic prorytezacje debugow, szczegolowy tylko dla 1 konkretnego watku, ogolny dac do kolejki watku od debug i ten ogolnny (bledy HAL, info podst, ze zalogowano itd..) zawsze bedzie aktywny a szczegolowy wlaczany ale tylko do 1 watku
 					{
-						if(SendToEsp32(0,"ATE0\r\n",typeSendArch) != HAL_OK){  DbgDma(DBG,_SE_"\r\nHAL_ERROR "_E_);  break;  }  //ZROB TAK  na sendESP32 nakladke !!!!!!
+						SendToEsp32(0,"ATE0\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 
 					}
@@ -1432,13 +1437,13 @@ void vtaskWifi(void *argument)
 					{
 						if (RecvFromEsp("\r\nOK\r\n"))
 						{
-							DbgDma(DBG, _S_" --- CLOSED --- "_E_);
+							if(archType!=noArch) DbgDma(DBG, _S_" --- CLOSED --- "_E_);
 							RestartDMA();
 						}
 					}
 					else if (RecvFromEsp("ERROR"))
 					{
-						DbgDma(DBG, _S_" --- ERROR --- "_E_);
+						if(archType!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
 						RestartDMA();
 					}
 					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
@@ -1447,8 +1452,10 @@ void vtaskWifi(void *argument)
 							if (strstr(pHttp,"\r\nSEND OK"))
 							{
 								int val = STRING_GetInt(pHttp,' ');
-								DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
-								DbgDma(DBG, _S_" --- SEND OK --- "_E_);
+								if(archType!=noArch){
+									DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
+									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
+								}
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);  //sprawdz ja kdlugo trwa SendToEsp32() !!!!
 							}
 						}
@@ -1560,13 +1567,13 @@ void vtaskWifi(void *argument)
 
 
 			uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue);
-			if ((ulPoprzedniaWartosc & (1<<0)) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
+			if ((ulPoprzedniaWartosc & BIT_ESP_SRV) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
 
 				asm("nop");
 			}
 		}
 
-		if (ulNotifiedValue & (1 << 1))
+		if (ulNotifiedValue & BIT_DBG_SRV)
 		{
 			DEBUG_InvalidateDCache();
 
@@ -1587,7 +1594,7 @@ void vtaskWifi(void *argument)
 
 
 			uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue);
-			if ((ulPoprzedniaWartosc & (1<<1)) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
+			if ((ulPoprzedniaWartosc & BIT_DBG_SRV) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
 
 				asm("nop");
 			}
