@@ -42,7 +42,7 @@ void DBG_EndSendInterrupt(void)
 		/* Give SemaphorFromISR (in future) */
 	}
 }
-
+												/* WAZNE: Wersja ta z buforem kołowym bedzie używana tylko do szczególowego debagowania dla wybranego watku, NIGDY wlaczona na stałe aby mogly wiecej watkow naraz korzystac ze szczegolowego debagowania. Do logów z roznych wątków w przyszlosci bedzie uruchomiony nowy dedykowany temu wątek obsługujacy kolejki RTOS */
 static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
 {												/* Jeśli zablokujesz Mutex, a potem uśpisz wątek semaforem oczekującym na koniec DMA, zablokujesz możliwość logowania innym wątkom na bardzo długi czas (czas transmisji UART/DMA). Logowanie stanie się operacją blokującą, co przeczy idei używania bufora kołowego i DMA */
 	/* Take Mutex (in future) */
