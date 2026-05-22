@@ -48,7 +48,7 @@
 #define ESP_ON 		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_SET)
 #define ESP_OFF		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_RESET)
 
-#define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL</h1></body></html>"
+#define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL 0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789</h1></body></html>"
 #define ESP32_DOMAIN_ERROR 	"\r\nNOT updated email Server IP "
 const static char txt_OK[]="\r\nOK\r\n";
 const static char txt_ERR[]="ERROR";
@@ -1020,7 +1020,7 @@ static int ErrorAnswerService(void)
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
-	int channel=0, size=0, len, result, result2;   int nrHTTP=0;
+	int channel=0, size=0, len, result, result2;   int nrHTTP=0;   int nrPages=0;
 	int j;
 
 	uint32_t ulNotifiedValue;
@@ -1409,7 +1409,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-
+					typeSendArch=noArch;
 					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
 
 					if ((pHttp=strstr(RecvBuffer,",CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
@@ -1419,19 +1419,19 @@ void vtaskWifi(void *argument)
 							if ((pHttp2=strstr(pHttp,":GET / ")))
 							{
 								GetSizeAndChannel(pHttp2, &channel, &size);
-								SendToEsp32(  mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, arch );
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, noArch );
 							}
 							else if ((pHttp2=strstr(pHttp,":GET /favicon.ico")))
 							{
 								GetSizeAndChannel(pHttp2, &channel, &size);
-								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch );
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, noArch );
 							}
 							else RestartDMA();
 						}
 					}
 					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, arch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, noArch );
 					}
 					else if (RecvFromEsp(",CLOSED\r\n"))
 					{
@@ -1456,7 +1456,14 @@ void vtaskWifi(void *argument)
 									DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
 									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
 								}
-								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);  //sprawdz ja kdlugo trwa SendToEsp32() !!!!
+
+								if(nrPages > 200){  nrPages=0;
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, noArch);		/* Czas wykonania SendToEsp32() to 28us */
+								}
+								else{  nrPages++; DbgDma(1,".");
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, noArch );
+								}
+
 							}
 						}
 					}
@@ -1588,6 +1595,10 @@ void vtaskWifi(void *argument)
 			else if(DEBUG_IsTxtReceive("z"))
 			{
 				DbgDma(DBG, _S_"z"_E_);
+			}
+			else if(DEBUG_IsTxtReceive("q"))
+			{
+				Dbg(DBG, _S_"\r\n uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue) "_E_);
 			}
 
 
