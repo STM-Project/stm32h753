@@ -162,15 +162,15 @@ void DefaultSettingsWIFI(void)
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
 		VAR_SetVal64(Const_wifiSTA_mac, i, 0x1122334455);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,99));
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,1,99));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
-		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
+		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
-//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -1437,13 +1437,13 @@ void vtaskWifi(void *argument)
 					{
 						if (RecvFromEsp("\r\nOK\r\n"))
 						{
-							if(archType!=noArch) DbgDma(DBG, _S_" --- CLOSED --- "_E_);
+							if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- CLOSED --- "_E_);
 							RestartDMA();
 						}
 					}
 					else if (RecvFromEsp("ERROR"))
 					{
-						if(archType!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
+						if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
 						RestartDMA();
 					}
 					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
@@ -1452,7 +1452,7 @@ void vtaskWifi(void *argument)
 							if (strstr(pHttp,"\r\nSEND OK"))
 							{
 								int val = STRING_GetInt(pHttp,' ');
-								if(archType!=noArch){
+								if(typeSendArch!=noArch){
 									DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
 									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
 								}

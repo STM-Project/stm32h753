@@ -21,9 +21,9 @@
 RAM_D2_ALIGN32 static char dbgRecvBuffer[RECV_BUFF_SIZE];
 RAM_D2_ALIGN32 static char dbgSendBuffer[SEND_BUFF_SIZE];
 
-static volatile uint16_t dbg_head = 0;		/* Uzywaj volatile jesli sa modyfikowane w przerwaniach i korzystane w petli w watku */
-static volatile uint16_t dbg_tail = 0;
-static volatile uint8_t dbg_dma_busy = 0;
+/*static*/ volatile uint16_t dbg_head = 0;		/* Uzywaj volatile jesli sa modyfikowane w przerwaniach i korzystane w petli w watku */
+volatile uint16_t dbg_tail = 0;
+volatile uint8_t dbg_dma_busy = 0;
 
 void DEBUG_Init(void)
 {
@@ -48,7 +48,8 @@ static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, 
 	/* Take Mutex (in future) */
     while (*txt){								/* zapis do bufora kolowego */
         uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
-        if (next_head == dbg_tail) vTaskDelay(1);			/* bufor pelny, niedapisujemy, mozemy tez poczekac az zwolni sie bufor w DBG_EndSendInterrupt() */
+        if (next_head == dbg_tail)
+        	vTaskDelay(1);						/* bufor pelny, niedapisujemy, mozemy tez poczekac az zwolni sie bufor w DBG_EndSendInterrupt() */
         dbgSendBuffer[dbg_head] = *txt++;
         dbg_head = next_head;
     }

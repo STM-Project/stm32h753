@@ -46,7 +46,7 @@ void MX_UART7_Init(void)
 
   /* USER CODE END UART7_Init 1 */
   huart7.Instance = UART7;
-  huart7.Init.BaudRate = 115200;
+  huart7.Init.BaudRate = 2000000;
   huart7.Init.WordLength = UART_WORDLENGTH_8B;
   huart7.Init.StopBits = UART_STOPBITS_1;
   huart7.Init.Parity = UART_PARITY_NONE;
@@ -467,6 +467,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 
 void DEBUG_Send(char *txt){
 	/* Take Mutex (in future) */
+	while (huart7.gState == HAL_UART_STATE_BUSY_TX) HAL_Delay(2);
 	HAL_UART_Transmit(&huart7, (uint8_t*)txt, mini_strlen(txt),300);
 	/* Give Mutex (in future) */
 }
@@ -478,7 +479,7 @@ void DEBUG_SendDma(uint8_t *txt, int size){
     int result = HAL_UART_Transmit_DMA(&huart7, txt, size);
     if(result!=HAL_OK)
     {
-    	asm("nop");
+    	;
     }
 }
 
