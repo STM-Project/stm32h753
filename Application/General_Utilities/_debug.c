@@ -46,11 +46,19 @@ void DEBUG_Init(void)
 	DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 }
 
+void AAAAAAAAAA(){
+	dbg_dma_busy = 0;
+}
+
+static void BuffCirc_SendData(void){
+    if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head - dbg_tail 		 );	 	dbg_tail = dbg_head;	}		/* to nic NIE szkodzi ze w przerwaniu 'dbg_tail' modyfikuje a w watku odczyuje i na odwrot z inna zmienna */
+    else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE - dbg_tail );	 	dbg_tail = 0;			} 		/* Reszta danych pójdzie w callbacku */
+}
+
 void DBG_EndSendInterrupt(void)
 {
 	if (dbg_head != dbg_tail){
-        if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head-dbg_tail 	   );	 dbg_tail = dbg_head;	}	/* to nic NIE szkodzi ze w przerwaniu 'dbg_tail' modyfikuje a w watku odczyuje i na odwrot z inna zmienna */
-        else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE-dbg_tail );	 dbg_tail = 0;			}
+		 BuffCirc_SendData();
     }
 	else{
 		dbg_dma_busy = 0;
@@ -63,16 +71,22 @@ static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, 
 	/* Take Mutex (in future) */
     while (*txt){								/* zapis do bufora kolowego */
         uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
-        if (next_head == dbg_tail)
-        	vTaskDelay(1);						/* bufor pelny, niedapisujemy, mozemy tez poczekac az zwolni sie bufor w DBG_EndSendInterrupt() */
+        if (next_head == dbg_tail){
+        	/* vTaskDelay(1); */						/* bufor pelny, niedapisujemy, mozemy tez poczekac az zwolni sie bufor w DBG_EndSendInterrupt() ale my jednak obserwujemy zawieszenie sie przerwania TX dlatego musimy je odblokowac wysylajac tu dane */
+        	if(dbg_dma_busy){
+        	    if ((dbg_head != dbg_tail)){
+        	        dbg_dma_busy = 1;
+        	        BuffCirc_SendData();
+        	    }
+        	}
+        }
         dbgSendBuffer[dbg_head] = *txt++;
         dbg_head = next_head;
     }
 
-    if (!dbg_dma_busy && dbg_head != dbg_tail){		/* Ta czesc jes wykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
+    if (!dbg_dma_busy && (dbg_head != dbg_tail)){		/* Ta czesc jes wykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
         dbg_dma_busy = 1;
-        if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head-dbg_tail 	   );	 dbg_tail = dbg_head;	}
-        else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE-dbg_tail );	 dbg_tail = 0;			} 		/* Reszta danych pójdzie w callbacku */
+        BuffCirc_SendData();
     }
     /* Wait for Semaphor (in future) */		/* Tu zasyiam i oddaje czas innym watkom */
     /* Give Mutex 		 (in future) */
@@ -276,8 +290,8 @@ void DBG_EndSendInterruptQue(void)
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     if (dbg_head_que != dbg_tail_que){
-        if (dbg_head_que > dbg_tail_que){	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], dbg_head_que-dbg_tail_que);			dbg_tail_que = dbg_head_que;	}
-        else							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE-dbg_tail_que);	dbg_tail_que = 0;				}
+        if (dbg_head_que > dbg_tail_que){	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], dbg_head_que - dbg_tail_que);		 dbg_tail_que = dbg_head_que;	}
+        else							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE - dbg_tail_que);	 dbg_tail_que = 0;				}
 
         if (xLogTaskHandle != NULL)	 vTaskNotifyGiveFromISR(xLogTaskHandle, &xHigherPriorityTaskWoken);		/* Ponieważ właśnie przesunęliśmy dbg_tail_que (zwolniliśmy miejsce), wysyłamy sygnał wybudzenia do wątku logującego na wypadek, gdyby spał z powodu pełnego bufora. */
     }
@@ -308,8 +322,8 @@ void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla 
 
             if (!dbg_dma_busy_que && (dbg_head_que != dbg_tail_que)){		/* Jeśli dma_was_idle==0, to znaczy, że DMA na pewno stoi */
             	dbg_dma_busy_que = 1;
-                if (dbg_head_que > dbg_tail_que){	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], dbg_head_que-dbg_tail_que);			dbg_tail_que = dbg_head_que;	}
-                else 							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE-dbg_tail_que);	dbg_tail_que = 0;				}		/* reszta danych zostanie wyslana w przerwaniu */
+                if (dbg_head_que > dbg_tail_que){	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], dbg_head_que - dbg_tail_que);		 dbg_tail_que = dbg_head_que;	}
+                else 							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE - dbg_tail_que);	 dbg_tail_que = 0;				}		/* reszta danych zostanie wyslana w przerwaniu */
             }
         }
     }

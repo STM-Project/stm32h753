@@ -529,14 +529,15 @@ void DEBUG_Send(char *txt){
 	/* Give Mutex (in future) */
 }
 
-void DEBUG_SendDma(uint8_t *txt, int size){
+int DEBUG_SendDma(uint8_t *txt, int size){
  /* SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE); */
     SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size));
     int result = HAL_UART_Transmit_DMA(&huart7, txt, size);
-    if(result!=HAL_OK)
+    if(result==HAL_OK)
     {
-    	;
+    	ATOMIC_SET_BIT(huart7.Instance->CR1, USART_CR1_TCIE); 		/* Ręcznie upewniamy się, że przerwanie od zakończenia transmisji UART jest aktywne */
     }
+    return result;
 }
 
 void DEBUG_ReceiveStart(uint8_t* buffer, uint16_t len)

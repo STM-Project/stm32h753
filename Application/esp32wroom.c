@@ -1598,11 +1598,12 @@ void vtaskWifi(void *argument)
 
 			if(DEBUG_IsTxtReceive("a"))
 			{
-				DbgDmaQue(DBG, _S_"a"_E_);
+				DbgDmaQue(DBG, _S_"Rafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal Markielowski "_E_);
 			}
 			else if(DEBUG_IsTxtReceive("x"))
 			{
-				DbgDma(DBG, _S_"x"_E_);
+				//DbgDma(DBG, _S_"x"_E_);
+				AAAAAAAAAA();
 			}
 			else if(DEBUG_IsTxtReceive("z"))
 			{
