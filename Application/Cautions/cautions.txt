@@ -142,7 +142,12 @@ Zastosowanie:
  -  Obsługa przerwań (ISR): Flagi globalne modyfikowane wewnątrz funkcji obsługi przerwania, a odczytywane w pętli głównej programu, muszą być volatile, aby pętla zauważyła ich zmianę.
  -  Puste pętle opóźniające: Zapobiega wycięciu przez kompilator "pustych" pętli typu for(int i=0; i<1000; i++);, które bez volatile zostałyby całkowicie usunięte podczas optymalizacji kodu.
  
- 
+ Jeśli używasz zaawansowanego mikrokontrolera z pamięcią podręczną (np. STM32H7, STM32F7), sam volatile może nie wystarczyć przy bardzo szybkich operacjach. Procesor posiada tzw. Store Buffer (bufor zapisu) i może opóźnić fizyczny zapis flagi do RAM-u o kilka cykli, zmieniając kolejność wykonywania instrukcji (instrukcje out-of-order).
+ Jeśli ustawiasz flagę i chcesz mieć absolutną pewność, że procesor fizycznie zapisał ją w pamięci przed wykonaniem kolejnej linijki kodu, użyj bariery danych:
+ 		dbg_dma_busy = 1;
+		__DSB(); 	 Data Synchronization Barrier - wymusza zakończenie wszystkich operacji na pamięci
+
+
 7------------- -taskENTER_CRITICAL() (fromISR) --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  	
 Zapewnia atomowość operacji (Read-Modify-Write). DLATEGO lepiej sosowac mutexy, semafory, kolejki, ktore zapewniaja atomowosc z założenia RTOS. 	

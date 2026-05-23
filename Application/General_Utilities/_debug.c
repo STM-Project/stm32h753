@@ -46,22 +46,19 @@ void DEBUG_Init(void)
 	DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 }
 
-void AAAAAAAAAA(){
-	dbg_dma_busy = 0;
-}
-
-static void BuffCirc_SendData(void){
-    if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head - dbg_tail 		 );	 	dbg_tail = dbg_head;	}		/* to nic NIE szkodzi ze w przerwaniu 'dbg_tail' modyfikuje a w watku odczyuje i na odwrot z inna zmienna */
-    else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE - dbg_tail );	 	dbg_tail = 0;			} 		/* Reszta danych pójdzie w callbacku */
+static void BuffCirc_SendData(void){			/*  Kompilator (GCC) optymalizuje kod. Jeśli widzi pętlę while(dbg_dma_busy == 1), a wewnątrz pętli wątek nie modyfikuje tej zmiennej, kompilator dla szybkości zapisze sobie wartość tej flagi w wewnętrznym rejestrze procesora i nigdy nie odczyta jej ponownie z pamięci RAM. Słowo volatile nakazuje procesorowi: "Zawsze odczytuj tę zmienną bezpośrednio z fizycznej pamięci RAM, bo ktoś inny (np. przerwanie) może ją zmienić w tle". */
+	if ((dbg_head != dbg_tail)){
+		dbg_dma_busy = 1;
+	    if (dbg_head > dbg_tail){	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head - dbg_tail 		 );	 	dbg_tail = dbg_head;	}		/* to nic NIE szkodzi ze w przerwaniu 'dbg_tail' modyfikuje a w watku odczyuje i na odwrot z inna zmienna */
+	    else					{	DEBUG_SendDma( (uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE - dbg_tail );	 	dbg_tail = 0;			} 		/* Reszta danych pójdzie w callbacku */
+	}
+	else dbg_dma_busy = 0;
 }
 
 void DBG_EndSendInterrupt(void)
 {
-	if (dbg_head != dbg_tail){
-		 BuffCirc_SendData();
-    }
-	else{
-		dbg_dma_busy = 0;
+	if (dbg_head != dbg_tail) BuffCirc_SendData();
+	else{					  dbg_dma_busy = 0;
 		/* Give SemaphorFromISR (in future) */
 	}
 }
@@ -73,21 +70,13 @@ static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, 
         uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
         if (next_head == dbg_tail){
         	/* vTaskDelay(1); */						/* bufor pelny, niedapisujemy, mozemy tez poczekac az zwolni sie bufor w DBG_EndSendInterrupt() ale my jednak obserwujemy zawieszenie sie przerwania TX dlatego musimy je odblokowac wysylajac tu dane */
-        	if(dbg_dma_busy){
-        	    if ((dbg_head != dbg_tail)){
-        	        dbg_dma_busy = 1;
-        	        BuffCirc_SendData();
-        	    }
-        	}
+        	if(dbg_dma_busy) BuffCirc_SendData();
         }
         dbgSendBuffer[dbg_head] = *txt++;
         dbg_head = next_head;
     }
+    if (dbg_dma_busy==0) BuffCirc_SendData();					/* Ta czesc jes wykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
 
-    if (!dbg_dma_busy && (dbg_head != dbg_tail)){		/* Ta czesc jes wykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
-        dbg_dma_busy = 1;
-        BuffCirc_SendData();
-    }
     /* Wait for Semaphor (in future) */		/* Tu zasyiam i oddaje czas innym watkom */
     /* Give Mutex 		 (in future) */
 }

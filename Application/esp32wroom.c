@@ -1602,12 +1602,11 @@ void vtaskWifi(void *argument)
 			}
 			else if(DEBUG_IsTxtReceive("x"))
 			{
-				//DbgDma(DBG, _S_"x"_E_);
-				AAAAAAAAAA();
+				DbgDma(DBG, _S_"x"_E_);
 			}
 			else if(DEBUG_IsTxtReceive("z"))
 			{
-				DbgDma(DBG, _S_"z"_E_);
+				DbgDma(DBG, _S_"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"_E_);
 			}
 			else if(DEBUG_IsTxtReceive("q"))
 			{
