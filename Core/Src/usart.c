@@ -388,7 +388,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance==UART7)
 	{
-		DBG_EndSendInterrupt();
+		//DBG_EndSendInterrupt();
+		DBG_EndSendInterruptQue();
 	}
 	else if(huart->Instance==USART6)
 	{

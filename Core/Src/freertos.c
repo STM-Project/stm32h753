@@ -180,7 +180,10 @@ void StartDefaultTask(void const * argument)
 	osDelay(1000);
 //	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff));
 
+	CreateLogTask();	/* Dac event group dla kolejnosci wykonywania watków */
+	osDelay(500);
 	CreateWifiTask();
+
 
 
 

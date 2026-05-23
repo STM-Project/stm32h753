@@ -13,17 +13,32 @@
 #include "mini_printf.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
+
+#define LOG_QUEUE_SIZE 20
 
 #define RECV_BUFF_SIZE	128
-#define SEND_BUFF_SIZE	1024		/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
-#define DEBUG_DEBUG		1
+#define SEND_BUFF_SIZE	1024			/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
+
+#define RECV_BUFF_SIZE_QUE	128
+#define SEND_BUFF_SIZE_QUE	128			/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
 
 RAM_D2_ALIGN32 static char dbgRecvBuffer[RECV_BUFF_SIZE];
 RAM_D2_ALIGN32 static char dbgSendBuffer[SEND_BUFF_SIZE];
 
-/*static*/ volatile uint16_t dbg_head = 0;		/* Uzywaj volatile jesli sa modyfikowane w przerwaniach i korzystane w petli w watku */
-volatile uint16_t dbg_tail = 0;
-volatile uint8_t dbg_dma_busy = 0;
+/* RAM_D2_ALIGN32 static char dbgRecvBuffQue[RECV_BUFF_SIZE_QUE]; */
+RAM_D2_ALIGN32 static char dbgSendBuffQue[SEND_BUFF_SIZE_QUE];
+
+static volatile uint16_t dbg_head = 0;			/* Uzywaj volatile jesli sa modyfikowane w przerwaniach i korzystane w petli w watku */
+static volatile uint16_t dbg_tail = 0;
+static volatile uint8_t dbg_dma_busy = 0;
+
+static volatile uint16_t dbg_head_que = 0;		/* Uzywaj volatile jesli sa modyfikowane w przerwaniach i korzystane w petli w watku */
+static volatile uint16_t dbg_tail_que = 0;
+static volatile uint8_t dbg_dma_busy_que = 0;
+
+QueueHandle_t xLogQueue = NULL;
+TaskHandle_t xLogTaskHandle = NULL;
 
 void DEBUG_Init(void)
 {
@@ -176,7 +191,7 @@ int DEBUG_IsTxtReceive(char *txt)
 
 void DEBUG_RxFullBuffService(void)
 {
-	Dbg(DEBUG_DEBUG,"\r\n -----  DEBUG_RxFullBuffService -------  ");
+	Dbg(1,"\r\n -----  DEBUG_RxFullBuffService -------  ");
 	DEBUG_ReceiveStop();
 	DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 }
@@ -248,96 +263,60 @@ void* DEBUG_TestFunction(void *a, DATA_TYPE dataType, DATA_ACTION dataAction, vo
 	#undef _OPERAT
 }
 
-/* --- Najbezpiecznaiejsza wersja logów BEZ sekcji krytycznych  --- */
-/*
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "task.h"
-
-#define LOG_QUEUE_SIZE 20
-QueueHandle_t xLogQueue = NULL;
-TaskHandle_t xLogTaskHandle = NULL; // Uchwyt wątku, potrzebny dla przerwania
-
-// 1. Funkcja wywoływana z dowolnego wątku (Thread-Safe)
-void DbgSend(const char *txt)		// DbgSend("Text example") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje.
+void DbgDmaQue(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje. */
 {
-    if (xLogQueue != NULL) {
-        xQueueSend(xLogQueue, &txt, portMAX_DELAY);
-    }
+	if(on){
+	    if (xLogQueue != NULL)
+	        xQueueSend(xLogQueue, &txt, portMAX_DELAY);
+	}
 }
 
-// 2. Dedykowany wątek obsługi logów
-void vLogTask(void *pvParameters)
-{
-    const char *txt_ptr;
-    xLogQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(char *));
-    xLogTaskHandle = xTaskGetCurrentTaskHandle();
-
-    for (;;) {
-        if (xQueueReceive(xLogQueue, &txt_ptr, portMAX_DELAY) == pdTRUE) {
-
-            // 1. ZAPAMIĘTUJEMY STAN: Czy przed dodaniem TEKSTU bufor był pusty?
-            // Jeśli dbg_head == dbg_tail, to znaczy, że DMA na pewno stoi.
-            BaseType_t dma_was_idle = (dbg_head == dbg_tail);
-
-            // 2. WPISUJEMY CAŁY STRING DO BUFORA KOŁOWEGO (Wiele bajtów)
-            while (*txt_ptr) {
-                uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
-
-                if (next_head == dbg_tail) {
-                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-                    continue;
-                }
-
-                dbgSendBuffer[dbg_head] = *txt_ptr++;
-                dbg_head = next_head;
-            }
-
-            // 3. DOPIERO PO WPISANIU CAŁEGO TEKSTU DECYDUJEMY O DMA
-            // Jeśli przed pętlą bufor był pusty (dma_was_idle), to teraz, po wpisaniu
-            // całego stringa, odpalamy DMA RAZ dla całej zgromadzonej paczki danych.
-            if (dma_was_idle && (dbg_head != dbg_tail)) {
-                if (dbg_head > dbg_tail) {
-                    DEBUG_SendDma((uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head - dbg_tail);
-                    dbg_tail = dbg_head;
-                } else {
-                    DEBUG_SendDma((uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE - dbg_tail);
-                    dbg_tail = 0;
-                }
-            }
-            // Jeśli dma_was_idle było fałszywe, to znaczy, że DMA już działało w tle
-            // i przerwanie samo zgarnie nowo dopisane znaki. Nic tu nie robimy.
-        }
-    }
-}
-
-// 3. Callback z przerwania DMA (ISR)
-void DBG_EndSendInterrupt(void)
+void DBG_EndSendInterruptQue(void)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    // Przerwanie sprawdza, czy w buforze kołowym są kolejne dane do wysłania
-    if (dbg_head != dbg_tail) {
-        if (dbg_head > dbg_tail) {
-            DEBUG_SendDma((uint8_t*)&dbgSendBuffer[dbg_tail], dbg_head - dbg_tail);
-            dbg_tail = dbg_head;
-        } else {
-            DEBUG_SendDma((uint8_t*)&dbgSendBuffer[dbg_tail], SEND_BUFF_SIZE - dbg_tail);
-            dbg_tail = 0;
-        }
+    if (dbg_head_que != dbg_tail_que){
+        if (dbg_head_que > dbg_tail_que){	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], dbg_head_que-dbg_tail_que);			dbg_tail_que = dbg_head_que;	}
+        else							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE-dbg_tail_que);	dbg_tail_que = 0;				}
 
-        // Ponieważ właśnie przesunęliśmy dbg_tail (zwolniliśmy miejsce),
-        // wysyłamy sygnał wybudzenia do wątku logującego na wypadek, gdyby spał z powodu pełnego bufora.
-        if (xLogTaskHandle != NULL) {
-            vTaskNotifyGiveFromISR(xLogTaskHandle, &xHigherPriorityTaskWoken);
-        }
-    } else {
-        // Bufor jest pusty. Nie robimy nic. DMA odpocznie, dopóki wątek vLogTask
-        // nie wpisze nowego znaku i sam go ponownie nie uruchomi.
+        if (xLogTaskHandle != NULL)	 vTaskNotifyGiveFromISR(xLogTaskHandle, &xHigherPriorityTaskWoken);		/* Ponieważ właśnie przesunęliśmy dbg_tail_que (zwolniliśmy miejsce), wysyłamy sygnał wybudzenia do wątku logującego na wypadek, gdyby spał z powodu pełnego bufora. */
     }
+    else dbg_dma_busy_que = 0;		/* Bufor jest pusty. DMA odpocznie, dopóki wątek vLogTask nie wpisze nowego znaku i sam go ponownie nie uruchomi. */
 
-    // Jeśli wybudzony wątek ma wyższy priorytet, przełącz kontekst od razu
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);			/* Jeśli wybudzony wątek ma wyższy priorytet, przełącz kontekst od razu */
 }
-*/
+
+void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla logów musimy zrezygnowac z używanie DbgSendDma() */
+{
+    const char *txt_ptr;
+    xLogQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(char *));
+ /* xLogTaskHandle = xTaskGetCurrentTaskHandle(); */
+
+    for (;;){
+        if (xQueueReceive(xLogQueue, &txt_ptr, portMAX_DELAY) == pdTRUE)
+        {
+            while (*txt_ptr) {
+                uint16_t next_head = (dbg_head_que + 1) % SEND_BUFF_SIZE_QUE;
+
+                if (next_head == dbg_tail_que) {
+                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                    continue;		/* wraca zaraz na while() tak jak instrukcja 'goto'  */
+                }
+                dbgSendBuffQue[dbg_head_que] = *txt_ptr++;
+                dbg_head_que = next_head;
+            }
+
+            if (!dbg_dma_busy_que && (dbg_head_que != dbg_tail_que)){		/* Jeśli dma_was_idle==0, to znaczy, że DMA na pewno stoi */
+            	dbg_dma_busy_que = 1;
+                if (dbg_head_que > dbg_tail_que){	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], dbg_head_que-dbg_tail_que);			dbg_tail_que = dbg_head_que;	}
+                else 							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE-dbg_tail_que);	dbg_tail_que = 0;				}		/* reszta danych zostanie wyslana w przerwaniu */
+            }
+        }
+    }
+}
+
+void CreateLogTask(void)		/* --- Najbezpiecznaiejsza wersja logów --- */
+{
+	xTaskCreate(vLogTask, "vLogTask", 1000, NULL, (unsigned portBASE_TYPE ) 4, &xLogTaskHandle);
+}
 

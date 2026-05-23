@@ -66,11 +66,13 @@ char* _Col(FONT_BKG_COLOR background, uint8_t red, uint8_t green, uint8_t blue);
 
 void DEBUG_Init(void);
 void DBG_EndSendInterrupt(void);
+void DBG_EndSendInterruptQue(void);
 void Dbg(int on, char *txt);
 void DbgMulti(int on, char *startTxt, char *txt, char *endTxt);
 void DbgVar(int on, unsigned int buffLen, const char *fmt, ...);
 void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...);
 void DbgDma(int on, char *txt);
+void DbgDmaQue(int on, char *txt);
 void DbgMultiDma(int on, char *startTxt, char *txt, char *endTxt);
 void DbgVarDma(int on, unsigned int buffLen, const char *fmt, ...);
 void DbgVarDma2(int on, unsigned int buffLen, const char *fmt, ...);
@@ -80,6 +82,7 @@ int DEBUG_IsTxtReceive(char *txt);
 void DEBUG_InvalidateDCache(void);
 
 void* DEBUG_TestFunction(void *a, DATA_TYPE dataType, DATA_ACTION dataAction, void *step, void *min, void *max, char *descr, VOID_FUNCTION_TEST xfunc, VOID_FUNCTION_TEST xfunc2);
+void CreateLogTask(void);
 
 
 #endif /* GENERAL_UTILITIES__DEBUG_H_ */
