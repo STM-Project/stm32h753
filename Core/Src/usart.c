@@ -24,6 +24,8 @@
 #include "mini_printf.h"
 #include "_debug.h"
 #include "esp32wroom.h"
+#include "FreeRTOS.h"
+#include "task.h"
 //#include "esp32wroom.h"
 /* USER CODE END 0 */
 
@@ -388,7 +390,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance==UART7)
 	{
-		//DBG_EndSendInterrupt();
+		DBG_EndSendInterrupt();
 		DBG_EndSendInterruptQue();
 	}
 	else if(huart->Instance==USART6)
@@ -443,7 +445,7 @@ void DEBUG_UartHandler(long *pxWoken)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if(huart->Instance==UART7)
+	if(huart->Instance==UART7)   //Przerob aby w przerwaniach byly tylko xTaskNotify do vLog Task !!!!!!!!!!!!!!!!!!
 	{
 		DEBUG_RxFullBuffService();
 	}
@@ -455,6 +457,60 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
+//    /* 1. Odczytaj rodzaj błędu (opcjonalnie, np. do diagnostyki) */   TO DAJ JAKO FUNKCJE w _debug.c
+//     uint32_t error_code = HAL_UART_GetError(huart);
+//
+//     /* 2. Zresetuj stan sprzętowy UART i DMA */
+//     // Funkcja ta czyści flagi błędów w rejestrach procesora i ustawia stan HAL_UART_STATE_READY,
+//     // dzięki czemu peryferium będzie gotowe do ponownego uruchomienia.
+//     HAL_UART_Abort_IT(huart);
+//
+//     /* 3. Powiadom zadanie FreeRTOS o błędzie (odroczenie obsługi) */
+//     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+//
+//     // Przekazujemy np. powiadomienie (Notification) lub semafor do zadania obsługującego UART
+//     // Możesz użyć wartości powiadomienia, aby przekazać kod błędu (error_code)
+//     xTaskNotifyFromISR(xUartTaskHandle, error_code, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+//
+//     /* 4. Wymuś przełączenie kontekstu (jeśli zadanie ma wysoki priorytet) */
+//     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+
+
+
+//	void vUartTask(void *pvParameters)  // TO DAJ W vLOGTask !!!!!!!!!!!!!!
+//	{
+//	    uint32_t notified_value;
+//
+//	    for(;;)
+//	    {
+//	        // Czekaj na powiadomienie (zwykłe zakończenie transferu LUB błąd)
+//	        if(xTaskNotifyWait(0x00, ULONG_MAX, &notified_value, portMAX_DELAY) == pdTRUE)
+//	        {
+//	            if(notified_value != 0) // Jeśli wartość jest różna od 0, to mamy błąd UART
+//	            {
+//	                // Tutaj jesteś w bezpiecznym kontekście zadania!
+//	                // MOŻESZ użyć vTaskDelay, jeśli linia potrzebuje czasu na ustabilizowanie
+//	                vTaskDelay(pdMS_TO_TICKS(5));
+//
+//	                // MOŻESZ bezpiecznie wyczyścić cache, jeśli przygotowujesz nowy bufor
+//	                SCB_CleanDCache_by_Addr(...);
+//
+//	                // Restartujesz transmisję po wystąpieniu błędu
+//	                HAL_UART_Receive_DMA(&huart1, rx_buffer, BUFFER_SIZE);
+//	            }
+//	            else
+//	            {
+//	                // Poprawnie odebrane dane...
+//	            }
+//	        }
+//	    }
+//	}
+
+
+
+
+
 	if(huart->Instance==UART7)
 	{
 		Dbg(1,"\r\n!! UART7_ERROR !!");
@@ -468,7 +524,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 
 void DEBUG_Send(char *txt){
 	/* Take Mutex (in future) */
-	while (huart7.gState == HAL_UART_STATE_BUSY_TX) HAL_Delay(2);
+	while (huart7.gState == HAL_UART_STATE_BUSY_TX) vTaskDelay(2);
 	HAL_UART_Transmit(&huart7, (uint8_t*)txt, mini_strlen(txt),300);
 	/* Give Mutex (in future) */
 }
@@ -476,7 +532,6 @@ void DEBUG_Send(char *txt){
 void DEBUG_SendDma(uint8_t *txt, int size){
  /* SCB_CleanDCache_by_Addr((uint32_t*)dbgSendBuffer, SEND_BUFF_SIZE); */
     SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size));
-
     int result = HAL_UART_Transmit_DMA(&huart7, txt, size);
     if(result!=HAL_OK)
     {

@@ -21,7 +21,7 @@
 #define SEND_BUFF_SIZE	1024			/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
 
 #define RECV_BUFF_SIZE_QUE	128
-#define SEND_BUFF_SIZE_QUE	128			/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
+#define SEND_BUFF_SIZE_QUE	1024			/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
 
 RAM_D2_ALIGN32 static char dbgRecvBuffer[RECV_BUFF_SIZE];
 RAM_D2_ALIGN32 static char dbgSendBuffer[SEND_BUFF_SIZE];
@@ -191,7 +191,7 @@ int DEBUG_IsTxtReceive(char *txt)
 
 void DEBUG_RxFullBuffService(void)
 {
-	Dbg(1,"\r\n -----  DEBUG_RxFullBuffService -------  ");
+	Dbg(1,"\r\n -----  DEBUG_RxFullBuffService -------  ");  //DO KOLEJKI vTASKLOG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	DEBUG_ReceiveStop();
 	DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 }
@@ -317,6 +317,6 @@ void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla 
 
 void CreateLogTask(void)		/* --- Najbezpiecznaiejsza wersja logów --- */
 {
-	xTaskCreate(vLogTask, "vLogTask", 1000, NULL, (unsigned portBASE_TYPE ) 4, &xLogTaskHandle);
+	xTaskCreate(vLogTask, "vLogTask", 1024, NULL, (unsigned portBASE_TYPE ) 4, &xLogTaskHandle);
 }
 

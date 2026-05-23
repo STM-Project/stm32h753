@@ -13,7 +13,7 @@
 #define ESP_UART_TYPE		USART6
 #define ESP_UART_HANDLE		huart6
 #define ESP_UART_DMA_RX		hdma_usart6_rx
-#define ESP_UART_BUADRATE	2000000
+#define ESP_UART_BUADRATE	1500000
 
 #define ESP_EMAIL_CHANNEL	4
 

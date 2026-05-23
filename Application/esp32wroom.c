@@ -235,18 +235,15 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_" SEND_STOP\r\n"_X_); }
 	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",sendBuff,"\r\n"); }
 
-	if (ESP_UART_HANDLE.gState != HAL_UART_STATE_READY) return HAL_BUSY;							/* alternatively:  'if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) return HAL_BUSY'   in HAL_UART_TxCpltCallback() put vTaskNotifyGiveFromISR(vtaskWifiHandle,pxWoken) */
-	else{
-		RestartDMA();
-		SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);								/* SCB_CleanDCache_by_Addr() takes only 4us */		/* Jesli w MPU ustawimy adres bufora 'sendBuff' w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_CleanDCache_by_Addr() nie jest potrzebny */
+	RestartDMA();
+	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);								/* SCB_CleanDCache_by_Addr() takes only 4us */		/* Jesli w MPU ustawimy adres bufora 'sendBuff' w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_CleanDCache_by_Addr() nie jest potrzebny */
 
-	/*	uint32_t clean_size = (len_ + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
-		SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, clean_size);	*/
+/*	uint32_t clean_size = (len_ + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
+	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, clean_size);	*/
 
-		int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
-		if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
-		return result;
-	}
+	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
+	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
+	return result;
 }
 
 static char* COMMAND_Service(GET_SET type, char* comm)
@@ -1055,20 +1052,20 @@ void vtaskWifi(void *argument)
 //	StopMeasureTime_us("\r\nTEST: ");
 
 
-	while(1)
-	{
-		vTaskDelay(1000);
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789a");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789ab");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abc");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcd");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcde");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdef");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefgh");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghi");
-		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghij");
-	}
+//	while(1)
+//	{
+//		vTaskDelay(1000);
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789a");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789ab");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abc");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcd");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcde");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdef");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefgh");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghi");
+//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghij");
+//	}
 
 
 	while(1)
@@ -1424,7 +1421,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-					typeSendArch=noArch;
+					typeSendArch=arch;
 					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
 
 					if ((pHttp=strstr(RecvBuffer,",CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
@@ -1434,19 +1431,19 @@ void vtaskWifi(void *argument)
 							if ((pHttp2=strstr(pHttp,":GET / ")))
 							{
 								GetSizeAndChannel(pHttp2, &channel, &size);
-								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, noArch );
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 							}
 							else if ((pHttp2=strstr(pHttp,":GET /favicon.ico")))
 							{
 								GetSizeAndChannel(pHttp2, &channel, &size);
-								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, noArch );
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
 							}
 							else RestartDMA();
 						}
 					}
 					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, noArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch );		//DbgDma(DBG,"\r\nSEND_DATA ");
 					}
 					else if (RecvFromEsp(",CLOSED\r\n"))
 					{
@@ -1473,10 +1470,10 @@ void vtaskWifi(void *argument)
 								}
 
 								if(nrPages > 200){  nrPages=0;
-									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, noArch);		/* Czas wykonania SendToEsp32() to 28us */
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
 								}
 								else{  nrPages++; DbgDma(1,".");
-									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, noArch );
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 								}
 
 							}
@@ -1599,9 +1596,9 @@ void vtaskWifi(void *argument)
 		{
 			DEBUG_InvalidateDCache();
 
-			if(DEBUG_IsTxtReceive("abc"))
+			if(DEBUG_IsTxtReceive("a"))
 			{
-				DbgDma(DBG, _S_" Rafal Markielowski"_E_);
+				DbgDmaQue(DBG, _S_"a"_E_);
 			}
 			else if(DEBUG_IsTxtReceive("x"))
 			{
@@ -1989,7 +1986,7 @@ void vtaskWifi(void *argument)
 
 void CreateWifiTask(void)
 {
-	xTaskCreate(vtaskWifi, "vtaskWifi", 1000, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
+	xTaskCreate(vtaskWifi, "vtaskWifi", 1024, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
 }
 
 void CloseWifiTask(void)
@@ -2008,12 +2005,12 @@ void RestartWifiTask(void)
 
 void WIFI_UartErrorService(void)
 {
-	resetDMA=1;
+	resetDMA=1;  //Nie tak tylko semafor !!!!!
 }
 
 void WIFI_RxCallbackService(void)
 {
-	Dbg(DBG, "\r\n -----  USART6  HAL_UART_RxCpltCallback -------  ");
+	Dbg(DBG, "\r\n -----  USART6  HAL_UART_RxCpltCallback -------  ");  //xTaskNotify i do vLogTask !!!!
 	RestartDMA();
 }
 
