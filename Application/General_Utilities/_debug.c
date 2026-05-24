@@ -63,23 +63,37 @@ void DBG_EndSendInterrupt(void)
 	}
 }
 												/* WAZNE: Wersja ta z buforem kołowym bedzie używana tylko do szczególowego debagowania dla wybranego watku, NIGDY wlaczona na stałe aby mogly wiecej watkow naraz korzystac ze szczegolowego debagowania. Do logów z roznych wątków w przyszlosci bedzie uruchomiony nowy dedykowany temu wątek obsługujacy kolejki RTOS */
-static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
+static void DbgSendDma___(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
 {												/* Jeśli zablokujesz Mutex, a potem uśpisz wątek semaforem oczekującym na koniec DMA, zablokujesz możliwość logowania innym wątkom na bardzo długi czas (czas transmisji UART/DMA). Logowanie stanie się operacją blokującą, co przeczy idei używania bufora kołowego i DMA */
 	/* Take Mutex (in future) */
     while (*txt){								/* zapis do bufora kolowego */
         uint16_t next_head = (dbg_head + 1) % SEND_BUFF_SIZE;
-        if (next_head == dbg_tail){
-        	/* vTaskDelay(1); */						/* bufor pelny, niedapisujemy, mozemy tez poczekac az zwolni sie bufor w DBG_EndSendInterrupt() ale my jednak obserwujemy zawieszenie sie przerwania TX dlatego musimy je odblokowac wysylajac tu dane */
-        	if(dbg_dma_busy) BuffCirc_SendData();
+        if (next_head == dbg_tail){				/* bufor pelny, niedapisujemy, mozemy tez poczekac az zwolni sie bufor w DBG_EndSendInterrupt() ale my jednak obserwujemy zawieszenie sie przerwania TX dlatego musimy je odblokowac wysylajac tu dane */
+        	vTaskDelay(10);						/* przy 2000000 Mb/s, zakladamy 8 bajtów + 2 bajty kontrolne, mamy 1000 bajtów UART7 wysyla w ciągu 5ms wiec dajmy pewnosc opróżnienia całego bufora nadawczego wciągu: (SEND_BUFF_SIZE*5[ms])/1000[B]. Na wszelki wypadek dajmy np 10ms opóznienia i jeśli w tym czasie bufor nie zostanie opróżniony stwierdzamy uszkodzenie przerwania HAL_UART_TxCpltCallback() i inicjalizujemy HAL_UART_Transmit_DMA() żeby odblokowac przerwanie i opróżnic bufor. */
+        	if(next_head == dbg_tail)
+        		BuffCirc_SendData();			/* wchodzac w ten warunek stwierdzamy że dbg_dma_busy=1 */
         }
         dbgSendBuffer[dbg_head] = *txt++;
         dbg_head = next_head;
     }
-    if (dbg_dma_busy==0) BuffCirc_SendData();					/* Ta czesc jes wykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
+    if (dbg_dma_busy==0) BuffCirc_SendData();		/* Ta czesc jes wykonywana gdy na 100% nie przyjdzie przerwania DBG_EndSendInterrupt() wiec mozemy modygikowac 'dbg_tail' */
 
     /* Wait for Semaphor (in future) */		/* Tu zasyiam i oddaje czas innym watkom */
     /* Give Mutex 		 (in future) */
 }
+
+
+
+
+void DbgDmaQue(int on, char *txt);
+
+static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
+{
+	DbgDmaQue(1,txt);
+}
+
+
+
 
 void DbgDma(int on, char *txt)
 {
@@ -266,11 +280,28 @@ void* DEBUG_TestFunction(void *a, DATA_TYPE dataType, DATA_ACTION dataAction, vo
 	#undef _OPERAT
 }
 
-void DbgDmaQue(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje. */
+void DbgDmaQue___(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje. */
 {
 	if(on){
 	    if (xLogQueue != NULL)
 	        xQueueSend(xLogQueue, &txt, portMAX_DELAY);
+	}
+}
+
+void DbgDmaQue(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje. */
+{
+	if(on)
+	{
+		char* msg = pvPortMalloc(2048 * sizeof(char));
+		if (NULL != msg)
+		{
+		    if (xLogQueue != NULL)
+		    {
+		    	strncpy(msg,txt,2048);
+		    	if(pdFALSE == xQueueSend(xLogQueue, &msg, portMAX_DELAY /*200*/))
+		    		vPortFree(msg);
+		    }
+		}
 	}
 }
 
@@ -291,13 +322,14 @@ void DBG_EndSendInterruptQue(void)
 
 void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla logów musimy zrezygnowac z używanie DbgSendDma() */
 {
-    const char *txt_ptr;
+    char *txt_ptr=NULL, *txt_ptr_copy=NULL;
     xLogQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(char *));
  /* xLogTaskHandle = xTaskGetCurrentTaskHandle(); */
 
     for (;;){
         if (xQueueReceive(xLogQueue, &txt_ptr, portMAX_DELAY) == pdTRUE)
         {
+        	txt_ptr_copy = txt_ptr;
             while (*txt_ptr) {
                 uint16_t next_head = (dbg_head_que + 1) % SEND_BUFF_SIZE_QUE;
 
@@ -308,6 +340,7 @@ void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla 
                 dbgSendBuffQue[dbg_head_que] = *txt_ptr++;
                 dbg_head_que = next_head;
             }
+            vPortFree(txt_ptr_copy);
 
             if (!dbg_dma_busy_que && (dbg_head_que != dbg_tail_que)){		/* Jeśli dma_was_idle==0, to znaczy, że DMA na pewno stoi */
             	dbg_dma_busy_que = 1;
