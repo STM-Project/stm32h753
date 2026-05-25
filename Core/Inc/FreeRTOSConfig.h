@@ -143,6 +143,13 @@ standard names. */
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+
+extern void MyTraceMalloc(void *pvAddress, size_t xSize);
+extern void MyTraceFree(void *pvAddress, size_t xSize);
+
+#define traceMALLOC( pvReturn, xWantedSize )   MyTraceMalloc( pvReturn, xWantedSize )
+#define traceFREE( pvAddress, uiSize )         MyTraceFree( pvAddress, uiSize )
+
 /* USER CODE END Defines */
 
 #endif /* FREERTOS_CONFIG_H */
