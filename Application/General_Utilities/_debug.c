@@ -291,7 +291,7 @@ void DbgDmaQue(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu 
 	if(on)
 	{ 	if (xLogQueue != NULL)
     	{
-			int len = mini_strlen(txt);		if(len>=HEAP_MAX_ALLOC_BYTE-1) len=HEAP_MAX_ALLOC_BYTE-1;
+			int len = mini_strlen(txt);   len=CACHE_ALLIGN_LEN(len);	if(len>=HEAP_MAX_ALLOC_BYTE-1) len=HEAP_MAX_ALLOC_BYTE-1;
 			char* msg = pvPortMalloc(len * sizeof(char));
 
 			if (NULL != msg)
@@ -334,8 +334,8 @@ void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla 
 
                 if (next_head == dbg_tail_que) {
     	        	vTaskDelay(10);						/* przy 2000000 Mb/s, zakladamy 8 bajtów + 2 bajty kontrolne, mamy 1000 bajtów UART7 wysyla w ciągu 5ms wiec dajmy pewnosc opróżnienia całego bufora nadawczego wciągu: (SEND_BUFF_SIZE*5[ms])/1000[B]. Na wszelki wypadek dajmy np 10ms opóznienia i jeśli w tym czasie bufor nie zostanie opróżniony stwierdzamy uszkodzenie przerwania HAL_UART_TxCpltCallback() i inicjalizujemy HAL_UART_Transmit_DMA() żeby odblokowac przerwanie i opróżnic bufor. */
-    	        	if(next_head == dbg_tail)			/* wchodzac w ten warunek stwierdzamy że dbg_dma_busy==1 bo przerwanie HAL_UART_TxCpltCallback() przestało sie wywoływac. */
-    	        		BuffCirc_SendData();
+    	        	if(next_head == dbg_tail_que)		/* wchodzac w ten warunek stwierdzamy że dbg_dma_busy==1 bo przerwanie HAL_UART_TxCpltCallback() przestało sie wywoływac. */
+    	        		BuffCirc_SendDataQue();
                 }
                 dbgSendBuffQue[dbg_head_que] = *txt_ptr++;
                 dbg_head_que = next_head;
