@@ -15,10 +15,11 @@
 #include "task.h"
 #include "queue.h"
 
-#define LOG_QUEUE_SIZE 20
+#define LOG_QUEUE_SIZE 	20
+#define HEAP_MAX_ALLOC_BYTE	 2048
 
 #define RECV_BUFF_SIZE	128
-#define SEND_BUFF_SIZE	1024			/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
+#define SEND_BUFF_SIZE	1024				/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
 
 #define RECV_BUFF_SIZE_QUE	128
 #define SEND_BUFF_SIZE_QUE	1024			/* musi byc wiekszy lub rowny dlugosci wyslanej za jednym razem */
@@ -33,7 +34,7 @@ static volatile uint16_t dbg_head = 0;			/* Uzywaj volatile jesli sa modyfikowan
 static volatile uint16_t dbg_tail = 0;
 static volatile uint8_t dbg_dma_busy = 0;
 
-static volatile uint16_t dbg_head_que = 0;		/* Uzywaj volatile jesli sa modyfikowane w przerwaniach i korzystane w petli w watku */
+static volatile uint16_t dbg_head_que = 0;
 static volatile uint16_t dbg_tail_que = 0;
 static volatile uint8_t dbg_dma_busy_que = 0;
 
@@ -63,7 +64,7 @@ void DBG_EndSendInterrupt(void)
 	}
 }
 												/* WAZNE: Wersja ta z buforem kołowym bedzie używana tylko do szczególowego debagowania dla wybranego watku, NIGDY wlaczona na stałe aby mogly wiecej watkow naraz korzystac ze szczegolowego debagowania. Do logów z roznych wątków w przyszlosci bedzie uruchomiony nowy dedykowany temu wątek obsługujacy kolejki RTOS */
-static void DbgSendDma___(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
+static void DbgSendDma___(char *txt)			/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
 {												/* Jeśli zablokujesz Mutex, a potem uśpisz wątek semaforem oczekującym na koniec DMA, zablokujesz możliwość logowania innym wątkom na bardzo długi czas (czas transmisji UART/DMA). Logowanie stanie się operacją blokującą, co przeczy idei używania bufora kołowego i DMA */
 	/* Take Mutex (in future) */
     while (*txt){								/* zapis do bufora kolowego */
@@ -82,18 +83,12 @@ static void DbgSendDma___(char *txt)				/* funkcja ta wywolywana z roznych watko
     /* Give Mutex 		 (in future) */
 }
 
-
-
-
 void DbgDmaQue(int on, char *txt);
 
 static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
 {
 	DbgDmaQue(1,txt);
 }
-
-
-
 
 void DbgDma(int on, char *txt)
 {
@@ -280,47 +275,51 @@ void* DEBUG_TestFunction(void *a, DATA_TYPE dataType, DATA_ACTION dataAction, vo
 	#undef _OPERAT
 }
 
-void DbgDmaQue___(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje. */
+void MyTraceMalloc(void *pvAddress, size_t xSize)	//Wpisywac w tablice allocacji
 {
-	if(on){
-	    if (xLogQueue != NULL)
-	        xQueueSend(xLogQueue, &txt, portMAX_DELAY);
-	}
+/*    void *caller = __builtin_return_address(0);
+    printf("M:[%p] Sz:%d od:%p\n", pvAddress, xSize, caller); */
+}
+
+void MyTraceFree(void *pvAddress, size_t xSize)		//Wypisywac z tablicy allocacji
+{
+ /*   printf("F:[%p]\n", pvAddress); */
 }
 
 void DbgDmaQue(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje. */
 {
 	if(on)
-	{
-		char* msg = pvPortMalloc(2048 * sizeof(char));
-		if (NULL != msg)
-		{
-		    if (xLogQueue != NULL)
-		    {
-		    	strncpy(msg,txt,2048);
-		    	if(pdFALSE == xQueueSend(xLogQueue, &msg, portMAX_DELAY /*200*/))
+	{ 	if (xLogQueue != NULL)
+    	{
+			int len = mini_strlen(txt);		if(len>=HEAP_MAX_ALLOC_BYTE-1) len=HEAP_MAX_ALLOC_BYTE-1;
+			char* msg = pvPortMalloc(len * sizeof(char));
+
+			if (NULL != msg)
+			{
+		    	strncpy(msg,txt,len);  *(msg+(len-1))=0;
+		    	if(pdFALSE == xQueueSend(xLogQueue, &msg, 200))
 		    		vPortFree(msg);
-		    }
+			}
 		}
 	}
 }
 
-void DBG_EndSendInterruptQue(void)
+static void BuffCirc_SendDataQue(void)
 {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    if (dbg_head_que != dbg_tail_que){
+    if (dbg_head_que != dbg_tail_que){		/* Jeśli dma_was_idle==0, to znaczy, że DMA na pewno stoi */
+    	dbg_dma_busy_que = 1;
         if (dbg_head_que > dbg_tail_que){	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], dbg_head_que - dbg_tail_que);		 dbg_tail_que = dbg_head_que;	}
-        else							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE - dbg_tail_que);	 dbg_tail_que = 0;				}
-
-        if (xLogTaskHandle != NULL)	 vTaskNotifyGiveFromISR(xLogTaskHandle, &xHigherPriorityTaskWoken);		/* Ponieważ właśnie przesunęliśmy dbg_tail_que (zwolniliśmy miejsce), wysyłamy sygnał wybudzenia do wątku logującego na wypadek, gdyby spał z powodu pełnego bufora. */
+        else 							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE - dbg_tail_que);	 dbg_tail_que = 0;				}		/* reszta danych zostanie wyslana w przerwaniu */
     }
-    else dbg_dma_busy_que = 0;		/* Bufor jest pusty. DMA odpocznie, dopóki wątek vLogTask nie wpisze nowego znaku i sam go ponownie nie uruchomi. */
-
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);			/* Jeśli wybudzony wątek ma wyższy priorytet, przełącz kontekst od razu */
 }
 
-void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla logów musimy zrezygnowac z używanie DbgSendDma() */
+void DBG_EndSendInterruptQue(void)
+{
+    if (dbg_head_que == dbg_tail_que)  dbg_dma_busy_que=0;			/* Bufor jest pusty. DMA odpocznie, dopóki wątek vLogTask nie wpisze nowego znaku i sam go ponownie nie uruchomi. */
+    else							   BuffCirc_SendDataQue();
+}
+
+void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla logów musimy zrezygnowac z używanie DbgSendDma___() */
 {
     char *txt_ptr=NULL, *txt_ptr_copy=NULL;
     xLogQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(char *));
@@ -334,19 +333,17 @@ void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla 
                 uint16_t next_head = (dbg_head_que + 1) % SEND_BUFF_SIZE_QUE;
 
                 if (next_head == dbg_tail_que) {
-                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-                    continue;		/* wraca zaraz na while() tak jak instrukcja 'goto'  */
+    	        	vTaskDelay(10);						/* przy 2000000 Mb/s, zakladamy 8 bajtów + 2 bajty kontrolne, mamy 1000 bajtów UART7 wysyla w ciągu 5ms wiec dajmy pewnosc opróżnienia całego bufora nadawczego wciągu: (SEND_BUFF_SIZE*5[ms])/1000[B]. Na wszelki wypadek dajmy np 10ms opóznienia i jeśli w tym czasie bufor nie zostanie opróżniony stwierdzamy uszkodzenie przerwania HAL_UART_TxCpltCallback() i inicjalizujemy HAL_UART_Transmit_DMA() żeby odblokowac przerwanie i opróżnic bufor. */
+    	        	if(next_head == dbg_tail)			/* wchodzac w ten warunek stwierdzamy że dbg_dma_busy==1 bo przerwanie HAL_UART_TxCpltCallback() przestało sie wywoływac. */
+    	        		BuffCirc_SendData();
                 }
                 dbgSendBuffQue[dbg_head_que] = *txt_ptr++;
                 dbg_head_que = next_head;
             }
             vPortFree(txt_ptr_copy);
 
-            if (!dbg_dma_busy_que && (dbg_head_que != dbg_tail_que)){		/* Jeśli dma_was_idle==0, to znaczy, że DMA na pewno stoi */
-            	dbg_dma_busy_que = 1;
-                if (dbg_head_que > dbg_tail_que){	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], dbg_head_que - dbg_tail_que);		 dbg_tail_que = dbg_head_que;	}
-                else 							{	DEBUG_SendDma((uint8_t*)&dbgSendBuffQue[dbg_tail_que], SEND_BUFF_SIZE_QUE - dbg_tail_que);	 dbg_tail_que = 0;				}		/* reszta danych zostanie wyslana w przerwaniu */
-            }
+            if (dbg_dma_busy_que == 0) BuffCirc_SendDataQue();		/* Jeśli dma_was_idle==0, to znaczy, że DMA na pewno stoi */
+
         }
     }
 }
