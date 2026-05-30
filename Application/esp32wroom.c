@@ -61,6 +61,7 @@ const static char txt_ERR[]="ERROR";
 #define _SET_NEXT_CASE_			CASE_Service(-2,NULL,NULL,0)
 #define _THE_SAME_CASE_			CASE_Service((_GET_ACTUAL_CASE_-1),NULL,NULL,0)		/* CASE_Service() increment actual case */
 #define _GET_ANSW_CASE_			CASE_Service(-5,NULL,NULL,0)
+#define _CLR_ACTUAL_CASE_		CASE_Service(-6,NULL,NULL,0)
 
 #define BIT_ESP_SRV			(1<<0)
 #define BIT_DBG_SRV			(1<<1)
@@ -994,6 +995,7 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	else if(-3==nrCase) return repeatCase;							/* CASE_Service(-3,NULL,NULL,0)  get repat case for this case (nmbr of repeat this case) */
 	else if(-4==nrCase) return (repeatCase=0);						/* CASE_Service(-4,NULL,NULL,0)  clera repeat case */
 	else if(-5==nrCase) return flagCase;							/* CASE_Service(-5,NULL,NULL,0)  get last flag case for answer */
+	else if(-6==nrCase) return actualCase=0;						/* CASE_Service(-6,NULL,NULL,0)  reset actualCase to '0' */
 
 	int flag=0;
 	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase;  }
@@ -1082,7 +1084,7 @@ void vtaskWifi(void *argument)
 			{
 				case INIT_CONNECTION:
 
-					if (CASE_Service(0,"ready",NULL,typeRecvArch))				//Zrobic prorytezacje debugow, szczegolowy tylko dla 1 konkretnego watku, ogolny dac do kolejki watku od debug i ten ogolnny (bledy HAL, info podst, ze zalogowano itd..) zawsze bedzie aktywny a szczegolowy wlaczany ale tylko do 1 watku
+					if (CASE_Service(0,"ready",NULL,typeRecvArch))
 					{
 						SendToEsp32(0,"ATE0\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
@@ -1409,19 +1411,12 @@ void vtaskWifi(void *argument)
 					{
 						ESP32_FreeAnswers();
 					}
-
 					break;
 
 
 
-					//SendEmail(0, 1<<1, EMAIL_MEASURE);  //musi byc 0 bo sprawdza w Const_emailSend_IP w pozycjo 0 !!!!! do poprawki
-					//EmailSendStart();
-
-
-
-
 				case HTTP_CONNECTION:
-					typeSendArch=arch;
+
 					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
 
 					if ((pHttp=strstr(RecvBuffer,",CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
@@ -1443,7 +1438,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch );		//DbgDma(DBG,"\r\nSEND_DATA ");
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch /*noArch*/ );
 					}
 					else if (RecvFromEsp(",CLOSED\r\n"))
 					{
@@ -1487,97 +1482,35 @@ void vtaskWifi(void *argument)
 
 
 
-//				case HTTP_CONNECTION:
-//
-//					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers();
-//
-//					if ((pHttp=strstr(RecvBuffer,",CONNECT\r\n")))			/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
-//					{
-//						if ((pHttp=strstr(pHttp,"+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
-//						{
-//							if ((pHttp2=strstr(pHttp,":GET / ")))
-//							{
-//								GetSizeAndChannel(pHttp2, &channel, &size);
-//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, arch );
-//							}
-//							else if ((pHttp2=strstr(pHttp,":GET /favicon.ico")))
-//							{
-//								GetSizeAndChannel(pHttp2, &channel, &size);
-//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch );
-//							}
-//							else RestartDMA();
-//						}
-//						else  //Tu srpadzaj cala tablice roznych dozwolonych odpowiedzi i podejmuj akcje
-//						{
-////							if ((pHttp=strstr(pHttp,",CLOSED\r\n")))
-////							{
-////								RestartDMA();
-////							}
-//							RestartDMA();
-//						}
-//
-//
-//					}
-//					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
-//					{
-//						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, arch ); //policz jak dlugo SendToEsp32()
-//					}
-//					else if (RecvFromEsp(",CLOSED\r\n"))
-//					{
-//						if (RecvFromEsp("\r\nOK\r\n"))
-//						{
-//							DbgDma(DBG, _S_"---- ,CLOSED ----"_E_);
-//						}
-//						RestartDMA();
-//
-//					}
-//					else if (RecvFromEsp("ERROR"))
-//					{
-//						DbgDma(DBG, _SE_" ---- ERROR ---- "_E_);
-//						RestartDMA();
-//					}
-//					else if (RecvFromEsp("\r\nRecv "))		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes for ESP */
-//					{
-//						if (RecvFromEsp(" bytes\r\n"))
-//						{
-//							if (RecvFromEsp("\r\nSEND OK"))
-//							{
-//								DbgDma(DBG, _S_" ---- SEND OK ---- "_E_);
-//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, arch);
-//							}
-//							else RestartDMA();
-//						}
-//						else RestartDMA();
-//					}
-//					else
-//					{
-//						RestartDMA();
-//					}
-//
-//					break;
-
-
-
-
-
-
-
-
-
-
-
-
 				case SMTP_CONNECTION:
-					DbgMultiDma(DBG,"\r\nRECV_START: ",RecvBuffer," RECV_STOP\r\n");
+					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
+					{
+						if(ErrorAnswerService()){
+							_CLR_ACTUAL_CASE_;
+							connectionType=SMTP_CONNECTION;
+							break;
+						}
+						SendToEsp32(0,"\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
-//					if (false==CheckEmailAnswer(220))
-//					{
-//
-//					}
-					//EmailSendParam.start=4;
+					}
+					else if (CASE_Service(1,txt_OK,txt_ERR,typeRecvArch))
+					{
+						if(ErrorAnswerService()) break;
+						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART=%d,\"%s\",\"%s\",%d\r\n",ESP_EMAIL_CHANNEL, CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), IP2Str(Const.emailSend[EmailSendParam.whichSender].IP), Const.emailSend[EmailSendParam.whichSender].port);
+						SendToEsp32(len,NULL,typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
 
-
-
+					}
+					else if (CASE_Service(3,txt_OK,txt_ERR,typeRecvArch))
+					{
+						if(ErrorAnswerService()) break;
+						INIT_BUFF(answer,"220 ");
+						if ((ptr=RecvFromEsp(answer)))
+						{
+							DbgDma(DBG, _S_" --- Email 220 --- "_E_);
+						}
+					}
 
 					break;
 
@@ -1599,6 +1532,23 @@ void vtaskWifi(void *argument)
 			if(DEBUG_IsTxtReceive("a"))
 			{
 				DbgDmaQue(DBG, _S_"Rafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal Markielowski "_E_);
+			}
+			else if(DEBUG_IsTxtReceive("s"))
+			{
+				SendEmail(0, 1<<1, EMAIL_MEASURE);
+
+				if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
+					 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
+				{
+					_CLR_ACTUAL_CASE_;
+					connectionType=SMTP_CONNECTION;
+					SendToEsp32(0,"AT+CIPSERVER=0\r\n",typeSendArch);
+					DbgDma(DBG, _S_"\r\nWysylam email... "_E_);
+				}
+
+
+
+
 			}
 			else if(DEBUG_IsTxtReceive("x"))
 			{
