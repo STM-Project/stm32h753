@@ -1492,9 +1492,18 @@ void vtaskWifi(void *argument)
 						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(1,"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,",txt_ERR,typeRecvArch))
+					else if (CASE_Service(1,"\r\nOK\r\n",txt_ERR,typeRecvArch))
+					//else if (CASE_Service(1,",CONNECT\r\n\r\nOK\r\n\r\n+IPD,",txt_ERR,typeRecvArch))
 					{
 						//Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,31:220 smtp.poczta.onet.pl ESMTP\r\n\r\n", '\0' <repeats 1985 times>
+
+						//Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,78:421 4.7.0 smtp.poczta.onet.pl Error: too many connections from 46.205.198.71\r\n\r\n", '\0' <repeats 1938 times>
+
+						//if(_GET_ANSW_CASE_==_OK) result=ESP_CONNECTION_OK;
+
+						//SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);
+
+
 
 						if(ErrorAnswerService()){  _CLR_ACTUAL_CASE_;  connectionType=HTTP_CONNECTION;  break;  }
 						INIT_BUFF(answer,"220 ");
