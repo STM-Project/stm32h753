@@ -1018,6 +1018,8 @@ static int ErrorAnswerService(void)
 
 void vtaskWifi(void *argument)
 {
+	static char* pMem=NULL;
+
 	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
 	int channel=0, size=0, len, result, result2;   int nrHTTP=0;   int nrPages=0;
 	int j;
@@ -1317,7 +1319,7 @@ void vtaskWifi(void *argument)
 								else
 								{
 									INIT_BUFF(answer,"+CIPDOMAIN:");
-									if ((ptr=RecvFromEsp(answer))){  Const.emailSend[_GET_REP_CASE_].IP = IPStr2Int(ptr+mini_strlen(answer)+1);  }
+									if ((ptr=RecvFromEsp(answer))){  Const.emailSend[_GET_REP_CASE_-1].IP = IPStr2Int(ptr+mini_strlen(answer)+1);  }
 									else  						  {  DbgDma(DBG,_S_ ESP32_DOMAIN_ERROR);  }
 								}
 							}
@@ -1393,7 +1395,7 @@ void vtaskWifi(void *argument)
 								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY-1)
 								{
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",Const.sntp.time), NULL,typeSendArch );
-									while(WaitForRcvEsp(txt_OK,txt_ERR)==0) vTaskDelay(10);
+									while(WaitForRcvEsp(txt_OK,txt_ERR)==0) vTaskDelay(10);			/* Wyjątek: czekanie na odpowiedz w pętli bez udzialu przerwania */
 									DispRecvBuff(_GET_ACTUAL_CASE_,typeSendArch);
 									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 									RestartDMA();
@@ -1470,7 +1472,6 @@ void vtaskWifi(void *argument)
 								else{  nrPages++; DbgDma(1,".");
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 								}
-
 							}
 						}
 					}
@@ -1480,36 +1481,58 @@ void vtaskWifi(void *argument)
 					}
 					break;
 
-
+					  //i jesli nie bedzie odpowiedzi po np 30 sekund to timercallbak timeout !!!!!!
 
 				case SMTP_CONNECTION:
 					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
 					{
-						if(ErrorAnswerService()){
-							_CLR_ACTUAL_CASE_;
-							connectionType=SMTP_CONNECTION;
-							break;
-						}
-						SendToEsp32(0,"\r\n",typeSendArch);
-						COMMAND_Service(_SET,sendBuff);
-
-					}
-					else if (CASE_Service(1,txt_OK,txt_ERR,typeRecvArch))
-					{
-						if(ErrorAnswerService()) break;
+						if(ErrorAnswerService()){  _CLR_ACTUAL_CASE_;  connectionType=HTTP_CONNECTION;  break;  }
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART=%d,\"%s\",\"%s\",%d\r\n",ESP_EMAIL_CHANNEL, CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), IP2Str(Const.emailSend[EmailSendParam.whichSender].IP), Const.emailSend[EmailSendParam.whichSender].port);
 						SendToEsp32(len,NULL,typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(3,txt_OK,txt_ERR,typeRecvArch))
+					else if (CASE_Service(1,"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,",txt_ERR,typeRecvArch))
 					{
-						if(ErrorAnswerService()) break;
+						//Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,31:220 smtp.poczta.onet.pl ESMTP\r\n\r\n", '\0' <repeats 1985 times>
+
+						if(ErrorAnswerService()){  _CLR_ACTUAL_CASE_;  connectionType=HTTP_CONNECTION;  break;  }
 						INIT_BUFF(answer,"220 ");
 						if ((ptr=RecvFromEsp(answer)))
 						{
 							DbgDma(DBG, _S_" --- Email 220 --- "_E_);
+
+
+
+							len=mini_snprintf(sendBuff, sizeof(sendBuff), "EHLO %s\r\n", Const.emailSend[EmailSendParam.whichSender].name);
+							pMem = (char*)pvPortMalloc(len*sizeof(char));
+							strncpy(pMem,sendBuff,len);  *(pMem+len)=0;
+
+							len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n", ESP_EMAIL_CHANNEL, len);
+							SendToEsp32(len,NULL,typeSendArch);
+							COMMAND_Service(_SET,sendBuff);//RecvBuffer
 						}
+
+						//ZROB tablice allokacji !!!!!!!!!!!!!! wyswieltlanie na zadanie
+
+					}
+					else if (CASE_Service(2,"\r\nOK\r\n\r\n>",NULL,typeRecvArch))
+					{
+						//Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250
+
+						SendToEsp32(0,pMem,typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
+						vPortFree(pMem);
+
+//						vTaskDelay(100);
+//
+//						while(WaitForRcvEsp(txt_OK,txt_ERR)==0)
+//							vTaskDelay(10);
+
+					}
+					else if (CASE_Service(3,"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,",txt_ERR,typeRecvArch))
+					{
+						asm("nop");
 					}
 
 					break;
@@ -1543,6 +1566,7 @@ void vtaskWifi(void *argument)
 					_CLR_ACTUAL_CASE_;
 					connectionType=SMTP_CONNECTION;
 					SendToEsp32(0,"AT+CIPSERVER=0\r\n",typeSendArch);
+					COMMAND_Service(_SET,sendBuff);
 					DbgDma(DBG, _S_"\r\nWysylam email... "_E_);
 				}
 

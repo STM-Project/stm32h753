@@ -291,7 +291,7 @@ void DbgDmaQue(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu 
 	if(on)
 	{ 	if (xLogQueue != NULL)
     	{
-			int len = mini_strlen(txt);   len=CACHE_ALLIGN_LEN(len);	if(len>=HEAP_MAX_ALLOC_BYTE-1) len=HEAP_MAX_ALLOC_BYTE-1;
+			int len = mini_strlen(txt)+1;   len=CACHE_ALLIGN_LEN(len);	if(len>=HEAP_MAX_ALLOC_BYTE-1) len=HEAP_MAX_ALLOC_BYTE-1;
 			char* msg = pvPortMalloc(len * sizeof(char));
 
 			if (NULL != msg)
