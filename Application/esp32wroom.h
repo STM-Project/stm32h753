@@ -15,7 +15,7 @@
 #define ESP_UART_DMA_RX		hdma_usart6_rx
 #define ESP_UART_BUADRATE	1500000
 
-#define ESP_EMAIL_CHANNEL	4
+#define ESP_EMAIL_CHANNEL	"4"
 
 #define ESP_EN_GPIO_TYPE 	GPIOA
 #define ESP_EN_GPIO_PIN 	GPIO_PIN_9
