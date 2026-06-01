@@ -279,6 +279,27 @@ void MyTraceMalloc(void *pvAddress, size_t xSize)	//Wpisywac w tablice allocacji
 {
 /*    void *caller = __builtin_return_address(0);
     printf("M:[%p] Sz:%d od:%p\n", pvAddress, xSize, caller); */
+/*
+	HeapStats_t xHeapStats;
+	vPortGetHeapStats(&xHeapStats);
+
+	// Teraz masz dostęp do parametrów daj w debug na zadanie wyswietlenie:
+	size_t wolne_bajty = xHeapStats.xAvailableHeapSpaceInBytes;
+	size_t liczba_wolnych_blokow = xHeapStats.xNumberOfFreeBlocks;
+	size_t najwiekszy_wolny_blok = xHeapStats.xSizeOfLargestFreeBlockInBytes;
+*/
+/*
+	void vApplicationMallocFailedHook(void) {
+	    // Kompilator zatrzyma się tutaj, gdy pvPortMalloc zwróci NULL
+	    __disable_irq();
+	    while(1);
+	}
+	*/
+/*
+#ifndef configUSE_MALLOC_FAILED_HOOK
+	#define configUSE_MALLOC_FAILED_HOOK 0
+#endif
+	*/
 }
 
 void MyTraceFree(void *pvAddress, size_t xSize)		//Wypisywac z tablicy allocacji
