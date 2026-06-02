@@ -119,7 +119,7 @@ int main(void)
   MX_I2C4_Init();
   MX_UART7_Init();
   MX_USART6_UART_Init();
-  //MX_ETH_Init();
+ // MX_ETH_Init();
   MX_LTDC_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
@@ -269,28 +269,6 @@ void MPU_Config(void)
   MPU_InitStruct.Size = MPU_REGION_SIZE_64MB;
 
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-
-
-
-
-
-//  MPU_InitStruct.Number = MPU_REGION_NUMBER5;
-//  MPU_InitStruct.BaseAddress = 0x30000000;
-//  MPU_InitStruct.Size = MPU_REGION_SIZE_4KB;
-//  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-//  MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
-//
-//  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-
-
-
-
-
-
-
-
   /* Enables the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 

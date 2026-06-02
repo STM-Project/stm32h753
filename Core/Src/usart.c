@@ -116,7 +116,7 @@ void MX_USART6_UART_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart6, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)		//Sprobowac z FIFIO enable !!!!!
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart6, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
   {
     Error_Handler();
   }
@@ -124,12 +124,12 @@ void MX_USART6_UART_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_UARTEx_DisableFifoMode(&huart6) != HAL_OK)		/* Dzięki FIFO masz pewność, że w momencie wywołania przerwania RTO, absolutnie wszystkie bajty wysłane przez drugie urządzenie zostały bezpiecznie odebrane sprzętowo i albo już są w RAM-ie (dzięki DMA), albo bezpiecznie czekają w kolejce FIFO na zwolnienie szyny przez DMA.*/
+  if (HAL_UARTEx_DisableFifoMode(&huart6) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN USART6_Init 2 */
-
+  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	/* Dzięki FIFO  HAL_UARTEx_EnableFifoMode()  masz pewność, że w momencie wywołania przerwania RTO, absolutnie wszystkie bajty wysłane przez drugie urządzenie zostały bezpiecznie odebrane sprzętowo i albo już są w RAM-ie (dzięki DMA), albo bezpiecznie czekają w kolejce FIFO na zwolnienie szyny przez DMA.*/
   __HAL_UART_DISABLE_IT(&huart6, UART_IT_TXE | UART_IT_RXNE | UART_IT_TC);			/* 1. WYŁĄCZ niepotrzebne przerwania i WYCZYŚĆ flagi (Przygotowanie pola) */
   __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_TC | UART_FLAG_RTOF);
   __HAL_DMA_DISABLE_IT(huart6.hdmatx, DMA_IT_HT);
@@ -137,7 +137,7 @@ void MX_USART6_UART_Init(void)
   HAL_UART_ReceiverTimeout_Config(&huart6, 35); 									/* 2. SKONFIGURUJ parametry sprzętowe,   exmple: timeout for 3.5 bytes idle (10 bytes for one frame) and TimeoutValue=35 */
   HAL_UART_EnableReceiverTimeout(&huart6);
 
-  __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);										/* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA */
+  __HAL_UART_ENABLE_IT(&huart6, UART_IT_RTO);										/* 3. WŁĄCZ docelowe przerwania i teraz (lub pozniej) mozesz WYSTARTOWAC DMA - NIE potrzebne jezeli uzywasz HAL_UARTEx_ReceiveToIdle_DMA() bo ta funkcja juz w sobie to robi */
 
   /* USER CODE END USART6_Init 2 */
 
@@ -174,14 +174,14 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     GPIO_InitStruct.Pin = GPIO_PIN_6;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF7_UART7;
     HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin = GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF7_UART7;
     HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
@@ -275,7 +275,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     hdma_usart6_rx.Init.MemInc = DMA_MINC_ENABLE;
     hdma_usart6_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_usart6_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    hdma_usart6_rx.Init.Mode = DMA_NORMAL;
+    hdma_usart6_rx.Init.Mode = DMA_CIRCULAR;
     hdma_usart6_rx.Init.Priority = DMA_PRIORITY_LOW;
     hdma_usart6_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_usart6_rx) != HAL_OK)
@@ -399,6 +399,36 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 
+//void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)			/* Obsługa bezczynności (może to być IDLE lub RTO) */
+//{
+//	if (huart->Instance == USART6)
+//	{
+//		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+//
+//		ESP32_Notify2EspThread(0,size,&xHigherPriorityTaskWoken);
+//
+//		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+//
+///*		HAL_UART_RxEventTypeTypeDef eventType = HAL_UARTEx_GetRxEventType(huart);
+//		switch(eventType)
+//		{
+//			case HAL_UART_RXEVENT_IDLE:
+//				break;
+//
+//			case HAL_UART_RXEVENT_HT:
+//				break;
+//
+//			case HAL_UART_RXEVENT_TC:
+//				break;
+//		}
+//*/
+//	}
+//	else if (huart->Instance == UART7)
+//	{
+//		asm("nop");
+//	}
+//}
+
 void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long *pxWoken)			/* Obsługa bezczynności (może to być IDLE lub RTO) */
 {  																									/* Nie jest samoczynnie wywolywany trzeba samemu wywolac */
 	if (huart->Instance == USART6)
@@ -419,7 +449,7 @@ void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long 
 		}
 */
 	}
-	else if (huart->Instance == UART7)
+	if (huart->Instance == UART7)
 	{
 		ESP32_Notify2EspThread(1,size,pxWoken);
 	}

@@ -48,11 +48,10 @@ void DEBUG_ReceiveStop(void);
 
 void MX_UART7_Init(void);
 void MX_USART6_UART_Init(void);
-void ESP32_UartHandler(long *pxWoken);
-void DEBUG_UartHandler(long *pxWoken);
 
 /* USER CODE BEGIN Prototypes */
-
+void ESP32_UartHandler(long *pxWoken);
+void DEBUG_UartHandler(long *pxWoken);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
