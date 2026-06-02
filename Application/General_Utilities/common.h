@@ -63,7 +63,8 @@ typedef uint8_t u8;
 #define SET_IN_RANGE(val,min,max) (((val)<(min))?(min):(((val)>(max))?(max):(val)))
 #define SET_NEW_RANGE(val,min,max,newMin,newMax) (((val)<(min))?(newMin):(((val)>(max))?(newMax):(val)))
 
-#define STRUCT_TAB_SIZE(_struct) (sizeof(_struct) / sizeof(&_struct[0]))		/* if every element of table or structure is regular */
+#define STRUCT_TAB_SIZE(_struct) 	(sizeof(_struct) / sizeof(&_struct[0]))		/* if every element of table or structure is regular */
+#define PTR_TAB_SIZE(_tab) 			(sizeof(_tab) / sizeof(_tab[0]))
 
 #define SET_bit(allBits,bitNr)	((allBits) |=   1<<(bitNr))
 #define RST_bit(allBits,bitNr)	((allBits) &= ~(1<<(bitNr)))
@@ -175,7 +176,7 @@ typedef uint8_t u8;
 
 #define OPTIMIZE_FAST	__attribute__ ((optimize("-Ofast")))
 #define OPTIMIZE_SIZE	__attribute__ ((optimize("-Os")))
-#define OPTIMIZE_DBG		__attribute__ ((optimize("-Og")))
+#define OPTIMIZE_DBG	__attribute__ ((optimize("-Og")))
 
 #define ALIGN_TO_32BIT(val)		while(((val)%4)!=0) (val)++;
 #define _NOP		asm("nop")
