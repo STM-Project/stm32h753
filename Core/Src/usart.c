@@ -451,7 +451,7 @@ void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long 
 	}
 	if (huart->Instance == UART7)
 	{
-		ESP32_Notify2EspThread(1,size,pxWoken);
+		ESP32_Notify2EspThread_DBG(1,size,pxWoken);
 	}
 }
 

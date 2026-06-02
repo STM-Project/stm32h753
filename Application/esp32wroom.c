@@ -148,15 +148,51 @@ static int resetDMA=0;
 RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];
 RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];	//BYC moze zwiekszenie predkosci uart dopiero gdy wlacze FIFO_UART enable !!!!!!!!!!!!!!!!!!!!!
 
+
+//
+//// Zadanie blokuje się i czeka na sygnał z callbacku (np. max 100ms na wypadek błędu)
+//if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100)) > 0)
+//{
+//    // Odczytujemy, gdzie sprzęt skończył wpisywać dane w momencie przerwania
+//    // Można użyć argumentu przekazanego z callbacku lub odczytać licznik DMA bezpośrednio:
+//    uint16_t dma_pos = RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(huart1.hdmarx);
+//
+//    // Przetwarzamy dane bezpośrednio z RxBuffer
+//    while (read_pos != dma_pos)
+//    {
+//        uint8_t data = RxBuffer[read_pos];
+//
+//        // --- TUTAJ OPERUJESZ BEZPOŚREDNIO NA DANYCH ---
+//        // Przykład: Analiza bajtu, parsowanie nagłówków binarnej ramki itp.
+//        // ----------------------------------------------
+//
+//        // Inkrementacja wskaźnika odczytu z uwzględnieniem zawijania bufora kołowego
+//        read_pos = (read_pos + 1) % RX_BUF_SIZE;
+//    }
+//}
+
+
+
+
 static int qqq=0;
 void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken)					/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
 {
 	recvByteFromEsp = ESP_RECV_BUFF_SIZE - size;
 /*  vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);	*/					/* Wyślij powiadomienie bezpośrednio do wątku */
-    if(interruptSrc==0){
-    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_ESP_SRV,eSetBits,pxWoken);  }
-    else{
-    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_DBG_SRV,eSetBits,pxWoken);  }
+//    if(interruptSrc==0){
+    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_ESP_SRV,eSetBits,pxWoken); // }
+//    else{
+//    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_DBG_SRV,eSetBits,pxWoken);  }
+}
+
+void ESP32_Notify2EspThread_DBG(int interruptSrc, uint16_t size, long *pxWoken)					/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
+{
+	//recvByteFromEsp = ESP_RECV_BUFF_SIZE - size;
+/*  vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);	*/					/* Wyślij powiadomienie bezpośrednio do wątku */
+//    if(interruptSrc==0){
+//    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_ESP_SRV,eSetBits,pxWoken);  }
+//    else{
+    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_DBG_SRV,eSetBits,pxWoken);  //}
 }
 
 void DefaultSettingsWIFI(void)
@@ -936,8 +972,8 @@ static int WaitForRcvEsp(const char* recv1, const char* recv2)
 
 static void DispRecvBuff(int nrCase, ARCHIVING_TYPE archType)
 {//RECV_START_001_ilosc bajtow do odczytu:
-		 if(arch ==archType){ DbgVarDma(DBG,1024,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,RecvBuffer); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
-	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",RecvBuffer,"\r\n");	}
+		 if(arch ==archType){ DbgVarDma(DBG,1024,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,&RecvBuffer[qqq]); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
+	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",&RecvBuffer[qqq],"\r\n");	}
 }
 
 static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL,0)   set new nr case */
@@ -954,8 +990,8 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	int flag=0;
 	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase;  }
 	if( nrCase == actualCase ){
-		int hasRecv1 = (recv1 != NULL) && (strstr(RecvBuffer, recv1) != NULL);
-		int hasRecv2 = (recv2 != NULL) && (strstr(RecvBuffer, recv2) != NULL);
+		int hasRecv1 = (recv1 != NULL) && (strstr(&RecvBuffer[qqq], recv1) != NULL);
+		int hasRecv2 = (recv2 != NULL) && (strstr(&RecvBuffer[qqq], recv2) != NULL);
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
@@ -1065,9 +1101,17 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(1,txt_OK,txt_ERR,typeRecvArch))
 					{
+						RecvBuffer[recvByteFromEsp]=0;
+						RecvBuffer[recvByteFromEsp+1]=0;
+
 						if(ErrorAnswerService()) break;
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+UART_CUR=%d,8,1,0,0\r\n",ESP_UART_BUADRATE), NULL, typeSendArch );
+						vTaskDelay(1000);
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+GMR\r\n"/*"AT+UART_CUR=%d,8,1,0,0\r\n"*/,ESP_UART_BUADRATE), NULL, typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
+						_THE_SAME_CASE_;
+						qqq=recvByteFromEsp;
+
+
 
 					}
 					else if (CASE_Service(2,txt_OK,txt_ERR,typeRecvArch))
