@@ -123,6 +123,16 @@ typedef enum
 
 }ESP_ANSWER;
 
+static const char *freeAnswerTypes[] = {
+    "WIFI CONNECTED",
+    "WIFI GOT IP",
+	"WIFI DISCONNECT",
+	"Will force to restart",
+	"+TIME_UPDATED",
+	"+STA_CONNECTED:",		/* +STA_CONNECTED:"a4:45:19:6a:7f:5a" */
+	"+DIST_STA_IP:",		/* +DIST_STA_IP:"a4:45:19:6a:7f:5a","192.168.7.2" */
+};
+
 const static char txt_OK[]  =TXT_OK;
 const static char txt_ERR[] =TXT_ERR;
 
@@ -885,94 +895,34 @@ static bool CheckEmailAnswer(int emailCode)
 	}
 }
 
-
-
-
-
-
 void ESP32_FreeAnswers(void)
 {
-	char *ptr[10]={NULL};
-	int flag=0;
+	char *ptr=NULL;
+	int flag=0,len=0;
 
-	if((ptr[0]=RecvFromEsp("WIFI CONNECTED")))
-	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_CONNECTED -%d- "_E_,recvByteFromEsp);  memset(ptr[0],' ',14);  flag=1;  //Jezeli znaki po \r\n to tez usun !!!
-	}
-	if((ptr[1]=RecvFromEsp("WIFI GOT IP")))
-	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_GOT_IP -%d- "_E_,recvByteFromEsp);  memset(ptr[1],' ',11);  flag=1;
-	}
-	if((ptr[2]=RecvFromEsp("WIFI DISCONNECT")))
-	{
-		DbgVarDma(DBG,100,_SE_"\r\nWIFI_DISCONNECT -%d- "_E_,recvByteFromEsp);  memset(ptr[2],' ',15);  flag=1;
-	}
-	if((ptr[3]=RecvFromEsp("Will force to restart")))
-	{
-		DbgDma(DBG,_SE_"\r\nRESTART "_E_);   memset(ptr[3],' ',21);  flag=1;
-	}
-	if((ptr[4]=RecvFromEsp("+TIME_UPDATED")))
-	{
-		DbgVarDma(DBG,100,_SE_"\r\nTIME_UPDATED  -%d- "_E_,recvByteFromEsp);   memset(ptr[4],' ',13);  flag=1;
+	LOOP_FOR(i,PTR_TAB_SIZE(freeAnswerTypes)){
+		if((ptr=RecvFromEsp(freeAnswerTypes[i]))){
+			if(RecvFromEsp("+STA_CONNECTED:")||RecvFromEsp("+DIST_STA_IP:")){
+				char buf[80]={0}; int i=0;
+				while(*(ptr+i)>0x20){ if(i==sizeof(buf)-1){buf[i]=0; break;}  buf[i]=*(ptr+i);  i++; }
+				DbgVarDma(DBG,100,_SE_"\r\n%s -%d- "_E_,buf,recvByteFromEsp);
+				len=i;
+			}
+			else{ DbgVarDma(DBG,100,_SE_"\r\n%s -%d- "_E_,freeAnswerTypes[i],recvByteFromEsp);
+				  len=mini_strlen(freeAnswerTypes[i]);
+			}
+			if(*(ptr+len)=='\r'&&*(ptr+len+1)=='\n') len+=2;
+			memset(ptr,' ',len);
+			flag=1;
+		}
 	}
 
 	if(flag)
 	{
-		//SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size));
-		uint32_t clean_size = (recvByteFromEsp + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 //		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
+	/*	SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size)); */
+		uint32_t clean_size = (recvByteFromEsp + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 /* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32 */
 		SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, clean_size);
 	}
-
-/*
-	RECV_START: WIFI DISCONNECT
-	 RECV_STOP
-
-	RECV_START: +STA_CONNECTED:"a4:45:19:6a:7f:5a"
-	 RECV_STOP
-
-	RECV_START: +DIST_STA_IP:"a4:45:19:6a:7f:5a","192.168.7.2"
-	 RECV_STOP
-
-	RECV_START: WIFI CONNECTED
-	 RECV_STOP
-
-	RECV_START: WIFI GOT IP
-	 RECV_STOP
-*/
-
-/*	  //NA ROZLACZENIE routera !!!
-RECV_START: WIFI DISCONNECT
- RECV_STOP
-
-RECV_START: WIFI CONNECTED
- RECV_STOP
-
-RECV_START: WIFI GOT IP
- RECV_STOP
-
-RECV_START: WIFI DISCONNECT
- RECV_STOP
-
-RECV_START: WIFI CONNECTED
- RECV_STOP
-
-RECV_START: WIFI GOT IP
- RECV_STOP
-
-RECV_START: WIFI DISCONNECT
- RECV_STOP
-
-RECV_START: WIFI CONNECTED
- RECV_STOP
-
-RECV_START: WIFI GOT IP
- RECV_STOP
-
-RECV_START: 0,CONNECT
- RECV_STOP
-
-*/
-
 }
 
 static int WaitForRcvEsp(const char* recv1, const char* recv2)
@@ -1026,7 +976,7 @@ void BackFromEmail(int nrInfo)
 		char *ptr=NULL;
 		if((ptr=RecvFromEsp("ERROR"))){
 			memset(ptr,' ',5);
-			uint32_t clean_size = (recvByteFromEsp + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 //		  Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32
+			uint32_t clean_size = (recvByteFromEsp + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 /* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32 */
 			SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, clean_size);
 		}
 	}
@@ -1515,7 +1465,7 @@ void vtaskWifi(void *argument)
 						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK, txt_ERR, typeRecvArch))						/* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
+					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK, txt_ERR, typeRecvArch))				/* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0); nrHTTP=0;  break;  }								/* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,31:220 smtp.poczta.onet.pl ESMTP\r\n\r\n", '\0' <repeats 1985 times> */
 						INIT_BUFF(answer, "\r\n+IPD,"ESP_EMAIL_CHANNEL);	//RecvBuffer																	/* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,78:421 4.7.0 smtp.poczta.onet.pl Error: too many connections from 46.205.198.71\r\n\r\n", '\0' <repeats 1938 times> */
