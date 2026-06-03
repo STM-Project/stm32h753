@@ -13,7 +13,7 @@
 #define ESP_UART_TYPE		USART6
 #define ESP_UART_HANDLE		huart6
 #define ESP_UART_DMA_RX		hdma_usart6_rx
-#define ESP_UART_BUADRATE	115200//1500000
+#define ESP_UART_BUADRATE	1500000
 
 #define ESP_EMAIL_CHANNEL	"4"
 
@@ -75,6 +75,7 @@ typedef struct __attribute__ ((packed))
 }s_wifi_select;
 
 void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken);
+void ESP32_Notify2EspThread_DBG(int interruptSrc, uint16_t size, long *pxWoken);
 void CreateWifiTask(void);
 void CloseWifiTask(void);
 void RestartWifiTask(void);
