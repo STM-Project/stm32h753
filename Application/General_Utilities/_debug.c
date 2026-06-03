@@ -84,6 +84,7 @@ static void DbgSendDma___(char *txt)			/* funkcja ta wywolywana z roznych watkow
 }
 
 void DbgDmaQue(int on, char *txt);
+void DbgDmaQue_(int on, char *txt, int lenTxt);
 
 static void DbgSendDma(char *txt)				/* funkcja ta wywolywana z roznych watkow, trzeba zastosowac mutex i semafor, ktory jest zwalniany w przerwaniu przy wyjsciu a najlepiej zastosowac kolejke (dla logow), ktora jest obslugiwana w osobnym watku */
 {
@@ -94,6 +95,11 @@ void DbgDma(int on, char *txt)
 {
 	if(on)
 		DbgSendDma(txt);
+}
+
+void DbgDma_(int on, char *txt, int len)
+{
+	DbgDmaQue_(on,txt,len);
 }
 
 void Dbg(int on, char *txt)
@@ -318,6 +324,24 @@ void DbgDmaQue(int on, char *txt)		/* DbgSend("Text") - takie wywolania z wielu 
 			if (NULL != msg)
 			{
 		    	strncpy(msg,txt,len);  *(msg+(len-1))=0;
+		    	if(pdFALSE == xQueueSend(xLogQueue, &msg, 200))
+		    		vPortFree(msg);
+			}
+		}
+	}
+}
+
+void DbgDmaQue_(int on, char *txt, int lenTxt)		/* DbgSend("Text") - takie wywolania z wielu watkow nie zatraci bufora bo sa one przechowywane we flashu i wskaznik do nich zawsze istnieje. */
+{
+	if(on)
+	{ 	if (xLogQueue != NULL)			/* Skoro wywołujesz funkcję ze statycznymi ciągami tekstowymi (np. DbgSend("Uruchamianie systemu...")), które na stałe rezydują w pamięci Flash, alokowanie pamięci przez pvPortMalloc i kopiowanie tekstu przez strncpy jest zbędnym marnowaniem czasu procesora i pamięci RAM. */
+    	{
+			int len = CONDITION(lenTxt,lenTxt+1,mini_strlen(txt)+1);   if(len>=HEAP_MAX_ALLOC_BYTE-1) len=HEAP_MAX_ALLOC_BYTE-1;
+			char* msg = pvPortMalloc(CACHE_ALLIGN_LEN(len) * sizeof(char));
+
+			if (NULL != msg)
+			{
+		    	strncpy(msg,txt,len-1);  *(msg+(len-1))=0;
 		    	if(pdFALSE == xQueueSend(xLogQueue, &msg, 200))
 		    		vPortFree(msg);
 			}
