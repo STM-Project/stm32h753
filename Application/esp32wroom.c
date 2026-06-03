@@ -145,7 +145,7 @@ extern DMA_HandleTypeDef ESP_UART_DMA_RX;
 static xTaskHandle vtaskWifiHandle=NULL;
 static int resetDMA=0;
 
-RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];
+RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];		/* ESP_RECV_BUFF_SIZE musi byc wielokrotnoscia 32 jesli uzylem RAM_D2_ALIGN32 */
 RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];	//BYC moze zwiekszenie predkosci uart dopiero gdy wlacze FIFO_UART enable !!!!!!!!!!!!!!!!!!!!!
 
 
@@ -171,10 +171,27 @@ RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];	//BYC moze zwiekszenie pre
 //    }
 //}
 
+static int read_pos=0;
+static int recvByteFromEsp_copy = 0;
 
+int strstr_(const char* pattern)			/* Algorytm Knutha-Morrisa-Pratta (KMP) idealnie rozwiązuje problem cofania się w buforze kołowym. Zamiast cofać wskaźnik bufora (read_pos_copy), KMP wykorzystuje tablicę przesunięć (tzw. tablicę LPS – Longest Proper Prefix which is also Suffix).Dzięki temu wskaźnik bufora porusza się tylko do przodu, co czyni algorytm znacznie wydajniejszym i prostszym w obsłudze buforów pierścieniowych */
+{
+    int i=0, read_pos_copy=read_pos, match_start = read_pos;
+	while (read_pos_copy != recvByteFromEsp_copy){
+        if(RecvBuffer[read_pos_copy]==*(pattern+i)){
+        	if(i==0)  match_start=read_pos_copy;
+        	i++;
+        	if(*(pattern+i)=='\0') return 1;
+        	read_pos_copy=(read_pos_copy+1) % ESP_RECV_BUFF_SIZE;
+        }
+        else {
+        	if(i>0){  read_pos_copy=(match_start+1)   % ESP_RECV_BUFF_SIZE;  i=0; }
+        	else   {  read_pos_copy=(read_pos_copy+1) % ESP_RECV_BUFF_SIZE;       }   //zamien na .. & (ESP_RECV_BUFF_SIZE - 1); ale ESP_RECV_BUFF_SIZE musi byc potega 2
+        }
+    }
+	return 0;
+}
 
-
-static int qqq=0;
 void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken)					/* size: ile zostalo wolnego miejsca w buforze DMA,  size=0 to bufor DMA calkowice zapelniony */
 {
 	recvByteFromEsp = ESP_RECV_BUFF_SIZE - size;
@@ -247,21 +264,6 @@ static int GetAnswerDelay(void)
 	}
 }
 
-static void ChangeUartBuadRate(int baudRate)
-{
-	HAL_UART_DMAStop(&ESP_UART_HANDLE);
-
-	HAL_UART_MspDeInit(&ESP_UART_HANDLE);
-	HAL_UART_MspInit(&ESP_UART_HANDLE);
-
-	ESP_UART_HANDLE.Instance= ESP_UART_TYPE;
-	ESP_UART_HANDLE.Init.BaudRate=baudRate;
-	if (HAL_UART_Init(&ESP_UART_HANDLE)!=HAL_OK)
-	{
-		Error_Handler();
-	}
-}
-
 static void StartDMA(void)																	/* Jesli w tym momencie przyjdzie jakis komunikat asynchroniczny z ESP32 to NIGDY go nie odczytam bo wyczyszcze go. Rozwiazaniem jest Circle DMA */
 {
 	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE);												/* memset() takes 18us */
@@ -277,13 +279,29 @@ static void RestartDMA(void)
 	StartDMA();
 }
 
+static void ChangeUartBuadRate(int baudRate)
+{
+	HAL_UART_DMAStop(&ESP_UART_HANDLE);
+
+	HAL_UART_MspDeInit(&ESP_UART_HANDLE);
+	HAL_UART_MspInit(&ESP_UART_HANDLE);
+
+	ESP_UART_HANDLE.Instance= ESP_UART_TYPE;
+	ESP_UART_HANDLE.Init.BaudRate=baudRate;
+	if (HAL_UART_Init(&ESP_UART_HANDLE)!=HAL_OK)
+	{
+		Error_Handler();
+	}
+	StartDMA();
+}
+
 static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* if data=NULL we use buffer 'sendBuff' as default. 		if len=0 we calculate length text. */
 {
 	int len_ = CONDITION( 0==len, mini_strlen(CONDITION(NULL==data,sendBuff,data)), len );
 	if(len_ > PACKET_SEND_LEN-1)  len_=PACKET_SEND_LEN-1;
 	if(data != sendBuff && data != NULL){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;		/* memcpy(sendBuff, data, len_)  jest szybsze niż strncpy */
 
-		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_" SEND_STOP\r\n"_X_); }
+		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_"SEND_STOP\r\n"_X_); }
 	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",sendBuff,"\r\n"); }
 
 	//RestartDMA();
@@ -933,32 +951,32 @@ static bool CheckEmailAnswer(int emailCode)
 
 void ESP32_FreeAnswers(void)
 {
-	char *ptr=NULL;
-	int flag=0,len=0;
-
-	LOOP_FOR(i,PTR_TAB_SIZE(freeAnswerTypes)){
-		if((ptr=RecvFromEsp(freeAnswerTypes[i]))){
-			if(RecvFromEsp("+STA_CONNECTED:")||RecvFromEsp("+DIST_STA_IP:")){
-				char buf[80]={0}; int i=0;
-				while(*(ptr+i)>0x20){ if(i==sizeof(buf)-1){buf[i]=0; break;}  buf[i]=*(ptr+i);  i++; }
-				DbgVarDma(DBG,100,_SE_"\r\n%s -%d- "_E_,buf,recvByteFromEsp);
-				len=i;
-			}
-			else{ DbgVarDma(DBG,100,_SE_"\r\n%s -%d- "_E_,freeAnswerTypes[i],recvByteFromEsp);
-				  len=mini_strlen(freeAnswerTypes[i]);
-			}
-			if(*(ptr+len)=='\r'&&*(ptr+len+1)=='\n') len+=2;
-			memset(ptr,' ',len);
-			flag=1;
-		}
-	}
-
-	if(flag)
-	{
-	/*	SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size)); */
-		uint32_t clean_size = (recvByteFromEsp + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 /* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32 */
-		SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, clean_size);
-	}
+//	char *ptr=NULL;
+//	int flag=0,len=0;
+//
+//	LOOP_FOR(i,PTR_TAB_SIZE(freeAnswerTypes)){
+//		if((ptr=RecvFromEsp(freeAnswerTypes[i]))){
+//			if(RecvFromEsp("+STA_CONNECTED:")||RecvFromEsp("+DIST_STA_IP:")){
+//				char buf[80]={0}; int i=0;
+//				while(*(ptr+i)>0x20){ if(i==sizeof(buf)-1){buf[i]=0; break;}  buf[i]=*(ptr+i);  i++; }
+//				DbgVarDma(DBG,100,_SE_"\r\n%s -%d- "_E_,buf,recvByteFromEsp);
+//				len=i;
+//			}
+//			else{ DbgVarDma(DBG,100,_SE_"\r\n%s -%d- "_E_,freeAnswerTypes[i],recvByteFromEsp);
+//				  len=mini_strlen(freeAnswerTypes[i]);
+//			}
+////			if(*(ptr+len)=='\r'&&*(ptr+len+1)=='\n') len+=2;
+////			memset(ptr,' ',len);
+//			flag=1;
+//		}
+//	}
+//
+//	if(flag)
+//	{
+//	/*	SCB_CleanDCache_by_Addr((uint32_t*)txt, CACHE_ALLIGN_LEN(size)); */
+//		uint32_t clean_size = (recvByteFromEsp + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 /* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32 */
+//		SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, clean_size);
+//	}
 }
 
 static int WaitForRcvEsp(const char* recv1, const char* recv2)
@@ -972,8 +990,20 @@ static int WaitForRcvEsp(const char* recv1, const char* recv2)
 
 static void DispRecvBuff(int nrCase, ARCHIVING_TYPE archType)
 {//RECV_START_001_ilosc bajtow do odczytu:
-		 if(arch ==archType){ DbgVarDma(DBG,1024,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); DbgDma(DBG,&RecvBuffer[qqq]); DbgDma(DBG,CoG3_" RECV_STOP\r\n"_X_); }
-	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",&RecvBuffer[qqq],"\r\n");	}
+
+//	char bufff[1+recvByteFromEsp_copy-read_pos];  //niebezpieczne bo nie zawija sie !!!
+//	memset(bufff, 0, 1+recvByteFromEsp_copy-read_pos);
+//	LOOP_FOR(i, recvByteFromEsp_copy-read_pos){
+//		bufff[i]=RecvBuffer[read_pos+i];
+//	}
+
+	void _AAAA(void){
+		if(read_pos < recvByteFromEsp_copy)  DbgDma_(DBG, &RecvBuffer[read_pos], recvByteFromEsp_copy-read_pos);
+		else{								 DbgDma_(DBG, &RecvBuffer[read_pos], ESP_RECV_BUFF_SIZE	 -read_pos);	 if(recvByteFromEsp_copy) DbgDma_(DBG,&RecvBuffer[0],recvByteFromEsp_copy);  }
+	}
+
+		 if(arch ==archType){ DbgVarDma(DBG,1024,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); _AAAA(); DbgDma(DBG,CoG3_"RECV_STOP\r\n"_X_); }
+	else if(arch2==archType){ /*DbgMultiDma(DBG,"\r\n",bufff,"\r\n");*/	}
 }
 
 static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIVING_TYPE archType)		/* CASE_Service(2,NULL,NULL,0)   set new nr case */
@@ -990,8 +1020,8 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	int flag=0;
 	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase;  }
 	if( nrCase == actualCase ){
-		int hasRecv1 = (recv1 != NULL) && (strstr(&RecvBuffer[qqq], recv1) != NULL);
-		int hasRecv2 = (recv2 != NULL) && (strstr(&RecvBuffer[qqq], recv2) != NULL);
+		int hasRecv1 = (recv1 != NULL) && (strstr_(recv1) != 0);
+		int hasRecv2 = (recv2 != NULL) && (strstr_(recv2) != 0);
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
@@ -1087,6 +1117,7 @@ void vtaskWifi(void *argument)
 	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
 		if (ulNotifiedValue & BIT_ESP_SRV)
 		{
+			recvByteFromEsp_copy = recvByteFromEsp;
 			SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);		/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_InvalidateDCache_by_Addr() nie jest potrzebny */
 
 			switch (connectionType)
@@ -1097,21 +1128,16 @@ void vtaskWifi(void *argument)
 					{
 						SendToEsp32(0,"ATE0\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
+						read_pos=recvByteFromEsp_copy;
 
 					}
 					else if (CASE_Service(1,txt_OK,txt_ERR,typeRecvArch))
 					{
-						RecvBuffer[recvByteFromEsp]=0;
-						RecvBuffer[recvByteFromEsp+1]=0;
-
+						//RecvBuffer;
 						if(ErrorAnswerService()) break;
-						vTaskDelay(1000);
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+GMR\r\n"/*"AT+UART_CUR=%d,8,1,0,0\r\n"*/,ESP_UART_BUADRATE), NULL, typeSendArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+UART_CUR=%d,8,1,0,0\r\n",ESP_UART_BUADRATE), NULL, typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
-						_THE_SAME_CASE_;
-						qqq=recvByteFromEsp;
-
-
+						read_pos=recvByteFromEsp_copy;
 
 					}
 					else if (CASE_Service(2,txt_OK,txt_ERR,typeRecvArch))
@@ -1121,6 +1147,7 @@ void vtaskWifi(void *argument)
 						ChangeUartBuadRate(ESP_UART_BUADRATE);
 						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
+						read_pos=0;
 
 					}
 					else if (CASE_Service(3,txt_OK,txt_ERR,typeRecvArch))
@@ -1129,17 +1156,32 @@ void vtaskWifi(void *argument)
 						if(ErrorAnswerService()) break;
 						SendToEsp32(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CWMODE=%d\r\n",Const.wifiGeneral.mode), NULL, typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
+						read_pos=recvByteFromEsp_copy;
 
 					}
 					else if (CASE_Service(4,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()) break;
-						if(WIFI_MODE_DISABLED==Const.wifiGeneral.mode){
-							DbgDma(DBG,_SE_"\r\nWifi DISABLED "_E_);
-							break;
-						}
-						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",typeSendArch);
+
+						vTaskDelay(1000);
+						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
+//						if(WIFI_MODE_DISABLED==Const.wifiGeneral.mode){
+//							DbgDma(DBG,_SE_"\r\nWifi DISABLED "_E_);
+//							break;
+//						}
+//						SendToEsp32(0,"AT+CWLAPOPT=1,23\r\n",typeSendArch);
+
+
 						COMMAND_Service(_SET,sendBuff);
+						read_pos=recvByteFromEsp_copy;
+						_THE_SAME_CASE_;
+
+
+
+
+
+
+
 
 					}
 					else if (CASE_Service(5,txt_OK,txt_ERR,typeRecvArch))
@@ -1580,6 +1622,7 @@ void vtaskWifi(void *argument)
 
 				asm("nop");
 			}
+
 		}
 
 		if (ulNotifiedValue & BIT_DBG_SRV)
