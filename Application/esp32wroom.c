@@ -185,7 +185,7 @@ int strstr_(const char* pattern)			/* Algorytm Knutha-Morrisa-Pratta (KMP) ideal
         	read_pos_copy=(read_pos_copy+1) % ESP_RECV_BUFF_SIZE;
         }
         else {
-        	if(i>0){  read_pos_copy=(match_start+1)   % ESP_RECV_BUFF_SIZE;  i=0; }
+        	if(i>0){  read_pos_copy=(match_start+1)   % ESP_RECV_BUFF_SIZE;  i=0; }		//& (ESP_RECV_BUFF_SIZE-1)
         	else   {  read_pos_copy=(read_pos_copy+1) % ESP_RECV_BUFF_SIZE;       }   //zamien na .. & (ESP_RECV_BUFF_SIZE - 1); ale ESP_RECV_BUFF_SIZE musi byc potega 2
         }
     }
@@ -197,7 +197,7 @@ void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken)					
 	recvByteFromEsp = ESP_RECV_BUFF_SIZE - size;
 /*  vTaskNotifyGiveFromISR(vtaskWifiHandle, pxWoken);	*/					/* Wyślij powiadomienie bezpośrednio do wątku */
 //    if(interruptSrc==0){
-    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_ESP_SRV,eSetBits,pxWoken); // }
+    	if(vtaskWifiHandle!=NULL/* && recvByteFromEsp!=2048*/) xTaskNotifyFromISR(vtaskWifiHandle,BIT_ESP_SRV,eSetBits,pxWoken); // }
 //    else{
 //    	if(vtaskWifiHandle!=NULL) xTaskNotifyFromISR(vtaskWifiHandle,BIT_DBG_SRV,eSetBits,pxWoken);  }
 }
@@ -269,7 +269,11 @@ static void StartDMA(void)																	/* Jesli w tym momencie przyjdzie jak
 	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE);												/* memset() takes 18us */
 	SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);						/* Wypchnij bufor RecvBuffer z casha do RAMu by wyczyscic pamiec DMA */
 	UART_ClearFlags(&ESP_UART_HANDLE);
-	HAL_UARTEx_ReceiveToIdle_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
+	HAL_StatusTypeDef status = HAL_UART_Receive_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
+	if (status != HAL_OK) {
+	    // JEŚLI PROGRAM TU WCHODZI, to znaczy, że DMA/UART jest źle zainicjalizowany w CubeMX!
+	    asm("BKPT 0");
+	}
 	UART_ClearFlags2(&ESP_UART_HANDLE);
 }
 
@@ -1163,7 +1167,7 @@ void vtaskWifi(void *argument)
 					{
 						if(ErrorAnswerService()) break;
 
-						vTaskDelay(1000);
+						vTaskDelay(20);
 						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
 //						if(WIFI_MODE_DISABLED==Const.wifiGeneral.mode){
 //							DbgDma(DBG,_SE_"\r\nWifi DISABLED "_E_);

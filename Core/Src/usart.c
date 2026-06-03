@@ -368,7 +368,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 /* USER CODE BEGIN 1 */
 void UART_ClearFlags(UART_HandleTypeDef *huart)
 {
-    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_FEF | UART_CLEAR_PEF | UART_CLEAR_OREF | UART_CLEAR_NEF);		/* Czyścimy flagi błędów, które mogą blokować przerwanie i callback */
+    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_FEF | UART_CLEAR_PEF | UART_CLEAR_OREF | UART_CLEAR_NEF | UART_CLEAR_TCF);		/* Czyścimy flagi błędów, które mogą blokować przerwanie i callback */
 /*	__HAL_UART_CLEAR_FEFLAG(huart);
 	__HAL_UART_CLEAR_PEFLAG(huart);
 	__HAL_UART_CLEAR_OREFLAG(huart);
@@ -377,7 +377,6 @@ void UART_ClearFlags(UART_HandleTypeDef *huart)
     __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_IDLEF | UART_CLEAR_RTOF);										/* Czyścimy flagę bezczynności i timeoutu */
 	__HAL_UART_FLUSH_DRREGISTER(huart);																		/* Czyścimy FIFO */
 	__HAL_UART_SEND_REQ(huart, UART_RXDATA_FLUSH_REQUEST);  												/* Całkowicie czyści sprzętową kolejkę odbiorczą, zapobiegając przetwarzaniu "śmieciowych" bajtów po błędzie */
-
 }
 
 void UART_ClearFlags2(UART_HandleTypeDef *huart)
@@ -399,10 +398,12 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 
-//void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)			/* Obsługa bezczynności (może to być IDLE lub RTO) */
-//{
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)			/* Obsługa bezczynności (może to być IDLE lub RTO) wywolywana tylko jesli uzyta zostala funkcja HAL_UARTEx_ReceiveToIdle_DMA() raz na poczatek */
+{
 //	if (huart->Instance == USART6)
 //	{
+		asm("nop");
+//
 //		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 //
 //		ESP32_Notify2EspThread(0,size,&xHigherPriorityTaskWoken);
@@ -427,7 +428,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 //	{
 //		asm("nop");
 //	}
-//}
+}
 
 void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long *pxWoken)			/* Obsługa bezczynności (może to być IDLE lub RTO) */
 {  																									/* Nie jest samoczynnie wywolywany trzeba samemu wywolac */
