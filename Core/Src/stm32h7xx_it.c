@@ -263,12 +263,6 @@ void USART6_IRQHandler(void)
 
 	ESP32_UartHandler(&xHigherPriorityTaskWoken);
 
-//	if(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RTOF) != RESET && __HAL_UART_GET_IT_SOURCE(&huart6, UART_IT_RTO) != RESET)
-//	{
-//		__HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_RTOF);
-//		//HAL_UARTEx_RxEventCallback_(&huart6, __HAL_DMA_GET_COUNTER(huart6.hdmarx), pxWoken);		/* Rejestr COUNTER startuje z wartością, która podana jest w funkcji startującej (np. HAL_UART_Receive_DMA), i zmniejsza się o 1 po każdym odebranym bajcie */
-//	}
-
   /* USER CODE END USART6_IRQn 0 */
   HAL_UART_IRQHandler(&huart6);
   /* USER CODE BEGIN USART6_IRQn 1 */
@@ -280,19 +274,6 @@ void USART6_IRQHandler(void)
 
   	  	  	  	  	  	  	  	  	  	  	  	  	/* Problem:			Jesli portYIELD_FROM_ISR() znajdzie sie gdzies w srodku funkcji to portYIELD natychmiast przełączy kontekst na ten wątek (jesli ma wysoki priorytet). Wątek zacznie działać, mimo że przerwanie sprzętowe (USART6_IRQHandler) formalnie się jeszcze nie skończyło (pozostała funkcja HAL). W skrajnych przypadkach może to zaburzyć logikę flag przerwań w bibliotece HAL i może prowadzić do rzadkich, trudnych do zdebugowania błędów (tzw. race conditions), możesz doprowadzić do nieprzewidzianych zachowań lub opóźnień w przełączeniu zadań */
   	  	  	  	  	  	  	  	  	  	  	  	  	/* 					Zgodnie z dobrą praktyką FreeRTOS, portYIELD_FROM_ISR powinno być ostatnią instrukcją w samym handlerze przerwania. */
-
-
-//  //OPISZ TEN BLAD NIE POWINIEN WYSTAWIAF FLAGE ERROR !!!!!
-//  /* UART Receiver Timeout interrupt occurred ---------------------------------*/
-//  if (((isrflags & USART_ISR_RTOF) != 0U) && ((cr1its & USART_CR1_RTOIE) != 0U))
-//  {
-//    __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_RTOF);
-//
-//    huart->ErrorCode |= HAL_UART_ERROR_RTO;
-//  }
-
-
-
 
   /* USER CODE END USART6_IRQn 1 */
 }
