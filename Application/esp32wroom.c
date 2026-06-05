@@ -74,6 +74,11 @@ typedef enum
 
 typedef enum
 {
+	_Asynchr=-1, _Test=-2
+} DBG_TYPE;
+
+typedef enum
+{
 	INIT_CONNECTION, HTTP_CONNECTION, SMTP_CONNECTION, TEST_CONNECTION
 } CONNECTION_TYPE;
 
@@ -271,40 +276,44 @@ static void TEST_QueLog(void)
 	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghij");
 }
 */
+/*
+static void PutLog(int on, const char *fmt, ...)
+{
+	if(on)
+	{
+		va_list va;
+		va_start(va, fmt);
+		int len = mini_snprintf(sendBuff,sizeof(sendBuff)-1, fmt, va);		// Niebezpieczne bo w tle DMA moze pobierac dane z sendBuff po wywolaniu SendToEsp32();
+		va_end(va);
+		DbgDma2(DBG,sendBuff,len);
+	}
+}
+*/
 static void DispRecvBuff(int nrCase, ARCHIVING_TYPE archType)
 {//RECV_START_001_ilosc bajtow do odczytu:
+	char type[10]={0};
+	switch(nrCase){ case -1:strcpy(type,"ASYN");break;  case -2:strcpy(type,"TEST");break;  default:mini_snprintf(type,sizeof(type)-1,"%03d",nrCase);break; }
+
 	void _DbgDma(void){
 		if(read_pos < recvByteFromEsp_copy)  DbgDma2(DBG, &RecvBuffer[read_pos], recvByteFromEsp_copy-read_pos);
 		else{								 DbgDma2(DBG, &RecvBuffer[read_pos], ESP_RECV_BUFF_SIZE	 -read_pos);	 if(recvByteFromEsp_copy) DbgDma2(DBG,&RecvBuffer[0],recvByteFromEsp_copy);  }
 	}
-	if(nrCase == -1){	/* komunikat asynchroniczny */
-		 	  if(arch ==archType){ DbgDma(DBG,CoG3_"\r\nRECV_START_ASYN:"_X_); _DbgDma(); DbgDma(DBG,CoG3_"RECV_STOP\r\n"_X_); }
-		 else if(arch2==archType){ /*DbgMultiDma(DBG,"\r\n",bufff,"\r\n");*/	}
-	}else{
-		 	  if(arch ==archType){ DbgVarDma(DBG,1024,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); _DbgDma(); DbgDma(DBG,CoG3_"RECV_STOP\r\n"_X_); }
-		 else if(arch2==archType){ /*DbgMultiDma(DBG,"\r\n",bufff,"\r\n");*/	}
-	}
+		 if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_START_%s:"_X_,type); _DbgDma(); DbgDma(DBG,CoG3_"RECV_STOP\r\n"_X_); }
+	else if(arch2==archType){ DbgDma(DBG,"\r\n"); _DbgDma(); DbgDma(DBG,"\r\n"); }
+
 }
 
 static void ESP32_FreeAnswers(int whereCalled)
 {
 	char *ptr=NULL;		int flag=1,len=0;
 	LOOP_FOR(i,PTR_TAB_SIZE(freeAnswerTypes)){
-		if((ptr=strstr_(freeAnswerTypes[i]))){	if(flag&&whereCalled){ DispRecvBuff(-1,arch); flag=0; }
+		if((ptr=strstr_(freeAnswerTypes[i]))){	if(flag&&whereCalled){ DispRecvBuff(_Asynchr,arch); flag=0; }
 			if(strstr(freeAnswerTypes[i],"+STA_CONNECTED:")||strstr(freeAnswerTypes[i],"+DIST_STA_IP:")){
 				char buf[100]={0};
 				len += strcpy_(buf,ptr,0,'\r') + 2;
-
-
-//				 int i=0;
-//				while(*(ptr+i)>0x20){ if(i==sizeof(buf)-1){buf[i]=0; break;}  buf[i]=*(ptr+i);  i++; }	  len+=i+2;		/* 2 bo "\r\n" */
-
-
-
-
-				DbgVarDma(DBG,200,_SE_"\r\n%s -%d- "_E_,buf,BytesToRead());
+				DbgVarDma(DBG,150,_SE_"\r\n%s -%d- "_E_,buf,BytesToRead());
 			}
-			else{ DbgVarDma(DBG,200,_SE_"\r\n%s -%d- "_E_,freeAnswerTypes[i],BytesToRead());   len+=mini_strlen(freeAnswerTypes[i])+2; }
+			else{ DbgVarDma(DBG,150,_SE_"\r\n%s -%d- "_E_,freeAnswerTypes[i],BytesToRead());   len+=mini_strlen(freeAnswerTypes[i])+2; }
 	}}
 	if(BytesToRead()==len && len)  read_pos = (read_pos+len) & (ESP_RECV_BUFF_SIZE-1);		/* Zmień pozycje odczytu bufora kołowego jeżeli przed komunikatami asynchronicznymi nie było innego rodzaju komunikatu */
 }
@@ -1183,7 +1192,7 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(2,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()) break;
-						vTaskDelay(10);
+						vTaskDelay(20);
 						ChangeUartBuadRate(ESP_UART_BUADRATE);
 						SendToEsp32(0,"AT+GMR\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
@@ -1332,7 +1341,7 @@ void vtaskWifi(void *argument)
 								}}
 								else result=ESP_UNKNOW_ERROR_OCCURRED;
 							}
-							DbgVarDma2(DBG,100,_S_"\r\nSTA_CONNECTION status: %d\r\n"_E_,result);		//dac max buffer jako SEND_BUFF_SIZE !!!
+							DbgVarDma2(DBG,100,_S_"\r\nSTA_CONNECTION status: %d\r\n"_E_,result);
 						}
 						else
 						{
@@ -1460,7 +1469,7 @@ void vtaskWifi(void *argument)
 							{
 								gmtime_r(&getTime,sntpTime);			/* lepsze dla wielowatkowosci niz  sntpTime=gmtime(&getTime) */
 								Const.sntp.time = getTime;
-								DbgVarDma(DBG,500,_S_"\r\nESP32 TIME LOADED %d: %02d-%02d-%02d  %02d:%02d:%02d"_E_,
+								DbgVarDma(DBG,200,_S_"\r\nESP32 TIME LOADED %d: %02d-%02d-%02d  %02d:%02d:%02d"_E_,
 										Const.sntp.time,
 										sntpTime->tm_year-100,
 										sntpTime->tm_mon+1,
@@ -1475,12 +1484,10 @@ void vtaskWifi(void *argument)
 							else
 							{
 								vTaskDelay(2000);    //jezeli nie ma odpowiedzi sntp to trzeba cyklicznie co godzine np pytac
-								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY-1)
+								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY)
 								{
-									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",Const.sntp.time), NULL,typeSendArch );
-									while(WaitForRcvEsp(txt_OK,txt_ERR)==0) vTaskDelay(10);			/* Wyjątek: czekanie na odpowiedz w pętli bez udzialu przerwania */
-									DispRecvBuff(_GET_ACTUAL_CASE_,typeSendArch);
-									connectionType = TEST_CONNECTION;   _SET_NEW_CASE_(0);
+									UpdateReadPos();
+									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 								}
 								else
 								{
@@ -1501,10 +1508,9 @@ void vtaskWifi(void *argument)
 				case TEST_CONNECTION:
 					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
 					{
-						int aaaa = _GET_REP_CASE_;
 						_THE_SAME_CASE_;
-						DbgDma(DBG, _SE_"\r\nAATTTTTTTTTT  YES !!!!!!"_E_);
-						UpdateReadPos();		/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
+						DbgVarDma(DBG,50, _SE_"\r\nAATTTTTTTTTT  YES_%d_ !!!!!!"_E_,_GET_REP_CASE_);
+						UpdateReadPos();				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
 
 					}
 					else
@@ -1518,9 +1524,9 @@ void vtaskWifi(void *argument)
 
 					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers(0);
 
-					if ((pHttp=strstr(RecvBuffer,"0,CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+					if ((pHttp=strstr_("0,CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
 					{
-						if ((pHttp=strstr(pHttp,"+IPD,0")))							/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						if ((pHttp=strstr_(pHttp,"+IPD,0")))							/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
 							if ((pHttp2=strstr(pHttp,":GET / ")))
 							{

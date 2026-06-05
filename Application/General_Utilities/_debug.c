@@ -131,13 +131,12 @@ void DbgVar(int on, unsigned int buffLen, const char *fmt, ...)
 {
 	if(on)
 	{
-		char *temp = (char*)pvPortMalloc(buffLen);
+		char temp[buffLen];
 		va_list va;
 		va_start(va, fmt);
 		mini_vsnprintf(temp, buffLen, fmt, va);
 		va_end(va);
 		DEBUG_Send(temp);
-		vPortFree(temp);
 	}
 }
 
@@ -145,13 +144,12 @@ void DbgVarDma(int on, unsigned int buffLen, const char *fmt, ...)
 {
 	if(on)
 	{
-		char *temp = (char*)pvPortMalloc(buffLen);
+		char temp[buffLen];
 		va_list va;
 		va_start(va, fmt);
 		mini_vsnprintf(temp, buffLen, fmt, va);
 		va_end(va);
 		DbgSendDma(temp);
-		vPortFree(temp);
 	}
 }
 
@@ -159,13 +157,12 @@ void DbgVar2(int on, unsigned int buffLen, const char *fmt, ...)
 {
 	if(on)
 	{
-		char *temp = (char*)pvPortMalloc(buffLen);
+		char temp[buffLen];
 		va_list va;
 		va_start(va, fmt);
 		vsnprintf(temp,buffLen, fmt, va);			/* W niektórych implementacjach standardowej biblioteki C (szczególnie pełnej newlib), vsnprintf może pod spodem niejawnie wywołać malloc(). W systemie wielowątkowym klasyczny malloc bez odpowiednich wrapperów nitkowych (np. malloc_r lub mutexów) nie jest bezpieczny i prowadzi do uszkodzenia pamięci heap */
 		va_end(va);
 		DEBUG_Send(temp);
-		vPortFree(temp);
 	}
 }
 
@@ -173,13 +170,12 @@ void DbgVarDma2(int on, unsigned int buffLen, const char *fmt, ...)
 {
 	if(on)
 	{
-		char *temp = (char*)pvPortMalloc(buffLen);
+		char temp[buffLen];
 		va_list va;
 		va_start(va, fmt);
 		vsnprintf(temp,buffLen, fmt, va);
 		va_end(va);
 		DbgSendDma(temp);
-		vPortFree(temp);
 	}
 }
 

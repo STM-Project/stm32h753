@@ -169,10 +169,14 @@ Jeżeli dowolne przerwanie (nawet niezwiązane z UARTEM) wejdzie pomiędzy krok 
  	- Event Groups (Najgorsze w tym przypadku): Wolne wywołanie z ISR (przez Timer Task), ryzyko utraty impulsów wybudzenia ze względu na brak zliczania, brak atomowości operacji na bitach w specyficznych sytuacjach wywłaszczan.
 
 
-9-------------   -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+9-------------_Min_Stack_Size ,  _Min_Heap_Size ,  configTOTAL_HEAP_SIZE -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 
+_Min_Stack_Size - Służy on systemowi tylko w dwóch sytuacjach (w przypadku RTOS):
+  - Od momentu włączenia mikrokontrolera do momentu wywołania funkcji vTaskStartScheduler() (czyli podczas startu i inicjalizacji peryferiów).
+  - Podczas obsługi wszystkich przerwań sprzętowych (ISR), np. odebrania danych z UART, timera czy naciśnięcia przycisku, gdy system już działa. Kiedy możesz go zmniejszyć? Jeśli Twoje procedury obsługi przerwań (funkcje IRQHandler) są krótkie, nie tworzą wielkich tablic lokalnych i nie wywołują głębokich zagnieżdżeń funkcji, możesz bezpiecznie zmniejszyć tę wartość np. do 0x400 (1 KB) lub 0x800 (2 KB).
  	
- 	
- 	
+ configTOTAL_HEAP_SIZE:
+  - Każde zadanie (Task), które tworzysz we FreeRTOS, otrzymuje swój własny, oddzielny stos. Pamięć na te stosy jest alokowana dynamicznie przez heap_4 z puli configTOTAL_HEAP_SIZE.	
  	
 	
 	
