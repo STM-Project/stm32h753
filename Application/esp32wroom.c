@@ -74,7 +74,7 @@ typedef enum
 
 typedef enum
 {
-	INIT_CONNECTION, HTTP_CONNECTION, SMTP_CONNECTION
+	INIT_CONNECTION, HTTP_CONNECTION, SMTP_CONNECTION, TEST_CONNECTION
 } CONNECTION_TYPE;
 
 typedef enum
@@ -172,6 +172,105 @@ static void GetNewReadPos(void){ recvByteFromEsp_copy = recvByteFromEsp; }
 static void ClearReadPos (void){ recvByteFromEsp_copy=0;  read_pos=0; 	 }
 static int  BytesToRead  (void){ return (recvByteFromEsp_copy-read_pos); }
 
+static void  IncPos(int* pos) 			 { *pos=(*pos+1)   &(ESP_RECV_BUFF_SIZE-1); }
+static void  SetPos(int* pos, int offs) { *pos=(*pos+offs)&(ESP_RECV_BUFF_SIZE-1); }
+static u32   GetPos(char* ptr)			 { return (ptr-RecvBuffer); 			  	}
+
+static int strcpy_(char* buff, char* ptr, int offs, char endSign)
+{
+	int i = GetPos(ptr);
+	int j=0;
+
+	if(offs) SetPos(&i,offs);
+
+	while(RecvBuffer[i] != endSign)
+	{
+		*(buff+j++) = RecvBuffer[i];
+		IncPos(&i);
+	}
+	*(buff+j) = '\0';
+	return j;
+}
+
+static int strcpy2_(char* buff, char* ptr, int offs, u16 size)
+{
+	int i = GetPos(ptr);
+	int j=0;
+
+	if(offs) SetPos(&i,offs);
+
+	for(j=0; j<size; ++j)
+	{
+		*(buff+j) = RecvBuffer[i];
+		IncPos(&i);
+	}
+	*(buff+j) = '\0';
+	return j;
+}
+
+int atoi_(char* ptr, int offs)
+{
+	char buff[20]={0};
+	int i = GetPos(ptr);
+	int j=0;
+
+	if(offs) SetPos(&i,offs);
+
+	while(ISDIGITAL(RecvBuffer[i]))
+	{
+		buff[j++] = RecvBuffer[i];
+		if(j==sizeof(buff)-1) break;
+		IncPos(&i);
+	}
+	*(buff+j) = '\0';
+	return atoi(buff);
+}
+/*
+static void TEST_CircBuff(void)
+{
+	LOOP_FOR(i,2048){
+		RecvBuffer[i++]='A';
+		RecvBuffer[i++]='B';
+		RecvBuffer[i++]='C';
+		RecvBuffer[i]='D';
+	}
+
+	RecvBuffer[1]='A';
+	RecvBuffer[2]='B';
+	RecvBuffer[3]='C';
+	RecvBuffer[4]='D';
+	RecvBuffer[5]='E';
+
+	read_pos=7;
+	recvByteFromEsp_copy=6;
+
+	char temp[100]={0}, *ptr=NULL;
+	INIT_BUFF(answer,"ABCDE");
+	StartMeasureTime_us();
+	if((ptr=strstr_(answer))!=NULL)		// przeszukanie calego bufora dla tego wzorca zajmuje max 274 us
+	{
+		strcpy2_(temp,ptr,mini_strlen(answer),4);
+		//int zmmm = atoi_(ptr,mini_strlen(answer));
+		asm("nop");
+	}
+	StopMeasureTime_us("\r\nTEST: ");
+}
+
+static void TEST_QueLog(void)
+{
+	vTaskDelay(1000);
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789a");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789ab");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abc");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcd");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcde");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdef");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefgh");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghi");
+	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghij");
+}
+*/
 static void DispRecvBuff(int nrCase, ARCHIVING_TYPE archType)
 {//RECV_START_001_ilosc bajtow do odczytu:
 	void _DbgDma(void){
@@ -193,8 +292,16 @@ static void ESP32_FreeAnswers(int whereCalled)
 	LOOP_FOR(i,PTR_TAB_SIZE(freeAnswerTypes)){
 		if((ptr=strstr_(freeAnswerTypes[i]))){	if(flag&&whereCalled){ DispRecvBuff(-1,arch); flag=0; }
 			if(strstr(freeAnswerTypes[i],"+STA_CONNECTED:")||strstr(freeAnswerTypes[i],"+DIST_STA_IP:")){
-				char buf[80]={0}; int i=0;
-				while(*(ptr+i)>0x20){ if(i==sizeof(buf)-1){buf[i]=0; break;}  buf[i]=*(ptr+i);  i++; }	  len+=i+2;		/* 2 bo "\r\n" */
+				char buf[100]={0};
+				len += strcpy_(buf,ptr,0,'\r') + 2;
+
+
+//				 int i=0;
+//				while(*(ptr+i)>0x20){ if(i==sizeof(buf)-1){buf[i]=0; break;}  buf[i]=*(ptr+i);  i++; }	  len+=i+2;		/* 2 bo "\r\n" */
+
+
+
+
 				DbgVarDma(DBG,200,_SE_"\r\n%s -%d- "_E_,buf,BytesToRead());
 			}
 			else{ DbgVarDma(DBG,200,_SE_"\r\n%s -%d- "_E_,freeAnswerTypes[i],BytesToRead());   len+=mini_strlen(freeAnswerTypes[i])+2; }
@@ -1044,130 +1151,6 @@ void vtaskWifi(void *argument)
 //	StopMeasureTime_us("\r\nTEST: ");
 
 
-//	while(1)
-//	{
-//		vTaskDelay(1000);
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789a");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789ab");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abc");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcd");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcde");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdef");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefgh");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghi");
-//		DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghij");
-//	}
-
-
-
-
-	RecvBuffer[2040]='M';
-	RecvBuffer[2041]='a';
-	RecvBuffer[2042]='r';
-	RecvBuffer[2043]='k';
-	RecvBuffer[2044]='i';
-	RecvBuffer[2045]='e';
-	RecvBuffer[2046]='l';
-	RecvBuffer[2047]='4';
-	RecvBuffer[0]=' ';
-	RecvBuffer[1]='2';
-	RecvBuffer[2]='3';
-	RecvBuffer[3]='i';
-	RecvBuffer[4]='x';
-	RecvBuffer[5]='R';
-	RecvBuffer[6]='\r';
-
-	read_pos=2040;
-	recvByteFromEsp_copy=6;
-
-void  IncPos(int* pos) 			 { *pos=(*pos+1)   &(ESP_RECV_BUFF_SIZE-1); }
-void  SetPos(int* pos, int offs) { *pos=(*pos+offs)&(ESP_RECV_BUFF_SIZE-1);    }
-u32   GetPos(char* ptr)			 { return (ptr-RecvBuffer); 			  	   }
-
-void strcpy_(char* buff, char* ptr, int offs, char endSign)
-{
-	int i = GetPos(ptr);
-	int j=0;
-
-	if(offs) SetPos(&i,offs);
-
-	while(RecvBuffer[i] != endSign)
-	{
-		*(buff+j++) = RecvBuffer[i];
-		IncPos(&i);
-	}
-	*(buff+j) = '\0';
-}
-
-void strcpy2_(char* buff, char* ptr, int offs, u16 size)
-{
-	int i = GetPos(ptr);
-	int j=0;
-
-	if(offs) SetPos(&i,offs);
-
-	for(j=0; j<size; ++j)
-	{
-		*(buff+j) = RecvBuffer[i];
-		IncPos(&i);
-	}
-	*(buff+j) = '\0';
-}
-
-int atoi_(char* ptr, int offs)
-{
-	char buff[20]={0};
-	int i = GetPos(ptr);
-	int j=0;
-
-	if(offs) SetPos(&i,offs);
-
-	while(ISDIGITAL(RecvBuffer[i]))
-	{
-		buff[j++] = RecvBuffer[i];
-		if(j>sizeof(buff)-1) break;
-		IncPos(&i);
-	}
-	*(buff+j) = '\0';
-	return atoi(buff);
-}
-
-
-
-
-
-char temp[100]={0};
-
-	INIT_BUFF(answer,"Markiel4 ");
-	if((ptr=strstr_(answer))!=NULL)
-	{
-
-		//strcpy2_(temp,ptr,mini_strlen(answer),4);
-		int zmmm = atoi_(ptr,mini_strlen(answer));
-
-		asm("nop");
-
-	}
-
-
-
-
-
-
-
-
-
-
-	while(1) vTaskDelay(20);
-
-
-
-
-
-
-
-
 
 	while(1)
 	{
@@ -1340,7 +1323,7 @@ char temp[100]={0};
 								INIT_BUFF(answer,"+CWJAP:");
 								if ((ptr=RecvFromEsp(answer))){
 									result=0;
-									switch(atoi(ptr+mini_strlen(answer))){
+									switch(atoi_(ptr,mini_strlen(answer))){
 										case 1:  result=ESP_CONNECTION_TIMEOUT; 		break;
 										case 2:  result=ESP_WRONG_PASSWORD;				break;
 										case 3:  result=ESP_CANNOT_FIND_THE_TARGET_AP;	break;
@@ -1419,7 +1402,7 @@ char temp[100]={0};
 								else
 								{
 									INIT_BUFF(answer,"+CIPDOMAIN:");
-									if ((ptr=RecvFromEsp(answer))){  Const.emailSend[_GET_REP_CASE_-1].IP = IPStr2Int(ptr+mini_strlen(answer)+1);  }
+									if ((ptr=RecvFromEsp(answer))){  char temp[20]={0};  strcpy2_(temp,ptr,mini_strlen(answer)+1,16);  Const.emailSend[_GET_REP_CASE_-1].IP=IPStr2Int(temp);  }
 									else  						  {  DbgDma(DBG,_S_ ESP32_DOMAIN_ERROR);  }
 								}
 							}
@@ -1452,7 +1435,7 @@ char temp[100]={0};
 							else
 							{
 								INIT_BUFF(answer,"+CIPDOMAIN:");
-								if ((ptr=RecvFromEsp(answer))){  Const.emailSend[MAX_EMAIL_SENDERS-1].IP = IPStr2Int(ptr+mini_strlen(answer)+1);  }
+								if ((ptr=RecvFromEsp(answer))){  char temp[20]={0};  strcpy2_(temp,ptr,mini_strlen(answer)+1,16);  Const.emailSend[MAX_EMAIL_SENDERS-1].IP=IPStr2Int(temp);  }
 								else  						  {  DbgDma(DBG,_S_ ESP32_DOMAIN_ERROR);  }
 							}
 						}
@@ -1472,7 +1455,7 @@ char temp[100]={0};
 						INIT_BUFF(answer,"+SYSTIMESTAMP:");
 						if ((ptr=RecvFromEsp(answer)))
 						{
-							getTime=(time_t)atoi(ptr+mini_strlen(answer));
+							getTime=(time_t)atoi_(ptr,mini_strlen(answer));
 							if(getTime>1565853509)
 							{
 								gmtime_r(&getTime,sntpTime);			/* lepsze dla wielowatkowosci niz  sntpTime=gmtime(&getTime) */
@@ -1486,19 +1469,18 @@ char temp[100]={0};
 										sntpTime->tm_min,
 										sntpTime->tm_sec);
 
-								connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
-								RestartDMA();
+								connectionType = TEST_CONNECTION;   _SET_NEW_CASE_(0);
+								UpdateReadPos();
 							}
 							else
 							{
-								vTaskDelay(2000);
+								vTaskDelay(2000);    //jezeli nie ma odpowiedzi sntp to trzeba cyklicznie co godzine np pytac
 								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY-1)
 								{
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",Const.sntp.time), NULL,typeSendArch );
 									while(WaitForRcvEsp(txt_OK,txt_ERR)==0) vTaskDelay(10);			/* Wyjątek: czekanie na odpowiedz w pętli bez udzialu przerwania */
 									DispRecvBuff(_GET_ACTUAL_CASE_,typeSendArch);
-									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
-									RestartDMA();
+									connectionType = TEST_CONNECTION;   _SET_NEW_CASE_(0);
 								}
 								else
 								{
@@ -1515,6 +1497,21 @@ char temp[100]={0};
 					}
 					break;
 
+
+				case TEST_CONNECTION:
+					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
+					{
+						int aaaa = _GET_REP_CASE_;
+						_THE_SAME_CASE_;
+						DbgDma(DBG, _SE_"\r\nAATTTTTTTTTT  YES !!!!!!"_E_);
+						UpdateReadPos();		/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
+
+					}
+					else
+					{
+						ESP32_FreeAnswers(1);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() */
+					}
+					break;
 
 
 				case HTTP_CONNECTION:
@@ -1535,7 +1532,7 @@ char temp[100]={0};
 								GetSizeAndChannel(pHttp2, &channel, &size);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
 							}
-							else RestartDMA();
+							else UpdateReadPos();
 						}
 					}
 					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
@@ -1547,13 +1544,13 @@ char temp[100]={0};
 						if (RecvFromEsp("\r\nOK\r\n"))
 						{
 							if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- CLOSED --- "_E_);
-							RestartDMA();
+							UpdateReadPos();
 						}
 					}
 					else if (RecvFromEsp("ERROR"))
 					{
 						if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
-						RestartDMA();
+						UpdateReadPos();
 					}
 					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
 					{
@@ -1577,7 +1574,7 @@ char temp[100]={0};
 					}
 					else
 					{
-						RestartDMA();
+						UpdateReadPos();
 					}
 					break;
 
@@ -1695,7 +1692,9 @@ char temp[100]={0};
 			}
 			else if(DEBUG_IsTxtReceive("x"))
 			{
-				DbgDma(DBG, _S_"x"_E_);
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
+				SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",arch);
 			}
 			else if(DEBUG_IsTxtReceive("z"))
 			{
@@ -2108,7 +2107,6 @@ void WIFI_UartErrorService(void)
 void WIFI_RxCallbackService(void)
 {
 	Dbg(DBG, "\r\n -----  USART6  HAL_UART_RxCpltCallback -------  ");  //xTaskNotify i do vLogTask !!!!
-	RestartDMA();
 }
 
 //------------- ATTENTIONS ------------------------------
