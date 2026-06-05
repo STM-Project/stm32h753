@@ -178,8 +178,13 @@ static void DispRecvBuff(int nrCase, ARCHIVING_TYPE archType)
 		if(read_pos < recvByteFromEsp_copy)  DbgDma2(DBG, &RecvBuffer[read_pos], recvByteFromEsp_copy-read_pos);
 		else{								 DbgDma2(DBG, &RecvBuffer[read_pos], ESP_RECV_BUFF_SIZE	 -read_pos);	 if(recvByteFromEsp_copy) DbgDma2(DBG,&RecvBuffer[0],recvByteFromEsp_copy);  }
 	}
-		 if(arch ==archType){ DbgVarDma(DBG,1024,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); _DbgDma(); DbgDma(DBG,CoG3_"RECV_STOP\r\n"_X_); }
-	else if(arch2==archType){ /*DbgMultiDma(DBG,"\r\n",bufff,"\r\n");*/	}
+	if(nrCase == -1){	/* komunikat asynchroniczny */
+		 	  if(arch ==archType){ DbgDma(DBG,CoG3_"\r\nRECV_START_ASYN:"_X_); _DbgDma(); DbgDma(DBG,CoG3_"RECV_STOP\r\n"_X_); }
+		 else if(arch2==archType){ /*DbgMultiDma(DBG,"\r\n",bufff,"\r\n");*/	}
+	}else{
+		 	  if(arch ==archType){ DbgVarDma(DBG,1024,CoG3_"\r\nRECV_START_%03d:"_X_,nrCase); _DbgDma(); DbgDma(DBG,CoG3_"RECV_STOP\r\n"_X_); }
+		 else if(arch2==archType){ /*DbgMultiDma(DBG,"\r\n",bufff,"\r\n");*/	}
+	}
 }
 
 static void ESP32_FreeAnswers(int whereCalled)
@@ -194,7 +199,7 @@ static void ESP32_FreeAnswers(int whereCalled)
 			}
 			else{ DbgVarDma(DBG,200,_SE_"\r\n%s -%d- "_E_,freeAnswerTypes[i],BytesToRead());   len+=mini_strlen(freeAnswerTypes[i])+2; }
 	}}
-	if(BytesToRead()==len && len)  read_pos = (read_pos+len) & (ESP_RECV_BUFF_SIZE-1);
+	if(BytesToRead()==len && len)  read_pos = (read_pos+len) & (ESP_RECV_BUFF_SIZE-1);		/* Zmień pozycje odczytu bufora kołowego jeżeli przed komunikatami asynchronicznymi nie było innego rodzaju komunikatu */
 }
 
 static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* if data=NULL we use buffer 'sendBuff' as default. 		if len=0 we calculate length text. */
@@ -1055,6 +1060,115 @@ void vtaskWifi(void *argument)
 //	}
 
 
+
+
+	RecvBuffer[2040]='M';
+	RecvBuffer[2041]='a';
+	RecvBuffer[2042]='r';
+	RecvBuffer[2043]='k';
+	RecvBuffer[2044]='i';
+	RecvBuffer[2045]='e';
+	RecvBuffer[2046]='l';
+	RecvBuffer[2047]='4';
+	RecvBuffer[0]=' ';
+	RecvBuffer[1]='2';
+	RecvBuffer[2]='3';
+	RecvBuffer[3]='i';
+	RecvBuffer[4]='x';
+	RecvBuffer[5]='R';
+	RecvBuffer[6]='\r';
+
+	read_pos=2040;
+	recvByteFromEsp_copy=6;
+
+void  IncPos(int* pos) 			 { *pos=(*pos+1)   &(ESP_RECV_BUFF_SIZE-1); }
+void  SetPos(int* pos, int offs) { *pos=(*pos+offs)&(ESP_RECV_BUFF_SIZE-1);    }
+u32   GetPos(char* ptr)			 { return (ptr-RecvBuffer); 			  	   }
+
+void strcpy_(char* buff, char* ptr, int offs, char endSign)
+{
+	int i = GetPos(ptr);
+	int j=0;
+
+	if(offs) SetPos(&i,offs);
+
+	while(RecvBuffer[i] != endSign)
+	{
+		*(buff+j++) = RecvBuffer[i];
+		IncPos(&i);
+	}
+	*(buff+j) = '\0';
+}
+
+void strcpy2_(char* buff, char* ptr, int offs, u16 size)
+{
+	int i = GetPos(ptr);
+	int j=0;
+
+	if(offs) SetPos(&i,offs);
+
+	for(j=0; j<size; ++j)
+	{
+		*(buff+j) = RecvBuffer[i];
+		IncPos(&i);
+	}
+	*(buff+j) = '\0';
+}
+
+int atoi_(char* ptr, int offs)
+{
+	char buff[20]={0};
+	int i = GetPos(ptr);
+	int j=0;
+
+	if(offs) SetPos(&i,offs);
+
+	while(ISDIGITAL(RecvBuffer[i]))
+	{
+		buff[j++] = RecvBuffer[i];
+		if(j>sizeof(buff)-1) break;
+		IncPos(&i);
+	}
+	*(buff+j) = '\0';
+	return atoi(buff);
+}
+
+
+
+
+
+char temp[100]={0};
+
+	INIT_BUFF(answer,"Markiel4 ");
+	if((ptr=strstr_(answer))!=NULL)
+	{
+
+		//strcpy2_(temp,ptr,mini_strlen(answer),4);
+		int zmmm = atoi_(ptr,mini_strlen(answer));
+
+		asm("nop");
+
+	}
+
+
+
+
+
+
+
+
+
+
+	while(1) vTaskDelay(20);
+
+
+
+
+
+
+
+
+
 	while(1)
 	{
 
@@ -1063,7 +1177,7 @@ void vtaskWifi(void *argument)
 	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
 		if (ulNotifiedValue & BIT_ESP_SRV)
 		{
-			GetNewReadPos();
+			GetNewReadPos();		//Zastanowic sie co w przypadku przepelnienia bufora cyklicznego i nie zdarzenie oblugi go
 			SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);		/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_InvalidateDCache_by_Addr() nie jest potrzebny */
 
 			switch (connectionType)

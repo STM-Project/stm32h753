@@ -136,6 +136,10 @@ typedef uint8_t u8;
 #define U64_TO_DOUBLE(val)	(*((double*)(&(val))))
 #define DOUBLE_TO_U64(val)	(*((uint64_t*)(&(val))))
 
+#define ISUPPER(c)		(((c)>='A')&&((c)<='Z'))
+#define ISLOWER(c)		(((c)>='a')&&((c)<='z'))
+#define ISDIGITAL(c)	(((c)>='0')&&((c)<='9'))
+
 #define _ZERO 0
 #define _ZEROS2 _ZERO,_ZERO
 #define _ZEROS3 _ZEROS2,_ZERO
