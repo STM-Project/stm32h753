@@ -1557,7 +1557,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, noArch /*noArch*/ );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch /*noArch*/ );  //ni NIE mini_printf tylko cos szybkiego !!!!!!!!1 kopiowania
 					}
 					else if (RecvFromEsp(",CLOSED\r\n"))
 					{
@@ -1584,10 +1584,10 @@ void vtaskWifi(void *argument)
 								}
 
 								if(nrPages > 200){  nrPages=0;
-									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, noArch);		/* Czas wykonania SendToEsp32() to 28us */
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
 								}
 								else{  nrPages++; DbgDma(1,".");
-									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, noArch );
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 								}
 							}
 						}
