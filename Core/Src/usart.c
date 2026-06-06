@@ -398,13 +398,46 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)			/* Obsługa bezczynności (może to być IDLE lub RTO) wywolywana tylko jesli uzyta zostala funkcja HAL_UARTEx_ReceiveToIdle_DMA() raz na poczatek */
+/* Przypadek użycia  HAL_UARTEx_ReceiveToIdle_DMA()  wywołujacego  HAL_UARTEx_RxEventCallback(): */
+/*
+	void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)			// Obsługa bezczynności (może to być IDLE lub RTO) wywolywana tylko jesli uzyta zostala funkcja HAL_UARTEx_ReceiveToIdle_DMA() raz na poczatek
+	{
+		if (huart->Instance == USART6)
+		{
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			ESP32_Notify2EspThread(0,size,&xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+		}
+	}
+
+	void ESP32_Notify2EspThread(int interruptSrc, uint16_t size, long *pxWoken)
+	{
+		if(vtaskWifiHandle!=NULL){
+			if(interruptSrc==0){  recvByteFromEsp = size;  if(recvByteFromEsp==2048) recvByteFromEsp=0;
+								  xTaskNotifyFromISR( vtaskWifiHandle,BIT_ESP_SRV,eSetBits,pxWoken );  }
+			else			   {  xTaskNotifyFromISR( vtaskWifiHandle,BIT_DBG_SRV,eSetBits,pxWoken );  }
+		}
+	}
+
+	void USART6_IRQHandler(void)
+	{
+		if(__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RTOF) != RESET && __HAL_UART_GET_IT_SOURCE(&huart6, UART_IT_RTO) != RESET)
+		{
+			__HAL_UART_CLEAR_FLAG(&huart6, UART_CLEAR_RTOF);
+		}
+	  	...
+	}
+
+	static void StartDMA(void)
+	{
+		...
+		HAL_UARTEx_ReceiveToIdle_DMA(&ESP_UART_HANDLE, (uint8_t*) RecvBuffer, ESP_RECV_BUFF_SIZE);
+		...
+	}
+*/
+
+void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long *pxWoken)
 {
-
-}
-
-void HAL_UARTEx_RxEventCallback_(UART_HandleTypeDef *huart, uint16_t size, long *pxWoken)			/* Obsługa bezczynności (może to być IDLE lub RTO) */
-{  																									/* Nie jest samoczynnie wywolywany trzeba samemu wywolac */
 	if (huart->Instance == USART6)
 	{
 		ESP32_Notify2EspThread(0,size,pxWoken);

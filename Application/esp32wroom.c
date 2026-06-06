@@ -48,7 +48,7 @@
 #define ESP_ON 		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_SET)
 #define ESP_OFF		HAL_GPIO_WritePin(ESP_EN_GPIO_TYPE, ESP_EN_GPIO_PIN, GPIO_PIN_RESET)
 
-#define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL 0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789</h1></body></html>"
+#define HTML_TXT_CODE		"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>ESP32 SSL 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789</h1></body></html>"
 #define ESP32_DOMAIN_ERROR 	"\r\nNOT updated email Server IP "
 #define TXT_OK				"\r\nOK\r\n"
 #define TXT_ERR				"ERROR"
@@ -958,16 +958,16 @@ static int vGetConnectionResultToSTA(void)
 
 static void GetAddressesForConnection(void)
 {
-	char *ptr=NULL;
+	char *ptr=NULL, temp[20]={0};
 	char rcv1[]="+CIFSR:APIP,\"";
 	char rcv2[]="+CIFSR:APMAC,\"";
 	char rcv3[]="+CIFSR:STAIP,\"";
 	char rcv4[]="+CIFSR:STAMAC,\"";
 
-	if ((ptr=RecvFromEsp(rcv1)))  Const.wifiAP[ Const.wifiGeneral.nrAP ].ip    = IPStr2Int	  (ptr+mini_strlen(rcv1));  //Powinno zapisywac do zmiennych niezapisywalnych a nie di zapisywalnych !!!!
-	if ((ptr=RecvFromEsp(rcv2)))  Const.wifiAP[ Const.wifiGeneral.nrAP ].mac   = MACStr2Int64 (ptr+mini_strlen(rcv2));
-	if ((ptr=RecvFromEsp(rcv3)))  Const.wifiAP[ Const.wifiGeneral.nrSTA ].ip   = IPStr2Int	  (ptr+mini_strlen(rcv3));
-	if ((ptr=RecvFromEsp(rcv4)))  Const.wifiSTA[ Const.wifiGeneral.nrSTA ].mac = MACStr2Int64 (ptr+mini_strlen(rcv4));
+	if ((ptr=RecvFromEsp(rcv1))){ strcpy2_(temp,ptr,mini_strlen(rcv1)+1,16); Const.wifiAP[Const.wifiGeneral.nrAP].ip    = IPStr2Int	   (ptr+mini_strlen(rcv1)); }  //Powinno zapisywac do zmiennych niezapisywalnych a nie di zapisywalnych !!!!
+	if ((ptr=RecvFromEsp(rcv2))){ strcpy2_(temp,ptr,mini_strlen(rcv2)+1,16); Const.wifiAP[Const.wifiGeneral.nrAP].mac   = MACStr2Int64 (ptr+mini_strlen(rcv2)); }
+	if ((ptr=RecvFromEsp(rcv3))){ strcpy2_(temp,ptr,mini_strlen(rcv3)+1,16); Const.wifiSTA[Const.wifiGeneral.nrSTA].ip  = IPStr2Int	   (ptr+mini_strlen(rcv3)); }
+	if ((ptr=RecvFromEsp(rcv4))){ strcpy2_(temp,ptr,mini_strlen(rcv4)+1,16); Const.wifiSTA[Const.wifiGeneral.nrSTA].mac = MACStr2Int64 (ptr+mini_strlen(rcv4)); }
 }
 
 static void vQueryAndReplaceEmailAddrName2AddrIP(void)
@@ -1353,9 +1353,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(14,txt_OK,txt_ERR,typeRecvArch))
 					{
-						if(ErrorAnswerService()) break;  //RecvBuffer
-						vTaskDelay(1000);
-						vTaskDelay(1000);
+						if(ErrorAnswerService()) break;
 						GetAddressesForConnection();
 						SendToEsp32(0,"AT+CIPSERVERMAXCONN=1\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
@@ -1524,32 +1522,20 @@ void vtaskWifi(void *argument)
 
 					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers(0);
 
-					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
 					{
 						if ((pHttp=strstr_(pHttp,"+IPD,0")))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
 							if ((pHttp2=strstr_(pHttp,":GET / ")))
 							{
-
-								 //char temp[50]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);
-								 channel = atoi_(pHttp,mini_strlen("+IPD,"));
-								 size = atoi_(pHttp,mini_strlen("+IPD,0,"));
-								//GetSizeAndChannel(temp, &channel, &size);
-								 DbgVarDma(DBG,200,_SE_"\r\n********************** %d , %d ********************"_E_,channel,size);
-
+								channel = atoi_(pHttp,mini_strlen("+IPD,"));			/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
+								size 	 = atoi_(pHttp,mini_strlen("+IPD,0,"));
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 							}
-							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))
+							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))				/* Każde nowe połączenie generuje 0,CONNECT tj. czeka na zakończenie jednego by 'weszlo' drugie, nie ma przychodzących rownocześnie połączeń */
 							{
-
-
-								 //char temp[50]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);
-								 channel = atoi_(pHttp,mini_strlen("+IPD,"));
-								 size = atoi_(pHttp,mini_strlen("+IPD,0,"));
-								//GetSizeAndChannel(pHttp2, &channel, &size);
-								 DbgVarDma(DBG,200,_SE_"\r\n********************** %d , %d ********************"_E_,channel,size);
-
-
+								channel = atoi_(pHttp,mini_strlen("+IPD,"));
+								size 	 = atoi_(pHttp,mini_strlen("+IPD,0,"));
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
 							}
 							else UpdateReadPos();
@@ -1583,7 +1569,7 @@ void vtaskWifi(void *argument)
 									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
 								}
 
-								if(nrPages > 200){  nrPages=0;
+								if(nrPages > 100){  nrPages=0;
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
 								}
 								else{  nrPages++; DbgDma(1,".");
