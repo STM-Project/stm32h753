@@ -53,7 +53,7 @@
 #define TXT_OK				"\r\nOK\r\n"
 #define TXT_ERR				"ERROR"
 #define EMAIL_ERROR			" --- email ERROR --- "
-#define RecvFromEsp(txt)   strstr_(txt) 		/* alternatywnie memcmp() strnstr()  */
+#define RecvFromEsp(txt)   strstr_(NULL,txt) 		/* alternatywnie memcmp() strnstr()  */
 
 #define _GET_REP_CASE_			CASE_Service(-3,NULL,NULL,0)-1
 #define _CLR_REP_CASE_			CASE_Service(-4,NULL,NULL,0)
@@ -154,9 +154,18 @@ RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];	//BYC moze zwiekszenie pre
 static int recvByteFromEsp=0, recvByteFromEsp_copy=0;
 static int read_pos=0;
 
-static char* strstr_(const char* pattern)							/* Algorytm Knutha-Morrisa-Pratta (KMP) idealnie rozwiązuje problem cofania się w buforze kołowym. Zamiast cofać wskaźnik bufora (read_pos_copy), KMP wykorzystuje tablicę przesunięć (tzw. tablicę LPS – Longest Proper Prefix which is also Suffix).Dzięki temu wskaźnik bufora porusza się tylko do przodu, co czyni algorytm znacznie wydajniejszym i prostszym w obsłudze buforów pierścieniowych */
+static void UpdateReadPos(void){ read_pos = recvByteFromEsp_copy; 		 }
+static void GetNewReadPos(void){ recvByteFromEsp_copy = recvByteFromEsp; }
+static void ClearReadPos (void){ recvByteFromEsp_copy=0;  read_pos=0; 	 }
+static int  BytesToRead  (void){ return (recvByteFromEsp_copy-read_pos); }
+
+static void  IncPos(int* pos) 		   { *pos=(*pos+1)   &(ESP_RECV_BUFF_SIZE-1); }
+static void  SetPos(int* pos, int offs){ *pos=(*pos+offs)&(ESP_RECV_BUFF_SIZE-1); }
+static u32   GetPos(char* ptr)		   { return (ptr-RecvBuffer); 			  	  }
+
+static char* strstr_(char* pBuff, const char* pattern)							/* Algorytm Knutha-Morrisa-Pratta (KMP) idealnie rozwiązuje problem cofania się w buforze kołowym. Zamiast cofać wskaźnik bufora (read_pos_copy), KMP wykorzystuje tablicę przesunięć (tzw. tablicę LPS – Longest Proper Prefix which is also Suffix).Dzięki temu wskaźnik bufora porusza się tylko do przodu, co czyni algorytm znacznie wydajniejszym i prostszym w obsłudze buforów pierścieniowych */
 {
-    int i=0, read_pos_copy=read_pos, match_start = read_pos_copy;	char* ptr=NULL;
+    int i=0, read_pos_copy=CONDITION(pBuff,GetPos(pBuff),read_pos), match_start = read_pos_copy;	char* ptr=NULL;
 	while (read_pos_copy != recvByteFromEsp_copy){
         if(RecvBuffer[read_pos_copy]==*(pattern+i)){
         	if(i==0){  match_start=read_pos_copy;  ptr=&RecvBuffer[read_pos_copy]; }
@@ -171,15 +180,6 @@ static char* strstr_(const char* pattern)							/* Algorytm Knutha-Morrisa-Pratt
     }
 	return NULL;
 }
-
-static void UpdateReadPos(void){ read_pos = recvByteFromEsp_copy; 		 }
-static void GetNewReadPos(void){ recvByteFromEsp_copy = recvByteFromEsp; }
-static void ClearReadPos (void){ recvByteFromEsp_copy=0;  read_pos=0; 	 }
-static int  BytesToRead  (void){ return (recvByteFromEsp_copy-read_pos); }
-
-static void  IncPos(int* pos) 			 { *pos=(*pos+1)   &(ESP_RECV_BUFF_SIZE-1); }
-static void  SetPos(int* pos, int offs) { *pos=(*pos+offs)&(ESP_RECV_BUFF_SIZE-1); }
-static u32   GetPos(char* ptr)			 { return (ptr-RecvBuffer); 			  	}
 
 static int strcpy_(char* buff, char* ptr, int offs, char endSign)
 {
@@ -213,7 +213,7 @@ static int strcpy2_(char* buff, char* ptr, int offs, u16 size)
 	return j;
 }
 
-int atoi_(char* ptr, int offs)
+int atoi_(char* ptr, int offs)		/* ptr+offs  musi wskazywac na pierwsza liczbę */
 {
 	char buff[20]={0};
 	int i = GetPos(ptr);
@@ -307,7 +307,7 @@ static void ESP32_FreeAnswers(int whereCalled)
 {
 	char *ptr=NULL;		int flag=1,len=0;
 	LOOP_FOR(i,PTR_TAB_SIZE(freeAnswerTypes)){
-		if((ptr=strstr_(freeAnswerTypes[i]))){	if(flag&&whereCalled){ DispRecvBuff(_Asynchr,arch); flag=0; }
+		if((ptr=strstr_(NULL,freeAnswerTypes[i]))){	if(flag&&whereCalled){ DispRecvBuff(_Asynchr,arch); flag=0; }
 			if(strstr(freeAnswerTypes[i],"+STA_CONNECTED:")||strstr(freeAnswerTypes[i],"+DIST_STA_IP:")){
 				char buf[100]={0};
 				len += strcpy_(buf,ptr,0,'\r') + 2;
@@ -349,8 +349,8 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	int flag=0;
 	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase;  }
 	if( nrCase == actualCase ){
-		int hasRecv1 = (recv1 != NULL) && (strstr_(recv1) != NULL);
-		int hasRecv2 = (recv2 != NULL) && (strstr_(recv2) != NULL);
+		int hasRecv1 = (recv1 != NULL) && (strstr_(NULL,recv1) != NULL);
+		int hasRecv2 = (recv2 != NULL) && (strstr_(NULL,recv2) != NULL);
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
@@ -1383,8 +1383,8 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(17,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()) break;
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeSendArch );
-						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
+						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeSendArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
 
 					}
@@ -1478,8 +1478,8 @@ void vtaskWifi(void *argument)
 										sntpTime->tm_min,
 										sntpTime->tm_sec);
 
-								connectionType = TEST_CONNECTION;   _SET_NEW_CASE_(0);
-								UpdateReadPos();
+								connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
+								UpdateReadPos();				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
 							}
 							else
 							{
@@ -1508,8 +1508,8 @@ void vtaskWifi(void *argument)
 				case TEST_CONNECTION:
 					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
 					{
-						_THE_SAME_CASE_;
-						DbgVarDma(DBG,50, _SE_"\r\nAATTTTTTTTTT  YES_%d_ !!!!!!"_E_,_GET_REP_CASE_);
+						connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
+						DbgVarDma(DBG,50, _SE_"\r\nTest OK "_E_);
 						UpdateReadPos();				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
 
 					}
@@ -1524,18 +1524,32 @@ void vtaskWifi(void *argument)
 
 					DispRecvBuff(++nrHTTP,typeSendArch);  ESP32_FreeAnswers(0);
 
-					if ((pHttp=strstr_("0,CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
+					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))					/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
 					{
-						if ((pHttp=strstr_(pHttp,"+IPD,0")))							/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						if ((pHttp=strstr_(pHttp,"+IPD,0")))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
-							if ((pHttp2=strstr(pHttp,":GET / ")))
+							if ((pHttp2=strstr_(pHttp,":GET / ")))
 							{
-								GetSizeAndChannel(pHttp2, &channel, &size);
+
+								 //char temp[50]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);
+								 channel = atoi_(pHttp,mini_strlen("+IPD,"));
+								 size = atoi_(pHttp,mini_strlen("+IPD,0,"));
+								//GetSizeAndChannel(temp, &channel, &size);
+								 DbgVarDma(DBG,200,_SE_"\r\n********************** %d , %d ********************"_E_,channel,size);
+
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 							}
-							else if ((pHttp2=strstr(pHttp,":GET /favicon.ico")))
+							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))
 							{
-								GetSizeAndChannel(pHttp2, &channel, &size);
+
+
+								 //char temp[50]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);
+								 channel = atoi_(pHttp,mini_strlen("+IPD,"));
+								 size = atoi_(pHttp,mini_strlen("+IPD,0,"));
+								//GetSizeAndChannel(pHttp2, &channel, &size);
+								 DbgVarDma(DBG,200,_SE_"\r\n********************** %d , %d ********************"_E_,channel,size);
+
+
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
 							}
 							else UpdateReadPos();
@@ -1543,7 +1557,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch /*noArch*/ );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, noArch /*noArch*/ );
 					}
 					else if (RecvFromEsp(",CLOSED\r\n"))
 					{
@@ -1560,8 +1574,8 @@ void vtaskWifi(void *argument)
 					}
 					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
 					{
-						if (strstr(pHttp," bytes\r\n")){
-							if (strstr(pHttp,"\r\nSEND OK"))
+						if (strstr_(pHttp," bytes\r\n")){
+							if (strstr_(pHttp,"\r\nSEND OK"))
 							{
 								int val = STRING_GetInt(pHttp,' ');
 								if(typeSendArch!=noArch){
@@ -1570,10 +1584,10 @@ void vtaskWifi(void *argument)
 								}
 
 								if(nrPages > 200){  nrPages=0;
-									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, noArch);		/* Czas wykonania SendToEsp32() to 28us */
 								}
 								else{  nrPages++; DbgDma(1,".");
-									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, noArch );
 								}
 							}
 						}
