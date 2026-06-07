@@ -275,6 +275,29 @@ static void TEST_QueLog(void)
 	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghi");
 	DbgDmaQue(1,"\r\n0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789abcdefghij");
 }
+
+static void TEST_CopyRate(void)
+{
+	StartMeasureTime_us();
+	mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE);	// 170 us
+	StopMeasureTime_us("\r\nTEST_1: ");
+
+	StartMeasureTime_us();
+	strcpy(sendBuff,HTML_TXT_CODE);		// 13 us
+	StopMeasureTime_us("\r\nTEST_2: ");
+
+	StartMeasureTime_us();
+	int aaaa = mini_strlen(HTML_TXT_CODE);  // 39 us
+	StopMeasureTime_us("\r\nTEST_3: ");
+
+	StartMeasureTime_us();
+	LOOP_FOR(i,aaaa) sendBuff[i]='a';
+	StopMeasureTime_us("\r\nTEST_4: ");   // 43us
+
+	StartMeasureTime_us();
+	memcpy(sendBuff, HTML_TXT_CODE, aaaa);
+	StopMeasureTime_us("\r\nTEST_5: ");   //13 us
+}
 */
 /*
 static void PutLog(int on, const char *fmt, ...)
@@ -1155,9 +1178,8 @@ void vtaskWifi(void *argument)
 
 */
 
-
 //	StartMeasureTime_us();
-//	StopMeasureTime_us("\r\nTEST: ");
+//	StopMeasureTime_us("\r\nTEST_5");
 
 
 
@@ -1528,14 +1550,14 @@ void vtaskWifi(void *argument)
 						{
 							if ((pHttp2=strstr_(pHttp,":GET / ")))
 							{
-								channel = atoi_(pHttp,mini_strlen("+IPD,"));			/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
-								size 	 = atoi_(pHttp,mini_strlen("+IPD,0,"));
+								channel = atoi_(pHttp,mini_strlen("+IPD,"));					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
+								size 	= atoi_(pHttp,mini_strlen("+IPD,0,"));
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 							}
 							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))				/* Każde nowe połączenie generuje 0,CONNECT tj. czeka na zakończenie jednego by 'weszlo' drugie, nie ma przychodzących rownocześnie połączeń */
 							{
 								channel = atoi_(pHttp,mini_strlen("+IPD,"));
-								size 	 = atoi_(pHttp,mini_strlen("+IPD,0,"));
+								size 	= atoi_(pHttp,mini_strlen("+IPD,0,"));
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
 							}
 							else UpdateReadPos();
@@ -1543,7 +1565,8 @@ void vtaskWifi(void *argument)
 					}
 					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch /*noArch*/ );  //ni NIE mini_printf tylko cos szybkiego !!!!!!!!1 kopiowania
+					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
+						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,typeSendArch /*noArch*/ );
 					}
 					else if (RecvFromEsp(",CLOSED\r\n"))
 					{
