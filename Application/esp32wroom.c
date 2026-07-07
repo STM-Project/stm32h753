@@ -29,6 +29,8 @@
 
 #include "tim.h"
 
+#define PAUSE_BETWEEN_SEND_RECV_MS		3000
+
 #define ESP_RECV_BUFF_SIZE		2048
 #define PACKET_SEND_LEN 		2048
 
@@ -149,10 +151,11 @@ extern DMA_HandleTypeDef ESP_UART_DMA_RX;
 static xTaskHandle vtaskWifiHandle=NULL;
 static int resetDMA=0;
 
-RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];			/* ESP_RECV_BUFF_SIZE musi byc wielokrotnoscia 32 jesli uzylem RAM_D2_ALIGN32 */
-RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];	//BYC moze zwiekszenie predkosci uart dopiero gdy wlacze FIFO_UART enable !!!!!!!!!!!!!!!!!!!!!
+RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];			/* ESP_RECV_BUFF_SIZE musi byc wielokrotnoscia 32 jesli uzylem _ALIGN32 */
+RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];
 static int recvByteFromEsp=0, recvByteFromEsp_copy=0;
 static int read_pos=0;
+static TickType_t tickCnt=0;
 
 static void UpdateReadPos(void){ read_pos = recvByteFromEsp_copy; 		 }
 static void GetNewReadPos(void){ recvByteFromEsp_copy = recvByteFromEsp; }
@@ -341,6 +344,13 @@ static void ESP32_FreeAnswers(int whereCalled)
 	if(BytesToRead()==len && len)  read_pos = (read_pos+len) & (ESP_RECV_BUFF_SIZE-1);		/* Zmień pozycje odczytu bufora kołowego jeżeli przed komunikatami asynchronicznymi nie było innego rodzaju komunikatu */
 }
 
+static void RstTimeBtwnSendRcv(void){
+	tickCnt = xTaskGetTickCount();
+}
+static int GetTimeBtwnSendRcv(void){
+	return CONDITION( xTaskGetTickCount()-tickCnt > PAUSE_BETWEEN_SEND_RECV_MS, 1, 0 );
+}
+
 static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* if data=NULL we use buffer 'sendBuff' as default. 		if len=0 we calculate length text. */
 {
 	int len_ = CONDITION( 0==len, mini_strlen(CONDITION(NULL==data,sendBuff,data)), len );
@@ -355,6 +365,7 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, CACHE_ALLIGN_LEN(len_)); 	 					/* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy   CACHE_LINE_BYTES = 32 */
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
+	RstTimeBtwnSendRcv();
 	return result;
 }
 
@@ -1128,19 +1139,17 @@ static bool CheckEmailAnswer(int emailCode)
 
 void BackFromEmail(int nrInfo)
 {
-//	if(_GET_ANSW_CASE_==_ERROR){  //To JEST BEZSENSU !!!!
-//		char *ptr=NULL;
-//		if((ptr=RecvFromEsp("ERROR"))){
-//			memset(ptr,' ',5); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! kolowy!!!!
-//			uint32_t clean_size = (recvByteFromEsp + (CACHE_LINE_BYTES - 1)) & ~(CACHE_LINE_BYTES - 1); 	 /* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy 	CACHE_LINE_BYTES = 32 */
-//			SCB_CleanDCache_by_Addr((uint32_t*)RecvBuffer, clean_size);
-//		}
-//	}
 	if(nrInfo) DbgDma(DBG, _S_ EMAIL_ERROR _E_);
-	_CLR_ACTUAL_CASE_;
-	connectionType=HTTP_CONNECTION;
+	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,arch );
+	COMMAND_Service(_SET,sendBuff);
+	_SET_NEW_CASE_(99);
+}
 
-	//"AT+CIPCLOSE=4r\n"
+void BackToHttpService(int *param){
+	UpdateReadPos();
+	_SET_NEW_CASE_(0);
+	*param=0;
+	connectionType = HTTP_CONNECTION;
 }
 
 void vtaskWifi(void *argument)
@@ -1152,12 +1161,13 @@ void vtaskWifi(void *argument)
 	int j;
 
 	uint32_t ulNotifiedValue;
-	u8 activHttp=0;	u32 tickCnt=0;
+	u8 activHttp=0;
 
 
 	int typeSendArch = arch;
 	int typeRecvArch = arch;
 
+	RstTimeBtwnSendRcv();
 	StartDMA();
 	ESP_ON;
 
@@ -1527,25 +1537,10 @@ void vtaskWifi(void *argument)
 					break;
 
 
-				case TEST_CONNECTION:
-					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
-					{
-						connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
-						DbgVarDma(DBG,50, _SE_"\r\nTest OK "_E_);
-						UpdateReadPos();				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
-
-					}
-					else
-					{
-						ESP32_FreeAnswers(1);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() */
-					}
-					break;
-
-
 				case HTTP_CONNECTION:
 
-					tickCnt=xTaskGetTickCount();
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
+					RstTimeBtwnSendRcv();
 
 					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
 					{
@@ -1614,20 +1609,35 @@ void vtaskWifi(void *argument)
 //ZROB tablice allokacji !!!!!!!!!!!!!! wyswieltlanie na zadanie
 					//SPRAWDZ czy czasem razem nie moze isc HTTP i SMTP !!!!!!!
 
-				case SMTP_CONNECTION:
-					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))		/* CASE_Service() osluguje ESP32_FreeAnswers() ale tylko wtedy gdy jest ktoras z odpowioedzi !!!!!!  */
+
+				case TEST_CONNECTION:
+					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
 					{
-						if(ErrorAnswerService()){  BackFromEmail(0); nrHTTPpacket=0; break;  }   //nrHTTP to pakiet kolejne nr !!!! poprawic poc oc to ?
+						DbgVarDma(DBG,50, _SE_"\r\nTest OK "_E_);
+						BackToHttpService(&nrHTTPpacket);
+
+					}
+					else
+					{
+						ESP32_FreeAnswers(1);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() - podobnie jak w pozostalych case */
+					}
+					break;
+
+
+				case SMTP_CONNECTION:
+					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))		/* CASE_Service() osluguje ESP32_FreeAnswers() ale tylko wtedy gdy jest ktoras z odpowiedzi */
+					{
+						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART="ESP_EMAIL_CHANNEL",\"%s\",\"%s\",%d\r\n",CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), IP2Str(Const.emailSend[EmailSendParam.whichSender].IP), Const.emailSend[EmailSendParam.whichSender].port);
 						SendToEsp32(len,NULL,typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 
 					}
-					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK, txt_ERR, typeRecvArch))				/* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
+					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK, txt_ERR, typeRecvArch))		 /* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
 					{
-						if(ErrorAnswerService()){  BackFromEmail(0); nrHTTPpacket=0;  break;  }								/* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,31:220 smtp.poczta.onet.pl ESMTP\r\n\r\n", '\0' <repeats 1985 times> */
-						INIT_BUFF(answer, "\r\n+IPD,"ESP_EMAIL_CHANNEL);	//RecvBuffer																	/* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,78:421 4.7.0 smtp.poczta.onet.pl Error: too many connections from 46.205.198.71\r\n\r\n", '\0' <repeats 1938 times> */
-						if ((ptr=RecvFromEsp(answer)))																	/* Free answer					   	   +IPD,4,55:421 4.4.2 smtp.poczta.onet.pl Error: timeout exceeded */
+						if(ErrorAnswerService()){  BackFromEmail(0); break;  }									  /* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,31:220 smtp.poczta.onet.pl ESMTP\r\n\r\n", '\0' <repeats 1985 times> */
+						INIT_BUFF(answer, "\r\n+IPD,"ESP_EMAIL_CHANNEL);										  /* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,78:421 4.7.0 smtp.poczta.onet.pl Error: too many connections from 46.205.198.71\r\n\r\n", '\0' <repeats 1938 times> */
+						if ((ptr=RecvFromEsp(answer)))															  /* Free answer					   	 +IPD,4,55:421 4.4.2 smtp.poczta.onet.pl Error: timeout exceeded */
 						{
 							channel = STRING_GetInt(ptr,',');	 ptr += mini_strlen(answer);
 							size 	= STRING_GetInt(ptr,',');
@@ -1639,20 +1649,20 @@ void vtaskWifi(void *argument)
 								len = mini_snprintf(sendBuff, sizeof(sendBuff), "EHLO %s\r\n", Const.emailSend[EmailSendParam.whichSender].name);
 								if((pMem = (char*)pvPortMalloc((len+1)*sizeof(char)))){												  /* Uruchom vApplicationMallocFailedHook() dla  #define configUSE_MALLOC_FAILED_HOOK 1 */
 									strncpy(pMem,sendBuff,len);  *(pMem+len)=0;
-									len = mini_snprintf(sendBuff,sizeof(sendBuff),"AT+n="ESP_EMAIL_CHANNEL",%d\r\n",len);
+									len = mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND="ESP_EMAIL_CHANNEL",%d\r\n",len);
 									SendToEsp32(len,NULL,typeSendArch);
 									COMMAND_Service(_SET,sendBuff);
 								}
-								else{  BackFromEmail(0); nrHTTPpacket=0;  break; }
+								else{  BackFromEmail(0);  break; }
 							}
-							else{  BackFromEmail(1); nrHTTPpacket=0;  break; }
+							else{  BackFromEmail(1);  break; }
 						}
 						else _THE_SAME_CASE_;
 
 					}
 					else if (CASE_Service(2,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
 					{
-						if(ErrorAnswerService()){  if(pMem) vPortFree(pMem); BackFromEmail(0); nrHTTPpacket=0;  break;  }
+						if(ErrorAnswerService()){  if(pMem) vPortFree(pMem); BackFromEmail(0);  break;  }
 						SendToEsp32(0,pMem,typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 						if(pMem) vPortFree(pMem);
@@ -1660,7 +1670,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(3,"\r\nSEND OK\r\n\r\n+IPD,4",txt_ERR,typeRecvArch)) 					/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
 					{
-						if(ErrorAnswerService()){  BackFromEmail(0); nrHTTPpacket=0;  break;  }
+						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
 						if((ptr=RecvFromEsp("\r\nRecv "))){
 							size = STRING_GetInt(ptr,' ');
 							if(typeSendArch!=noArch){
@@ -1676,10 +1686,18 @@ void vtaskWifi(void *argument)
 							if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv email data: channel %d  size %d "_E_,channel,size);
 							if(code==250){
 								DbgDma(DBG, _S_" --- Email 250 --- "_E_);
-								BackFromEmail(0); nrHTTPpacket=0;
+								BackFromEmail(0);
 							}
-							else{  BackFromEmail(1); nrHTTPpacket=0;  break; }
+							else{  BackFromEmail(1);  break; }
 						}
+
+					}
+					else if (CASE_Service(99,txt_OK,txt_ERR,typeRecvArch))
+					{
+						if(ErrorAnswerService()){ ; }
+						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);
+						BackToHttpService(&nrHTTPpacket);
+
 					}
 
 					break;
@@ -1704,23 +1722,23 @@ void vtaskWifi(void *argument)
 			{
 				DbgDmaQue(DBG, _S_"Rafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal Markielowski "_E_,0);
 			}
-			else if(DEBUG_IsTxtReceive("s"))  //daj ze czekasz az cisza po HTTP !!!! i wtedy puszczaj to !!!! zamykajac polaczenie HTTP czasowo
+			else if(DEBUG_IsTxtReceive("s"))
 			{
-				if(xTaskGetTickCount()-tickCnt > 3000);
-				SendEmail(0, 1<<1, EMAIL_MEASURE);
-
-				if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
-					 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
+				if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
 				{
-					DbgDma(DBG, _S_"\r\nWysylam email... "_E_);
-					_CLR_ACTUAL_CASE_;
-					connectionType=SMTP_CONNECTION;
-					SendToEsp32(0,"AT\r\n"/*"AT+CIPSERVER=0\r\n"*/,typeSendArch);
-					COMMAND_Service(_SET,sendBuff);
+					SendEmail(0, 1<<1, EMAIL_MEASURE);
+
+					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
+						 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
+					{
+						DbgDma(DBG, _S_"\r\nWysylam email... "_E_);
+						_CLR_ACTUAL_CASE_;
+						connectionType=SMTP_CONNECTION;
+						SendToEsp32(0,"AT+CIPSERVER=0\r\n",typeSendArch);
+						COMMAND_Service(_SET,sendBuff);
+					}
 				}
-
-
-
+				else{ DbgDma(DBG, _S_"\r\nESP jest zajety..."_E_); }
 
 			}
 			else if(DEBUG_IsTxtReceive("x"))
