@@ -1639,15 +1639,15 @@ void vtaskWifi(void *argument)
 						INIT_BUFF(answer, "\r\n+IPD,"ESP_EMAIL_CHANNEL);										  /* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,78:421 4.7.0 smtp.poczta.onet.pl Error: too many connections from 46.205.198.71\r\n\r\n", '\0' <repeats 1938 times> */
 						if ((ptr=RecvFromEsp(answer)))															  /* Free answer					   	 +IPD,4,55:421 4.4.2 smtp.poczta.onet.pl Error: timeout exceeded */
 						{
-							channel = STRING_GetInt(ptr,',');	 ptr += mini_strlen(answer);
+							channel = STRING_GetInt(ptr,',');	 ptr += mini_strlen(answer); //!!!!!  STRING_GetInt() NIE bo kolowy wspaznik do bufora kolowego !!!!!
 							size 	= STRING_GetInt(ptr,',');
 							code 	= STRING_GetInt(ptr,':');
-							if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv email data: channel %d  size %d "_E_,channel,size);
+							if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv email data: channel %d  size %d  code %d"_E_,channel,size,code);
 							if(code==220)
 							{
 								DbgDma(DBG, _S_" --- Email 220 --- "_E_);
 								len = mini_snprintf(sendBuff, sizeof(sendBuff), "EHLO %s\r\n", Const.emailSend[EmailSendParam.whichSender].name);
-								if((pMem = (char*)pvPortMalloc((len+1)*sizeof(char)))){												  /* Uruchom vApplicationMallocFailedHook() dla  #define configUSE_MALLOC_FAILED_HOOK 1 */
+								if((pMem = (char*)pvPortMalloc((len+1)*sizeof(char)))){								/* Uruchom vApplicationMallocFailedHook() dla  #define configUSE_MALLOC_FAILED_HOOK 1 */
 									strncpy(pMem,sendBuff,len);  *(pMem+len)=0;
 									len = mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND="ESP_EMAIL_CHANNEL",%d\r\n",len);
 									SendToEsp32(len,NULL,typeSendArch);
@@ -1668,7 +1668,7 @@ void vtaskWifi(void *argument)
 						if(pMem) vPortFree(pMem);
 
 					}
-					else if (CASE_Service(3,"\r\nSEND OK\r\n\r\n+IPD,4",txt_ERR,typeRecvArch)) 					/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
+					else if (CASE_Service(3,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch)) 					/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
 						if((ptr=RecvFromEsp("\r\nRecv "))){
@@ -1698,6 +1698,10 @@ void vtaskWifi(void *argument)
 						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);
 						BackToHttpService(&nrHTTPpacket);
 
+					}
+					else
+					{
+						ESP32_FreeAnswers(1);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() - podobnie jak w pozostalych case */
 					}
 
 					break;
@@ -1746,6 +1750,12 @@ void vtaskWifi(void *argument)
 				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
 				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
 				SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",arch);
+			}
+			else if(DEBUG_IsTxtReceive("X"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
+				SendToEsp32(0,"AT+CIPCLOSE="ESP_EMAIL_CHANNEL"\r\n",arch);
 			}
 			else if(DEBUG_IsTxtReceive("z"))
 			{
