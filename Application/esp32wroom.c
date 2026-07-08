@@ -1544,6 +1544,11 @@ void vtaskWifi(void *argument)
 					break;
 
 
+
+//static void GetHTTPpacketParam(void){
+//
+//}
+
 				case HTTP_CONNECTION:
 
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
