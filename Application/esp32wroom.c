@@ -449,10 +449,10 @@ void DefaultSettingsWIFI(void)
 
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
-		VAR_SetVal64(Const_wifiSTA_mac, i, 0x1122334455);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,1,99));
+		VAR_SetVal64(Const_wifiSTA_mac, i, 0x0c0078f505);
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,93));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
-		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
+		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
 		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
@@ -998,10 +998,10 @@ static void GetAddressesForConnection(void)
 	char rcv3[]="+CIFSR:STAIP,\"";
 	char rcv4[]="+CIFSR:STAMAC,\"";
 
-	if ((ptr=RecvFromEsp(rcv1))){ strcpy2_(temp,ptr,mini_strlen(rcv1)+1,16); Const.wifiAP[Const.wifiGeneral.nrAP].ip    = IPStr2Int	   (ptr+mini_strlen(rcv1)); }  //Powinno zapisywac do zmiennych niezapisywalnych a nie di zapisywalnych !!!!
-	if ((ptr=RecvFromEsp(rcv2))){ strcpy2_(temp,ptr,mini_strlen(rcv2)+1,16); Const.wifiAP[Const.wifiGeneral.nrAP].mac   = MACStr2Int64 (ptr+mini_strlen(rcv2)); }
-	if ((ptr=RecvFromEsp(rcv3))){ strcpy2_(temp,ptr,mini_strlen(rcv3)+1,16); Const.wifiSTA[Const.wifiGeneral.nrSTA].ip  = IPStr2Int	   (ptr+mini_strlen(rcv3)); }
-	if ((ptr=RecvFromEsp(rcv4))){ strcpy2_(temp,ptr,mini_strlen(rcv4)+1,16); Const.wifiSTA[Const.wifiGeneral.nrSTA].mac = MACStr2Int64 (ptr+mini_strlen(rcv4)); }
+	if ((ptr=RecvFromEsp(rcv1))){ strcpy2_(temp,ptr,mini_strlen(rcv1)+1,16); Const.wifiAP[Const.wifiGeneral.nrAP].ip    = IPStr2Int	   (temp); }  //Powinno zapisywac do zmiennych niezapisywalnych a nie di zapisywalnych !!!!
+	if ((ptr=RecvFromEsp(rcv2))){ strcpy2_(temp,ptr,mini_strlen(rcv2)+1,16); Const.wifiAP[Const.wifiGeneral.nrAP].mac   = MACStr2Int64 (temp); }
+	if ((ptr=RecvFromEsp(rcv3))){ strcpy2_(temp,ptr,mini_strlen(rcv3)+1,16); Const.wifiSTA[Const.wifiGeneral.nrSTA].ip  = IPStr2Int	   (temp); }
+	if ((ptr=RecvFromEsp(rcv4))){ strcpy2_(temp,ptr,mini_strlen(rcv4)+1,16); Const.wifiSTA[Const.wifiGeneral.nrSTA].mac = MACStr2Int64 (temp); }
 }
 
 static void vQueryAndReplaceEmailAddrName2AddrIP(void)
@@ -1150,6 +1150,13 @@ void BackToHttpService(int *param){
 	_SET_NEW_CASE_(0);
 	*param=0;
 	connectionType = HTTP_CONNECTION;
+}
+
+static void GetSMTPpacketParam(char* ptr, char* answer, int* channel, int* size, int* code){
+	char temp[50]={0};  strcpy2_(temp,ptr,0,20);
+	*channel = STRING_GetInt(temp,',');
+	*size 	 = STRING_GetInt(temp+mini_strlen(answer),',');
+	*code 	 = STRING_GetInt(temp,':');
 }
 
 void vtaskWifi(void *argument)
@@ -1550,12 +1557,14 @@ void vtaskWifi(void *argument)
 							{
 								channel = atoi_(pHttp,mini_strlen("+IPD,"));					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
 								size 	= atoi_(pHttp,mini_strlen("+IPD,0,"));
+								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 							}
 							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))				/* Każde nowe połączenie generuje 0,CONNECT tj. czeka na zakończenie jednego by 'weszlo' drugie, nie ma przychodzących rownocześnie połączeń */
 							{
 								channel = atoi_(pHttp,mini_strlen("+IPD,"));
 								size 	= atoi_(pHttp,mini_strlen("+IPD,0,"));
+								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
 							}
 							else UpdateReadPos();
@@ -1584,7 +1593,8 @@ void vtaskWifi(void *argument)
 						if (strstr_(pHttp," bytes\r\n")){
 							if (strstr_(pHttp,"\r\nSEND OK"))
 							{
-								int val = STRING_GetInt(pHttp,' ');
+								char temp[50]={0};  strcpy_(temp,pHttp,1,'\r');		/* strcpy2_(temp,pHttp,0,30); */
+								int val = STRING_GetInt(temp,' ');					/* val = atoi_(pHttp,mini_strlen("\r\nRecv ")); */
 								if(typeSendArch!=noArch){
 									DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
 									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
@@ -1639,9 +1649,7 @@ void vtaskWifi(void *argument)
 						INIT_BUFF(answer, "\r\n+IPD,"ESP_EMAIL_CHANNEL);										  /* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,78:421 4.7.0 smtp.poczta.onet.pl Error: too many connections from 46.205.198.71\r\n\r\n", '\0' <repeats 1938 times> */
 						if ((ptr=RecvFromEsp(answer)))															  /* Free answer					   	 +IPD,4,55:421 4.4.2 smtp.poczta.onet.pl Error: timeout exceeded */
 						{
-							channel = STRING_GetInt(ptr,',');	 ptr += mini_strlen(answer); //!!!!!  STRING_GetInt() NIE bo kolowy wspaznik do bufora kolowego !!!!!
-							size 	= STRING_GetInt(ptr,',');
-							code 	= STRING_GetInt(ptr,':');
+							GetSMTPpacketParam(ptr,answer,&channel,&size,&code);
 							if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv email data: channel %d  size %d  code %d"_E_,channel,size,code);
 							if(code==220)
 							{
@@ -1672,7 +1680,8 @@ void vtaskWifi(void *argument)
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
 						if((ptr=RecvFromEsp("\r\nRecv "))){
-							size = STRING_GetInt(ptr,' ');
+							char temp[50]={0};  strcpy_(temp,ptr,1,'\r');		/* strcpy2_(temp,pHttp,0,20); */
+							size = STRING_GetInt(temp,' ');
 							if(typeSendArch!=noArch){
 								DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,size);
 								DbgDma(DBG, _S_" --- SEND OK --- "_E_);
@@ -1680,10 +1689,8 @@ void vtaskWifi(void *argument)
 						}
 						INIT_BUFF(answer,"+IPD,");
 						if ((ptr=RecvFromEsp(answer))){
-							channel = STRING_GetInt(ptr,',');	 ptr += mini_strlen(answer);
-							size 	= STRING_GetInt(ptr,',');
-							code 	= STRING_GetInt(ptr,':');
-							if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv email data: channel %d  size %d "_E_,channel,size);
+							GetSMTPpacketParam(ptr,answer,&channel,&size,&code);
+							if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv email data: channel %d  size %d  code %d"_E_,channel,size,code);
 							if(code==250){
 								DbgDma(DBG, _S_" --- Email 250 --- "_E_);
 								BackFromEmail(0);
