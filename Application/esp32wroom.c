@@ -1152,8 +1152,13 @@ void BackToHttpService(int *param){
 	connectionType = HTTP_CONNECTION;
 }
 
-static void GetSMTPpacketParam(char* ptr, char* answer, int* channel, int* size, int* code){
-	char temp[50]={0};  strcpy2_(temp,ptr,0,20);
+static void GetHTTPpacketParam(char* ptr, int* channel, int* size){			/* +IPD,0,698:GET /... */
+	*channel = atoi_(ptr,mini_strlen("+IPD,"));								/* *channel = ESP_HTTP_CHANNEL */
+	*size 	 = atoi_(ptr,mini_strlen("+IPD,"ESP_HTTP_CHANNEL","));
+}
+
+static void GetSMTPpacketParam(char* ptr, char* answer, int* channel, int* size, int* code){		/* +IPD,4,31:220 smtp.poczta.onet.pl... */
+	char temp[50]={0};  strcpy2_(temp,ptr,0,20);													/* *channel = ESP_EMAIL_CHANNEL */
 	*channel = STRING_GetInt(temp,',');
 	*size 	 = STRING_GetInt(temp+mini_strlen(answer),',');
 	*code 	 = STRING_GetInt(temp,':');
@@ -1544,11 +1549,6 @@ void vtaskWifi(void *argument)
 					break;
 
 
-
-//static void GetHTTPpacketParam(void){
-//
-//}
-
 				case HTTP_CONNECTION:
 
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
@@ -1556,19 +1556,18 @@ void vtaskWifi(void *argument)
 
 					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
 					{
-						if ((pHttp=strstr_(pHttp,"+IPD,0")))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						INIT_BUFF(answer, "+IPD,"ESP_HTTP_CHANNEL);
+						if ((pHttp=strstr_(pHttp,answer)))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
 							if ((pHttp2=strstr_(pHttp,":GET / ")))
 							{
-								channel = atoi_(pHttp,mini_strlen("+IPD,"));					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
-								size 	= atoi_(pHttp,mini_strlen("+IPD,0,"));
+								GetHTTPpacketParam(pHttp,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
 								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 							}
 							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))				/* Każde nowe połączenie generuje 0,CONNECT tj. czeka na zakończenie jednego by 'weszlo' drugie, nie ma przychodzących rownocześnie połączeń */
 							{
-								channel = atoi_(pHttp,mini_strlen("+IPD,"));
-								size 	= atoi_(pHttp,mini_strlen("+IPD,0,"));
+								GetHTTPpacketParam(pHttp,&channel,&size);
 								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
 							}
