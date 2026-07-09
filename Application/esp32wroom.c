@@ -1625,7 +1625,7 @@ void vtaskWifi(void *argument)
 
 
 				case TEST_CONNECTION:
-					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
+					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))  //DAJ ABY  RECV_START_T:
 					{
 						DbgVarDma(DBG,50, _SE_"\r\nTest OK "_E_);
 						BackToHttpService(&nrHTTPpacket);
@@ -1767,6 +1767,18 @@ void vtaskWifi(void *argument)
 				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
 				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
 				SendToEsp32(0,"AT+CIPCLOSE="ESP_EMAIL_CHANNEL"\r\n",arch);
+			}
+			else if(DEBUG_IsTxtReceive("o"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
+				SendToEsp32(0,"AT+CIPSTATUS\r\n",arch);
+			}
+			else if(DEBUG_IsTxtReceive("p"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
+				SendToEsp32(0,"AT+CIPSTATE?\r\n",arch);
 			}
 			else if(DEBUG_IsTxtReceive("z"))
 			{
