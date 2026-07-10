@@ -76,11 +76,6 @@ typedef enum
 
 typedef enum
 {
-	_Asynchr=-1, _Test=-2
-} DBG_TYPE;
-
-typedef enum
-{
 	INIT_CONNECTION, HTTP_CONNECTION, SMTP_CONNECTION, TEST_CONNECTION
 } CONNECTION_TYPE;
 
@@ -143,6 +138,7 @@ static const char *freeAnswerTypes[] = {
 const static char txt_OK[]  =TXT_OK;
 const static char txt_ERR[] =TXT_ERR;
 
+static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
 
@@ -315,25 +311,33 @@ static void PutLog(int on, const char *fmt, ...)
 	}
 }
 */
-static void DispRecvBuff(int nrCase, ARCHIVING_TYPE archType)
-{//RECV_START_001_ilosc bajtow do odczytu:
-	char type[10]={0};
-	switch(nrCase){ case -1:strcpy(type,"ASYN");break;  case -2:strcpy(type,"TEST");break;  default:mini_snprintf(type,sizeof(type)-1,"%03d",nrCase);break; }
+static void DispRecvBuff(int nrItem, ARCHIVING_TYPE archType)			/* DispRecvBuff(-2,arch) - ASYN 	*/
+{//RECV_START_001_ilosc bajtow do odczytu:								/* DispRecvBuff(<0,arch) - no count */
+	char type[20]={0}, typeNm[10]={0};
+	if(-2==nrItem) strcpy(typeNm,"ASYN");
+	else{  		   switch(connectionType){ case INIT_CONNECTION:strcpy(typeNm,"INIT");break;  case HTTP_CONNECTION:strcpy(typeNm,"HTTP");break;  case SMTP_CONNECTION:strcpy(typeNm,"SMTP");break;  case TEST_CONNECTION:strcpy(typeNm,"TEST");break; }  }
+
+
+	if(nrItem<0) mini_snprintf(type,sizeof(type)-1,"%s",typeNm);
+	else		 mini_snprintf(type,sizeof(type)-1,"%s_%03d",typeNm,nrItem);
+
+
+	//switch(nrCase){ case -1:strcpy(type,"ASYN");break;  case -2:strcpy(type,"TEST");break;  default:mini_snprintf(type,sizeof(type)-1,"%03d",nrCase);break; }
 
 	void _DbgDma(void){
 		if(read_pos < recvByteFromEsp_copy)  DbgDma2(DBG, &RecvBuffer[read_pos], recvByteFromEsp_copy-read_pos);
 		else{								 DbgDma2(DBG, &RecvBuffer[read_pos], ESP_RECV_BUFF_SIZE	 -read_pos);	 if(recvByteFromEsp_copy) DbgDma2(DBG,&RecvBuffer[0],recvByteFromEsp_copy);  }
 	}
-		 if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_START_%s:"_X_,type); _DbgDma(); DbgDma(DBG,CoG3_"RECV_STOP\r\n"_X_); }
+		 if(arch ==archType){ DbgVarDma(DBG,100,CoG3_"\r\nRECV_%s_START:"_X_,type); _DbgDma();  DbgDma(DBG,CoG3_"\r\nRECV_STOP"_X_); }
 	else if(arch2==archType){ DbgDma(DBG,"\r\n"); _DbgDma(); DbgDma(DBG,"\r\n"); }
 
 }
 
-static void ESP32_FreeAnswers(int whereCalled)
-{
+static void ESP32_FreeAnswers(int whereCalled)						/* ESP32_FreeAnswers(1) - display the origin asynch mess 	*/
+{																	/* ESP32_FreeAnswers(0) - no display the origin asynch mess */
 	char *ptr=NULL;		int flag=1,len=0;
 	LOOP_FOR(i,PTR_TAB_SIZE(freeAnswerTypes)){
-		if((ptr=strstr_(NULL,freeAnswerTypes[i]))){	if(flag&&whereCalled){ DispRecvBuff(_Asynchr,arch); flag=0; }
+		if((ptr=strstr_(NULL,freeAnswerTypes[i]))){	if(flag&&whereCalled){ DispRecvBuff(-2,arch); flag=0; }
 			if(strstr(freeAnswerTypes[i],"+STA_CONNECTED:")||strstr(freeAnswerTypes[i],"+DIST_STA_IP:")){
 				char buf[100]={0};
 				len += strcpy_(buf,ptr,0,'\r') + 2;
@@ -1164,10 +1168,27 @@ static void GetSMTPpacketParam(char* ptr, char* answer, int* channel, int* size,
 	*code 	 = STRING_GetInt(temp,':');
 }
 
+int SMTP_SendCmd(int typeSendArch,int len){
+	if((pMem = (char*)pvPortMalloc((len+1)*sizeof(char)))){								/* Uruchom vApplicationMallocFailedHook() dla  #define configUSE_MALLOC_FAILED_HOOK 1 */
+		strncpy(pMem,sendBuff,len);  *(pMem+len)=0;
+		len = mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND="ESP_EMAIL_CHANNEL",%d\r\n",len);
+		SendToEsp32(len,NULL,typeSendArch);
+		COMMAND_Service(_SET,sendBuff);
+		return 0;
+	}
+	else return 1;
+}
+
+int SMTP_SendData(int typeSendArch){
+	if(ErrorAnswerService()){  if(pMem) vPortFree(pMem);  return 1;  }
+	SendToEsp32(0,pMem,typeSendArch);
+	COMMAND_Service(_SET,sendBuff);
+	if(pMem) vPortFree(pMem);
+	return 0;
+}
+
 void vtaskWifi(void *argument)
 {
-	static char* pMem=NULL;
-
 	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
 	int channel=0, size=0, code=0, len, result, result2;   int nrHTTPpacket=0;   int nrPages=0;
 	int j;
@@ -1625,7 +1646,7 @@ void vtaskWifi(void *argument)
 
 
 				case TEST_CONNECTION:
-					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))  //DAJ ABY  RECV_START_T:
+					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))  //DAJ ABY  RECV_START_TEST:  zastanow sie
 					{
 						DbgVarDma(DBG,50, _SE_"\r\nTest OK "_E_);
 						BackToHttpService(&nrHTTPpacket);
@@ -1659,13 +1680,14 @@ void vtaskWifi(void *argument)
 							{
 								DbgDma(DBG, _S_" --- Email 220 --- "_E_);
 								len = mini_snprintf(sendBuff, sizeof(sendBuff), "EHLO %s\r\n", Const.emailSend[EmailSendParam.whichSender].name);
-								if((pMem = (char*)pvPortMalloc((len+1)*sizeof(char)))){								/* Uruchom vApplicationMallocFailedHook() dla  #define configUSE_MALLOC_FAILED_HOOK 1 */
-									strncpy(pMem,sendBuff,len);  *(pMem+len)=0;
-									len = mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND="ESP_EMAIL_CHANNEL",%d\r\n",len);
-									SendToEsp32(len,NULL,typeSendArch);
-									COMMAND_Service(_SET,sendBuff);
-								}
-								else{  BackFromEmail(0);  break; }
+								if(SMTP_SendCmd(typeSendArch,len)){  BackFromEmail(0);  break;  }
+//								if((pMem = (char*)pvPortMalloc((len+1)*sizeof(char)))){								/* Uruchom vApplicationMallocFailedHook() dla  #define configUSE_MALLOC_FAILED_HOOK 1 */
+//									strncpy(pMem,sendBuff,len);  *(pMem+len)=0;
+//									len = mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND="ESP_EMAIL_CHANNEL",%d\r\n",len);
+//									SendToEsp32(len,NULL,typeSendArch);
+//									COMMAND_Service(_SET,sendBuff);
+//								}
+//								else{  BackFromEmail(0);  break; }
 							}
 							else{  BackFromEmail(1);  break; }
 						}
@@ -1674,10 +1696,11 @@ void vtaskWifi(void *argument)
 					}
 					else if (CASE_Service(2,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
 					{
-						if(ErrorAnswerService()){  if(pMem) vPortFree(pMem); BackFromEmail(0);  break;  }
-						SendToEsp32(0,pMem,typeSendArch);
-						COMMAND_Service(_SET,sendBuff);
-						if(pMem) vPortFree(pMem);
+						if(SMTP_SendData(typeSendArch)){ BackFromEmail(0); break; }
+//						if(ErrorAnswerService()){  if(pMem) vPortFree(pMem); BackFromEmail(0);  break;  }
+//						SendToEsp32(0,pMem,typeSendArch);
+//						COMMAND_Service(_SET,sendBuff);
+//						if(pMem) vPortFree(pMem);
 
 					}
 					else if (CASE_Service(3,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch)) 					/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
