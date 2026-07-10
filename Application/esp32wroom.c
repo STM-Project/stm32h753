@@ -1190,7 +1190,7 @@ int SMTP_SendData(int typeSendArch){
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
-	int channel=0, size=0, code=0, len, result, result2;   int nrHTTPpacket=0;   int nrPages=0;
+	int channel=0, size=0, code=0, len, result, result2;   int nrHTTPpacket=0;  int nrSMTP=0;   int nrPages=0;
 	int j;
 
 	uint32_t ulNotifiedValue;
@@ -1658,7 +1658,8 @@ void vtaskWifi(void *argument)
 					}
 					break;
 
-
+//DAJ odmierzanie timer po wysylanie jesli po czasie pewnym nie dostanie odpowiedzi zadanej to wywoluje  funkcje colback timer i tam zamyka polaczenie dane czy 0 http czy 4 SMTP !!!!!
+					//Musisz sprawdzac czy wisi jakies polaczenie za pomoca AT+CIPSTATUS jesi tak to at+cipclose=x
 				case SMTP_CONNECTION:
 					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))		/* CASE_Service() osluguje ESP32_FreeAnswers() ale tylko wtedy gdy jest ktoras z odpowiedzi */
 					{
@@ -1666,6 +1667,7 @@ void vtaskWifi(void *argument)
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART="ESP_EMAIL_CHANNEL",\"%s\",\"%s\",%d\r\n",CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), IP2Str(Const.emailSend[EmailSendParam.whichSender].IP), Const.emailSend[EmailSendParam.whichSender].port);
 						SendToEsp32(len,NULL,typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
+						nrSMTP=0;
 
 					}
 					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK, txt_ERR, typeRecvArch))		 /* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
@@ -1681,27 +1683,17 @@ void vtaskWifi(void *argument)
 								DbgDma(DBG, _S_" --- Email 220 --- "_E_);
 								len = mini_snprintf(sendBuff, sizeof(sendBuff), "EHLO %s\r\n", Const.emailSend[EmailSendParam.whichSender].name);
 								if(SMTP_SendCmd(typeSendArch,len)){  BackFromEmail(0);  break;  }
-//								if((pMem = (char*)pvPortMalloc((len+1)*sizeof(char)))){								/* Uruchom vApplicationMallocFailedHook() dla  #define configUSE_MALLOC_FAILED_HOOK 1 */
-//									strncpy(pMem,sendBuff,len);  *(pMem+len)=0;
-//									len = mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND="ESP_EMAIL_CHANNEL",%d\r\n",len);
-//									SendToEsp32(len,NULL,typeSendArch);
-//									COMMAND_Service(_SET,sendBuff);
-//								}
-//								else{  BackFromEmail(0);  break; }
+								_SET_NEW_CASE_(98);
 							}
 							else{  BackFromEmail(1);  break; }
 						}
 						else _THE_SAME_CASE_;
 
 					}
-					else if (CASE_Service(2,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
+					else if (CASE_Service(98,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
 					{
 						if(SMTP_SendData(typeSendArch)){ BackFromEmail(0); break; }
-//						if(ErrorAnswerService()){  if(pMem) vPortFree(pMem); BackFromEmail(0);  break;  }
-//						SendToEsp32(0,pMem,typeSendArch);
-//						COMMAND_Service(_SET,sendBuff);
-//						if(pMem) vPortFree(pMem);
-
+						_SET_NEW_CASE_(3);  nrSMTP++;
 					}
 					else if (CASE_Service(3,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch)) 					/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
 					{
@@ -1718,11 +1710,25 @@ void vtaskWifi(void *argument)
 						if ((ptr=RecvFromEsp(answer))){
 							GetSMTPpacketParam(ptr,answer,&channel,&size,&code);
 							if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv email data: channel %d  size %d  code %d"_E_,channel,size,code);
-							if(code==250){
-								DbgDma(DBG, _S_" --- Email 250 --- "_E_);
-								BackFromEmail(0);
+
+
+//Send - timer start - timer over: callbackFunction Timer, ktory wysyla status jesli jest cos to zamyka,      KAZDY recv stopTimerCalback
+
+
+
+
+								 if(250 == code){  									 if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"AUTH LOGIN\r\n")))														   { BackFromEmail(0); break; }  }
+							else if(334 == code){  if(strstr_(ptr,"VXNlcm5hbWU6")){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"%s\r\n",base64_enc2(Const.emailSend[EmailSendParam.whichSender].login))))   { BackFromEmail(0); break; }  }
+											  else if(strstr_(ptr,"UGFzc3dvcmQ6")){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"%s\r\n",base64_enc2(Const.emailSend[EmailSendParam.whichSender].password)))){ BackFromEmail(0); break; }  }
 							}
-							else{  BackFromEmail(1);  break; }
+							else if(235 == code){  BackFromEmail(0); break; }
+							else				{  BackFromEmail(1); break; }
+							_SET_NEW_CASE_(98);
+
+
+
+
+
 						}
 
 					}
@@ -1827,6 +1833,31 @@ void vtaskWifi(void *argument)
 		}
 	  }
 	}
+
+
+
+//	SEND_START: AT+CIPSTATUS
+//	SEND_STOP
+//
+//	RECV_TEST_000_START:STATUS:3
+//	+CIPSTATUS:4,"SSL","213.180.147.145",465,53751,0
+//
+//	OK
+//
+//	RECV_STOP
+//	Test OK
+//	Send Test AT
+//	SEND_START: AT+CIPSTATE?
+//	SEND_STOP
+//
+//	RECV_TEST_000_START:+CIPSTATE:4,"SSL","213.180.147.145",465,53751,0
+//
+//	OK
+//
+//	RECV_STOP
+//	Test OK
+
+
 /*
 	while (1)
 	{
