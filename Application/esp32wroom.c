@@ -1690,11 +1690,6 @@ void vtaskWifi(void *argument)
 						else _THE_SAME_CASE_;
 
 					}
-					else if (CASE_Service(98,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
-					{
-						if(SMTP_SendData(typeSendArch)){ BackFromEmail(0); break; }
-						_SET_NEW_CASE_(3);  nrSMTP++;
-					}
 					else if (CASE_Service(3,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch)) 					/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
@@ -1716,21 +1711,51 @@ void vtaskWifi(void *argument)
 
 
 
-
-								 if(250 == code){  									 if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"AUTH LOGIN\r\n")))														   { BackFromEmail(0); break; }  }
+								 if(250 == code && 0 == nrSMTP){					 if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"AUTH LOGIN\r\n")))														   { BackFromEmail(0); break; }  }
 							else if(334 == code){  if(strstr_(ptr,"VXNlcm5hbWU6")){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"%s\r\n",base64_enc2(Const.emailSend[EmailSendParam.whichSender].login))))   { BackFromEmail(0); break; }  }
 											  else if(strstr_(ptr,"UGFzc3dvcmQ6")){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"%s\r\n",base64_enc2(Const.emailSend[EmailSendParam.whichSender].password)))){ BackFromEmail(0); break; }  }
 							}
-							else if(235 == code){  BackFromEmail(0); break; }
-							else				{  BackFromEmail(1); break; }
+							else if(235 == code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"MAIL FROM:<%s>\r\n",Const.emailSend[EmailSendParam.whichSender].login))){ BackFromEmail(0); break; }  }
+							else if(250 == code){  if(nrSMTP<MAX_EMAIL_RECIPIENTS){	if ((EmailSendParam.recepientsMask>>nrSMTP)&0x01){
+														  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"RCPT TO<%s>\r\n",Const.emailRecv[EmailSendParam.whichSender].email))){ BackFromEmail(0); break; }	nrSMTP++;  }}
+												   else{  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"DATA\r\n"))){ BackFromEmail(0); break; } 															nrSMTP=0; 	}
+							}
+							else if(354 == code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"FROM: %s\r\nSubject: %s\r\n",Const.emailSend[EmailSendParam.whichSender].login))){ BackFromEmail(0); break; } }
+							else if(250 == code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"quit\r\n"))){ BackFromEmail(0); break; }  }
+							else if(221 == code){  DbgDma(DBG, _SE_"Email sended successful "_E_); BackFromEmail(0); break; }  //Rozwiaz sprawe HTTPS a HTTP kiedy?!!!
+							else				{  											 	   BackFromEmail(1); break; }
 							_SET_NEW_CASE_(98);
-
-
 
 
 
 						}
 
+					}
+					else if (CASE_Service(3,"\r\nSEND OK",txt_ERR,typeRecvArch))
+					{
+						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
+
+						if(nrSMTP == 0){len=mini_snprintf(sendBuff,sizeof(sendBuff),"TO: ");  j=0;
+							for (int i=0; i<MAX_EMAIL_RECIPIENTS; ++i){  if((EmailSendParam.recepientsMask>>i)&0x01) len+=mini_snprintf(sendBuff+len,sizeof(sendBuff),"%s,",Const.emailRecv[j].email);   j++;  }
+							len+=mini_snprintf(sendBuff+len, sizeof(sendBuff), "\r\n");
+						}
+						else if(nrSMTP == 1){
+							len=mini_snprintf(sendBuff, 	 PACKET_SEND_LEN, "Content-Transfer-Encoding: 8bit\r\n");
+							len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN, "Content-Type: text/html; charset=\"UTF-8\"");
+							len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN, "\r\n\r\n");
+						}
+						else if(nrSMTP == 2){
+							len=mini_snprintf(sendBuff, 	 PACKET_SEND_LEN, "Rafal Markielowski\r\nAAAAA\r\nBBB");
+							len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN, "\r\n\r\n.\r\n");
+						}
+						if(SMTP_SendCmd(typeSendArch,len)){ BackFromEmail(0); break; }
+						_SET_NEW_CASE_(98);	 nrSMTP++;
+
+					}
+					else if (CASE_Service(98,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
+					{
+						if(SMTP_SendData(typeSendArch)){ BackFromEmail(0); break; }
+						_SET_NEW_CASE_(3);
 					}
 					else if (CASE_Service(99,txt_OK,txt_ERR,typeRecvArch))
 					{
