@@ -1146,6 +1146,7 @@ void BackFromEmail(int nrInfo)
 	if(nrInfo) DbgDma(DBG, _S_ EMAIL_ERROR _E_);
 	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,arch );
 	COMMAND_Service(_SET,sendBuff);
+	EmailSendParam.start=0;
 	_SET_NEW_CASE_(99);
 }
 
@@ -1633,9 +1634,9 @@ void vtaskWifi(void *argument)
 					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
 					{
 						if (strstr_(pHttp," bytes\r\n")){
-							if (strstr_(pHttp,"\r\nSEND OK"))
+							if (strstr_(pHttp,"\r\nSEND OK"))    //!!!!!!!!!!!!!!!!!!!!!!!!!!!TO tez do jednej funkcjia dac !!!!!!!!!!!!!!!!!
 							{
-								char temp[50]={0};  strcpy_(temp,pHttp,1,'\r');		/* strcpy2_(temp,pHttp,0,30); */    //TO tez do jednej funkcjia dac !!!!!!!!!!!!!!!!!
+								char temp[50]={0};  strcpy_(temp,pHttp,1,'\r');		/* strcpy2_(temp,pHttp,0,30); */
 								int val = STRING_GetInt(temp,' ');					/* val = atoi_(pHttp,mini_strlen("\r\nRecv ")); */
 								if(typeSendArch!=noArch){
 									DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
@@ -1689,7 +1690,7 @@ void vtaskWifi(void *argument)
 						nrSMTP=0;
 
 					}
-					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK, txt_ERR, typeRecvArch))		 /* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
+					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK"\r\n+IPD,"ESP_EMAIL_CHANNEL, txt_ERR, typeRecvArch))		 /* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0); break;  }									  /* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,31:220 smtp.poczta.onet.pl ESMTP\r\n\r\n", '\0' <repeats 1985 times> */
 						INIT_BUFF(answer, "\r\n+IPD,"ESP_EMAIL_CHANNEL);										  /* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,78:421 4.7.0 smtp.poczta.onet.pl Error: too many connections from 46.205.198.71\r\n\r\n", '\0' <repeats 1938 times> */
@@ -1702,17 +1703,17 @@ void vtaskWifi(void *argument)
 								DbgDma(DBG, _S_" --- Email 220 --- "_E_);
 								len = mini_snprintf(sendBuff, sizeof(sendBuff), "EHLO %s\r\n", Const.emailSend[EmailSendParam.whichSender].name);
 								if(SMTP_SendCmd(typeSendArch,len)){  BackFromEmail(0);  break;  }
-								_SET_NEW_CASE_(98);
 							}
 							else{  BackFromEmail(1);  break; }
 						}
-						else _THE_SAME_CASE_;
+					/*	else _THE_SAME_CASE_; */
 
 					}
+					else if (CASE_Service(2,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
+					{
+						if(SMTP_SendData(typeSendArch)){BackFromEmail(0);break;}
 
-
-
-
+					}
 					else if (CASE_Service(3,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
@@ -1725,6 +1726,19 @@ void vtaskWifi(void *argument)
 						if(SMTP_SendData(typeSendArch)){BackFromEmail(0);break;}
 
 					}
+
+
+		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//					Recv 12 bytes
+//
+//					+IPD,4,18:334 VXNlcm5hbWU6
+//
+//
+//					SEND OK
+
+
+
+
 					else if (CASE_Service(5,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
@@ -1765,31 +1779,20 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(11,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
+						int isNextMailTo=0;
 						SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);
 						if(250==code){
-							int isNextMailTo=0;
-							for(int i=nrSMTP; i<MAX_EMAIL_RECIPIENTS; ++i) //w funkcji daj!!!
-							{
-								if((EmailSendParam.recepientsMask>>i)&0x01)
-								{
-
-											nrSMTP=i+1; isNextMailTo=1; break;
-							   }
-							}
+							for(int i=nrSMTP; i<MAX_EMAIL_RECIPIENTS; ++i){	  if((EmailSendParam.recepientsMask>>i)&0x01){ nrSMTP=i+1; isNextMailTo=1; break; }	  }
 						}
 						else{BackFromEmail(1);break;}
 
 						if(isNextMailTo){
-							if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"RCPT TO<%s>\r\n",Const.emailRecv[nrSMTP-1].email))){ BackFromEmail(0); break; }
+							if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"RCPT TO:<%s>\r\n",Const.emailRecv[nrSMTP-1].email))){ BackFromEmail(0); break; }
 						}
 						else{
 							if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"DATA\r\n"))){ BackFromEmail(0); break; }
 							_SET_NEW_CASE_(13);
 						}
-
-
-
-
 
 					}
 					else if (CASE_Service(12,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
@@ -1812,75 +1815,69 @@ void vtaskWifi(void *argument)
 						if(SMTP_SendCmd(typeSendArch,len)){ BackFromEmail(0); break; }
 
 					}
-
-
-
-
-
-
-
-
-
-
-					else if (CASE_Service(3,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch)) 					/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
+					else if (CASE_Service(15,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
 					{
-						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
-
-						if(SMTP_Descr(ptr,typeSendArch,&channel,&size,&code))
-						{
-								 if(250 == code && 0 == nrSMTP){					 if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"AUTH LOGIN\r\n")))														   { BackFromEmail(0); break; }  }
-							else if(334 == code){  if(strstr_(ptr,"VXNlcm5hbWU6")){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"%s\r\n",base64_enc2(Const.emailSend[EmailSendParam.whichSender].login))))   { BackFromEmail(0); break; }  }
-											  else if(strstr_(ptr,"UGFzc3dvcmQ6")){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"%s\r\n",base64_enc2(Const.emailSend[EmailSendParam.whichSender].password)))){ BackFromEmail(0); break; }  }
-							}
-							else if(235 == code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"MAIL FROM:<%s>\r\n",Const.emailSend[EmailSendParam.whichSender].login))){ BackFromEmail(0); break; }  }
-							else if(250 == code){  if(nrSMTP<MAX_EMAIL_RECIPIENTS){	if ((EmailSendParam.recepientsMask>>nrSMTP)&0x01){
-														  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"RCPT TO<%s>\r\n",Const.emailRecv[nrSMTP].email))){ BackFromEmail(0); break; }	nrSMTP++;  }}
-												   else{  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"DATA\r\n"))){ BackFromEmail(0); break; } 															nrSMTP=0; 	}
-							}
-							else if(354 == code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"FROM: %s\r\nSubject: %s\r\n",Const.emailSend[EmailSendParam.whichSender].login))){ BackFromEmail(0); break; } }
-							else if(250 == code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"quit\r\n"))){ BackFromEmail(0); break; }  }
-							else if(221 == code){  DbgDma(DBG, _SE_"Email sended successful "_E_); BackFromEmail(0); break; }  //Rozwiaz sprawe HTTPS a HTTP kiedy?!!!
-							else				{  											 	   BackFromEmail(1); break; }
-							_SET_NEW_CASE_(98);
-						}
+						if(SMTP_SendData(typeSendArch)){BackFromEmail(0);break;}
 
 					}
-					else if (CASE_Service(4,"\r\nSEND OK",txt_ERR,typeRecvArch))
+					else if (CASE_Service(16,"\r\nSEND OK",txt_ERR,typeRecvArch))		/* +IPD,4,37:354 End data with <CR><LF>.<CR><LF> */
 					{
 						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
-
-						if(nrSMTP == 0){len=mini_snprintf(sendBuff,sizeof(sendBuff),"TO: ");  j=0;
-							for (int i=0; i<MAX_EMAIL_RECIPIENTS; ++i){  if((EmailSendParam.recepientsMask>>i)&0x01) len+=mini_snprintf(sendBuff+len,sizeof(sendBuff),"%s,",Const.emailRecv[j].email);   j++;  }
-							len+=mini_snprintf(sendBuff+len, sizeof(sendBuff), "\r\n");
-						}
-						else if(nrSMTP == 1){
-							len=mini_snprintf(sendBuff, 	 PACKET_SEND_LEN, "Content-Transfer-Encoding: 8bit\r\n");
-							len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN, "Content-Type: text/html; charset=\"UTF-8\"");
-							len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN, "\r\n\r\n");
-						}
-						else if(nrSMTP == 2){
-							len=mini_snprintf(sendBuff, 	 PACKET_SEND_LEN, "Rafal Markielowski\r\nAAAAA\r\nBBB");
-							len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN, "\r\n\r\n.\r\n");
-						}
+						len=mini_snprintf(sendBuff, 	 PACKET_SEND_LEN,  	  "Content-Transfer-Encoding: 8bit\r\n");
+						len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN-len, "Content-Type: text/html; charset=\"UTF-8\"");
+						len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN-len, "\r\n\r\n");
 						if(SMTP_SendCmd(typeSendArch,len)){ BackFromEmail(0); break; }
-						_SET_NEW_CASE_(98);	 nrSMTP++;
 
 					}
-					else if (CASE_Service(98,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
+					else if (CASE_Service(17,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
 					{
-						if(SMTP_SendData(typeSendArch)){ BackFromEmail(0); break; }
-						_SET_NEW_CASE_(3);
+						if(SMTP_SendData(typeSendArch)){BackFromEmail(0);break;}
+
+					}
+					else if (CASE_Service(18,"\r\nSEND OK",txt_ERR,typeRecvArch))
+					{
+						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
+						len=mini_snprintf(sendBuff, 	 PACKET_SEND_LEN, 	  "Rafal Markielowski\r\nAAAAA\r\nBBB");
+						len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN-len, "\r\n\r\n.\r\n");
+						if(SMTP_SendCmd(typeSendArch,len)){ BackFromEmail(0); break; }  //TU wszedie break; jest NIE POTRZEBNY !!!!! wymarz
+
+					}
+					else if (CASE_Service(19,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
+					{
+						if(SMTP_SendData(typeSendArch)){BackFromEmail(0);break;}
+
+					}
+					else if (CASE_Service(20,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch))				/* +IPD,4,40:250 2.0.0 Ok: queued as 4gyw1S00G4zjHD */
+					{
+						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
+						SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);
+						if(250==code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"quit\r\n"))){BackFromEmail(0);break;}  }else{BackFromEmail(1);break;}
+
+					}
+					else if (CASE_Service(21,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
+					{
+						if(SMTP_SendData(typeSendArch)){BackFromEmail(0);break;}
+
 					}
 
 
 
 
 
+					else if (CASE_Service(22,"\r\nSEND OK\r\n\r\n+IPD,"ESP_EMAIL_CHANNEL"",txt_ERR,typeRecvArch))				/* +IPD,4,15:221 2.0.0 Bye */
+					{
+						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
+						SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);
+						if(221==code){  BackFromEmail(0);  }else{BackFromEmail(1);break;}  //POPRAWIC to !!!!
 
-
-
-
-
+					}
+//					else if (CASE_Service(22,"\r\nSEND OK",txt_ERR,typeRecvArch))				/* +IPD,4,15:221 2.0.0 Bye */
+//					{
+//						if(ErrorAnswerService()){  BackFromEmail(0);  break;  }
+//						BackFromEmail(0);
+//						DbgDma(DBG, _S_"XXXXXXXXXXXXXXX"_E_);
+//
+//					}
 
 
 
@@ -1888,13 +1885,13 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(99,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ ; }
-						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);
-						BackToHttpService(&nrHTTPpacket);
+						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);  BackToHttpService(&nrHTTPpacket);
 
 					}
 					else
 					{
-						ESP32_FreeAnswers(1);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() - podobnie jak w pozostalych case */
+						//ESP32_FreeAnswers(1);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() - podobnie jak w pozostalych case */
+						DispRecvBuff(-2,arch);
 					}
 
 					break;
