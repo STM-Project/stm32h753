@@ -1960,7 +1960,7 @@ void vtaskWifi(void *argument)
 			{
 				if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
 				{
-					SendEmail(1, 1<<1, EMAIL_MEASURE);
+					SendEmail(0, 1<<1, EMAIL_MEASURE);
 
 					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
 						 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
@@ -1981,12 +1981,57 @@ void vtaskWifi(void *argument)
 				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
 				SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",arch);
 			}
-			else if(DEBUG_IsTxtReceive("X"))
+			else if(DEBUG_IsTxtReceive("1"))
 			{
 				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
-				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
-				SendToEsp32(0,"AT+CIPCLOSE="ESP_EMAIL_CHANNEL"\r\n",arch);
+				DbgDma(DBG, _S_"\r\nSend Test AT1 "_E_);
+				SendToEsp32(0,"AT+CIPSSLCCONF?\r\n",arch);
 			}
+			else if(DEBUG_IsTxtReceive("2"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nSend Test AT2 "_E_);
+				SendToEsp32(0,"AT+CIPSSLCCONF=0,0\r\n",arch);
+			}
+
+
+
+
+
+
+			else if(DEBUG_IsTxtReceive("3"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\n33333 "_E_);
+				SendToEsp32(0,"AT+CIPSSLCSNI=0,\"smtp.interia.pl\"\r\n",arch);
+			}
+			else if(DEBUG_IsTxtReceive("4"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\n44444 "_E_);
+				SendToEsp32(0,"AT+SYSFLASH=0,\"fatfs\",0,589824\r\n",arch);
+			}
+			else if(DEBUG_IsTxtReceive("5"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nWysylam DATA cert "_E_);
+				SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQzIwgH1aQGG4zANBgkqhkiG9w0BAQUFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYqrrXSVzXgS7OwtWc9LFBBg6snA5bVvOr4H7PDg3VU8qgifgJuogGxOn4UOFIOMpUMG7up6X8XSpYtH8Wwihy67vvwbFJuINkwXgX6V1E24gwEsPDyDxa6e4T6kKvTOUeNANJMch80wFH57S875fA3lyWMa2L6+fThvAt04VIO4u30R73MD4b46p6UoMQk96Sbt8v60pYgCE6EAsvIKA67X9M1N9L04wREOcIEX3gS6g7LwK7Bf8XpBfXbSB3o9A7S3XfR7O2EDMA40OpFLwX10r8A7E+V2N8H4NURbY6K7J4wNURM9OhSgI==-----END CERTIFICATE-----",arch);
+			}
+			else if(DEBUG_IsTxtReceive("6"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nSend Test AT3 "_E_);
+				SendToEsp32(0,"AT+SYSFLASH?\r\n",arch);
+			}
+
+
+
+
+
+
+
+
+
 			else if(DEBUG_IsTxtReceive("o"))
 			{
 				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
