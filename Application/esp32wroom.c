@@ -1185,7 +1185,7 @@ static int SMTP_SendData(int typeSendArch){
 	if(ErrorAnswerService()){  if(pMem) vPortFree(pMem);  return 1;  }
 	SendToEsp32(0,pMem,typeSendArch);
 	COMMAND_Service(_SET,sendBuff);
-	if(pMem) vPortFree(pMem);
+	if(pMem){ vPortFree(pMem); pMem=NULL; }
 	return 0;
 }
 
@@ -1598,7 +1598,7 @@ void vtaskWifi(void *argument)
 					}
 					else
 					{
-						ESP32_FreeAnswers(2);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() */
+						ESP32_FreeAnswers(1/*2*/);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() */
 					}
 					break;
 
@@ -1687,13 +1687,38 @@ void vtaskWifi(void *argument)
 					}
 					else
 					{
-						ESP32_FreeAnswers(2);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() - podobnie jak w pozostalych case */
+						ESP32_FreeAnswers(1/*2*/);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() - podobnie jak w pozostalych case */
 					}
 					break;
 
 //DAJ odmierzanie timer po wysylanie jesli po czasie pewnym nie dostanie odpowiedzi zadanej to wywoluje  funkcje colback timer i tam zamyka polaczenie dane czy 0 http czy 4 SMTP !!!!!
 //Musisz sprawdzac czy wisi jakies polaczenie za pomoca AT+CIPSTATUS jesi tak to at+cipclose=x
 //Send - timer start - timer over: callbackFunction Timer, ktory wysyla status jesli jest cos to zamyka,      KAZDY recv stopTimerCalback
+
+
+
+//AT+SYSFLASH=0,"client_ca",0,4096	   Wyczyszczenie sektora certyfikatu
+
+//					-----BEGIN CERTIFICATE-----
+//					MIIDrzCCApegAwIBAgIQCDvgVpBCwQzIwgH1aQGG4zANBgkqhkiG9w0BAQUFADBh
+//					MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+//					d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+//					QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+//					MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+//					b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+//					9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYqrrXSVzXgS7OwtWc9L
+//					FBBg6snA5bVvOr4H7PDg3VU8qgifgJuogGxOn4UOFIOMpUMG7up6X8XSpYtH8Wwi
+//					hy67vvwbFJuINkwXgX6V1E24gwEsPDyDxa6e4T6kKvTOUeNANJMch80wFH57S875
+//					fA3lyWMa2L6+fThvAt04VIO4u30R73MD4b46p6UoMQk96Sbt8v60pYgCE6EAsvIK
+//					A67X9M1N9L04wREOcIEX3gS6g7LwK7Bf8XpBfXbSB3o9A7S3XfR7O2EDMA40OpFL
+//					wX10r8A7E+V2N8H4NURbY6K7J4wNURM9OhSgI==
+//					-----END CERTIFICATE-----
+
+//AT+SYSFLASH=1,"client_ca",0,1040
+//>  i wysylasz text : -----BEGIN CERTIFICATE-----.....
+//AT+CIPSSLCCONF=2,0,0
+
+
 
 				case SMTP_CONNECTION:
 					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))		/* CASE_Service() osluguje ESP32_FreeAnswers() ale tylko wtedy gdy jest ktoras z odpowiedzi */
@@ -1705,7 +1730,7 @@ void vtaskWifi(void *argument)
 						nrSMTP=0;
 
 					}
-					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK"\r\n+IPD,"ESP_EMAIL_CHANNEL, txt_ERR, typeRecvArch))		 /* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
+					else if (CASE_Service(1, ESP_EMAIL_CHANNEL",CONNECT\r\n"TXT_OK, txt_ERR, typeRecvArch))		 /* "...,CONNECT\r\n\r\nOK\r\n"  a  "\r\n+IPD,..."  jest szczelina czasowa, mozna wydluzyc parametr timeout dla UART6 aby nie generowalo przerwania po 1 czesci ale jednak robimy inaczej: czekamy na calosc 1 czesc i 2 czesc w CASE_Service() */
 					{
 						if(ErrorAnswerService()){ BackFromEmail(0); break; }									  /* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,31:220 smtp.poczta.onet.pl ESMTP\r\n\r\n", '\0' <repeats 1985 times> */
 						INIT_BUFF(answer, "\r\n+IPD,"ESP_EMAIL_CHANNEL);										  /* Details:"4,CONNECT\r\n\r\nOK\r\n\r\n+IPD,4,78:421 4.7.0 smtp.poczta.onet.pl Error: too many connections from 46.205.198.71\r\n\r\n", '\0' <repeats 1938 times> */
@@ -1721,7 +1746,7 @@ void vtaskWifi(void *argument)
 							}
 							else BackFromEmail(1);
 						}
-					/*	else _THE_SAME_CASE_; */
+						else _THE_SAME_CASE_;
 
 					}
 					else if (CASE_Service(2,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
@@ -1744,12 +1769,12 @@ void vtaskWifi(void *argument)
 						if(SMTP_SendData(typeSendArch)) BackFromEmail(0);
 
 					}
-					else if (CASE_Service(5,"\r\nSEND OK",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
+					else if (CASE_Service(5,"\r\nSEND OK",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,18:334 VXNlcm5hbWU6 */
 					{
 						if(ErrorAnswerService()){ BackFromEmail(0); break; }
 						if(Is_ComplRecvSMTPpacket()){
 							SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);			/* if(strstr_(ptr,"VXNlcm5hbWU6") */
-							if(334==code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"%s\r\n",base64_enc2(Const.emailSend[EmailSendParam.whichSender].login)))){BackFromEmail(0);break;}  }else{BackFromEmail(1);break;}
+							if(334==code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"%s\r\n",base64_enc2(Const.emailSend[EmailSendParam.whichSender].login)))) BackFromEmail(0);  }else BackFromEmail(1);
 						}
 						else _THE_SAME_CASE_;
 
@@ -1759,7 +1784,7 @@ void vtaskWifi(void *argument)
 						if(SMTP_SendData(typeSendArch)) BackFromEmail(0);
 
 					}
-					else if (CASE_Service(7,"\r\nSEND OK",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
+					else if (CASE_Service(7,"\r\nSEND OK",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,18:334 UGFzc3dvcmQ6 */
 					{
 						if(ErrorAnswerService()){ BackFromEmail(0); break; }
 						if(Is_ComplRecvSMTPpacket()){
@@ -1774,12 +1799,12 @@ void vtaskWifi(void *argument)
 						if(SMTP_SendData(typeSendArch)) BackFromEmail(0);
 
 					}
-					else if (CASE_Service(9,"\r\nSEND OK",txt_ERR,typeRecvArch))  		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
+					else if (CASE_Service(9,"\r\nSEND OK",txt_ERR,typeRecvArch))  		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,37:235 2.7.0 Authentication successful */
 					{
 						if(ErrorAnswerService()){ BackFromEmail(0); break; }
 						if(Is_ComplRecvSMTPpacket()){
 							SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);
-							if(235==code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"MAIL FROM:<%s>\r\n",Const.emailSend[EmailSendParam.whichSender].login))){BackFromEmail(0);break;}  }else{BackFromEmail(1);break;}
+							if(235==code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"MAIL FROM:<%s>\r\n",Const.emailSend[EmailSendParam.whichSender].login))) BackFromEmail(0);  }else BackFromEmail(1);
 						}
 						else _THE_SAME_CASE_;
 
@@ -1790,7 +1815,7 @@ void vtaskWifi(void *argument)
 						else nrSMTP=0;
 
 					}
-					else if (CASE_Service(11,"\r\nSEND OK",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,169:250-smtp.poczta.onet.pl\r\n250-PIPELINING\r\n250-SIZE 90000000\r\n250-ETRN\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250-AUTH=PLAIN LOGIN XOAUTH2\r\n250-ENHANCEDSTATUSCODES\r\n250... */
+					else if (CASE_Service(11,"\r\nSEND OK",txt_ERR,typeRecvArch)) 		/* Details:"\r\nRecv 20 bytes\r\n\r\nSEND OK\r\n\r\n+IPD,4,14:250 2.1.5 Ok*/
 					{
 						if(ErrorAnswerService()){ BackFromEmail(0); break; }
 						if(Is_ComplRecvSMTPpacket()){
@@ -1820,13 +1845,20 @@ void vtaskWifi(void *argument)
 						if(SMTP_SendData(typeSendArch)) BackFromEmail(0);
 
 					}
-					else if (CASE_Service(14,"\r\nSEND OK",txt_ERR,typeRecvArch))
+					else if (CASE_Service(14,"\r\nSEND OK",txt_ERR,typeRecvArch))		/* +IPD,4,37:354 End data with <CR><LF>.<CR><LF> */
 					{
 						if(ErrorAnswerService()){ BackFromEmail(0); break; }
-						len=mini_snprintf(sendBuff,sizeof(sendBuff),"TO: ");  j=0;
-						for (int i=0; i<MAX_EMAIL_RECIPIENTS; ++i){  if((EmailSendParam.recepientsMask>>i)&0x01)  len+=mini_snprintf(sendBuff+len,sizeof(sendBuff)-len,"%s,",Const.emailRecv[i].email);  }
-						len+=mini_snprintf(sendBuff+len, sizeof(sendBuff), "\r\n");
-						if(SMTP_SendCmd(typeSendArch,len)) BackFromEmail(0);
+						if(Is_ComplRecvSMTPpacket()){
+							SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);
+							if(354==code){
+								len=mini_snprintf(sendBuff,sizeof(sendBuff),"TO: ");  j=0;
+								for (int i=0; i<MAX_EMAIL_RECIPIENTS; ++i){  if((EmailSendParam.recepientsMask>>i)&0x01)  len+=mini_snprintf(sendBuff+len,sizeof(sendBuff)-len,"%s,",Const.emailRecv[i].email);  }
+								len+=mini_snprintf(sendBuff+len, sizeof(sendBuff), "\r\n");
+								if(SMTP_SendCmd(typeSendArch,len)) BackFromEmail(0);
+							}
+							else BackFromEmail(1);
+						}
+						else _THE_SAME_CASE_;
 
 					}
 					else if (CASE_Service(15,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
@@ -1834,7 +1866,7 @@ void vtaskWifi(void *argument)
 						if(SMTP_SendData(typeSendArch)) BackFromEmail(0);
 
 					}
-					else if (CASE_Service(16,"\r\nSEND OK",txt_ERR,typeRecvArch))		/* +IPD,4,37:354 End data with <CR><LF>.<CR><LF> */
+					else if (CASE_Service(16,"\r\nSEND OK",txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ BackFromEmail(0); break; }
 						len=mini_snprintf(sendBuff, 	 PACKET_SEND_LEN,  	  "Content-Transfer-Encoding: 8bit\r\n");
@@ -1886,7 +1918,7 @@ void vtaskWifi(void *argument)
 						else _THE_SAME_CASE_;
 
 					}
-					else if (CASE_Service(98,txt_OK,txt_ERR,typeRecvArch))
+					else if (CASE_Service(98,ESP_EMAIL_CHANNEL",CLOSED\r\n"TXT_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ ; }
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeRecvArch );
@@ -1896,12 +1928,12 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(99,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ ; }
-						DbgVarDma(DBG,20, _SE_"\r\nWracma do HTTP "_E_);  BackToHttpService(&nrHTTPpacket);	 EmailSendParam.start=0;
+						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);  BackToHttpService(&nrHTTPpacket);	 EmailSendParam.start=0;
 
 					}
 					else
 					{
-						ESP32_FreeAnswers(2);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() - podobnie jak w pozostalych case */
+						ESP32_FreeAnswers(1/*2*/);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() - podobnie jak w pozostalych case */
 
 					}
 					break;
@@ -1928,7 +1960,7 @@ void vtaskWifi(void *argument)
 			{
 				if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
 				{
-					SendEmail(0, 1<<1, EMAIL_MEASURE);
+					SendEmail(1, 1<<1, EMAIL_MEASURE);
 
 					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
 						 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
