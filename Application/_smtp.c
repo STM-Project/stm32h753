@@ -316,6 +316,6 @@ void DefaultSettingsEmail(void)
 	}
 
 	VAR_SetStr(Const_emailRecv_email, 1, "marafal@interia.pl");
-	VAR_SetStr(Const_emailRecv_email, 5, "marafal6666@gmail.com");   //"rafal.markielowski@gmail.com"
+	VAR_SetStr(Const_emailRecv_email, 5, "marafal@op.pl");   //"rafal.markielowski@gmail.com"
 
 }

@@ -1609,15 +1609,32 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-
+					typeSendArch=noArch;
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
 					RstTimeBtwnSendRcv();
 
-					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
+
+
+					//------------------------------
+					if ((pHttp=strstr_(NULL,",CONNECT\r\n")))
+					{
+						if ((pHttp=strstr_(pHttp,"+IPD,")))
+						{
+							DispRecvBuff(nrHTTPpacket,arch);
+						}
+					}
+					//------------------------------
+
+
+
+
+
+					if ((pHttp=strstr_(NULL,ESP_HTTP_CHANNEL",CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
 					{
 						INIT_BUFF(answer, "+IPD,"ESP_HTTP_CHANNEL);
 						if ((pHttp=strstr_(pHttp,answer)))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
 						{
+							//if(typeSendArch==noArch) DispRecvBuff(nrHTTPpacket,arch);
 							if ((pHttp2=strstr_(pHttp,":GET / ")))
 							{
 								GetHTTPpacketParam(pHttp,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
@@ -1666,7 +1683,7 @@ void vtaskWifi(void *argument)
 								if(nrPages > 100){  nrPages=0;
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
 								}
-								else{  nrPages++; DbgDma(1,".");
+								else{  nrPages++;  if(typeSendArch==noArch) DbgDma(1,".");
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 								}
 							}
@@ -1702,34 +1719,13 @@ void vtaskWifi(void *argument)
 
 
 
-//AT+SYSFLASH=0,"client_ca",0,4096	   Wyczyszczenie sektora certyfikatu
-
-//					-----BEGIN CERTIFICATE-----
-//					MIIDrzCCApegAwIBAgIQCDvgVpBCwQzIwgH1aQGG4zANBgkqhkiG9w0BAQUFADBh
-//					MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
-//					d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
-//					QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
-//					MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
-//					b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
-//					9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYqrrXSVzXgS7OwtWc9L
-//					FBBg6snA5bVvOr4H7PDg3VU8qgifgJuogGxOn4UOFIOMpUMG7up6X8XSpYtH8Wwi
-//					hy67vvwbFJuINkwXgX6V1E24gwEsPDyDxa6e4T6kKvTOUeNANJMch80wFH57S875
-//					fA3lyWMa2L6+fThvAt04VIO4u30R73MD4b46p6UoMQk96Sbt8v60pYgCE6EAsvIK
-//					A67X9M1N9L04wREOcIEX3gS6g7LwK7Bf8XpBfXbSB3o9A7S3XfR7O2EDMA40OpFL
-//					wX10r8A7E+V2N8H4NURbY6K7J4wNURM9OhSgI==
-//					-----END CERTIFICATE-----
-
-//AT+SYSFLASH=1,"client_ca",0,1040
-//>  i wysylasz text : -----BEGIN CERTIFICATE-----.....
-//AT+CIPSSLCCONF=2,0,0
-
-
 
 				case SMTP_CONNECTION:
 					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))		/* CASE_Service() osluguje ESP32_FreeAnswers() ale tylko wtedy gdy jest ktoras z odpowiedzi */
 					{
-						if(ErrorAnswerService()){ BackFromEmail(0); break; }
+						if(ErrorAnswerService()){ BackFromEmail(0); break; } //DAJ PO NAZWIE A NIE PO IP !!!!!
 						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART="ESP_EMAIL_CHANNEL",\"%s\",\"%s\",%d\r\n",CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), IP2Str(Const.emailSend[EmailSendParam.whichSender].IP), Const.emailSend[EmailSendParam.whichSender].port);
+						//len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART="ESP_EMAIL_CHANNEL",\"%s\",\"poczta.interia.pl\",%d\r\n",CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), Const.emailSend[EmailSendParam.whichSender].port);
 						SendToEsp32(len,NULL,typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 						nrSMTP=0;
@@ -1965,7 +1961,7 @@ void vtaskWifi(void *argument)
 			{
 				if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
 				{
-					SendEmail(0, 1<<1, EMAIL_MEASURE);
+					SendEmail(1, 1<<5, EMAIL_MEASURE);			/* z interia.pl musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
 
 					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
 						 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
@@ -2049,7 +2045,9 @@ void vtaskWifi(void *argument)
 //			// Wait until AT command port returns ``>``, and then write 1164 bytes
 
 
-
+//SNTP aktualny czas
+// CIPSSLCCONF
+			//
 
 
 			else if(DEBUG_IsTxtReceive("0")){ GoToTest(0); SendToEsp32(0,"AT+RFPOWER?\r\n",arch); }
@@ -2060,7 +2058,7 @@ void vtaskWifi(void *argument)
 			else if(DEBUG_IsTxtReceive("5")){ GoToTest(0); SendToEsp32(0,"AT+CWQAP\r\n",arch); }
 			else if(DEBUG_IsTxtReceive("6")){ GoToTest(0); SendToEsp32(0,"AT+CWLIF\r\n",arch); }
 			else if(DEBUG_IsTxtReceive("7")){ GoToTest(0); SendToEsp32(0,"AT+CWAPPROTO?\r\n",arch); }
-			else if(DEBUG_IsTxtReceive("8")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPCFG=1,8,\"cn.ntp.org.cn\",\"ntp.sjtu.edu.cn\"\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("8")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPCFG=1,1,\"pool.ntp.org\"\r\n",arch); }   //"AT+CIPSNTPCFG=1,8,\"cn.ntp.org.cn\",\"ntp.sjtu.edu.cn\"\r\n"
 			else if(DEBUG_IsTxtReceive("9")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPTIME?\r\n",arch); }
 			else if(DEBUG_IsTxtReceive("q")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPINTV?\r\n",arch); }
 			else if(DEBUG_IsTxtReceive("w")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPINTV=3600\r\n",arch); }
@@ -2068,13 +2066,15 @@ void vtaskWifi(void *argument)
 			else if(DEBUG_IsTxtReceive("r")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCIPHER?\r\n",arch);    }
 			else if(DEBUG_IsTxtReceive("t")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCIPHER=0,2,0xC023,0xC0AD\r\n",arch);    }
 			else if(DEBUG_IsTxtReceive("y")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG?\r\n",arch);    }
-			else if(DEBUG_IsTxtReceive("i")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCONF=0,2,0,0\r\n",arch);    }  //aktywacja cert SMTP
-			else if(DEBUG_IsTxtReceive("k")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=2,\"client_ca\",\"client_ca.0\",8,1108\r\n",arch);    }  //zapisz
+			else if(DEBUG_IsTxtReceive("i")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCONF=4,2,0,0\r\n",arch);    }  //aktywacja cert SMTP
+			else if(DEBUG_IsTxtReceive("d")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCONF=4,0\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("k")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=2,\"client_ca\",\"client_ca.0\",8,807\r\n",arch);    }  //zapisz
 			else if(DEBUG_IsTxtReceive("j")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=1,\"client_ca\",\"client_ca.0\"\r\n",arch);    }  //odpytaj sprawdz czy zapisano     //client_ca.1,2,3.. to klejne certy
-			else if(DEBUG_IsTxtReceive("h")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
-			else if(DEBUG_IsTxtReceive("g")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
-			else if(DEBUG_IsTxtReceive("f")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
-
+			else if(DEBUG_IsTxtReceive("h")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=1,\"client_ca\",\"client_ca.1\"\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("g")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCSNI=4,\"poczta.interia.pl\"\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("f")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCSNI?\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("m")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=1,\"client_ca\",\"client_ca\"\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("n")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=2,\"client_ca\",\"client_ca.1\",8,807\r\n",arch);    }
 
 
 
@@ -2083,8 +2083,8 @@ void vtaskWifi(void *argument)
 			{
 				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
 				DbgDma(DBG, _S_"\r\nWysylam DATA cert "_E_);
-				SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQdBmJ8V4vhx7DANBgkqhkiG9w0BAQsFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMMF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYN5QLuEZDY6ntPEGwihkagMrYueAtvxhgreZdkgy5y5CsBBe3N5nJJyXghQIGMC4gKs8Omc79w4Z89yr3DH4mTJUYisH6g6NnIKVWhm5O1LKQXwpAsBq6t8UR695QnNMc9asj6L4gqq8GAe4uM9N178gKv1Cyg9SxZg6Es747teA9Wh2BKRpoY32SWhF9b8SjK4769PkVqAhDJ1U0Y7FVThB4S960uG6P440dgE2B3S4Y6T6qv7vU76RAfB9CTh9K6GfFED7P1B2b4vP5lBp4mMc36X9U8v5eB6H8K5gJ2779EX0G2uLgWp4f9Jtw1F65A7GwIDAQABo2MwYTAOBgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QnvStFj8Q92bJv8ONM0OD8KgwHwYDVR0jBBgwFoAUA95QnvStFj8Q92bJv8ONM0OD8KgwDQYJKoZIhvcNAQELBQADggEBAF3m3EehIiKNtAsST6VKVDTjCejY373bTIi7P35XmKAVffv2yQth564v96f7y9S41U9fDxU8yX5VfJv+D0P/X7H7gqH5fU1FfZ/pX76V/0j8+y6b0g177p+p7gK4S9P6VfXf9C8=-----END CERTIFICATE-----",arch);  //1108
-				//SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQzIwgH1aQGG4zANBgkqhkiG9w0BAQUFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYqrrXSVzXgS7OwtWc9LFBBg6snA5bVvOr4H7PDg3VU8qgifgJuogGxOn4UOFIOMpUMG7up6X8XSpYtH8Wwihy67vvwbFJuINkwXgX6V1E24gwEsPDyDxa6e4T6kKvTOUeNANJMch80wFH57S875fA3lyWMa2L6+fThvAt04VIO4u30R73MD4b46p6UoMQk96Sbt8v60pYgCE6EAsvIKA67X9M1N9L04wREOcIEX3gS6g7LwK7Bf8XpBfXbSB3o9A7S3XfR7O2EDMA40OpFLwX10r8A7E+V2N8H4NURbY6K7J4wNURM9OhSgI==-----END CERTIFICATE-----",arch);   //795
+				//SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQdBmJ8V4vhx7DANBgkqhkiG9w0BAQsFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMMF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYN5QLuEZDY6ntPEGwihkagMrYueAtvxhgreZdkgy5y5CsBBe3N5nJJyXghQIGMC4gKs8Omc79w4Z89yr3DH4mTJUYisH6g6NnIKVWhm5O1LKQXwpAsBq6t8UR695QnNMc9asj6L4gqq8GAe4uM9N178gKv1Cyg9SxZg6Es747teA9Wh2BKRpoY32SWhF9b8SjK4769PkVqAhDJ1U0Y7FVThB4S960uG6P440dgE2B3S4Y6T6qv7vU76RAfB9CTh9K6GfFED7P1B2b4vP5lBp4mMc36X9U8v5eB6H8K5gJ2779EX0G2uLgWp4f9Jtw1F65A7GwIDAQABo2MwYTAOBgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QnvStFj8Q92bJv8ONM0OD8KgwHwYDVR0jBBgwFoAUA95QnvStFj8Q92bJv8ONM0OD8KgwDQYJKoZIhvcNAQELBQADggEBAF3m3EehIiKNtAsST6VKVDTjCejY373bTIi7P35XmKAVffv2yQth564v96f7y9S41U9fDxU8yX5VfJv+D0P/X7H7gqH5fU1FfZ/pX76V/0j8+y6b0g177p+p7gK4S9P6VfXf9C8=-----END CERTIFICATE-----",arch);  //1108
+				SendToEsp32(0,"-----BEGIN CERTIFICATE-----\nMIIDjjCCAnagAwIBAgIQAzrx5W63S0b6AE5BHSTHPTANBgkqhkiG9w0BAQsFADBh\nMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\nd3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH\nMjAeFw0zMDA4MDExMjAwMDBaFw01MDA4MDExMjAwMDBaMGExCzAJBgNVBAYTAlVT\nMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWcipWVydC5j\nb20xIDAeBgNVBAMMF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG\n9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYqrrXSVzXgS7OwtWc9L\nFBBg6snA5bVvOr4H7PDg3VU8qgifgJuogGxOn4UOFIOMpUMG7up6X8XSpYtH8Wwi\nhy67vvwbFJuINkwXgX6V1E24gwEsPDyDxa6e4T6kKvTOUeNANJMch80wFH57S875\nfA3lyWMa2L6+fThvAt04VIO4u30R73MD4b46p6UoMQk96Sbt8v60pYgCE6EAsvIK\nA67X9M1N9L04wREOcIEX3gS6g7LwK7Bf8XpBfXbSB3o9A7S3XfR7O2EDMA40OpFL\nwX10r8A7E+V2N8H4NURbY6K7J4wNURM9OhSgI==-----END CERTIFICATE-----",arch);   //807
 			}
 			else if(DEBUG_IsTxtReceive("6"))
 			{
