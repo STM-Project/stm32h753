@@ -1218,6 +1218,11 @@ static void vWaitOnSendTimeoutTimerCallback(TimerHandle_t pxTimer)
 	xTimerStop(pxTimer, 0);
 }
 
+void GoToTest(char* txt){
+	connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+	DbgVarDma(DBG,50, _S_"%s"_E_,txt);
+}
+
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
@@ -1455,7 +1460,7 @@ void vtaskWifi(void *argument)
 					{
 						if(ErrorAnswerService()) break;
 						GetAddressesForConnection();
-						SendToEsp32(0,"AT+CIPSERVERMAXCONN=1\r\n",typeSendArch);
+						SendToEsp32(0,"AT+CIPSERVERMAXCONN=4\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 
 					}
@@ -1981,41 +1986,105 @@ void vtaskWifi(void *argument)
 				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
 				SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",arch);
 			}
-			else if(DEBUG_IsTxtReceive("1"))
-			{
-				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
-				DbgDma(DBG, _S_"\r\nSend Test AT1 "_E_);
-				SendToEsp32(0,"AT+CIPSSLCCONF?\r\n",arch);
-			}
-			else if(DEBUG_IsTxtReceive("2"))
-			{
-				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
-				DbgDma(DBG, _S_"\r\nSend Test AT2 "_E_);
-				SendToEsp32(0,"AT+CIPSSLCCONF=0,0\r\n",arch);
-			}
+
+
+//SendToEsp32(0,"AT+CIPSSLCCONF?\r\n",arch);
+//SendToEsp32(0,"AT+CIPSSLCCONF=0,0\r\n",arch);
+
+//			AT+CWLAP
+//			AT+CWSAP?
+//			AT+CWQAP diconnect z softAP
+//			AT+CWLIF
+//			AT+CWAPPROTO?
+//			AT+CIPSNTPCFG=1,8,"cn.ntp.org.cn","ntp.sjtu.edu.cn"
+//			AT+CIPSNTPTIME?
+//			AT+CIPSNTPINTV?
+//			AT+CIPSNTPINTV=3600   //time every hour
+//			AT+CIPSSLCCONF?
+
+//SendToEsp32(0,"AT+CIPSSLCSNI=0,\"smtp.interia.pl\"\r\n",arch);
+
+
+//			// Single connection: (AT+CIPMUX=0)
+//			AT+CIPSSLCCONF=<auth_mode>[,<pki_number>][,<ca_number>]
+//			// Multiple connections: (AT+CIPMUX=1)
+//			AT+CIPSSLCCONF=<link ID>,<auth_mode>[,<pki_number>][,<ca_number>]
+
+
+
+			//AT+CIPSSLCCIPHER?
+//			AT+CIPSSLCCIPHER=2,0xC023,0xC0AD       // Single connection: (AT+CIPMUX=0), cipher suites are TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 and TLS_ECDHE_ECDSA_WITH_AES_256_CCM
+//			AT+CIPSSLCCIPHER=0,2,0xC023,0xC0AD    // Multiple connections: (AT+CIPMUX=1), cipher suites are TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 and TLS_ECDHE_ECDSA_WITH_AES_256_CCM
 
 
 
 
 
 
-			else if(DEBUG_IsTxtReceive("3"))
-			{
-				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
-				DbgDma(DBG, _S_"\r\n33333 "_E_);
-				SendToEsp32(0,"AT+CIPSSLCSNI=0,\"smtp.interia.pl\"\r\n",arch);
-			}
-			else if(DEBUG_IsTxtReceive("4"))
-			{
-				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
-				DbgDma(DBG, _S_"\r\n44444 "_E_);
-				SendToEsp32(0,"AT+SYSFLASH=0,\"fatfs\",0,589824\r\n",arch);
-			}
-			else if(DEBUG_IsTxtReceive("5"))
+
+			//AT+SYSMFG?	   //AT+SYSMFG=<operation>,<"namespace">[,<"key">]
+
+
+//			// Erase all key-value pairs of client_cert namespace (That is, erase all client␣
+//			,→certificates)
+//			AT+SYSMFG=0,"client_cert"
+//			// Erase the client_cert.0 key-value pair of client_cert namespace (That is, erase␣
+//			,→the first client certificate)
+//			AT+SYSMFG=0,"client_cert","client_cert.0"
+
+//			// Read all namespaces
+//			AT+SYSMFG=1
+//			// Read all key-value pairs of client_cert namespace
+//			AT+SYSMFG=1,"client_cert"
+//			// Read the value of client_cert.0 key in client_cert namespace
+//			AT+SYSMFG=1,"client_cert","client_cert.0"
+//			// Read the value of client_cert.0 key in client_cert namespace, from offset: 100␣
+//			,→place, read 200 bytes
+//			AT+SYSMFG=1,"client_cert","client_cert.0",100,200
+
+
+//			// Write a new value for client_cert.0 key into client_cert namespace (That is,␣
+//			,→update the 0th client certificate)
+//			AT+SYSMFG=2,"client_cert","client_cert.0",8,1164
+//			// Wait until AT command port returns ``>``, and then write 1164 bytes
+
+
+
+
+
+			else if(DEBUG_IsTxtReceive("0")){ GoToTest(0); SendToEsp32(0,"AT+RFPOWER?\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("1")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("2")){ GoToTest(0); SendToEsp32(0,"AT+CWSTATE?\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("3")){ GoToTest(0); SendToEsp32(0,"AT+CWLAP\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("4")){ GoToTest(0); SendToEsp32(0,"AT+CWSAP?\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("5")){ GoToTest(0); SendToEsp32(0,"AT+CWQAP\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("6")){ GoToTest(0); SendToEsp32(0,"AT+CWLIF\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("7")){ GoToTest(0); SendToEsp32(0,"AT+CWAPPROTO?\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("8")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPCFG=1,8,\"cn.ntp.org.cn\",\"ntp.sjtu.edu.cn\"\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("9")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPTIME?\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("q")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPINTV?\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("w")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPINTV=3600\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("e")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCONF?\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("r")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCIPHER?\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("t")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCIPHER=0,2,0xC023,0xC0AD\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("y")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG?\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("i")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCONF=0,2,0,0\r\n",arch);    }  //aktywacja cert SMTP
+			else if(DEBUG_IsTxtReceive("k")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=2,\"client_ca\",\"client_ca.0\",8,1108\r\n",arch);    }  //zapisz
+			else if(DEBUG_IsTxtReceive("j")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=1,\"client_ca\",\"client_ca.0\"\r\n",arch);    }  //odpytaj sprawdz czy zapisano     //client_ca.1,2,3.. to klejne certy
+			else if(DEBUG_IsTxtReceive("h")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("g")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
+			else if(DEBUG_IsTxtReceive("f")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
+
+
+
+
+
+			else if(DEBUG_IsTxtReceive("?"))
 			{
 				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
 				DbgDma(DBG, _S_"\r\nWysylam DATA cert "_E_);
-				SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQzIwgH1aQGG4zANBgkqhkiG9w0BAQUFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYqrrXSVzXgS7OwtWc9LFBBg6snA5bVvOr4H7PDg3VU8qgifgJuogGxOn4UOFIOMpUMG7up6X8XSpYtH8Wwihy67vvwbFJuINkwXgX6V1E24gwEsPDyDxa6e4T6kKvTOUeNANJMch80wFH57S875fA3lyWMa2L6+fThvAt04VIO4u30R73MD4b46p6UoMQk96Sbt8v60pYgCE6EAsvIKA67X9M1N9L04wREOcIEX3gS6g7LwK7Bf8XpBfXbSB3o9A7S3XfR7O2EDMA40OpFLwX10r8A7E+V2N8H4NURbY6K7J4wNURM9OhSgI==-----END CERTIFICATE-----",arch);
+				SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQdBmJ8V4vhx7DANBgkqhkiG9w0BAQsFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMMF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYN5QLuEZDY6ntPEGwihkagMrYueAtvxhgreZdkgy5y5CsBBe3N5nJJyXghQIGMC4gKs8Omc79w4Z89yr3DH4mTJUYisH6g6NnIKVWhm5O1LKQXwpAsBq6t8UR695QnNMc9asj6L4gqq8GAe4uM9N178gKv1Cyg9SxZg6Es747teA9Wh2BKRpoY32SWhF9b8SjK4769PkVqAhDJ1U0Y7FVThB4S960uG6P440dgE2B3S4Y6T6qv7vU76RAfB9CTh9K6GfFED7P1B2b4vP5lBp4mMc36X9U8v5eB6H8K5gJ2779EX0G2uLgWp4f9Jtw1F65A7GwIDAQABo2MwYTAOBgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QnvStFj8Q92bJv8ONM0OD8KgwHwYDVR0jBBgwFoAUA95QnvStFj8Q92bJv8ONM0OD8KgwDQYJKoZIhvcNAQELBQADggEBAF3m3EehIiKNtAsST6VKVDTjCejY373bTIi7P35XmKAVffv2yQth564v96f7y9S41U9fDxU8yX5VfJv+D0P/X7H7gqH5fU1FfZ/pX76V/0j8+y6b0g177p+p7gK4S9P6VfXf9C8=-----END CERTIFICATE-----",arch);  //1108
+				//SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQzIwgH1aQGG4zANBgkqhkiG9w0BAQUFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYqrrXSVzXgS7OwtWc9LFBBg6snA5bVvOr4H7PDg3VU8qgifgJuogGxOn4UOFIOMpUMG7up6X8XSpYtH8Wwihy67vvwbFJuINkwXgX6V1E24gwEsPDyDxa6e4T6kKvTOUeNANJMch80wFH57S875fA3lyWMa2L6+fThvAt04VIO4u30R73MD4b46p6UoMQk96Sbt8v60pYgCE6EAsvIKA67X9M1N9L04wREOcIEX3gS6g7LwK7Bf8XpBfXbSB3o9A7S3XfR7O2EDMA40OpFLwX10r8A7E+V2N8H4NURbY6K7J4wNURM9OhSgI==-----END CERTIFICATE-----",arch);   //795
 			}
 			else if(DEBUG_IsTxtReceive("6"))
 			{
@@ -2023,6 +2092,8 @@ void vtaskWifi(void *argument)
 				DbgDma(DBG, _S_"\r\nSend Test AT3 "_E_);
 				SendToEsp32(0,"AT+SYSFLASH?\r\n",arch);
 			}
+
+
 
 
 
@@ -2044,18 +2115,18 @@ void vtaskWifi(void *argument)
 				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
 				SendToEsp32(0,"AT+CIPSTATE?\r\n",arch);
 			}
-			else if(DEBUG_IsTxtReceive("z"))
-			{
-				DbgDma(DBG, _S_"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"_E_);
-			}
-			else if(DEBUG_IsTxtReceive("q"))
-			{
-				Dbg(DBG, _S_"\r\n uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue) "_E_);
-			}
-			else if(DEBUG_IsTxtReceive("c"))
-			{
-				DbgDma(DBG, Clr_"\r\n-------------------- Start -------------------- ");
-			}
+//			else if(DEBUG_IsTxtReceive("z"))
+//			{
+//				DbgDma(DBG, _S_"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"_E_);
+//			}
+//			else if(DEBUG_IsTxtReceive("q"))
+//			{
+//				Dbg(DBG, _S_"\r\n uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue) "_E_);
+//			}
+//			else if(DEBUG_IsTxtReceive("c"))
+//			{
+//				DbgDma(DBG, Clr_"\r\n-------------------- Start -------------------- ");
+//			}
 
 
 
@@ -2506,6 +2577,7 @@ AT+CIFSR  //...jesli IP 0.0.0.0 to cyklicznie �aczyc z skoja�on� siecia CW
 AT+CWJAP?  wyswietla parametry sieci do ktorej jest podlaczony
 AT+CWSAP?  wyswietla parametry swojej sieci AP
 AT+CWLIF: Obtain IP Address of the Station That Connects to an ESP SoftAP
+
 
 */
 
