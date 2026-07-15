@@ -295,11 +295,11 @@ void DefaultSettingsEmail(void)
 			break;
 		case 2:
 			VAR_SetTabVal(Const_emailSend_IP, i, LWIP_MAKEU32(173, 194, 222, 109));
-			VAR_SetStr(Const_emailSend_server, i, "smtp.gmail.com");
+			VAR_SetStr(Const_emailSend_server, i, "smtp.wp.pl");   //smtp.gmail.com
 			VAR_SetTabVal(Const_emailSend_port, i, 465);
 			VAR_SetStr(Const_emailSend_name, i, "marafal6666");
-			VAR_SetStr(Const_emailSend_login, i, "marafal6666@gmail.com");
-			VAR_SetStr(Const_emailSend_password, i, "Markielowski1979");
+			VAR_SetStr(Const_emailSend_login, i, "marafal6666@wp.pl");  //marafal6666@gmail.com
+			VAR_SetStr(Const_emailSend_password, i, "Markielowski1979!");    //Markielowski1979
 			VAR_SetTabVal(Const_emailSend_useSSL, i, 1);
 			break;
 		}
