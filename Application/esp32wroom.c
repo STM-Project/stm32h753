@@ -1226,7 +1226,7 @@ void GoToTest(char* txt){
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
-	int channel=0, size=0, code=0, len, result, result2;   int nrHTTPpacket=0;  int nrSMTP=0;   int nrPages=0;
+	int channel=0, size=0, code=0, len, result, result2;   int nrHTTPpacket=0;  int nrSMTP=0;   int nrPages[5]={0};
 	int j;
 
 	uint32_t ulNotifiedValue;
@@ -1616,25 +1616,66 @@ void vtaskWifi(void *argument)
 
 
 					//------------------------------
-					if ((pHttp=strstr_(NULL,",CONNECT\r\n")))
-					{
-						if ((pHttp=strstr_(pHttp,"+IPD,")))
+					struct HTTP_SEND_TEMP{
+						char* ptr;
+						u8 chnl;
+					 	u8 que[ESP_MAX_HTTP_CONN];
+					}httpTemp;
+
+					httpTemp.ptr = NULL;
+					httpTemp.chnl = 0xFF;
+					LOOP_FOR(i,ESP_MAX_HTTP_CONN) httpTemp.que[i]=0xFF;
+
+
+					u8 chnlTemp=0xFF;
+					pHttp = NULL;
+					LOOP_FOR(i,5){
+							 if ((pHttp=strstr_(pHttp,"0,CONNECT\r\n"))) chnlTemp=0;
+						else if ((pHttp=strstr_(pHttp,"1,CONNECT\r\n"))) chnlTemp=1;
+						else if ((pHttp=strstr_(pHttp,"2,CONNECT\r\n"))) chnlTemp=2;
+						else if ((pHttp=strstr_(pHttp,"3,CONNECT\r\n"))) chnlTemp=3;
+						else if ((pHttp=strstr_(pHttp,"4,CONNECT\r\n"))) chnlTemp=4;
+						else break;
+
+						if (strstr_(pHttp,"0,CONNECT\r\n")||
+								strstr_(pHttp,"1,CONNECT\r\n")||
+								strstr_(pHttp,"2,CONNECT\r\n")||
+								strstr_(pHttp,"3,CONNECT\r\n")||
+								strstr_(pHttp,"4,CONNECT\r\n"))
 						{
-							DispRecvBuff(nrHTTPpacket,arch);
+
+						}
+
+						if ((pHttp =strstr_(pHttp,"+IPD,"))){
+						if ((pHttp2=strstr_(pHttp,":GET / "))){
+
+								GetHTTPpacketParam(pHttp,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
+								LOOP_FOR(i,ESP_MAX_HTTP_CONN){ if(httpTemp.que[i]!=0xFF){ httpTemp.que[i]=channel; break; }  }
+								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
+
+						}
+						else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))
+						{
+								GetHTTPpacketParam(pHttp,&channel,&size);
+								LOOP_FOR(i,ESP_MAX_HTTP_CONN){ if(httpTemp.que[i]!=0xFF){ httpTemp.que[i]=channel; break; }  }
+								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
+
+						}
+						DispRecvBuff(nrHTTPpacket,arch);
 						}
 					}
+					UpdateReadPos();
+
 					//------------------------------
 
 
 
 
 
-					if ((pHttp=strstr_(NULL,ESP_HTTP_CHANNEL",CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
+					if ((pHttp=strstr_(NULL,",CONNECT\r\n")))
 					{
-						INIT_BUFF(answer, "+IPD,"ESP_HTTP_CHANNEL);
-						if ((pHttp=strstr_(pHttp,answer)))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						if ((pHttp=strstr_(pHttp,"+IPD,")))
 						{
-							//if(typeSendArch==noArch) DispRecvBuff(nrHTTPpacket,arch);
 							if ((pHttp2=strstr_(pHttp,":GET / ")))
 							{
 								GetHTTPpacketParam(pHttp,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
@@ -1648,8 +1689,32 @@ void vtaskWifi(void *argument)
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
 							}
 							else UpdateReadPos();
+
+							DispRecvBuff(nrHTTPpacket,arch);
 						}
 					}
+
+//					if ((pHttp=strstr_(NULL,ESP_HTTP_CHANNEL",CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
+//					{
+//						INIT_BUFF(answer, "+IPD,"ESP_HTTP_CHANNEL);
+//						if ((pHttp=strstr_(pHttp,answer)))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+//						{
+//							//if(typeSendArch==noArch) DispRecvBuff(nrHTTPpacket,arch);
+//							if ((pHttp2=strstr_(pHttp,":GET / ")))
+//							{
+//								GetHTTPpacketParam(pHttp,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
+//								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
+//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
+//							}
+//							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))				/* Każde nowe połączenie generuje 0,CONNECT tj. czeka na zakończenie jednego by 'weszlo' drugie, nie ma przychodzących rownocześnie połączeń */
+//							{
+//								GetHTTPpacketParam(pHttp,&channel,&size);
+//								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
+//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
+//							}
+//							else UpdateReadPos();
+//						}
+//					}
 					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
@@ -1680,10 +1745,10 @@ void vtaskWifi(void *argument)
 									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
 								}
 
-								if(nrPages > 100){  nrPages=0;
+								if(nrPages[channel] > 100){  nrPages[channel]=0;
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
 								}
-								else{  nrPages++;  if(typeSendArch==noArch) DbgDma(1,".");
+								else{  nrPages[channel]++;  if(typeSendArch==noArch) DbgDma(1,".");
 									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 								}
 							}
@@ -1961,7 +2026,7 @@ void vtaskWifi(void *argument)
 			{
 				if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
 				{
-					SendEmail(1, 1<<5, EMAIL_MEASURE);			/* z interia.pl musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
+					SendEmail(2, 1<<1, EMAIL_MEASURE);			/* z interia.pl musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
 
 					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
 						 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
