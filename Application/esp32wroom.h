@@ -17,6 +17,7 @@
 
 #define ESP_HTTP_CHANNEL	"0"
 #define ESP_EMAIL_CHANNEL	"4"
+#define ESP_MAX_HTTP_CONN	 4
 
 #define ESP_EN_GPIO_TYPE 	GPIOA
 #define ESP_EN_GPIO_PIN 	GPIO_PIN_9
