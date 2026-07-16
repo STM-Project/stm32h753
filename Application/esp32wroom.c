@@ -1260,6 +1260,7 @@ void vtaskWifi(void *argument)
 
 	uint32_t ulNotifiedValue;
 	u8 activHttp=0;
+	u8 continueRecv=0;
 
 
 	int typeSendArch = arch;
@@ -1650,6 +1651,7 @@ void vtaskWifi(void *argument)
 					{
 						char answ[20]={0};
 						pHttp = NULL;
+						continueRecv|=(1<<0);
 						LOOP_FOR(nrChnl,5)
 						{
 							if ((pHttp=strstr_(pHttp,",CONNECT\r\n")))
@@ -1672,45 +1674,58 @@ void vtaskWifi(void *argument)
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										if(SetRqstToSendChnl(channel,NULL)) DbgDma(DBG,_S_"\r\nQue ERROR "_E_);
+										if(SetRqstToSendChnl(channel,(char*)0x00000001)) DbgDma(DBG,_S_"\r\nQue ERROR "_E_);
 										if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 
 									}
+									continueRecv&=~(1<<0);
 								}
 							}
 							else break;
 						}
-						UpdateReadPos();
 
 						if(CheckReadyToSendChnl())
 						{
-							SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
-							//TU dal cipclose=nChnl jesli nic do wyslania
+							if(httpTemp.ptr[httpTemp.chnl]==NULL)
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
+							else
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, typeSendArch);
 						}
 
 					}
-					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
+					if (RecvFromEsp("\r\nOK\r\n\r\n>"))
 					{
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
 						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,typeSendArch /*noArch*/ );
+
 						// i tu przesuwam  wskaznik do html   httpTemp.ptr[ httpTemp.chnl ]  o tyle iel wyslalem
 
 					}
-					else if (RecvFromEsp(",CLOSED\r\n"))
+					if (RecvFromEsp(",CLOSED\r\n"))
 					{
+						continueRecv|=(1<<1);
 						if (RecvFromEsp("\r\nOK\r\n"))
 						{
-							if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- CLOSED --- "_E_);
-							UpdateReadPos();
+							if ((pHttp=strstr_(NULL,",CLOSED\r\n")))
+							{
+								int i=GetPos(pHttp);
+								DecPos(&i);
+								u8 chnlTemp=RecvBuffer[i]&0x0F;
+								if(httpTemp.chnl==chnlTemp){	if(typeSendArch!=noArch) DbgVarDma(DBG,30, _S_" --- CLOSED,%d --- "_E_,chnlTemp);	 }
+								else													 DbgVarDma(DBG,30, _SE_" --- ERROR,%d!=%d --- "_E_,httpTemp.chnl,chnlTemp);
+							}
+							continueRecv&=~(1<<1);
 						}
+
 					}
-					else if (RecvFromEsp("ERROR"))
+					if (RecvFromEsp("ERROR"))
 					{
 						if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
-						UpdateReadPos();
+
 					}
-					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
+					if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
 					{
+						continueRecv|=(1<<2);
 						if (strstr_(pHttp," bytes\r\n")){
 							if (strstr_(pHttp,"\r\nSEND OK"))    //!!!!!!!!!!!!!!!!!!!!!!!!!!!TO tez do jednej funkcjia dac !!!!!!!!!!!!!!!!!
 							{
@@ -1732,13 +1747,12 @@ void vtaskWifi(void *argument)
 										SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 									}
 								}
+								continueRecv&=~(1<<2);
 							}
 						}
+
 					}
-					else
-					{
-						UpdateReadPos();
-					}
+					if(continueRecv==0) UpdateReadPos();
 					break;
 
 //i jesli nie bedzie odpowiedzi po np 30 sekund to timercallbak timeout !!!!!!
