@@ -31,7 +31,7 @@
 
 #define PAUSE_BETWEEN_SEND_RECV_MS		3000
 
-#define ESP_RECV_BUFF_SIZE		2048
+#define ESP_RECV_BUFF_SIZE		4096
 #define PACKET_SEND_LEN 		2048
 
 #define HTTP_ANSWER_DELAY_MS		500
@@ -1231,19 +1231,21 @@ static void GoToTest(char* txt){
 }
 
 static int SetRqstToSendChnl(int channel, char* ptr){
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpTemp.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); return 1; }	}
 	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpTemp.que[i]==0xFF){ httpTemp.que[i]=channel; httpTemp.ptr[i]=ptr; return 0; }   }
-	return 1;
+	DbgDma(DBG,_SE_"\r\nQue: FULL "_E_);
+	return 2;
 }
 
 int CheckReadyToSendChnl(void){
 	if(httpTemp.chnl==0xFF){		/* gdy nie ma w tle oczekiwania na SEND OK */
-		LOOP_FOR(nrChnl,5){
+		LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
 			if(httpTemp.que[nrChnl]!=0xFF){
 				httpTemp.chnl = httpTemp.que[nrChnl];
-				httpTemp.que[nrChnl]=0xFF;
-				return 1;
+				//httpTemp.que[nrChnl]=0xFF;
+				return nrChnl;
 	}}}
-	return 0;
+	return -1;
 }
 
 static void InitStructRqstToSendChnl(void){
@@ -1642,7 +1644,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-					typeSendArch=noArch;
+					typeSendArch=arch;
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
 					RstTimeBtwnSendRcv();
 
@@ -1651,15 +1653,19 @@ void vtaskWifi(void *argument)
 					{
 						char answ[20]={0};
 						pHttp = NULL;
-						continueRecv|=(1<<0);
-						LOOP_FOR(nrChnl,5)
+						LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN)
 						{
 							if ((pHttp=strstr_(pHttp,",CONNECT\r\n")))
 							{
+								continueRecv|=(1<<0);
+								char* pHttp3=pHttp;
 								int i=GetPos(pHttp);
 								DecPos(&i);
 								u8 chnlTemp=RecvBuffer[i]&0x0F;
-								pHttp++;
+
+								SetPos(&i,2);
+								pHttp=&RecvBuffer[i];
+
 								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",chnlTemp);
 
 								if ((pHttp2=strstr_(pHttp,answ)))
@@ -1667,60 +1673,66 @@ void vtaskWifi(void *argument)
 									if (strstr_(pHttp2,":GET / "))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
-										if(SetRqstToSendChnl(channel,NULL)) DbgDma(DBG,_S_"\r\nQue ERROR "_E_);
+										SetRqstToSendChnl(channel,NULL);
 										if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										if(SetRqstToSendChnl(channel,(char*)0x00000001)) DbgDma(DBG,_S_"\r\nQue ERROR "_E_);
+										SetRqstToSendChnl(channel,(char*)0x00000001);
 										if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 
 									}
+									*pHttp3=' ';
 									continueRecv&=~(1<<0);
 								}
 							}
 							else break;
 						}
 
-						if(CheckReadyToSendChnl())
+						int nrQue=CheckReadyToSendChnl();
+						if(nrQue>-1)
 						{
-							if(httpTemp.ptr[httpTemp.chnl]==NULL)
-								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
-							else
+							if(httpTemp.ptr[nrQue]==NULL){  nrPages[httpTemp.chnl]=0;
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );  }
+							else{
 								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, typeSendArch);
+								httpTemp.que[nrQue]=0xFF;
+							}
 						}
 
 					}
-					if (RecvFromEsp("\r\nOK\r\n\r\n>"))
+					if ((pHttp=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
-						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,typeSendArch /*noArch*/ );
+						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,/*typeSendArch*/ noArch );
+						*pHttp=' ';
+						DbgDma(DBG, _S_" --- WYSYLAM --- "_E_);
 
 						// i tu przesuwam  wskaznik do html   httpTemp.ptr[ httpTemp.chnl ]  o tyle iel wyslalem
 
 					}
-					if (RecvFromEsp(",CLOSED\r\n"))
+					if ((pHttp=RecvFromEsp(",CLOSED\r\n")))
 					{
 						continueRecv|=(1<<1);
 						if (RecvFromEsp("\r\nOK\r\n"))
 						{
-							if ((pHttp=strstr_(NULL,",CLOSED\r\n")))
-							{
-								int i=GetPos(pHttp);
-								DecPos(&i);
-								u8 chnlTemp=RecvBuffer[i]&0x0F;
-								if(httpTemp.chnl==chnlTemp){	if(typeSendArch!=noArch) DbgVarDma(DBG,30, _S_" --- CLOSED,%d --- "_E_,chnlTemp);	 }
-								else													 DbgVarDma(DBG,30, _SE_" --- ERROR,%d!=%d --- "_E_,httpTemp.chnl,chnlTemp);
-							}
+							int i=GetPos(pHttp);
+							DecPos(&i);
+							u8 chnlTemp=RecvBuffer[i]&0x0F;
+							if(httpTemp.chnl==chnlTemp){	if(typeSendArch!=noArch) DbgVarDma(DBG,100, _S_" --- CLOSED,%d --- "_E_,chnlTemp);	 }
+							else													 DbgVarDma(DBG,100, _SE_" --- ERROR,%d!=%d --- "_E_,httpTemp.chnl,chnlTemp);
+							httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
+							*pHttp=' ';
 							continueRecv&=~(1<<1);
 						}
 
 					}
-					if (RecvFromEsp("ERROR"))
+					if ((pHttp=RecvFromEsp("ERROR")))
 					{
-						if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
+						if(typeSendArch!=noArch) DbgDma(DBG, _SE_" --- ERROR --- "_E_);
+						*pHttp=' ';
 
 					}
 					if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
@@ -1736,23 +1748,26 @@ void vtaskWifi(void *argument)
 									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
 								}
 
-								httpTemp.chnl=0xFF;
+								httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
 
-								if(CheckReadyToSendChnl())
+								int nrQue=CheckReadyToSendChnl();
+								if(nrQue>-1)
 								{
-									if(nrPages[httpTemp.chnl] > 100){  nrPages[httpTemp.chnl]=0;
+									if(nrPages[httpTemp.chnl] > 200){  nrPages[httpTemp.chnl]=0;
 										SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
+										httpTemp.que[nrQue]=0xFF;
 									}
 									else{  nrPages[httpTemp.chnl]++;  if(typeSendArch==noArch) DbgDma(1,".");
 										SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
 									}
 								}
+								*pHttp=' ';
 								continueRecv&=~(1<<2);
 							}
 						}
 
 					}
-					if(continueRecv==0) UpdateReadPos();
+					if(continueRecv==0){ UpdateReadPos(); DbgDma(DBG, _SE_"\r\n--- UPDATE --- "_E_); }
 					break;
 
 //i jesli nie bedzie odpowiedzi po np 30 sekund to timercallbak timeout !!!!!!
@@ -1989,7 +2004,7 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(99,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ ; }
-						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);  BackToHttpService(&nrHTTPpacket);	 EmailSendParam.start=0;
+						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);  BackToHttpService(&nrHTTPpacket);	 EmailSendParam.start=0;	InitStructRqstToSendChnl(); continueRecv=0;
 
 					}
 					else
