@@ -1273,7 +1273,7 @@ static void InitStructRqstToSendChnl(void){
 	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpTemp.ptr[i]=NULL; httpTemp.que[i]=0xFF; httpTemp.nr[i]=0; }
 }
 
-void HTTP_SendCloseChnlInit(ARCHIVING_TYPE archType){
+static void HTTP_SendCloseChnlInit(ARCHIVING_TYPE archType){
 	int nrQue=CheckReadyToSendChnl();
 	if(nrQue>-1)
 	{
@@ -1283,7 +1283,7 @@ void HTTP_SendCloseChnlInit(ARCHIVING_TYPE archType){
 			SendToEsp32___( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, arch);
 }}
 
-void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
+static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
 	int nrQue=CheckReadyToSendChnl();
 	if(nrQue>-1){
 		if(httpTemp.nr[httpTemp.chnl] > 200){  httpTemp.nr[httpTemp.chnl]=0;
@@ -1296,13 +1296,13 @@ void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
 				SendToEsp32___( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, arch);  }
 }}}
 
-int HTTP_GetClosedChannel(char* ptr){
+static int HTTP_GetClosedChannel(char* ptr){
 	int i=GetPos(ptr);
 	DecPos(&i);
 	return RecvBuffer[i]&0x0F;
 }
 
-void HTTP_ShowRecvBytes(ARCHIVING_TYPE archType){
+static void HTTP_ShowRecvBytes(ARCHIVING_TYPE archType){		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
 	char* ptr=NULL;
 	if(archType!=noArch){
 		if ((ptr=RecvFromEsp("\r\nRecv "))){	if (strstr_(ptr," bytes\r\n")){	if (strstr_(ptr,"\r\nSEND OK")){
@@ -1311,6 +1311,17 @@ void HTTP_ShowRecvBytes(ARCHIVING_TYPE archType){
 					DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
 					DbgDma(DBG, _S_" --- SEND OK --- "_E_);
 	}}}}
+}
+
+static void HTTP_ShowClosedChannel(u8 channel, ARCHIVING_TYPE archType){
+	if(archType!=noArch){
+		if(httpTemp.chnl==archType) DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,archType);
+		else						DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d --- "_E_,httpTemp.chnl,archType);
+	}
+}
+
+static void HTTP_ShowInitChannel(int channel,int size, ARCHIVING_TYPE archType){
+	if(archType!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 }
 
 void vtaskWifi(void *argument)
@@ -1781,7 +1792,6 @@ void vtaskWifi(void *argument)
 
 					if (RecvFromEsp("+IPD,")||RecvFromEsp(",CONNECT"))
 					{
-
 						DispRecvBuff(++nrHTTPpacket,arch/*typeSendArch*/);
 
 						if (RecvFromEsp("+IPD,"))
@@ -1790,52 +1800,41 @@ void vtaskWifi(void *argument)
 							pHttp = NULL;
 							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN)
 							{
-									mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl/*chnlTemp*/);
+								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl/*chnlTemp*/);
 
-									if ((pHttp2=strstr_(pHttp,answ)))
+								if ((pHttp2=strstr_(pHttp,answ)))
+								{
+									if (strstr_(pHttp2,":GET / "))
 									{
-										if (strstr_(pHttp2,":GET / "))
-										{
-											GetHTTPpacketParam(pHttp2,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
-											SetRqstToSendChnl(channel,(char*)0x00000001);
-											if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
+										GetHTTPpacketParam(pHttp2,&channel,&size);
+										SetRqstToSendChnl(channel,(char*)0x00000001);
+										HTTP_ShowInitChannel(channel,size,typeSendArch);
 
-										}
-										else if (strstr_(pHttp2,":GET /favicon.ico"))
-										{
-											GetHTTPpacketParam(pHttp2,&channel,&size);
-											SetRqstToSendChnl(channel,NULL);
-											/*if(typeSendArch!=noArch)*/  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
-
-										}
 									}
+									else if (strstr_(pHttp2,":GET /favicon.ico"))
+									{
+										GetHTTPpacketParam(pHttp2,&channel,&size);
+										SetRqstToSendChnl(channel,NULL);
+										HTTP_ShowInitChannel(channel,size,typeSendArch);
 
+									}
+								}
 							}
 						}
-
-
 						HTTP_SendCloseChnlInit(typeSendArch);
-
-
 
 					}
 					if ((pHttp=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
 						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,/*typeSendArch*/ noArch );
-
-
 						// i tu przesuwam  wskaznik do html   httpTemp.ptr[ httpTemp.chnl ]  o tyle iel wyslalem
 
 					}
 					if ((pHttp=RecvFromEsp(",CLOSED\r\n")))
 					{
 						u8 chnlClose=HTTP_GetClosedChannel(pHttp);
-
-						if(typeSendArch!=noArch){
-							if(httpTemp.chnl==chnlClose) DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,chnlClose);
-							else						 DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d --- "_E_,httpTemp.chnl,chnlClose);
-						}
+						HTTP_ShowClosedChannel(chnlClose,typeSendArch);
 
 						if(httpTemp.chnl == chnlClose)    /* jesli ten Case nastapil po wysylce at+cipsend lub at+cipclose - SYNCHRONICZNY */
 						{
@@ -1858,24 +1857,17 @@ void vtaskWifi(void *argument)
 							httpTemp.nr[chnlClose]=0;
 						}
 
-
 					}
 					if ((pHttp=RecvFromEsp("ERROR")))
 					{
 						if(typeSendArch!=noArch) DbgDma(DBG, _SE_" --- ERROR --- "_E_);
 
 					}
-					if ((pHttp=RecvFromEsp("\r\nSEND OK")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
+					if ((pHttp=RecvFromEsp("\r\nSEND OK")))
 					{
 						HTTP_ShowRecvBytes(typeSendArch);
-
-
-
-
-
-								httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
-
-								HTTP_SendCloseChnl(typeSendArch);
+						httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
+						HTTP_SendCloseChnl(typeSendArch);
 
 					}
 					UpdateReadPos();
