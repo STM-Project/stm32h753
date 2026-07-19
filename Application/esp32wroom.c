@@ -383,7 +383,7 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	return result;
 }
 
-static int SendToEsp32___(int len, char *data, ARCHIVING_TYPE archType)								/* if data=NULL we use buffer 'sendBuff' as default. 		if len=0 we calculate length text. */
+static int SendToEsp32_http(int len, char *data, ARCHIVING_TYPE archType)								/* if data=NULL we use buffer 'sendBuff' as default. 		if len=0 we calculate length text. */
 {
 	int len_ = CONDITION( 0==len, mini_strlen(CONDITION(NULL==data,sendBuff,data)), len );
 	if(len_ > PACKET_SEND_LEN-1)  len_=PACKET_SEND_LEN-1;
@@ -392,7 +392,6 @@ static int SendToEsp32___(int len, char *data, ARCHIVING_TYPE archType)								/
 		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_"SEND_STOP\r\n"_X_); }  //TU TEZ DAJ NUMERACJE SEND_START_001 !!!!!!!!!!!!
 	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",sendBuff,"\r\n"); }
 
-	//UpdateReadPos();
 /*	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);	*/							/* SCB_CleanDCache_by_Addr() takes only 4us */		/* Jesli w MPU ustawimy adres bufora 'sendBuff' w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_CleanDCache_by_Addr() nie jest potrzebny */
 	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, CACHE_ALLIGN_LEN(len_)); 	 					/* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy   CACHE_LINE_BYTES = 32 */
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
@@ -1262,7 +1261,6 @@ int CheckReadyToSendChnl(void){
 		LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
 			if(httpTemp.que[nrChnl]!=0xFF){
 				httpTemp.chnl = httpTemp.que[nrChnl];
-				//httpTemp.que[nrChnl]=0xFF;
 				return nrChnl;
 	}}}
 	return -1;
@@ -1278,22 +1276,22 @@ static void HTTP_SendCloseChnlInit(ARCHIVING_TYPE archType){
 	if(nrQue>-1)
 	{
 		if(httpTemp.ptr[nrQue]!=NULL){  httpTemp.nr[httpTemp.chnl]=0;
-			SendToEsp32___( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType );  }
+			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType );  }
 		else
-			SendToEsp32___( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, arch);
+			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, archType);
 }}
 
 static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
 	int nrQue=CheckReadyToSendChnl();
 	if(nrQue>-1){
 		if(httpTemp.nr[httpTemp.chnl] > 200){  httpTemp.nr[httpTemp.chnl]=0;
-			SendToEsp32___( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, arch);		/* Czas wykonania SendToEsp32() to 28us */
+			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
 		}
 		else{   if(archType==noArch) DbgVarDma(1,5,"%d",httpTemp.chnl);
 			if(httpTemp.ptr[nrQue]!=NULL){ httpTemp.nr[httpTemp.chnl]++;
-				SendToEsp32___( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType );  }
+				SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType );  }
 			else{   					   httpTemp.nr[httpTemp.chnl]=0;
-				SendToEsp32___( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, arch);  }
+				SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, archType);  }
 }}}
 
 static int HTTP_GetClosedChannel(char* ptr){
@@ -1301,22 +1299,22 @@ static int HTTP_GetClosedChannel(char* ptr){
 	DecPos(&i);
 	return RecvBuffer[i]&0x0F;
 }
-
-static void HTTP_ShowRecvBytes(ARCHIVING_TYPE archType){		/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
+/*
+static void HTTP_ShowRecvBytes(ARCHIVING_TYPE archType){		// RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP
 	char* ptr=NULL;
 	if(archType!=noArch){
 		if ((ptr=RecvFromEsp("\r\nRecv "))){	if (strstr_(ptr," bytes\r\n")){	if (strstr_(ptr,"\r\nSEND OK")){
-				char temp[50]={0};  strcpy_(temp,ptr,1,'\r');		/* strcpy2_(temp,pHttp,0,30); */
-				int val = STRING_GetInt(temp,' ');					/* val = atoi_(pHttp,mini_strlen("\r\nRecv ")); */
+				char temp[50]={0};  strcpy_(temp,ptr,1,'\r');		// strcpy2_(temp,pHttp,0,30);
+				int val = STRING_GetInt(temp,' ');					// val = atoi_(pHttp,mini_strlen("\r\nRecv "));
 					DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
 					DbgDma(DBG, _S_" --- SEND OK --- "_E_);
 	}}}}
 }
-
+*/
 static void HTTP_ShowClosedChannel(u8 channel, ARCHIVING_TYPE archType){
 	if(archType!=noArch){
 		if(httpTemp.chnl==archType) DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,archType);
-		else						DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d --- "_E_,httpTemp.chnl,archType);
+		else						DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d asyn --- "_E_,httpTemp.chnl,archType);
 	}
 }
 
@@ -1785,22 +1783,21 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
+					int flag=0;
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);
 					RstTimeBtwnSendRcv();
 
-
 					if (RecvFromEsp("+IPD,")||RecvFromEsp(",CONNECT"))
 					{
-						DispRecvBuff(++nrHTTPpacket,arch/*typeSendArch*/);
-
+						DispRecvBuff(++nrHTTPpacket,arch);		/* Show only GET Http */
 						if (RecvFromEsp("+IPD,"))
 						{
 							char answ[20]={0};
 							pHttp = NULL;
 							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN)
 							{
-								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl/*chnlTemp*/);
+								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl);
 
 								if ((pHttp2=strstr_(pHttp,answ)))
 								{
@@ -1809,14 +1806,12 @@ void vtaskWifi(void *argument)
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,(char*)0x00000001);
 										HTTP_ShowInitChannel(channel,size,typeSendArch);
-
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,NULL);
 										HTTP_ShowInitChannel(channel,size,typeSendArch);
-
 									}
 								}
 							}
@@ -1827,7 +1822,7 @@ void vtaskWifi(void *argument)
 					if ((pHttp=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
-						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,/*typeSendArch*/ noArch );
+						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32_http(2039,NULL,noArch/*typeSendArch*/);
 						// i tu przesuwam  wskaznik do html   httpTemp.ptr[ httpTemp.chnl ]  o tyle iel wyslalem
 
 					}
@@ -1847,7 +1842,7 @@ void vtaskWifi(void *argument)
 							httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
 							HTTP_SendCloseChnl(typeSendArch);
 						}
-						else /* if(httpTemp.chnl != chnlTemp) */       /* jesli ten Case nastapil NIE po wysylce at+cipsend lub at+cipclose - ASYNCHRONICZNY */
+						else /* if(httpTemp.chnl != chnlClose) */       /* jesli ten Case nastapil NIE po wysylce at+cipsend lub at+cipclose - ASYNCHRONICZNY */
 						{
 							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
 								if(httpTemp.que[nrChnl]!=0xFF){   if(chnlClose == httpTemp.que[nrChnl]){
@@ -1865,13 +1860,11 @@ void vtaskWifi(void *argument)
 					}
 					if ((pHttp=RecvFromEsp("\r\nSEND OK")))
 					{
-						HTTP_ShowRecvBytes(typeSendArch);
 						httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
 						HTTP_SendCloseChnl(typeSendArch);
 
 					}
 					UpdateReadPos();
-
 					break;
 
 //i jesli nie bedzie odpowiedzi po np 30 sekund to timercallbak timeout !!!!!!
