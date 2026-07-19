@@ -1296,6 +1296,23 @@ void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
 				SendToEsp32___( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, arch);  }
 }}}
 
+int HTTP_GetClosedChannel(char* ptr){
+	int i=GetPos(ptr);
+	DecPos(&i);
+	return RecvBuffer[i]&0x0F;
+}
+
+void HTTP_ShowRecvBytes(ARCHIVING_TYPE archType){
+	char* ptr=NULL;
+	if(archType!=noArch){
+		if ((ptr=RecvFromEsp("\r\nRecv "))){	if (strstr_(ptr," bytes\r\n")){	if (strstr_(ptr,"\r\nSEND OK")){
+				char temp[50]={0};  strcpy_(temp,ptr,1,'\r');		/* strcpy2_(temp,pHttp,0,30); */
+				int val = STRING_GetInt(temp,' ');					/* val = atoi_(pHttp,mini_strlen("\r\nRecv ")); */
+					DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
+					DbgDma(DBG, _S_" --- SEND OK --- "_E_);
+	}}}}
+}
+
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
@@ -1304,7 +1321,6 @@ void vtaskWifi(void *argument)
 
 	uint32_t ulNotifiedValue;
 	u8 activHttp=0;
-	u8 continueRecv=0;
 
 
 	int typeSendArch = arch;
@@ -1792,7 +1808,6 @@ void vtaskWifi(void *argument)
 											/*if(typeSendArch!=noArch)*/  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 
 										}
-										continueRecv&=~(1<<0);
 									}
 
 							}
@@ -1808,90 +1823,63 @@ void vtaskWifi(void *argument)
 					{
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
 						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,/*typeSendArch*/ noArch );
-						//*pHttp=' ';
-						//DbgDma(DBG, _S_" --- WYSYLAM --- "_E_);
+
 
 						// i tu przesuwam  wskaznik do html   httpTemp.ptr[ httpTemp.chnl ]  o tyle iel wyslalem
 
 					}
 					if ((pHttp=RecvFromEsp(",CLOSED\r\n")))
 					{
+						u8 chnlClose=HTTP_GetClosedChannel(pHttp);
 
-						int i=GetPos(pHttp);
-						DecPos(&i);
-						u8 chnlTemp=RecvBuffer[i]&0x0F;
+						if(typeSendArch!=noArch){
+							if(httpTemp.chnl==chnlClose) DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,chnlClose);
+							else						 DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d --- "_E_,httpTemp.chnl,chnlClose);
+						}
 
-
-
-						continueRecv|=(1<<1);
-//						if (RecvFromEsp("\r\nOK\r\n"))
-//						{
-
-							if(httpTemp.chnl==chnlTemp){	/*if(typeSendArch!=noArch)*/ DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,chnlTemp);	 }
-							else													    DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d --- "_E_,httpTemp.chnl,chnlTemp);
-
-							//*pHttp=' ';
-							continueRecv&=~(1<<1);
-
-
-							if(httpTemp.chnl == chnlTemp)     //DLA odpo po AT+cipclose   SYNCHRONICZNE
-							{
-								LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
-									if(httpTemp.que[nrChnl]!=0xFF){   if(httpTemp.chnl==httpTemp.que[nrChnl]){
-										httpTemp.que[nrChnl]=0xFF;
+						if(httpTemp.chnl == chnlClose)    /* jesli ten Case nastapil po wysylce at+cipsend lub at+cipclose - SYNCHRONICZNY */
+						{
+							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
+								if(httpTemp.que[nrChnl]!=0xFF){   if(httpTemp.chnl == httpTemp.que[nrChnl]){
+									httpTemp.que[nrChnl]=0xFF;
+									break;
+							}}}
+							httpTemp.nr[httpTemp.chnl]=0;
+							httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
+							HTTP_SendCloseChnl(typeSendArch);
+						}
+						else /* if(httpTemp.chnl != chnlTemp) */       /* jesli ten Case nastapil NIE po wysylce at+cipsend lub at+cipclose - ASYNCHRONICZNY */
+						{
+							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
+								if(httpTemp.que[nrChnl]!=0xFF){   if(chnlClose == httpTemp.que[nrChnl]){
+									httpTemp.que[nrChnl]=0xFF;
 										break;
-								}}}
-								httpTemp.nr[httpTemp.chnl]=0;
-								httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
-								HTTP_SendCloseChnl(typeSendArch);
-							}
-							else  //if(httpTemp.chnl != chnlTemp)   //DLA asynchr CLOSED  ASYNCHRONICZNE
-							{
-								LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
-									if(httpTemp.que[nrChnl]!=0xFF){   if(chnlTemp==httpTemp.que[nrChnl]){
-										httpTemp.que[nrChnl]=0xFF;
-										break;
-								}}}
-								httpTemp.nr[chnlTemp]=0;
-							}
-//						}
+							}}}
+							httpTemp.nr[chnlClose]=0;
+						}
+
 
 					}
-//					if ((pHttp=RecvFromEsp("ERROR")))
-//					{
-//						if(typeSendArch!=noArch) DbgDma(DBG, _SE_" --- ERROR --- "_E_);
-//						*pHttp=' ';
-//
-//					}
+					if ((pHttp=RecvFromEsp("ERROR")))
+					{
+						if(typeSendArch!=noArch) DbgDma(DBG, _SE_" --- ERROR --- "_E_);
+
+					}
 					if ((pHttp=RecvFromEsp("\r\nSEND OK")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
 					{
-						continueRecv|=(1<<2);
-//						if (strstr_(pHttp," bytes\r\n")){
-//							if (strstr_(pHttp,"\r\nSEND OK"))    //!!!!!!!!!!!!!!!!!!!!!!!!!!!TO tez do jednej funkcjia dac !!!!!!!!!!!!!!!!!
-//							{
-//								char temp[50]={0};  strcpy_(temp,pHttp,1,'\r');		/* strcpy2_(temp,pHttp,0,30); */
-//								int val = STRING_GetInt(temp,' ');					/* val = atoi_(pHttp,mini_strlen("\r\nRecv ")); */
-//								if(typeSendArch!=noArch){
-//									DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
-//									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
-//								}
+						HTTP_ShowRecvBytes(typeSendArch);
+
+
+
+
 
 								httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
 
-
-
-
-
-
 								HTTP_SendCloseChnl(typeSendArch);
-								//*pHttp=' ';
-								continueRecv&=~(1<<2);
-							//}
-						//}
 
 					}
 					UpdateReadPos();
-					//if(continueRecv==0){ UpdateReadPos(); DbgDma(DBG, _SE_"\r\n--- UPDATE --- "_E_); }
+
 					break;
 
 //i jesli nie bedzie odpowiedzi po np 30 sekund to timercallbak timeout !!!!!!
@@ -1922,9 +1910,9 @@ void vtaskWifi(void *argument)
 				case SMTP_CONNECTION:
 					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))		/* CASE_Service() osluguje ESP32_FreeAnswers() ale tylko wtedy gdy jest ktoras z odpowiedzi */
 					{
-						if(ErrorAnswerService()){ BackFromEmail(0); break; } //DAJ PO NAZWIE A NIE PO IP !!!!!
-						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART="ESP_EMAIL_CHANNEL",\"%s\",\"%s\",%d\r\n",CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), IP2Str(Const.emailSend[EmailSendParam.whichSender].IP), Const.emailSend[EmailSendParam.whichSender].port);
-						//len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART="ESP_EMAIL_CHANNEL",\"%s\",\"poczta.interia.pl\",%d\r\n",CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), Const.emailSend[EmailSendParam.whichSender].port);
+						if(ErrorAnswerService()){ BackFromEmail(0); break; }
+						len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART="ESP_EMAIL_CHANNEL",\"%s\",\"%s\",%d\r\n",CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), IP2Str(Const.emailSend[EmailSendParam.whichSender].IP), 	 Const.emailSend[EmailSendParam.whichSender].port);
+					 /* len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTART="ESP_EMAIL_CHANNEL",\"%s\",\"%s\",%d\r\n",CONDITION(Const.emailSend[EmailSendParam.whichSender].useSSL,"SSL","TCP"), 		 Const.emailSend[EmailSendParam.whichSender].server, Const.emailSend[EmailSendParam.whichSender].port); */
 						SendToEsp32(len,NULL,typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 						nrSMTP=0;
@@ -2043,22 +2031,39 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(13,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
 					{
 						if(SMTP_SendData(typeSendArch)) BackFromEmail(0);
+						 _SET_NEW_CASE_(80);
+
+					}
+					else if (CASE_Service(80,"\r\nSEND OK",txt_ERR,typeRecvArch))
+					{
+						if(ErrorAnswerService()){ BackFromEmail(0); break; }
+						if(Is_ComplRecvSMTPpacket()){
+							SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);
+							if(354==code){  if(SMTP_SendCmd(typeSendArch,mini_snprintf(sendBuff,sizeof(sendBuff),"FROM: %s\r\n",Const.emailSend[EmailSendParam.whichSender].login))) BackFromEmail(0);  }else BackFromEmail(1);
+						}
+						else _THE_SAME_CASE_;
+
+					}
+					else if (CASE_Service(81,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
+					{
+						if(SMTP_SendData(typeSendArch)) BackFromEmail(0);
+						_SET_NEW_CASE_(14);
 
 					}
 					else if (CASE_Service(14,"\r\nSEND OK",txt_ERR,typeRecvArch))		/* +IPD,4,37:354 End data with <CR><LF>.<CR><LF> */
 					{
 						if(ErrorAnswerService()){ BackFromEmail(0); break; }
-						if(Is_ComplRecvSMTPpacket()){
+/*						if(Is_ComplRecvSMTPpacket()){
 							SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);
-							if(354==code){
+							if(354==code){ */
 								len=mini_snprintf(sendBuff,sizeof(sendBuff),"TO: ");  j=0;
 								for (int i=0; i<MAX_EMAIL_RECIPIENTS; ++i){  if((EmailSendParam.recepientsMask>>i)&0x01)  len+=mini_snprintf(sendBuff+len,sizeof(sendBuff)-len,"%s,",Const.emailRecv[i].email);  }
 								len+=mini_snprintf(sendBuff+len, sizeof(sendBuff), "\r\n");
 								if(SMTP_SendCmd(typeSendArch,len)) BackFromEmail(0);
-							}
+/*							}
 							else BackFromEmail(1);
 						}
-						else _THE_SAME_CASE_;
+						else _THE_SAME_CASE_; */
 
 					}
 					else if (CASE_Service(15,TXT_OK"\r\n>",txt_ERR,typeRecvArch))
@@ -2128,7 +2133,7 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(99,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ ; }
-						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);  BackToHttpService(&nrHTTPpacket);	 EmailSendParam.start=0;	InitStructRqstToSendChnl(); continueRecv=0;
+						DbgVarDma(DBG,50, _SE_"\r\nWracma do HTTP "_E_);  BackToHttpService(&nrHTTPpacket);	 EmailSendParam.start=0;	InitStructRqstToSendChnl();
 
 					}
 					else
@@ -2307,8 +2312,6 @@ void vtaskWifi(void *argument)
 				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
 				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
 				SendToEsp32(0,"AT+CIPSTATUS\r\n",arch);
-
-				InitStructRqstToSendChnl(); continueRecv=0;
 			}
 			else if(DEBUG_IsTxtReceive("p"))
 			{
