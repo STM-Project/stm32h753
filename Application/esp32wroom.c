@@ -2159,6 +2159,7 @@ void vtaskWifi(void *argument)
 					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
 						 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
 					{
+						typeSendArch=arch;
 						DbgDma(DBG, _S_"\r\nWysylam email... "_E_);
 						_CLR_ACTUAL_CASE_;
 						connectionType=SMTP_CONNECTION;
