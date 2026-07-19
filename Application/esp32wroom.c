@@ -148,7 +148,7 @@ struct HTTP_SEND_TEMP{
 	char* ptr[ESP_MAX_HTTP_CONN];		/* ptr to html */
  	u8 	  que[ESP_MAX_HTTP_CONN];		/* buffer of requests to send channel */
  	u16   nr[ESP_MAX_HTTP_CONN];		/* iterix of web HTML */
-}httpTemp;
+}httpPar;
 
 TimerHandle_t xWaitOnSendTimeoutTimer;
 
@@ -1250,48 +1250,47 @@ static void GoToTest(char* txt){
 }
 
 static int SetRqstToSendChnl(int channel, char* ptr){
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpTemp.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); return 1; }	}
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpTemp.que[i]==0xFF){ httpTemp.que[i]=channel; httpTemp.ptr[i]=ptr; return 0; }   }
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); return 1; }	}
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF){ httpPar.que[i]=channel; httpPar.ptr[i]=ptr; return 0; }   }
 	DbgDma(DBG,_SE_"\r\nQue: FULL "_E_);
 	return 2;
 }
 
 int CheckReadyToSendChnl(void){
-	if(httpTemp.chnl==0xFF){		/* gdy nie ma w tle oczekiwania na SEND OK */
+	if(httpPar.chnl==0xFF){		/* gdy nie ma w tle oczekiwania na SEND OK */
 		LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
-			if(httpTemp.que[nrChnl]!=0xFF){
-				httpTemp.chnl = httpTemp.que[nrChnl];
+			if(httpPar.que[nrChnl]!=0xFF){
+				httpPar.chnl = httpPar.que[nrChnl];
 				return nrChnl;
 	}}}
 	return -1;
 }
 
 static void InitStructRqstToSendChnl(void){
-	httpTemp.chnl = 0xFF;
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpTemp.ptr[i]=NULL; httpTemp.que[i]=0xFF; httpTemp.nr[i]=0; }
+	httpPar.chnl = 0xFF;
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; }
 }
 
 static void HTTP_SendCloseChnlInit(ARCHIVING_TYPE archType){
 	int nrQue=CheckReadyToSendChnl();
 	if(nrQue>-1)
 	{
-		if(httpTemp.ptr[nrQue]!=NULL){  httpTemp.nr[httpTemp.chnl]=0;
-			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType );  }
-		else
-			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, archType);
+		httpPar.nr[nrQue]=0;
+		if	   (httpPar.ptr[nrQue]==(char*)0x00000001)	SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType);
+		else if(httpPar.ptr[nrQue]==(char*)0x00000002)	SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), 							   NULL, archType);
 }}
 
 static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
 	int nrQue=CheckReadyToSendChnl();
 	if(nrQue>-1){
-		if(httpTemp.nr[httpTemp.chnl] > 200){  httpTemp.nr[httpTemp.chnl]=0;
-			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
+		if(httpPar.nr[nrQue] > 200){  httpPar.nr[nrQue]=0;
+			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
 		}
-		else{   if(archType==noArch) DbgVarDma(1,5,"%d",httpTemp.chnl);
-			if(httpTemp.ptr[nrQue]!=NULL){ httpTemp.nr[httpTemp.chnl]++;
-				SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpTemp.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType );  }
-			else{   					   httpTemp.nr[httpTemp.chnl]=0;
-				SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpTemp.chnl), NULL, archType);  }
+		else{   if(archType==noArch) DbgVarDma(1,5,"%d",httpPar.chnl);
+			if	   (httpPar.ptr[nrQue]==(char*)0x00000001){  httpPar.nr[nrQue]++;
+				SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType );  }
+			else if(httpPar.ptr[nrQue]==(char*)0x00000002){  httpPar.nr[nrQue]=0;
+				SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);  }
 }}}
 
 static int HTTP_GetClosedChannel(char* ptr){
@@ -1313,8 +1312,8 @@ static void HTTP_ShowRecvBytes(ARCHIVING_TYPE archType){		// RecvFromEsp("\r\nRe
 */
 static void HTTP_ShowClosedChannel(u8 channel, ARCHIVING_TYPE archType){
 	if(archType!=noArch){
-		if(httpTemp.chnl==archType) DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,archType);
-		else						DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d asyn --- "_E_,httpTemp.chnl,archType);
+		if(httpPar.chnl==archType) DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,archType);
+		else						DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d asyn --- "_E_,httpPar.chnl,archType);
 	}
 }
 
@@ -1810,7 +1809,7 @@ void vtaskWifi(void *argument)
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,NULL);
+										SetRqstToSendChnl(channel,(char*)0x00000002);
 										HTTP_ShowInitChannel(channel,size,typeSendArch);
 									}
 								}
@@ -1823,7 +1822,7 @@ void vtaskWifi(void *argument)
 					{
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
 						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32_http(2039,NULL,noArch/*typeSendArch*/);
-						// i tu przesuwam  wskaznik do html   httpTemp.ptr[ httpTemp.chnl ]  o tyle iel wyslalem
+						// i tu przesuwam  wskaznik do html   httpPar.ptr[ nrChnl]  o tyle iel wyslalem
 
 					}
 					if ((pHttp=RecvFromEsp(",CLOSED\r\n")))
@@ -1831,25 +1830,27 @@ void vtaskWifi(void *argument)
 						u8 chnlClose=HTTP_GetClosedChannel(pHttp);
 						HTTP_ShowClosedChannel(chnlClose,typeSendArch);
 
-						if(httpTemp.chnl == chnlClose)    /* jesli ten Case nastapil po wysylce at+cipsend lub at+cipclose - SYNCHRONICZNY */
+						if(httpPar.chnl == chnlClose)    /* jesli ten Case nastapil po wysylce at+cipsend lub at+cipclose - SYNCHRONICZNY */
 						{
 							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
-								if(httpTemp.que[nrChnl]!=0xFF){   if(httpTemp.chnl == httpTemp.que[nrChnl]){
-									httpTemp.que[nrChnl]=0xFF;
+								if(httpPar.que[nrChnl]!=0xFF){   if(httpPar.chnl == httpPar.que[nrChnl]){
+									httpPar.que[nrChnl]=0xFF;
+									httpPar.nr[nrChnl]=0;
+									httpPar.ptr[nrChnl]=NULL;
 									break;
 							}}}
-							httpTemp.nr[httpTemp.chnl]=0;
-							httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
+							httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
 							HTTP_SendCloseChnl(typeSendArch);
 						}
-						else /* if(httpTemp.chnl != chnlClose) */       /* jesli ten Case nastapil NIE po wysylce at+cipsend lub at+cipclose - ASYNCHRONICZNY */
+						else /* if(httpPar.chnl != chnlClose) */       /* jesli ten Case nastapil NIE po wysylce at+cipsend lub at+cipclose - ASYNCHRONICZNY */
 						{
 							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
-								if(httpTemp.que[nrChnl]!=0xFF){   if(chnlClose == httpTemp.que[nrChnl]){
-									httpTemp.que[nrChnl]=0xFF;
-										break;
+								if(httpPar.que[nrChnl]!=0xFF){   if(chnlClose == httpPar.que[nrChnl]){
+									httpPar.que[nrChnl]=0xFF;
+									httpPar.nr[nrChnl]=0;
+									httpPar.ptr[nrChnl]=NULL;
+									break;
 							}}}
-							httpTemp.nr[chnlClose]=0;
 						}
 
 					}
@@ -1860,7 +1861,7 @@ void vtaskWifi(void *argument)
 					}
 					if ((pHttp=RecvFromEsp("\r\nSEND OK")))
 					{
-						httpTemp.chnl=0xFF;		/* zezwol na nastepna wysylke */
+						httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
 						HTTP_SendCloseChnl(typeSendArch);
 
 					}
@@ -2144,7 +2145,10 @@ void vtaskWifi(void *argument)
 
 			if(DEBUG_IsTxtReceive("a"))
 			{
-				DbgDmaQue(DBG, _S_"Rafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal MarkielowskiRafal Markielowski "_E_,0);
+				int n=mini_snprintf(sendBuff,sizeof(sendBuff),"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
+				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 n+=mini_snprintf(sendBuff+n,sizeof(sendBuff)-n,"ptr:%d		que:%d		nr:%d\r\n",httpPar.ptr[i], httpPar.que[i], httpPar.nr[i]);	}
+				DbgDmaQue(DBG,sendBuff,0);
+
 			}
 			else if(DEBUG_IsTxtReceive("s"))
 			{
