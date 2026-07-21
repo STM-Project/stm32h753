@@ -14,6 +14,8 @@
 #define HTTP_BUFFER_SIZE 		262144
 #define HTTP_BUFFER_SIZE_PRE 		262144
 
+extern const char HttpBuff[];
+
 DATA_TO_SEND* GetPageWWW(char *getHttpRequest);
 void ResetTestTab(void);
 
