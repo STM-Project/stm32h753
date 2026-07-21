@@ -34,6 +34,8 @@
 #define ESP_RECV_BUFF_SIZE		4096
 #define PACKET_SEND_LEN 		2048
 
+#define ETH_PACKET_LEN 			2039
+
 #define HTTP_ANSWER_DELAY_MS		500
 #define SMTP_CONNECTION_DELAY_MS	15000
 #define SMTP_ANSWER_DELAY_MS		10000
@@ -148,6 +150,7 @@ struct HTTP_SEND_TEMP{
 	char* ptr[ESP_MAX_HTTP_CONN];		/* ptr to html */
  	u8 	  que[ESP_MAX_HTTP_CONN];		/* buffer of requests to send channel */
  	u16   nr[ESP_MAX_HTTP_CONN];		/* iterix of web HTML */
+ 	u16   siz[ESP_MAX_HTTP_CONN];		/* size html web */
 }httpPar;
 
 TimerHandle_t xWaitOnSendTimeoutTimer;
@@ -1250,10 +1253,10 @@ static void GoToTest(char* txt){
 }
 
 static int SetRqstToSendChnl(int channel, char* ptr){
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); return 1; }	}
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF){ httpPar.que[i]=channel; httpPar.ptr[i]=ptr; return 0; }   }
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); 																	  return -1;  }  }
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=ptr;   if(ptr==NULL) httpPar.siz[i]=0; else httpPar.siz[i]=sizeof(ptr);  return i;   }  }
 	DbgDma(DBG,_SE_"\r\nQue: FULL "_E_);
-	return 2;
+	return -2;
 }
 
 int CheckReadyToSendChnl(void){
@@ -1268,22 +1271,26 @@ int CheckReadyToSendChnl(void){
 
 static void InitStructRqstToSendChnl(void){
 	httpPar.chnl = 0xFF;
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; }
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.siz[i]=0; }
 }
 
 static void HTTP_SendCloseChnlInit(ARCHIVING_TYPE archType){
 	int nrQue=CheckReadyToSendChnl();
 	if(nrQue>-1)
 	{
-		httpPar.nr[nrQue]=0;
-		if	   (httpPar.ptr[nrQue]==(char*)0x00000001)	SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,mini_strlen(HTML_TXT_CODE)), NULL, archType);
-		else if(httpPar.ptr[nrQue]==(char*)0x00000002)	SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), 							   NULL, archType);
+		if(httpPar.ptr[nrQue]==NULL)  SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl),NULL, archType);
+		else{
+			if(archType==noArch) DbgVarDma(1,5,"%d",httpPar.chnl);
+			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl, CONDITION( httpPar.siz[nrQue]>ETH_PACKET_LEN, ETH_PACKET_LEN, httpPar.siz[nrQue]) ), NULL, archType);
+			httpPar.nr[nrQue]++;
+		}
 }}
 
 static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
 	int nrQue=CheckReadyToSendChnl();
 	if(nrQue>-1){
-		if(httpPar.nr[nrQue] > 200){  httpPar.nr[nrQue]=0;
+		if(httpPar.nr[nrQue] > httpPar.siz[nrQue]/ ETH_PACKET_LEN){
+			httpPar.nr[nrQue]=0;
 			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
 		}
 		else{   if(archType==noArch) DbgVarDma(1,5,"%d",httpPar.chnl);
@@ -1782,7 +1789,6 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-					int flag=0;
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);
 					RstTimeBtwnSendRcv();
@@ -1803,13 +1809,13 @@ void vtaskWifi(void *argument)
 									if (strstr_(pHttp2,":GET / "))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,(char*)0x00000001);
+										SetRqstToSendChnl(channel,(char*)HttpBuff);
 										HTTP_ShowInitChannel(channel,size,typeSendArch);
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,(char*)0x00000002);
+										SetRqstToSendChnl(channel,NULL);
 										HTTP_ShowInitChannel(channel,size,typeSendArch);
 									}
 								}
@@ -1822,7 +1828,7 @@ void vtaskWifi(void *argument)
 					{
 					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
 						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32_http(2039,NULL,noArch/*typeSendArch*/);
-						// i tu przesuwam  wskaznik do html   httpPar.ptr[ nrChnl]  o tyle iel wyslalem
+						// i tu przesuwam  wskaznik do html   httpPar.ptr[ nrChnl]  o tyle ile wyslalem
 
 					}
 					if ((pHttp=RecvFromEsp(",CLOSED\r\n")))
