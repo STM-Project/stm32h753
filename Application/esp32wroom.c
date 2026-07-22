@@ -1255,7 +1255,7 @@ static void GoToTest(char* txt){
 
 static int SetRqstToSendChnl(int channel, char* ptr){
 	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); 																	  return -1;  }  }
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=ptr;   if(ptr==NULL) httpPar.siz[i]=0; else httpPar.siz[i]=sizeof(ptr);  return i;   }  }
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=ptr;   if(ptr==NULL) httpPar.siz[i]=0; else httpPar.siz[i]=mini_strlen(HttpBuff);  return i;   }  }
 	DbgDma(DBG,_SE_"\r\nQue: FULL "_E_);
 	return -2;
 }
@@ -1333,8 +1333,8 @@ static void HTTP_ShowRecvBytes(ARCHIVING_TYPE archType){		// RecvFromEsp("\r\nRe
 */
 static void HTTP_ShowClosedChannel(u8 channel, ARCHIVING_TYPE archType){
 	if(archType!=noArch){
-		if(httpPar.chnl==channel) DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,archType);
-		else					  DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d asyn --- "_E_,httpPar.chnl,archType);
+		if(httpPar.chnl==channel) DbgVarDma(DBG,100, _S_" \r\n--- CLOSED,%d --- "_E_,channel);
+		else					  DbgVarDma(DBG,100, _SE_"\r\n --- CLOSED,%d!=%d asyn --- "_E_,httpPar.chnl,channel);
 	}
 }
 
@@ -1803,13 +1803,13 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-					typeSendArch=noArch;
-					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);
+					typeSendArch=arch;
+					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
 					RstTimeBtwnSendRcv();
 
 					if (RecvFromEsp("+IPD,")||RecvFromEsp(",CONNECT"))
 					{
-						DispRecvBuff(++nrHTTPpacket,arch);		/* Show only GET Http */
+						//DispRecvBuff(++nrHTTPpacket,arch);		/* Show only GET Http */
 						if (RecvFromEsp("+IPD,"))
 						{
 							char answ[20]={0};
@@ -1856,6 +1856,8 @@ void vtaskWifi(void *argument)
 								httpPar.que[nr]=0xFF;
 								httpPar.nr[nr]=0;
 								httpPar.ptr[nr]=NULL;
+								httpPar.siz[nr]=0;
+								httpPar.len[nr]=0;
 								break;
 							}
 							httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
@@ -1868,6 +1870,8 @@ void vtaskWifi(void *argument)
 								httpPar.que[nr]=0xFF;
 								httpPar.nr[nr]=0;
 								httpPar.ptr[nr]=NULL;
+								httpPar.siz[nr]=0;
+								httpPar.len[nr]=0;
 								break;
 							}
 						}
@@ -2165,7 +2169,7 @@ void vtaskWifi(void *argument)
 			if(DEBUG_IsTxtReceive("a"))
 			{
 				int n=mini_snprintf(sendBuff,sizeof(sendBuff),"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
-				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 n+=mini_snprintf(sendBuff+n,sizeof(sendBuff)-n,"siz:%d		ptr:%d		que:%d		nr:%d\r\n",httpPar.siz[i], httpPar.ptr[i], httpPar.que[i], httpPar.nr[i]);	}
+				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 n+=mini_snprintf(sendBuff+n,sizeof(sendBuff)-n,"ptr:%d   que:%d 	nr:%d 	 siz:%d\r\n",httpPar.ptr[i], httpPar.que[i], httpPar.nr[i], httpPar.siz[i]);	}
 				DbgDmaQue(DBG,sendBuff,0);
 
 			}
