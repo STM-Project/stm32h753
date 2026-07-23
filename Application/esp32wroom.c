@@ -1272,39 +1272,22 @@ int CheckReadyToSendChnl(void){
 
 static void InitStructRqstToSendChnl(void){
 	httpPar.chnl = 0xFF;
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.siz[i]=0; }
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.siz[i]=0; httpPar.len[i]=0; }
 }
-
-//static void HTTP_SendCloseChnlInit(ARCHIVING_TYPE archType){
-//	int nrQue=CheckReadyToSendChnl();
-//	if(nrQue>-1)
-//	{
-//		if(httpPar.ptr[nrQue]==NULL)  SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl),NULL, archType);
-//		else{
-//			if(archType==noArch) DbgVarDma(1,5,"%d",httpPar.chnl);
-//			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl, CONDITION( httpPar.siz[nrQue]>ETH_PACKET_LEN, ETH_PACKET_LEN, httpPar.siz[nrQue]) ), NULL, archType);
-//			httpPar.nr[nrQue]++;
-//		}
-//}}
 
 static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
 	int nrQue=CheckReadyToSendChnl();
 	if(nrQue>-1){
-		if(httpPar.nr[nrQue] > httpPar.siz[nrQue]/ETH_PACKET_LEN  ||  httpPar.siz[nrQue]==httpPar.nr[nrQue]*ETH_PACKET_LEN){
+		if(httpPar.ptr[nrQue]==NULL || httpPar.nr[nrQue] > httpPar.siz[nrQue]/ETH_PACKET_LEN  ||  httpPar.siz[nrQue]==httpPar.nr[nrQue]*ETH_PACKET_LEN){
 			httpPar.nr[nrQue]=0;
 			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
 		}
 		else{
-			if(httpPar.ptr[nrQue]==NULL){
-				httpPar.nr[nrQue]=0;
-				SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);
-			}
-			else{
-				int packetSizeToSend = httpPar.siz[nrQue]-httpPar.nr[nrQue]*ETH_PACKET_LEN;			if(archType==noArch) DbgVarDma(1,5,"%d",httpPar.chnl);
-				if(packetSizeToSend <= ETH_PACKET_LEN){	 SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,packetSizeToSend),NULL,archType );	httpPar.len[nrQue]=packetSizeToSend; 	}
-				else{									 SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,ETH_PACKET_LEN),	 NULL,archType ); 	httpPar.len[nrQue]=ETH_PACKET_LEN;   	}
-				httpPar.nr[nrQue]++;
-			}
+			int packetSizeToSend = httpPar.siz[nrQue]-httpPar.nr[nrQue]*ETH_PACKET_LEN;			if(archType==noArch) DbgVarDma(1,5,"%d",httpPar.chnl);
+			if(packetSizeToSend <= ETH_PACKET_LEN){	 SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,packetSizeToSend),NULL,archType );	httpPar.len[nrQue]=packetSizeToSend; 	}
+			else{									 SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,ETH_PACKET_LEN),	 NULL,archType ); 	httpPar.len[nrQue]=ETH_PACKET_LEN;   	}
+			httpPar.nr[nrQue]++;
+
 }}}
 
 static int SearchChnl(u8 channel){
@@ -1809,7 +1792,7 @@ void vtaskWifi(void *argument)
 
 					if (RecvFromEsp("+IPD,")||RecvFromEsp(",CONNECT"))
 					{
-						//DispRecvBuff(++nrHTTPpacket,arch);		/* Show only GET Http */
+						/* DispRecvBuff(++nrHTTPpacket,arch); */		/* Show only GET Http */
 						if (RecvFromEsp("+IPD,"))
 						{
 							char answ[20]={0};
@@ -1841,7 +1824,7 @@ void vtaskWifi(void *argument)
 					if ((pHttp=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
 						int nr = SearchChnl(httpPar.chnl);
-						if(nr>=0){   LOOP_FOR(i,httpPar.len[nr]) sendBuff[i]=*(httpPar.ptr[nr]+i);    SendToEsp32(httpPar.len[nr],NULL,typeSendArch);    httpPar.ptr[nr]+=httpPar.len[nr];  }			/* strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32_http(2039,NULL,typeSendArch); */
+						if(nr>=0){   LOOP_FOR(i,httpPar.len[nr]) sendBuff[i]=*(httpPar.ptr[nr]+i);    SendToEsp32(httpPar.len[nr],NULL,/*arch*/typeSendArch);    httpPar.ptr[nr]+=httpPar.len[nr];  }			/* strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32_http(2039,NULL,typeSendArch); */
 
 					}
 					if ((pHttp=RecvFromEsp(",CLOSED\r\n")))
