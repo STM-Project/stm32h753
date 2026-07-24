@@ -1260,13 +1260,49 @@ static int SetRqstToSendChnl(int channel, char* ptr, int len){
 	return -2;
 }
 
-int CheckReadyToSendChnl(void){
-	if(httpPar.chnl==0xFF){		/* gdy nie ma w tle oczekiwania na SEND OK */
-		LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
-			if(httpPar.que[nrChnl]!=0xFF){
-				httpPar.chnl = httpPar.que[nrChnl];
-				return nrChnl;
-	}}}
+//int CheckReadyToSendChnl(void){
+//	if(httpPar.chnl==0xFF){		/* gdy nie ma w tle oczekiwania na SEND OK */
+//		LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
+//			if(httpPar.que[nrChnl]!=0xFF){
+//				httpPar.chnl = httpPar.que[nrChnl];
+//				return nrChnl;
+//	}}}
+//	return -1;
+//}
+
+int CheckReadyToSendChnl____(u8 chnlPrev){
+	if(httpPar.chnl==0xFF)		/* gdy nie ma w tle oczekiwania na SEND OK */
+	{
+		if(chnlPrev==-1)
+		{
+			LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
+				if(httpPar.que[nrChnl]!=0xFF){
+					httpPar.chnl = httpPar.que[nrChnl];
+					return nrChnl;
+			}}
+		}
+		else
+		{
+			int chnlNmbr=0; LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){	  if(httpPar.que[nrChnl]!=0xFF && httpPar.ptr[nrChnl]!=NULL) chnlNmbr++;   }
+			if(chnlNmbr>1)
+			{
+				LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
+					if(httpPar.que[nrChnl]!=0xFF && httpPar.ptr[nrChnl]!= NULL && httpPar.que[nrChnl]!=chnlPrev){
+						httpPar.chnl = httpPar.que[nrChnl];
+						return nrChnl;
+				}}
+			}
+			else
+			{
+				LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
+					if(httpPar.que[nrChnl]!=0xFF){
+						httpPar.chnl = httpPar.que[nrChnl];
+						return nrChnl;
+				}}
+			}
+		}
+
+	}
 	return -1;
 }
 
@@ -1275,8 +1311,8 @@ static void InitStructRqstToSendChnl(void){
 	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.siz[i]=0; httpPar.len[i]=0; }
 }
 
-static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType){
-	int nrQue=CheckReadyToSendChnl();
+static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl){
+	int nrQue=CheckReadyToSendChnl____(prevChnl);
 	if(nrQue>-1){
 		if(httpPar.ptr[nrQue]==NULL || httpPar.nr[nrQue] > httpPar.siz[nrQue]/ETH_PACKET_LEN  ||  httpPar.siz[nrQue]==httpPar.nr[nrQue]*ETH_PACKET_LEN){
 			httpPar.nr[nrQue]=0;
@@ -1818,7 +1854,7 @@ void vtaskWifi(void *argument)
 								}
 							}
 						}
-						HTTP_SendCloseChnl(typeSendArch);
+						HTTP_SendCloseChnl(typeSendArch,-1);
 
 					}
 					if ((pHttp=RecvFromEsp("\r\nOK\r\n\r\n>")))
@@ -1844,7 +1880,7 @@ void vtaskWifi(void *argument)
 								break;
 							}
 							httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
-							HTTP_SendCloseChnl(typeSendArch);
+							HTTP_SendCloseChnl(typeSendArch,-1);
 						}
 						else /* if(httpPar.chnl != chnlClose) */       /* jesli ten Case nastapil NIE po wysylce at+cipsend lub at+cipclose - ASYNCHRONICZNY */
 						{
@@ -1867,8 +1903,9 @@ void vtaskWifi(void *argument)
 					}
 					if ((pHttp=RecvFromEsp("\r\nSEND OK")))
 					{
+						int prevChnl=httpPar.chnl;
 						httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
-						HTTP_SendCloseChnl(typeSendArch);
+						HTTP_SendCloseChnl(typeSendArch,-1/*prevChnl*/);
 
 					}
 					UpdateReadPos();
@@ -2152,7 +2189,7 @@ void vtaskWifi(void *argument)
 			if(DEBUG_IsTxtReceive("a"))
 			{
 				int n=mini_snprintf(sendBuff,sizeof(sendBuff),"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
-				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 n+=mini_snprintf(sendBuff+n,sizeof(sendBuff)-n,"ptr:%d   que:%d 	nr:%d 	 siz:%d\r\n",httpPar.ptr[i], httpPar.que[i], httpPar.nr[i], httpPar.siz[i]);	}
+				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 n+=mini_snprintf(sendBuff+n,sizeof(sendBuff)-n,"que:%d 	nr:%d 	 ptr:%d   siz:%d   len:%d\r\n", -5,httpPar.que[i], -5,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.siz[i], -17,httpPar.len[i] );	}
 				DbgDmaQue(DBG,sendBuff,0);
 
 			}
