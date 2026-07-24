@@ -149,7 +149,7 @@ struct HTTP_SEND_TEMP{
 	u8 	  chnl;							/* actual channel wait for SEND OK or CLOSED */
 	char* ptr[ESP_MAX_HTTP_CONN];		/* ptr to html */
  	u8 	  que[ESP_MAX_HTTP_CONN];		/* buffer of requests to send channel */
- 	u16   nr[ESP_MAX_HTTP_CONN];		/* iterix of web HTML */
+ 	u16   nr[ESP_MAX_HTTP_CONN];		/* packet iterix of web HTML */
  	u16   siz[ESP_MAX_HTTP_CONN];		/* size html web */
  	u32   len[ESP_MAX_HTTP_CONN];		/* actual packet len to send */
 }httpPar;
@@ -1361,6 +1361,8 @@ static void HTTP_ShowInitChannel(int channel,int size, ARCHIVING_TYPE archType){
 	if(archType!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 }
 
+
+
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
@@ -1385,6 +1387,10 @@ void vtaskWifi(void *argument)
 	DefaultSettingsSNTP();
 
 	InitStructRqstToSendChnl();
+
+
+	int HttpWebLen=mini_strlen(HttpBuff); //Do USUNIECI i przerpnienia !!!!
+
 
 
 	ResetTestTab(); //Do USUNIECIA !!!
@@ -1822,27 +1828,27 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-					typeSendArch=arch;
-					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
+					typeSendArch=noArch;
+					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);
 					RstTimeBtwnSendRcv();
 
 					if (RecvFromEsp("+IPD,")||RecvFromEsp(",CONNECT"))
 					{
-						/* DispRecvBuff(++nrHTTPpacket,arch); */		/* Show only GET Http */
+						 DispRecvBuff(++nrHTTPpacket,arch);		/* Show only GET Http */
 						if (RecvFromEsp("+IPD,"))
 						{
 							char answ[20]={0};
 							pHttp = NULL;
 							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN)
 							{
-								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl);
+								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl);  //DAJ GET TME.TXT !!!!!!!!!!!!!!!!!!!!!!!!!!!! i innee i daj settings ten html wiekszy !!!!
 
 								if ((pHttp2=strstr_(pHttp,answ)))
 								{
 									if (strstr_(pHttp2,":GET / "))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,(char*)HttpBuff,sizeof((char*)HttpBuff));
+										SetRqstToSendChnl(channel,(char*)HttpBuff,HttpWebLen);
 										HTTP_ShowInitChannel(channel,size,typeSendArch);
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
@@ -1905,7 +1911,7 @@ void vtaskWifi(void *argument)
 					{
 						int prevChnl=httpPar.chnl;
 						httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
-						HTTP_SendCloseChnl(typeSendArch,-1/*prevChnl*/);
+						HTTP_SendCloseChnl(typeSendArch,prevChnl);
 
 					}
 					UpdateReadPos();
@@ -2188,9 +2194,8 @@ void vtaskWifi(void *argument)
 
 			if(DEBUG_IsTxtReceive("a"))
 			{
-				int n=mini_snprintf(sendBuff,sizeof(sendBuff),"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
-				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 n+=mini_snprintf(sendBuff+n,sizeof(sendBuff)-n,"que:%d 	nr:%d 	 ptr:%d   siz:%d   len:%d\r\n", -5,httpPar.que[i], -5,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.siz[i], -17,httpPar.len[i] );	}
-				DbgDmaQue(DBG,sendBuff,0);
+				DbgVarDma2(1,50,"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
+				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 DbgVarDma2(1,200,"que:%*d 	nr:%*d 	 ptr:%*d   siz:%*d   len:%*d\r\n", -3,httpPar.que[i], -3,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.siz[i], -17,httpPar.len[i] );	}
 
 			}
 			else if(DEBUG_IsTxtReceive("s"))
