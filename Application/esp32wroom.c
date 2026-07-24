@@ -1253,9 +1253,9 @@ static void GoToTest(char* txt){
 	DbgVarDma(DBG,50, _S_"%s"_E_,txt);
 }
 
-static int SetRqstToSendChnl(int channel, char* ptr){
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); 																	  return -1;  }  }
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=ptr;   if(ptr==NULL) httpPar.siz[i]=0; else httpPar.siz[i]=mini_strlen(HttpBuff);  return i;   }  }
+static int SetRqstToSendChnl(int channel, char* ptr, int len){
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); 															  return -1;  }  }
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=ptr;   if(ptr==NULL) httpPar.siz[i]=0; else httpPar.siz[i]=len;  return i;   }  }
 	DbgDma(DBG,_SE_"\r\nQue: FULL "_E_);
 	return -2;
 }
@@ -1806,13 +1806,13 @@ void vtaskWifi(void *argument)
 									if (strstr_(pHttp2,":GET / "))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,(char*)HttpBuff);
+										SetRqstToSendChnl(channel,(char*)HttpBuff,sizeof((char*)HttpBuff));
 										HTTP_ShowInitChannel(channel,size,typeSendArch);
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,NULL);
+										SetRqstToSendChnl(channel,NULL,0);
 										HTTP_ShowInitChannel(channel,size,typeSendArch);
 									}
 								}
