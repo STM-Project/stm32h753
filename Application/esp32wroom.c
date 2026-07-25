@@ -80,7 +80,7 @@ typedef enum
 
 typedef enum
 {
-	INIT_CONNECTION, HTTP_CONNECTION, SMTP_CONNECTION, TEST_CONNECTION
+	INIT_CONNECTION, HTTP_CONNECTION, HTTP_CONNECTION_2, SMTP_CONNECTION, TEST_CONNECTION
 } CONNECTION_TYPE;
 
 typedef enum
@@ -153,6 +153,11 @@ struct HTTP_SEND_TEMP{
  	u16   siz[ESP_MAX_HTTP_CONN];		/* size html web */
  	u32   len[ESP_MAX_HTTP_CONN];		/* actual packet len to send */
 }httpPar;
+
+struct HTML_PAGES{
+	char* ptr;
+	u32 size;
+}html[10];
 
 TimerHandle_t xWaitOnSendTimeoutTimer;
 
@@ -1306,6 +1311,13 @@ int CheckReadyToSendChnl____(u8 chnlPrev){
 	return -1;
 }
 
+static void InitHtmlParam(void){
+	html[0].ptr  = (char*)HttpBuff;
+	html[0].size = mini_strlen(HttpBuff);
+	html[1].ptr  = (char*)HttpRefr;
+	html[1].size = mini_strlen(HttpRefr);
+}
+
 static void InitStructRqstToSendChnl(void){
 	httpPar.chnl = 0xFF;
 	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.siz[i]=0; httpPar.len[i]=0; }
@@ -1387,11 +1399,7 @@ void vtaskWifi(void *argument)
 	DefaultSettingsSNTP();
 
 	InitStructRqstToSendChnl();
-
-
-	int HttpWebLen=mini_strlen(HttpBuff); //Do USUNIECI i przerpnienia !!!!
-
-
+	InitHtmlParam();
 
 	ResetTestTab(); //Do USUNIECIA !!!
 
@@ -1607,7 +1615,7 @@ void vtaskWifi(void *argument)
 					{
 						if(ErrorAnswerService()) break;
 						GetAddressesForConnection();
-						SendToEsp32(0,"AT+CIPSERVERMAXCONN=5\r\n",typeSendArch);  //ESP_MAX_HTTP_CONN !!!!
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVERMAXCONN=%d\r\n",ESP_MAX_HTTP_CONN), NULL, typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
 
 					}
@@ -1755,81 +1763,103 @@ void vtaskWifi(void *argument)
 					break;
 
 
+				case HTTP_CONNECTION_2:		/* Only for:  AT+CIPSERVERMAXCONN=1 */
+					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
+					RstTimeBtwnSendRcv();
 
-//				case HTTP_CONNECTION:
-//
-//					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
-//					RstTimeBtwnSendRcv();
-//
-//					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
-//					{
-//						INIT_BUFF(answer, "+IPD,"ESP_HTTP_CHANNEL);
-//						if ((pHttp=strstr_(pHttp,answer)))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
-//						{
-//							if ((pHttp2=strstr_(pHttp,":GET / ")))
-//							{
-//								GetHTTPpacketParam(pHttp,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
-//								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
-//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
-//							}
-//							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))				/* Każde nowe połączenie generuje 0,CONNECT tj. czeka na zakończenie jednego by 'weszlo' drugie, nie ma przychodzących rownocześnie połączeń */
-//							{
-//								GetHTTPpacketParam(pHttp,&channel,&size);
-//								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
-//								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
-//							}
-//							else UpdateReadPos();
-//						}
-//					}
-//					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
-//					{
-//					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
-//						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,typeSendArch /*noArch*/ );
-//					}
-//					else if (RecvFromEsp(",CLOSED\r\n"))
-//					{
-//						if (RecvFromEsp("\r\nOK\r\n"))
-//						{
-//							if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- CLOSED --- "_E_);
-//							UpdateReadPos();
-//						}
-//					}
-//					else if (RecvFromEsp("ERROR"))
-//					{
-//						if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
-//						UpdateReadPos();
-//					}
-//					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
-//					{
-//						if (strstr_(pHttp," bytes\r\n")){
-//							if (strstr_(pHttp,"\r\nSEND OK"))    //!!!!!!!!!!!!!!!!!!!!!!!!!!!TO tez do jednej funkcjia dac !!!!!!!!!!!!!!!!!
-//							{
-//								char temp[50]={0};  strcpy_(temp,pHttp,1,'\r');		/* strcpy2_(temp,pHttp,0,30); */
-//								int val = STRING_GetInt(temp,' ');					/* val = atoi_(pHttp,mini_strlen("\r\nRecv ")); */
-//								if(typeSendArch!=noArch){
-//									DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
-//									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
-//								}
-//
-//								if(nrPages > 100){  nrPages=0;
-//									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
-//								}
-//								else{  nrPages++; DbgDma(1,".");
-//									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
-//								}
-//							}
-//						}
-//					}
-//					else
-//					{
-//						UpdateReadPos();
-//					}
-//					break;
+					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
+					{
+						INIT_BUFF(answer, "+IPD,"ESP_HTTP_CHANNEL);
+						if ((pHttp=strstr_(pHttp,answer)))						/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
+						{
+							if ((pHttp2=strstr_(pHttp,":GET / ")))
+							{
+								GetHTTPpacketParam(pHttp,&channel,&size);					/* char temp[20]={0};  strcpy2_(temp,pHttp,0,pHttp2-pHttp);   temp="+IPD,0,698" */
+								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
+							}
+							else if ((pHttp2=strstr_(pHttp,":GET /favicon.ico")))				/* Każde nowe połączenie generuje 0,CONNECT tj. czeka na zakończenie jednego by 'weszlo' drugie, nie ma przychodzących rownocześnie połączeń */
+							{
+								GetHTTPpacketParam(pHttp,&channel,&size);
+								if(typeSendArch!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
+								SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch );
+							}
+							else UpdateReadPos();
+						}
+					}
+					else if (RecvFromEsp("\r\nOK\r\n\r\n>"))
+					{
+					/*	SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,HTML_TXT_CODE), NULL, typeSendArch ); */
+						strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32(2039,NULL,typeSendArch /*noArch*/ );
+					}
+					else if (RecvFromEsp(",CLOSED\r\n"))
+					{
+						if (RecvFromEsp("\r\nOK\r\n"))
+						{
+							if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- CLOSED --- "_E_);
+							UpdateReadPos();
+						}
+					}
+					else if (RecvFromEsp("ERROR"))
+					{
+						if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
+						UpdateReadPos();
+					}
+					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
+					{
+						if (strstr_(pHttp," bytes\r\n")){
+							if (strstr_(pHttp,"\r\nSEND OK"))
+							{
+								char temp[50]={0};  strcpy_(temp,pHttp,1,'\r');		/* strcpy2_(temp,pHttp,0,30); */
+								int val = STRING_GetInt(temp,' ');					/* val = atoi_(pHttp,mini_strlen("\r\nRecv ")); */
+								if(typeSendArch!=noArch){
+									DbgVarDma(DBG,200,_S_"\r\n%d received bytes by ESP32 "_E_,val);
+									DbgDma(DBG, _S_" --- SEND OK --- "_E_);
+								}
+
+								if(httpPar.nr[0] > 100){  httpPar.nr[0]=0;
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",channel), NULL, typeSendArch);		/* Czas wykonania SendToEsp32() to 28us */
+								}
+								else{  httpPar.nr[0]++; DbgDma(1,".");
+									SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff)-1,"AT+CIPSEND=%d,%d\r\n",channel,mini_strlen(HTML_TXT_CODE)), NULL, typeSendArch );
+								}
+							}
+						}
+					}
+					else
+					{
+						UpdateReadPos();
+					}
+					break;
 
 
-				case HTTP_CONNECTION:
+
+
+			//ROZWAZ TO !!!!!!!!
+//					RECV_STOP
+//					SEND_START: AT+CIPSTO=10
+//					SEND_STOP
+//
+//					RECV_INIT_019_START:
+//					OK
+//
+//					RECV_STOP
+//					SEND_START: AT+CIPDOMAIN="smtp.poczta.onet.pl"
+//					SEND_STOP
+//
+//					RECV_INIT_019_START:
+//					ERROR
+//
+//					RECV_STOP
+//					CMD_ERROR: AT+CIPDOMAIN="smtp.poczta.onet.pl"
+//
+//					SEND_START: AT+CIPDOMAIN="smtp.interia.pl"
+//					SEND_STOP
+
+
+				case HTTP_CONNECTION:	static u8 ttttt=0;
 					typeSendArch=noArch;
-					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);
+					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
 					RstTimeBtwnSendRcv();
 
 					if (RecvFromEsp("+IPD,")||RecvFromEsp(",CONNECT"))
@@ -1848,14 +1878,22 @@ void vtaskWifi(void *argument)
 									if (strstr_(pHttp2,":GET / "))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,(char*)HttpBuff,HttpWebLen);
-										HTTP_ShowInitChannel(channel,size,typeSendArch);
+										SetRqstToSendChnl(channel,html[0].ptr,html[0].size);
+										HTTP_ShowInitChannel(channel,size,arch);
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,NULL,0);
-										HTTP_ShowInitChannel(channel,size,typeSendArch);
+										HTTP_ShowInitChannel(channel,size,arch);
+									}
+									else if (strstr_(pHttp2,":GET /TME.txt"))
+									{
+										GetHTTPpacketParam(pHttp2,&channel,&size);
+										SetRqstToSendChnl(channel,html[1].ptr,html[1].size);
+										HTTP_ShowInitChannel(channel,size,arch);
+										ttttt++;
+										*html[1].ptr=(ttttt&0x0F)|0x30;
 									}
 								}
 							}
