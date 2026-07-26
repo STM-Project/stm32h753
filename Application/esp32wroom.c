@@ -149,8 +149,8 @@ struct HTTP_SEND_TEMP{
 	u8 	  chnl;							/* actual channel wait for SEND OK or CLOSED */
 	char* ptr[ESP_MAX_HTTP_CONN];		/* ptr to html */
  	u8 	  que[ESP_MAX_HTTP_CONN];		/* buffer of requests to send channel */
- 	u16   nr[ESP_MAX_HTTP_CONN];		/* packet iterix of web HTML */
- 	u16   siz[ESP_MAX_HTTP_CONN];		/* size html web */
+ 	u32   nr[ESP_MAX_HTTP_CONN];		/* packet iterix of web HTML */
+ 	u32   siz[ESP_MAX_HTTP_CONN];		/* size html web */
  	u32   len[ESP_MAX_HTTP_CONN];		/* actual packet len to send */
 }httpPar;
 
@@ -1312,10 +1312,9 @@ int CheckReadyToSendChnl____(u8 chnlPrev){
 }
 
 static void InitHtmlParam(void){
-	html[0].ptr  = (char*)HttpBuff;
-	html[0].size = mini_strlen(HttpBuff);
-	html[1].ptr  = (char*)HttpRefr;
-	html[1].size = mini_strlen(HttpRefr);
+	html[0].ptr  = (char*)HttpMainReadPanel;	html[0].size = mini_strlen(HttpMainReadPanel);
+	html[1].ptr  = (char*)HttpRefr;				html[1].size = mini_strlen(HttpRefr);
+	html[2].ptr  = (char*)HttpMainSettings;		html[2].size = mini_strlen(HttpMainSettings);
 }
 
 static void InitStructRqstToSendChnl(void){
@@ -1879,6 +1878,12 @@ void vtaskWifi(void *argument)
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,html[0].ptr,html[0].size);
+										HTTP_ShowInitChannel(channel,size,arch);
+									}
+									else if (strstr_(pHttp2,":GET /Set"))
+									{
+										GetHTTPpacketParam(pHttp2,&channel,&size);
+										SetRqstToSendChnl(channel,html[2].ptr,html[2].size);
 										HTTP_ShowInitChannel(channel,size,arch);
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
