@@ -145,13 +145,17 @@ const static char txt_ERR[] =TXT_ERR;
 extern UART_HandleTypeDef ESP_UART_HANDLE;
 extern DMA_HandleTypeDef ESP_UART_DMA_RX;
 
+#define MAX_HTML_WEBs	10
+
 struct HTTP_SEND_TEMP{
-	u8 	  chnl;							/* actual channel wait for SEND OK or CLOSED */
-	char* ptr[ESP_MAX_HTTP_CONN];		/* ptr to html */
- 	u8 	  que[ESP_MAX_HTTP_CONN];		/* buffer of requests to send channel */
- 	u32   nr[ESP_MAX_HTTP_CONN];		/* packet iterix of web HTML */
- 	u32   siz[ESP_MAX_HTTP_CONN];		/* size html web */
- 	u32   len[ESP_MAX_HTTP_CONN];		/* actual packet len to send */
+	char* web[ESP_MAX_HTTP_CONN][MAX_HTML_WEBs];	/* ptr`s to html`s */
+ 	u32   siz[ESP_MAX_HTTP_CONN][MAX_HTML_WEBs];	/* size html web`s */
+	u8	  nrWeb;									/* actual nr html_web to send at web[][] */
+	u8 	  chnl;										/* actual channel wait for SEND OK or CLOSED */
+	char* ptr[ESP_MAX_HTTP_CONN];					/* ptr to actual html_web */
+ 	u8 	  que[ESP_MAX_HTTP_CONN];					/* buffer of requests to send channel */
+ 	u32   nr[ESP_MAX_HTTP_CONN];					/* packet iterix of actual html_web */
+ 	u32   len[ESP_MAX_HTTP_CONN];					/* actual packet len to send */
 }httpPar;
 
 struct HTML_PAGES{
@@ -1258,24 +1262,61 @@ static void GoToTest(char* txt){
 	DbgVarDma(DBG,50, _S_"%s"_E_,txt);
 }
 
+static void AAAAAAAAAAAAAAAAA(int nrWWW)
+{
+	httpPar.nrWeb=0;	int nrPartWWW=0;
+	switch(nrWWW){
+	case 0:
+		httpPar.web[nrWWW][nrPartWWW] = (char*)HttpStyle;				httpPar.siz[nrWWW][nrPartWWW] = mini_strlen(HttpStyle);				nrPartWWW++;
+		httpPar.web[nrWWW][nrPartWWW] = (char*)HttpMainReadPanel;		httpPar.siz[nrWWW][nrPartWWW] = mini_strlen(HttpMainReadPanel);
+		break;
+	case 1:
+		break;
+	default:
+		break;
+	}
+	httpPar.web[nrWWW][nrPartWWW] = NULL;		httpPar.siz[nrWWW][nrPartWWW] = 0;
+
+
+
+
+	if(httpPar.web[0][ httpPar.nrWeb ]==NULL)
+	{
+
+	}
+
+//														html[0].ptr  = (char*)HttpMainReadPanel;	html[0].size = mini_strlen(HttpMainReadPanel);
+//														html[1].ptr  = (char*)HttpRefr;				html[1].size = mini_strlen(HttpRefr);
+//														html[2].ptr  = (char*)HttpMainSettings;		html[2].size = mini_strlen(HttpMainSettings);
+
+
+	//	struct HTTP_SEND_TEMP{
+	//		char* web[ESP_MAX_HTTP_CONN][MAX_HTML_WEBs];	/* ptr`s to html`s */
+	//	 	u32   siz[ESP_MAX_HTTP_CONN][MAX_HTML_WEBs];	/* size html web`s */
+	//		u8	  nrWeb;									/* actual nr html_web to send at web[][] */
+	//		u8 	  chnl;										/* actual channel wait for SEND OK or CLOSED */
+	//		char* ptr[ESP_MAX_HTTP_CONN];					/* ptr to actual html_web */
+	//	 	u8 	  que[ESP_MAX_HTTP_CONN];					/* buffer of requests to send channel */
+	//	 	u32   nr[ESP_MAX_HTTP_CONN];					/* packet iterix of actual html_web */
+	//	 	u32   len[ESP_MAX_HTTP_CONN];					/* actual packet len to send */
+	//	}httpPar;
+}
+
 static int SetRqstToSendChnl(int channel, char* ptr, int len){
 	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); 															  return -1;  }  }
 	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=ptr;   if(ptr==NULL) httpPar.siz[i]=0; else httpPar.siz[i]=len;  return i;   }  }
 	DbgDma(DBG,_SE_"\r\nQue: FULL "_E_);
 	return -2;
+
+
+
+
+
+
+
 }
 
-//int CheckReadyToSendChnl(void){
-//	if(httpPar.chnl==0xFF){		/* gdy nie ma w tle oczekiwania na SEND OK */
-//		LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
-//			if(httpPar.que[nrChnl]!=0xFF){
-//				httpPar.chnl = httpPar.que[nrChnl];
-//				return nrChnl;
-//	}}}
-//	return -1;
-//}
-
-int CheckReadyToSendChnl____(u8 chnlPrev){
+int CheckReadyToSendChnl(u8 chnlPrev){
 	if(httpPar.chnl==0xFF)		/* gdy nie ma w tle oczekiwania na SEND OK */
 	{
 		if(chnlPrev==-1)
@@ -1319,13 +1360,16 @@ static void InitHtmlParam(void){
 
 static void InitStructRqstToSendChnl(void){
 	httpPar.chnl = 0xFF;
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.siz[i]=0; httpPar.len[i]=0; }
+	httpPar.nrWeb = 0;
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
 }
 
+static int HTTP_IsAllDataSended(int nrChnl){  return (httpPar.web[nrChnl][httpPar.nrWeb]==NULL) && (httpPar.nr[nrChnl] > httpPar.siz[nrChnl][httpPar.nrWeb]/ETH_PACKET_LEN  ||  httpPar.siz[nrChnl][httpPar.nrWeb]==httpPar.nr[nrChnl]*ETH_PACKET_LEN);  }
+
 static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl){
-	int nrQue=CheckReadyToSendChnl____(prevChnl);
+	int nrQue=CheckReadyToSendChnl(prevChnl);
 	if(nrQue>-1){
-		if(httpPar.ptr[nrQue]==NULL || httpPar.nr[nrQue] > httpPar.siz[nrQue]/ETH_PACKET_LEN  ||  httpPar.siz[nrQue]==httpPar.nr[nrQue]*ETH_PACKET_LEN){
+		if(httpPar.ptr[nrQue]==NULL || HTTP_IsAllDataSended(nrQue)){
 			httpPar.nr[nrQue]=0;
 			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
 		}
@@ -1870,7 +1914,7 @@ void vtaskWifi(void *argument)
 							pHttp = NULL;
 							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN)
 							{
-								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl);  //DAJ GET TME.TXT !!!!!!!!!!!!!!!!!!!!!!!!!!!! i innee i daj settings ten html wiekszy !!!!
+								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl);
 
 								if ((pHttp2=strstr_(pHttp,answ)))
 								{
@@ -1879,6 +1923,10 @@ void vtaskWifi(void *argument)
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,html[0].ptr,html[0].size);
 										HTTP_ShowInitChannel(channel,size,arch);
+
+
+
+
 									}
 									else if (strstr_(pHttp2,":GET /Set"))
 									{
