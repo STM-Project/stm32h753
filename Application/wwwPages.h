@@ -15,6 +15,7 @@
 #define HTTP_BUFFER_SIZE_PRE 	262144
 
 extern char HttpRefr[];
+extern const char HttpStyle[];
 extern const char HttpMainReadPanel[];
 extern const char HttpMainReadPanel2[];
 extern const char HttpMainSettings[];
