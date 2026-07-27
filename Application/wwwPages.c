@@ -32,6 +32,374 @@ extern char buff[];
 /* W NotePad nalezy zamienic '\r\n' -> '\\r\\n\\\r\n' */
 char HttpRefr[]="22:59:08 &nbsp;26/07/25120000000000000 111111111111111111 55555555555555  25.10 65%0  78.30 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0       6.0       5.7      ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0 V     V              0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0";
 
+const char HttpStyle[]="<!DOCTYPE html PUBLIC \"-//WAPFORUM//DTD XHTML Mobile 1.2//EN\"\"http://www.openmobilealliance.org/tech/DTD/xhtml-mobile12.dtd\">\r\n\
+<html>\r\n\
+<head>\r\n\
+<meta name=\"handheldFriendly\" content=\"true\" />\r\n\
+<link rel=\"shortcut icon\" href=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABGdBTUEAALGPC/xhBQAAACRJREFUOE9jZGj4z0AaAGogCZGmGuQckowf1UBkcI0GKxEBBQA55GigBl4jdAAAAABJRU5ErkJggg==\">\r\n\
+   <style>.c{border-width: 0px;text-decoration: none;color: #222222;font-size: 19px;background-color: #468ccf;border-radius: 10px;padding: 5px 13px 5px 13px;display:inline-block;}</style>\r\n\
+  <style>.v{border:0px solid #c4c4c4;height:60px;width:74px;font-size:25px;color:#ffffff;background-color:#505050;}</style>\r\n\
+  <style>.m{border-width: 0px;text-decoration: none;color: #202020;font-size: 20px;background-color: #e0e0e0;border-radius: 10px;padding: 5px 13px 5px 13px;}</style>\r\n\
+  <style>.n{border-width: 0px;text-decoration: none;color: #202020;font-size: 18px;background-color: #e0e0e0;border-radius: 10px;padding: 5px 13px 5px 13px;}</style>\r\n\
+  <style>.x{border-radius: 30px;float:left;width: 320px;height: 120px;padding: 1px;border: solid 4px #808080;background-color: #505050;text-align: center;overflow: auto;font-size: 40px;}</style>\r\n\
+ <style>.y{border-radius: 0px;float:left;width: 350px;height: 150px;text-align: center;overflow: auto;}</style>\r\n\
+ <style>.b{font-size: 21px;color: #9edf0f;display:inline-block;}</style>\r\n\
+ <style>.a{font-size: 50px;color: #efefef;display:inline-block;}</style>\r\n\
+ <style>.z{font-size: 30px;color: #efefef;display:inline-block;}</style>\r\n\
+<style>\r\n\
+  .textbox {\r\n\
+    border: 1px solid #c4c4c4;\r\n\
+    height: 20px;\r\n\
+    width: 270px;\r\n\
+    font-size: 17px;\r\n\
+    padding: 4px 4px 4px 4px;\r\n\
+	background-color: #BBBBBB;\r\n\
+    background: -moz-linear-gradient(top, #FFF, #BBBBBB);\r\n\
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0.0, #FFF), color-stop(1.0, #BBBBBB));\r\n\
+\r\n\
+    border-radius: 4px;\r\n\
+    -moz-border-radius: 4px;\r\n\
+    -webkit-border-radius: 4px;\r\n\
+    box-shadow: 0px 0px 2px #d9d9d9;\r\n\
+    -moz-box-shadow: 0px 0px 2px #d9d9d9;\r\n\
+    -webkit-box-shadow: 0px 0px 2px #d9d9d9;\r\n\
+	//font-family: Comic Sans MS;\r\n\
+    font-size: 18px;\r\n\
+}\r\n\
+\r\n\
+.textbox:focus {\r\n\
+    outline: none;\r\n\
+    border: 3px solid #7bc1f7;\r\n\
+    box-shadow: 0px 0px 12px #7bc1f7;\r\n\
+    -moz-box-shadow: 0px 0px 12px #7bc1f7;\r\n\
+    -webkit-box-shadow: 0px 0px 12px #7bc1f7;\r\n\
+}\r\n\
+ </style>\r\n\
+<style>\r\n\
+  .textboxB {\r\n\
+    border: 1px solid #c4c4c4;\r\n\
+    color: #fff;\r\n\
+    height: 20px;\r\n\
+    font-size: 17px;\r\n\
+    padding: 4px 4px 4px 4px;\r\n\
+    border-radius: 4px;\r\n\
+    font-size: 18px;\r\n\
+}\r\n\
+ </style>\r\n\
+\r\n\
+ <style>\r\n\
+\r\n\
+.shiny-button {\r\n\
+  display: inline-block;\r\n\
+  text-align: center;\r\n\
+  border-width: 1px;\r\n\
+  border-style: solid;\r\n\
+  text-transform: uppercase;\r\n\
+  text-decoration: none;\r\n\
+  line-height: 1.1;\r\n\
+  font-weight: normal;\r\n\
+  font-family: sans-serif;\r\n\
+  color: #FFFFFF;\r\n\
+  font-size: 20px;\r\n\
+  background-color: #73B10E;\r\n\
+  border-color: #73B10E;\r\n\
+  -webkit-border-radius: 2px;\r\n\
+  -moz-border-radius: 2px;\r\n\
+  border-radius: 6px;\r\n\
+  padding: 3px 7px 3px 7px;\r\n\
+}\r\n\
+</style>\r\n\
+\r\n\
+\r\n\
+<style>\r\n\
+.css_button {\r\n\
+    font-size: 23px;\r\n\
+    font-family:Arial;\r\n\
+    font-weight:normal;\r\n\
+    -moz-border-radius: 26px;\r\n\
+    -webkit-border-radius: 26px;\r\n\
+    border-radius: 16px;\r\n\
+    border: 1px solid #3866A3;\r\n\
+    padding: 9px 25px;\r\n\
+    text-shadow:1px 1px 0px #5E5E5E;\r\n\
+    -moz-box-shadow:inset 1px 1px 0px 0px #BEE2F9;\r\n\
+    -webkit-box-shadow:inset 1px 1px 0px 0px #BEE2F9;\r\n\
+    box-shadow:inset 1px 1px 0px 0px #BEE2F9;\r\n\
+    font-weight:normal;\r\n\
+    text-decoration:none;\r\n\
+    cursor: pointer;\r\n\
+    background:-webkit-linear-gradient(90deg, #468ccf, #63b8ee);\r\n\
+    background:-moz-linear-gradient(90deg, #468ccf, #63b8ee);\r\n\
+    background:-ms-linear-gradient(90deg, #468ccf, #63b8ee);\r\n\
+    background:linear-gradient(180deg, #63b8ee, #468ccf);\r\n\
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#63b8ee', endColorstr='#468ccf');\r\n\
+    color:#FFFFFF;\r\n\
+    display:inline-block;\r\n\
+}\r\n\
+</style>\r\n\
+\r\n\
+\r\n\
+<style>\r\n\
+.css-font-style{\r\n\
+   font-size: 20px;\r\n\
+   padding: 10px;\r\n\
+   color: #ff0000;\r\n\
+   border: solid 0px #000;\r\n\
+   font-family: Arial, \"Helvetica Neue\", Helvetica, sans-serif;\r\n\
+}\r\n\
+</style>\r\n\
+\r\n\
+<style>\r\n\
+.css-font-style2{\r\n\
+   font-size: 20px;\r\n\
+   padding: 10px;\r\n\
+   color: #9edf0f;\r\n\
+   border: solid 0px #000;\r\n\
+   font-family: Arial, \"Helvetica Neue\", Helvetica, sans-serif;\r\n\
+}\r\n\
+</style>\r\n\
+<style>\r\n\
+.css_list{\r\n\
+   font-size: 20px;\r\n\
+   padding: 4px;\r\n\
+   color: #9edf0f;\r\n\
+   border: solid 0px #000;\r\n\
+   font-family: Arial, \"Helvetica Neue\", Helvetica, sans-serif;\r\n\
+}\r\n\
+</style>\r\n\
+\r\n\
+\r\n\
+\r\n\
+\r\n\
+<style>\r\n\
+.corner-radius{\r\n\
+    border-radius: 30px;\r\n\
+    float:left;\r\n\
+    width: 290px;\r\n\
+    height: 450px;\r\n\
+    padding: 1px;\r\n\
+    border: solid 4px #808080;\r\n\
+    background-color: #505050;\r\n\
+    text-align: center;\r\n\
+    overflow: auto;\r\n\
+    font-family: Arial,Helvetica,sans-serif;\r\n\
+    font-size: 40px;\r\n\
+}\r\n\
+</style>\r\n\
+<style>\r\n\
+.corner-radius3{\r\n\
+    border-radius: 30px;\r\n\
+    float:left;\r\n\
+    width: 290px;\r\n\
+    height: 540px;\r\n\
+    padding: 1px;\r\n\
+    border: solid 4px #808080;\r\n\
+    background-color: #505050;\r\n\
+    text-align: center;\r\n\
+    overflow: auto;\r\n\
+    font-family: Arial,Helvetica,sans-serif;\r\n\
+    font-size: 40px;\r\n\
+}\r\n\
+</style>\r\n\
+\r\n\
+\r\n\
+\r\n\
+<style>\r\n\
+.txt_shadow{\r\n\
+   text-shadow: 1px 1px 1px #BFBFBF;\r\n\
+   font-size: 37px;\r\n\
+   color: #ED7300;\r\n\
+   font-family: Arial Black, Gadget, sans-serif;\r\n\
+}\r\n\
+</style>\r\n\
+<style>\r\n\
+.corner-radius2{\r\n\
+    border-radius: 0px;\r\n\
+    float:left;\r\n\
+    width: 320px;\r\n\
+    height: 480px;\r\n\
+    text-align: center;\r\n\
+    overflow: auto;\r\n\
+}\r\n\
+</style>\r\n\
+<style>\r\n\
+.corner-radius4{\r\n\
+    border-radius: 0px;\r\n\
+    float:left;\r\n\
+    width: 320px;\r\n\
+    height: 570px;\r\n\
+    text-align: center;\r\n\
+    overflow: auto;\r\n\
+}\r\n\
+</style>\r\n\
+<style>\r\n\
+#holder {\r\n\
+    width: 100%;\r\n\
+}\r\n\
+\r\n\
+#holder > div {\r\n\
+    clear: both;\r\n\
+    padding: 2%;\r\n\
+    margin-bottom: 20px;\r\n\
+    border-bottom: 1px solid #eee;\r\n\
+    float: left;\r\n\
+    width: 96%;\r\n\
+}\r\n\
+\r\n\
+label {\r\n\
+    display: inline;\r\n\
+}\r\n\
+\r\n\
+.regular-checkbox {\r\n\
+    display: none;\r\n\
+}\r\n\
+\r\n\
+.regular-checkbox + label {\r\n\
+    background-color: #fafafa;\r\n\
+    border: 1px solid #cacece;\r\n\
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0px -15px 10px -12px rgba(0, 0, 0, 0.05);\r\n\
+    padding: 9px;\r\n\
+    border-radius: 3px;\r\n\
+    display: inline-block;\r\n\
+    position: relative;\r\n\
+}\r\n\
+.regular-checkbox:checked + label:after {\r\n\
+ content: \"\";\r\n\
+ position: absolute;\r\n\
+ top: 4px;\r\n\
+ left: 4px;\r\n\
+ height: 50%;\r\n\
+ width: 50%;\r\n\
+ background-color: #090;\r\n\
+}\r\n\
+</style>\r\n\
+<style>\r\n\
+­iv { margin: 20px; }\r\n\
+#mainselection select {\r\n\
+   border: 0;\r\n\
+   color: #EEE;\r\n\
+   background: #505050;\r\n\
+   font-size: 20px;\r\n\
+   padding: 2px 5px;\r\n\
+   /*background: #58B14C;\r\n\
+}\r\n\
+</style>\r\n\
+<script>\r\n\
+	function enableChart()\r\n\
+	{\r\n\
+		if( document.getElementById('n_s_Lan_param_001').value == \"nie\")document.getElementById('n_s_Lan_ip_001').disabled=false;\r\n\
+		else document.getElementById('n_s_Lan_ip_001').disabled = true;\r\n\
+\r\n\
+		if( document.getElementById('n_s_Lan_param_001').value == \"nie\")document.getElementById('n_s_Lan_mask_001').disabled=false;\r\n\
+		else document.getElementById('n_s_Lan_mask_001').disabled = true;\r\n\
+		\r\n\
+		if( document.getElementById('n_s_Lan_param_001').value == \"nie\")document.getElementById('n_s_Lan_br_001').disabled=false;\r\n\
+		else document.getElementById('n_s_Lan_br_001').disabled = true;\r\n\
+	}\r\n\
+</script>\r\n\
+<script>\r\n\
+\r\n\
+ function maskujKlawisze(AEvent, AMaska)\r\n\
+{\r\n\
+ if (window.Event) {\r\n\
+  kodKlawisza = AEvent.which;\r\n\
+ }\r\n\
+\r\n\
+ else {\r\n\
+   kodKlawisza = AEvent.keyCode;\r\n\
+ }\r\n\
+ if (kodKlawisza == 13) {\r\n\
+  return true;  // Enter\r\n\
+ };\r\n\
+ if (kodKlawisza == 0) {\r\n\
+  return true;  // klawisze sterujące\r\n\
+ };\r\n\
+ if (kodKlawisza == 8) {\r\n\
+  return true;  // backspace\r\n\
+ };\r\n\
+ klawisz = String.fromCharCode(kodKlawisza);\r\n\
+ if (AMaska.indexOf(klawisz) == -1) {\r\n\
+  return false;\r\n\
+ } else {\r\n\
+   return true;\r\n\
+ }\r\n\
+}\r\n\
+ function dop_zakr_min_sek(element){\r\n\
+   if(element.value>59){ alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value='00'; }\r\n\
+}\r\n\
+\r\n\
+</script>\r\n\
+ <style> \r\n\
+.menu {\r\n\
+    border: none;\r\n\
+    border: 0px;\r\n\
+    margin: 0px;\r\n\
+    padding: 0px;\r\n\
+    font-family: verdana,geneva,arial,helvetica,sans-serif;\r\n\
+    font-size: 18px;\r\n\
+    font-weight: bold;\r\n\
+    color: 8e8e8e;\r\n\
+}\r\n\
+.menu li {\r\n\
+    float: left;\r\n\
+    padding: 0px 0px 0px 0px;\r\n\
+}\r\n\
+.menu li a {\r\n\
+    color: #666666;\r\n\
+    display: block;\r\n\
+    font-weight: bold;\r\n\
+    line-height: 43px;\r\n\
+    padding: 0px 15px;\r\n\
+    text-align: center;\r\n\
+    text-decoration: none;\r\n\
+}\r\n\
+.menu li a:hover {\r\n\
+    color: #000000;\r\n\
+    text-decoration: none;\r\n\
+}\r\n\
+.menu li ul {\r\n\
+    background: #e0e0e0;\r\n\
+    border-left: 2px solid #a80329;\r\n\
+    border-right: 2px solid #a80329;\r\n\
+    border-bottom: 2px solid #a80329;\r\n\
+    display: none;\r\n\
+    height: auto;\r\n\
+    filter: alpha(opacity=95);\r\n\
+    opacity: 0.95;\r\n\
+    position: absolute;\r\n\
+    width: 225px;\r\n\
+    z-index: 100;\r\n\
+    \r\n\
+}\r\n\
+.menu li:hover ul {\r\n\
+    display: block;\r\n\
+}\r\n\
+.menu li li {\r\n\
+   // display: block;\r\n\
+    float: none;\r\n\
+    padding: 0px;\r\n\
+    width: 225px;\r\n\
+}\r\n\
+.menu li ul a {\r\n\
+    display: block;\r\n\
+    font-size: 16px;\r\n\
+    font-style: normal;\r\n\
+    padding: 0px 10px 0px 15px;\r\n\
+    text-align: left;\r\n\
+}\r\n\
+.menu li ul a:hover {\r\n\
+    background: #949494;\r\n\
+    color: #000000;\r\n\
+    opacity: 1.0;\r\n\
+    filter: alpha(opacity=100);\r\n\
+}\r\n\
+.menu #current {\r\n\
+    background: url(data:image/gif;base64,R0lGODlhAQArAJEAALk1VHsMJqgDKQAAACH5BAAAAAAALAAAAAABACsAAAIHFISpy+0aCgA7) top left repeat-x;\r\n\
+    color: #ffffff;\r\n\
+}\r\n\
+</style>\r\n\
+</head>";
+
 const char HttpMainReadPanel[]="<!DOCTYPE html PUBLIC \"-//WAPFORUM//DTD XHTML Mobile 1.2//EN\"\"http://www.openmobilealliance.org/tech/DTD/xhtml-mobile12.dtd\">\r\n\
 <html>\r\n\
 <head>\r\n\
