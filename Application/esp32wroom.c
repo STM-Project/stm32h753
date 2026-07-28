@@ -22,11 +22,10 @@
 #include "_smtp.h"
 #include "variables.h"
 #include "float.h"
-//#include "def.h"
 #include "sntp_dns.h"
 #include "timer.h"
 #include "usart.h"
-
+#include <time.h>
 #include "tim.h"
 
 #define PAUSE_BETWEEN_SEND_RECV_MS		3000
@@ -145,7 +144,7 @@ const static char txt_ERR[] =TXT_ERR;
 extern UART_HandleTypeDef ESP_UART_HANDLE;
 extern DMA_HandleTypeDef ESP_UART_DMA_RX;
 
-#define MAX_HTML_WEBs	10
+#define MAX_HTML_WEBs		10
 
 struct HTTP_SEND_TEMP{
 	char* web[ESP_MAX_HTTP_CONN][MAX_HTML_WEBs];	/* ptr`s to html_web`s */
@@ -158,18 +157,12 @@ struct HTTP_SEND_TEMP{
  	u32   len[ESP_MAX_HTTP_CONN];					/* actual packet len to send */
 }httpPar;
 
-struct HTML_PAGES{
-	char* ptr;
-	u32 size;
-}html[10];
-
 TimerHandle_t xWaitOnSendTimeoutTimer;
 
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
 static xTaskHandle vtaskWifiHandle=NULL;
-static int resetDMA=0;
 
 RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];			/* ESP_RECV_BUFF_SIZE musi byc wielokrotnoscia 32 jesli uzylem _ALIGN32 */
 RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];
@@ -438,15 +431,6 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	return flag;
 }
 
-static int WaitForRcvEsp(const char* recv1, const char* recv2)
-{
-	SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);
-	 	 if( NULL!=RecvFromEsp(recv1) && NULL==RecvFromEsp(recv2) ) return 1;
-	else if( NULL==RecvFromEsp(recv1) && NULL!=RecvFromEsp(recv2) ) return 2;
-	else if( NULL!=RecvFromEsp(recv1) && NULL!=RecvFromEsp(recv2) ) return 3;
-	else 															return 0;		/* if( NULL==RecvFromEsp(recv1) && NULL==RecvFromEsp(recv2) ) */
-}
-
 static char* COMMAND_Service(GET_SET type, char* comm)
 {
 	static char commBuff[200]={0};
@@ -510,25 +494,6 @@ void DefaultSettingsWIFI(void)
 	VAR_SetTabVal(Const_wifiGeneral_mode,NO_TAB,WIFI_MODE_AP_STA);
 }
 
-static int GetAnswerDelay(void)
-{
-	switch (connectionType)
-	{
-	case SMTP_CONNECTION:
-		switch (EmailSendParam.start)
-		{
-		case 3:
-			return SMTP_CONNECTION_DELAY_MS;
-		case 4:
-		default:
-			return SMTP_ANSWER_DELAY_MS;
-		}
-	case HTTP_CONNECTION:
-	default:
-		return HTTP_ANSWER_DELAY_MS;
-	}
-}
-
 static void StartDMA(void)																	/* Jesli w tym momencie przyjdzie jakis komunikat asynchroniczny z ESP32 to NIGDY go nie odczytam bo wyczyszcze go. Rozwiazaniem jest Circle DMA */
 {
 	memset(RecvBuffer, 0, ESP_RECV_BUFF_SIZE);												/* memset() takes 18us */
@@ -540,12 +505,6 @@ static void StartDMA(void)																	/* Jesli w tym momencie przyjdzie jak
 	    asm("BKPT 0");
 	}
 	UART_ClearFlags2(&ESP_UART_HANDLE);
-}
-
-static void RestartDMA(void)
-{
-	HAL_UART_DMAStop(&ESP_UART_HANDLE);
-	StartDMA();
 }
 
 static void ChangeUartBuadRate(int baudRate)
@@ -564,303 +523,6 @@ static void ChangeUartBuadRate(int baudRate)
 	StartDMA();
 }
 
-static void DisplayRequestGET(char *pBuf, int bytesDisp)
-{
-	int offs=10;
-	if(bytesDisp+offs<sizeof(sendBuff))
-	{
-		StrBuffCopylimit(sendBuff, pBuf-offs, bytesDisp+offs);
-		Dbg(DBG, "\r\n");
-		Dbg(DBG, sendBuff);
-	}
-}
-
-void vTestATcommand(void)  //+DST do czasu    //AT+SYSTEMP?
-{
-	SendToEsp("AT+SYSTIMESTAMP?\r\n");  //rozlaczyc riuter i sprawdzic   //AT+MDNS=1,"espressif","_iot",8080
-	while (RecvFromEsp("\r\nOK")==0)
-		vTaskDelay(1);
-	Dbg(DBG, RecvBuffer);
-}
-
-void ESP_Send(char *txtAT){ SendToEsp(txtAT);  }
-void ESP_Recv(void)		  { Dbg(1,RecvBuffer); }
-
-void vDNSdomain(void)
-{
-	SendToEsp("AT+CIPDOMAIN=\"smtp.poczta.onet.pl\"\r\n");
-	while (RecvFromEsp("\r\nOK")==0)
-		vTaskDelay(1);
-	Dbg(DBG, RecvBuffer);
-}
-
-void vRestoreESP(void)
-{
-	SendToEsp("AT+RESTORE\r\n");
-	while (RecvFromEsp("\r\nOK")==0)
-		vTaskDelay(1);
-	Dbg(DBG, RecvBuffer);
-}
-
-static void GetSizeAndChannel(char *pBuf, int *channel, int *size)
-{
-	int i=1, j;
-	*channel=0;
-	*size=0;
-	while ((*(pBuf-i)>0x2F)&&(*(pBuf-i)<0x3A))
-	{
-		switch (i)
-		{
-		case 2:
-			j=10;
-			break;
-		case 3:
-			j=100;
-			break;
-		case 4:
-			j=1000;
-			break;
-		default:
-			j=1;
-			break;
-		}
-		*size+=((*(pBuf-i))&0x0F)*j;
-		i++;
-	}
-	i++;
-	*channel=((*(pBuf-i))&0x0F);
-}
-
-static int GetDMACountByte(void)
-{
-	return ESP_RECV_BUFF_SIZE-__HAL_DMA_GET_COUNTER(&ESP_UART_DMA_RX);
-}
-
-static int vSendDataPacket(char *pData, int packetLen, int channel)
-{
-	char tempBuff[32] __attribute__((aligned (32)));
-	int itx, commandLen;
-
-	Dbg(DBG, ".");
-	commandLen=mini_snprintf(tempBuff, sizeof(tempBuff), "AT+CIPSEND=%d,%d\r\n", channel, packetLen);
-	if (HAL_OK!=SendToEsp2(tempBuff, commandLen))
-		return 1;
-
-	itx=0;
-	while (RecvFromEsp("\r\n>")==0)
-	{
-		if (RecvFromEsp(",CLOSED"))
-			return 5;
-		if (RecvFromEsp("ERROR"))
-			return 6;
-
-		itx++;
-		if (itx>GetAnswerDelay())
-			return 2;
-		vTaskDelay(1);
-	}
-
-	if (HAL_OK!=SendToEsp2(pData, packetLen))
-		return 3;
-
-	itx=0;
-	while (RecvFromEsp("\r\nSEND OK")==0)
-	{
-		if (RecvFromEsp(",CLOSED"))
-			return 7;
-		if (RecvFromEsp("ERROR"))
-			return 8;
-
-		itx++;
-		if (itx>GetAnswerDelay())
-			return 4;
-		vTaskDelay(1);
-	}
-	return 0;
-}
-
-static int vCloseConnection(int channel)
-{
-	int itx=0, commandLen;
-
-	commandLen=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPCLOSE=%d\r\n", channel);
-	if (HAL_OK!=SendToEsp2(sendBuff, commandLen))
-		return 1;
-	while (RecvFromEsp("CLOSED")==0)
-	{
-		itx++;
-		if (itx>GetAnswerDelay())
-			return 2;
-		vTaskDelay(1);
-	}
-	return 0;
-}
-
-static int vSendData(char *pData, int len, int channel)
-{
-	int i, partial=0, result;
-
-	while (partial<=len-PACKET_SEND_LEN)
-	{
-		if(TakeMutex(Semphr_sdram, 1000))
-		{
-			for (i=0; i<PACKET_SEND_LEN; i++)
-				sendBuff[i]=*(pData+i+partial);
-			GiveMutex(Semphr_sdram);
-
-			result=vSendDataPacket(sendBuff, PACKET_SEND_LEN, channel);
-			if (result>0)
-				return result;
-			partial+=PACKET_SEND_LEN;
-		}
-	}
-	if (len-partial>0)
-	{
-		if(TakeMutex(Semphr_sdram, 1000))
-		{
-			for (i=0; i<len-partial; i++)
-				sendBuff[i]=*(pData+i+partial);
-			GiveMutex(Semphr_sdram);
-
-			result=vSendDataPacket(sendBuff, len-partial, channel);
-			if (result>0)
-				return result;
-		}
-
-	}
-	return 0;
-}
-
-static int vSendDataHTTP(char *getHttpRequest, int channel)
-{
-	int result;
-	DATA_TO_SEND *temp=GetPageWWW(getHttpRequest);
-	result=vSendData(temp->pData, temp->len, channel);
-	vPortFree(temp);
-	return result;
-}
-
-static int vSendDataSMTP(int id)
-{
-	int result;
-	DATA_TO_SEND *temp=GetDataEmail(id);
-	if ((result=vSendData(temp->pData, temp->len, /*ESP_EMAIL_CHANNEL*/4)))
-	{
-		SetEmailState(SMTP_FAIL);
-		SetEmailCode(result);
-	}
-	vPortFree(temp);
-	return result;
-}
-
-static int vSendCommandSMTP(char *pCommand, int commandLen)
-{
-	int result;
-	if ((result=vSendDataPacket(pCommand, commandLen, /*ESP_EMAIL_CHANNEL*/4)))
-	{
-		SetEmailState(SMTP_FAIL);
-		SetEmailCode(100+result);
-	}
-	return result;
-}
-
-static int GetRecvCodeEmail(char *pBuf)  // dac jako strcat !!!!!
-{
-	int i=1, j, code=0;
-	char *ptr=pBuf;
-
-	ptr++;
-	while ((*ptr>0x2F)&&(*ptr<0x3A))
-		ptr++;
-	while ((*(ptr-i)>0x2F)&&(*(ptr-i)<0x3A))
-	{
-		switch (i)
-		{
-		case 2:
-			j=10;
-			break;
-		case 3:
-			j=100;
-			break;
-		case 4:
-			j=1000;
-			break;
-		default:
-			j=1;
-			break;
-		}
-		code+=((*(ptr-i))&0x0F)*j;
-		i++;
-	}
-	return code;
-}
-
-static char *vWaitForRecv(int timeoutWait)
-{
-	int itx=0;
-	char *ptr,*ptrP;
-
-	while ((ptr=RecvFromEsp("+IPD,"))==0)
-	{
-		itx++;
-		if (itx>timeoutWait)
-			return ptr;
-		vTaskDelay(1);
-	}
-	while ((ptrP=strstr(ptr,":"))==0)
-	{
-		itx++;
-		if (itx>timeoutWait)
-			return ptrP;
-		vTaskDelay(1);
-	}
-	ptr=ptrP;
-	return ptr;
-}
-
-static int vGetEmailRecvCode(int *channel)
-{
-	char *pRecvBuff;
-	int size, codeE, itx=0;
-
-	do
-	{
-		if ((pRecvBuff=vWaitForRecv(GetAnswerDelay()))==0)
-		{
-			Dbg(DBG, "\r\nNOTHING RECV ");
-			return 0;
-		}
-		GetSizeAndChannel(pRecvBuff, channel, &size);
-		if (itx>0)
-		{
-			Dbg(DBG, " Repeat email parser ");
-			if (itx>5)
-				return 20;
-		}
-		itx++;
-
-	} while (*channel!=/*ESP_EMAIL_CHANNEL*/4);
-
-	while (GetDMACountByte()<size)
-		vTaskDelay(1);
-	vTaskDelay(1);
-	codeE=GetRecvCodeEmail(pRecvBuff);
-	Dbg(DBG, "\r\n");
-	Dbg(DBG, pRecvBuff);
-	return codeE;
-}
-
-static void SendDummyData(int delayMs)
-{
-	vTaskDelay(delayMs);
-	SendToEsp2(sendBuff, PACKET_SEND_LEN);
-	vTaskDelay(delayMs);
-	SendToEsp2(sendBuff, PACKET_SEND_LEN);
-	vTaskDelay(delayMs);
-	SendToEsp2(sendBuff, PACKET_SEND_LEN);
-	Dbg(DBG, "\r\nSEND DUMMY DATA ");
-}
-
 static int GetHttpPort(void)
 {
 	switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
@@ -869,169 +531,6 @@ static int GetHttpPort(void)
 		return VAR_GetTabVal(Const_wifiAP_port,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB));
 	default:
 		return VAR_GetTabVal(Const_wifiSTA_port,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB));
-	}
-}
-
-static int vStartServer(void)
-{
-	int len,itx=0;
-
-	len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSERVER=1,%d\r\n", GetHttpPort());
-	SendToEsp2(sendBuff,len);
-	while (RecvFromEsp("\r\nOK")==0)
-	{
-		itx++;
-		if (itx>GetAnswerDelay())
-			return 1;
-		vTaskDelay(1);
-	}
-	return 0;
-}
-
-static int vStopServer(void)
-{
-	int len,itx=0;
-
-	len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSERVER=0\r\n");
-	SendToEsp2(sendBuff,len);
-	while (RecvFromEsp("\r\nOK")==0)
-	{
-		itx++;
-		if (itx>GetAnswerDelay())
-			return 1;
-		vTaskDelay(1);
-	}
-	return 0;
-}
-
-void vRestartWifiServer(void)
-{
-	vStopServer();
-	vTaskDelay(30);
-	vStartServer();
-}
-
-static bool vCheckEmailAnswer(int emailCode)
-{
-	int channel, code;
-
-	code=vGetEmailRecvCode(&channel);
-	SetEmailCode(code);
-
-	if (code==emailCode)
-	{
-		SetEmailState(SMTP_INPROGRESS);
-		return true;
-	}
-	else
-	{
-		SetEmailState(SMTP_FAIL);
-		vTaskDelay(200);
-		return false;
-	}
-}
-
-static void EmailSendStart(void)
-{
-	int len;
-	char buftemp[5];
-
-	switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-	{
-		case WIFI_MODE_STA:
-		case WIFI_MODE_AP_STA:
-
-			if(VAR_GetTabVal(Const_emailSend_IP, EmailSendParam.whichSender))
-			{
-				connectionType=SMTP_CONNECTION;
-				SetEmailState(SMTP_START);
-				EmailSendParam.start=3;
-				vStopServer();
-
-				if (VAR_GetTabVal(Const_emailSend_useSSL, EmailSendParam.whichSender))
-					strcpy(buftemp, "SSL");
-				else
-					strcpy(buftemp, "TCP");
-
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTART=%d,\"%s\",\"%s\",%d\r\n",
-						/*ESP_EMAIL_CHANNEL*/4,
-						buftemp,
-						IP2Str(VAR_GetTabVal(Const_emailSend_IP, EmailSendParam.whichSender)),
-						VAR_GetTabVal(Const_emailSend_port, EmailSendParam.whichSender));
-//				len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTART=%d,\"%s\",\"213.180.147.145\",%d\r\n",
-//						ESP_EMAIL_CHANNEL,
-//						buftemp,
-//						VAR_GetTabVal(Const_emailSend_port, EmailSendParam.whichSender));
-				SendToEsp2(sendBuff, len);
-				DbgMulti(DBG,"\r\nSEND_START: ",sendBuff," SEND STOP\r\n");
-			}
-
-			break;
-	}
-}
-
-static void ErrorServiceSMTP(void)
-{
-	if(GetEmailState()==SMTP_FAIL)
-	{
-		switch(GetEmailCode())
-		{
-		case ESPANSWER_TIMEOUT_TO_GET_SEND_OK:
-			Dbg(DBG,"\r\nESPANSWER_TIMEOUT_TO_GET_SEND_OK");
-			break;
-		case ESPANSWER_TIMEOUT_FOR_SMTPCOMM_TO_GET_SEND_OK:
-			Dbg(DBG,"\r\nESPANSWER_TIMEOUT_FOR_SMTPCOMM_TO_GET_SEND_OK");
-			break;
-		case ESPANSWER_CLOSED_AFTER_SEND_DATA:
-			Dbg(DBG,"\r\nESPANSWER_CLOSED_AFTER_SEND_DATA");
-			break;
-		case ESPANSWER_ERROR_AFTER_SEND_DATA:
-			Dbg(DBG,"\r\nESPANSWER_ERROR_AFTER_SEND_DATA");
-			break;
-		case 20:
-			break;
-		}
-	}
-}
-
-static int vGetConnectionResultToSTA(void)
-{
-	int itx=0;
-	char *ptr;
-	while(1)
-	{
-		if(RecvFromEsp("\r\nOK"))
-		{
-			return ESP_CONNECTION_OK;
-		}
-		else if(RecvFromEsp("ERROR"))
-		{
-			if ((ptr=RecvFromEsp("+CWJAP:")))
-			{
-				switch(atoi(ptr+7))
-				{
-				case 1:
-					return ESP_CONNECTION_TIMEOUT;
-				case 2:
-					return ESP_WRONG_PASSWORD;
-				case 3:
-					return ESP_CANNOT_FIND_THE_TARGET_AP;
-				case 4:
-					return ESP_CONNECTION_FAILED;
-				default:
-					return ESP_UNKNOW_ERROR_OCCURRED;
-				}
-			}
-			else
-				return ESP_UNKNOW_ERROR_OCCURRED;
-		}
-		else
-		{
-			itx++;
-			if(itx>CONNECTION_TIMEOUT_MS)
-				return ESP_UNKNOW_ERROR_OCCURRED;
-			vTaskDelay(1);
-		}
 	}
 }
 
@@ -1047,139 +546,6 @@ static void GetAddressesForConnection(void)
 	if ((ptr=RecvFromEsp(rcv2))){ strcpy2_(temp,ptr,mini_strlen(rcv2)+1,16); Const.wifiAP[Const.wifiGeneral.nrAP].mac   = MACStr2Int64 (temp); }
 	if ((ptr=RecvFromEsp(rcv3))){ strcpy2_(temp,ptr,mini_strlen(rcv3)+1,16); Const.wifiSTA[Const.wifiGeneral.nrSTA].ip  = IPStr2Int	   (temp); }
 	if ((ptr=RecvFromEsp(rcv4))){ strcpy2_(temp,ptr,mini_strlen(rcv4)+1,16); Const.wifiSTA[Const.wifiGeneral.nrSTA].mac = MACStr2Int64 (temp); }
-}
-
-static void vQueryAndReplaceEmailAddrName2AddrIP(void)
-{
-	int i,len,itx;
-	char *ptr;
-
-	for(i=0;i<MAX_EMAIL_SENDERS;++i)
-	{
-		if(*VAR_GetStr(Const_emailSend_server,i))
-		{
-			len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDOMAIN=\"%s\"\r\n",VAR_GetStr(Const_emailSend_server,i));
-			SendToEsp2(sendBuff,len);  DbgMulti(DBG,"\r\n",sendBuff," ");
-			itx=0;
-			while (1)
-			{
-				if (RecvFromEsp("\r\nOK"))
-				{
-					if ((ptr=RecvFromEsp("+CIPDOMAIN:")))
-					{
-						VAR_SetTabVal(Const_emailSend_IP,i,IPStr2Int(ptr+12)); //POPRAWIC to '12' !!!!!! dac jako przeszukuje do znaki ":"   +CIPDOMAIN:"213.180.147.145"
-						DbgMulti(DBG,"\r\n",ptr,"  ");
-						vTaskDelay(50);
-						break;
-					}
-					else
-						break;
-				}
-				else if (RecvFromEsp("ERROR"))
-					return;
-				else
-				{
-					itx++;
-					if (itx>DNS_SERVER_TIMEOUT_MS)
-						return;
-					vTaskDelay(1);
-				}
-			}
-		}
-	}
-}
-#include <time.h>
-static int vQueryAndLoadTimeFromSNTP(void)
-{
-	int itx=0;
-	char *ptr;
-	time_t getTime;
-
-	while (1)
-	{
-		SendToEsp("AT+SYSTIMESTAMP?\r\n");
-		while (1)
-		{
-//			if (RecvFromEsp("\r\nOK"))
-//			{
-				if ((ptr=RecvFromEsp("+SYSTIMESTAMP:")))
-				{
-					getTime=(time_t)atoi(ptr+14);
-					if(getTime>1565853509)
-					{
-						VAR_SetTabVal(Const_sntp_time,NO_TAB,getTime);
-						sntpTime=gmtime(&getTime);
-						DbgVar(1,50,"\r\nES TIME LOADED %d; %02d-%02d-%02d  %02d:%02d:%02d",
-								VAR_GetTabVal(Const_sntp_time,NO_TAB),
-								sntpTime->tm_year-100,
-								sntpTime->tm_mon+1,
-								sntpTime->tm_mday,
-								sntpTime->tm_hour,
-								sntpTime->tm_min,
-								sntpTime->tm_sec);
-						return 1;
-					}
-					Dbg(DBG,"*");
-					vTaskDelay(500);
-					itx+=500;
-					if (itx>SNTP_SERVER_TIMEOUT_MS)
-						return 0;
-					break;
-				}
-				else
-					return 0;
-//			}
-//			else if (RecvFromEsp("ERROR"))
-//				return 0;
-
-			itx++;
-			if (itx>SNTP_SERVER_TIMEOUT_MS)
-				return 0;
-			vTaskDelay(1);
-		}
-	}
-}
-
-//static void vLoadTime(time_t timeSet)
-//{
-//	int len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+SYSTIMESTAMP=%d\r\n",timeSet);
-//	SendToEsp32(sendBuff,len);
-//	while (RecvFromEsp("\r\nOK")==0)
-//		vTaskDelay(10);
-//}
-
-static bool CheckEmailAnswer(int emailCode)
-{
-	char *pSmtp = NULL;
-	int channel=0, size=0;
-
-	if ((pSmtp=RecvFromEsp(",CONNECT\r\n")))		/* RecvFromEsp("0,CONNECT\r\n")   0-channel */
-	{
-		if ((pSmtp=RecvFromEsp("+IPD,")))				/* RecvFromEsp("+IPD,0,698:GET /")   0-channel, 698-received bytes */
-		{
-			if ((pSmtp=RecvFromEsp(":")))
-			{
-				GetSizeAndChannel(pSmtp, &channel, &size);
-				if(channel == /*ESP_EMAIL_CHANNEL*/4)
-				{
-					int codeE=GetRecvCodeEmail(pSmtp);
-					SetEmailCode(codeE);
-
-					if (codeE==emailCode)
-					{
-						SetEmailState(SMTP_INPROGRESS);
-						return true;
-					}
-					else
-					{
-						SetEmailState(SMTP_FAIL);
-						vTaskDelay(200);
-						return false;
-					}
-				}
-			}
-		}
-	}
 }
 
 static void BackFromEmail(int nrInfo)
@@ -1256,13 +622,13 @@ static void vWaitOnSendTimeoutTimerCallback(TimerHandle_t pxTimer)
 	;
 	xTimerStop(pxTimer, 0);
 }
-
+/*
 static void GoToTest(char* txt){
 	connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
 	DbgVarDma(DBG,50, _S_"%s"_E_,txt);
 }
-
-static void HTTP_SetWeb(int channel, int nrWWW)
+*/
+static char* HTTP_SetWeb(int channel, int nrWWW)  //Zapytaj sie chata co mam wyslac dla favicon !!!!
 {
 	LOOP_FOR(i,MAX_HTML_WEBs){  httpPar.web[channel][i] = NULL;		httpPar.siz[channel][i] = 0;  }
 
@@ -1285,13 +651,13 @@ static void HTTP_SetWeb(int channel, int nrWWW)
 	default:
 		break;
 	}
-	httpPar.web[channel][nrPartWWW] = NULL;		httpPar.siz[channel][nrPartWWW] = 0;
-	httpPar.nrWeb[channel]=0;
+	httpPar.web[channel][nrPartWWW] = NULL;		httpPar.siz[channel][nrPartWWW] = 0;	 httpPar.nrWeb[channel]=0;
+	return httpPar.web[channel][0];
 }
 
-static int SetRqstToSendChnl(int channel, int nrWWW){	HTTP_SetWeb(channel,nrWWW);
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); 					   					   					return -1;  }  }
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=httpPar.web[channel][0];  httpPar.nr[i]=0;  httpPar.len[i]=0;  return i;   }  }
+static int SetRqstToSendChnl(int channel, int nrWWW){
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); 					   					   				 return -1;  }  }
+	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=HTTP_SetWeb(i,nrWWW);  httpPar.nr[i]=0;  httpPar.len[i]=0;  return i;   }  }
 	DbgDma(DBG,_SE_"\r\nQue: FULL "_E_);
 	return -2;
 }
@@ -1332,35 +698,15 @@ int CheckReadyToSendChnl(u8 chnlPrev){
 	return -1;
 }
 
-static void InitHtmlParam(void){
-	html[0].ptr  = (char*)HttpMainReadPanel;	html[0].size = mini_strlen(HttpMainReadPanel);
-	html[1].ptr  = (char*)HttpRefr;				html[1].size = mini_strlen(HttpRefr);
-	html[2].ptr  = (char*)HttpMainSettings;		html[2].size = mini_strlen(HttpMainSettings);
-}
-
 static void InitStructRqstToSendChnl(void){
 	httpPar.chnl = 0xFF;
 	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
 }
 
-static int HTTP_IsAllDataSended(int nrChnl){
-//	if(httpPar.web[nrChnl][httpPar.nrWeb]==NULL)
-//		return 1;
-//	else if(httpPar.nr[nrChnl] > httpPar.siz[nrChnl][httpPar.nrWeb]/ETH_PACKET_LEN  ||  httpPar.siz[nrChnl][httpPar.nrWeb]==httpPar.nr[nrChnl]*ETH_PACKET_LEN)
-//		return 2;
-//	else
-//		return 3;
-	if(httpPar.web[nrChnl][httpPar.nrWeb[nrChnl]]==NULL)
-		return 1;
-	else
-		return 0;
-}
-
-static HTTP_GetlastPacketLen(int nrChnl){  return  httpPar.siz[nrChnl][httpPar.nrWeb[nrChnl]]-httpPar.nr[nrChnl]*ETH_PACKET_LEN; }
-
 static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl){
 	int nrQue=CheckReadyToSendChnl(prevChnl);
 	if(nrQue>-1){
+		//if(httpPar.ptr[nrQue]==NUL)  //sprawdz chyba to samo !!!
 		if(httpPar.web[nrQue][httpPar.nrWeb[nrQue]]==NULL){
 			httpPar.nr[nrQue]=0;
 			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
@@ -1411,12 +757,11 @@ static void HTTP_ShowInitChannel(int channel,int size, ARCHIVING_TYPE archType){
 
 void vtaskWifi(void *argument)
 {
-	char *pHttp,*pHttp2,  *ptr;   int lenHTTP=0;
-	int channel=0, size=0, code=0, len, result, result2;   int nrHTTPpacket=0;  int nrSMTP=0;
-	int j;
+	char *pHttp,*pHttp2,  *ptr;
+	int channel=0, size=0, code=0, len, result;   int nrHTTPpacket=0;  int nrSMTP=0;
+
 
 	uint32_t ulNotifiedValue;
-	u8 activHttp=0;
 
 
 	int typeSendArch = arch;
@@ -1431,11 +776,8 @@ void vtaskWifi(void *argument)
 	DefaultSettingsEmail();
 	DefaultSettingsDNS();
 	DefaultSettingsSNTP();
-
 	InitStructRqstToSendChnl();
-	InitHtmlParam();
 
-	ResetTestTab(); //Do USUNIECIA !!!
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
 
@@ -1453,7 +795,7 @@ void vtaskWifi(void *argument)
 //	StartMeasureTime_us();
 //	StopMeasureTime_us("\r\nTEST_5");
 
-
+	//Cykliczne odpytatywanie czy nie zawieszony np AT
 
 	while(1)
 	{
@@ -1836,7 +1178,7 @@ void vtaskWifi(void *argument)
 					}
 					else if (RecvFromEsp("ERROR"))
 					{
-						if(typeSendArch!=noArch) DbgDma(DBG, _S_" --- ERROR --- "_E_);
+						if(typeSendArch!=noArch) DbgDma(DBG, _SE_" --- ERROR --- "_E_);
 						UpdateReadPos();
 					}
 					else if ((pHttp=RecvFromEsp("\r\nRecv ")))						/* RecvFromEsp("\r\nRecv 88 bytes")   88-received bytes by ESP */
@@ -1867,31 +1209,7 @@ void vtaskWifi(void *argument)
 					break;
 
 
-
-
-			//ROZWAZ TO !!!!!!!!
-//					RECV_STOP
-//					SEND_START: AT+CIPSTO=10
-//					SEND_STOP
-//
-//					RECV_INIT_019_START:
-//					OK
-//
-//					RECV_STOP
-//					SEND_START: AT+CIPDOMAIN="smtp.poczta.onet.pl"
-//					SEND_STOP
-//
-//					RECV_INIT_019_START:
-//					ERROR
-//
-//					RECV_STOP
-//					CMD_ERROR: AT+CIPDOMAIN="smtp.poczta.onet.pl"
-//
-//					SEND_START: AT+CIPDOMAIN="smtp.interia.pl"
-//					SEND_STOP
-
-
-				case HTTP_CONNECTION:	static u8 ttttt=0;
+				case HTTP_CONNECTION:
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
 					RstTimeBtwnSendRcv();
@@ -1932,8 +1250,6 @@ void vtaskWifi(void *argument)
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,1);
 										HTTP_ShowInitChannel(channel,size,arch);
-										ttttt++;
-										*html[1].ptr=(ttttt&0x0F)|0x30;
 									}
 								}
 							}
@@ -1972,7 +1288,6 @@ void vtaskWifi(void *argument)
 								httpPar.len[nr]=0;
 								httpPar.web[nr][0]=NULL;
 								httpPar.nrWeb[nr]=0;
-								break;
 							}
 							httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
 							HTTP_SendCloseChnl(typeSendArch,-1);
@@ -1988,7 +1303,6 @@ void vtaskWifi(void *argument)
 								httpPar.len[nr]=0;
 								httpPar.web[nr][0]=NULL;
 								httpPar.nrWeb[nr]=0;
-								break;
 							}
 						}
 
@@ -2182,7 +1496,7 @@ void vtaskWifi(void *argument)
 /*						if(Is_ComplRecvSMTPpacket()){
 							SMTP_Descr(ptr,typeSendArch,&channel,&size,&code);
 							if(354==code){ */
-								len=mini_snprintf(sendBuff,sizeof(sendBuff),"TO: ");  j=0;
+								len=mini_snprintf(sendBuff,sizeof(sendBuff),"TO: ");
 								for (int i=0; i<MAX_EMAIL_RECIPIENTS; ++i){  if((EmailSendParam.recepientsMask>>i)&0x01)  len+=mini_snprintf(sendBuff+len,sizeof(sendBuff)-len,"%s,",Const.emailRecv[i].email);  }
 								len+=mini_snprintf(sendBuff+len, sizeof(sendBuff), "\r\n");
 								if(SMTP_SendCmd(typeSendArch,len)) BackFromEmail(0);
@@ -2286,14 +1600,14 @@ void vtaskWifi(void *argument)
 			if(DEBUG_IsTxtReceive("a"))
 			{
 				DbgVarDma2(1,50,"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
-				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 DbgVarDma2(1,200,"que:%*d 	nr:%*d 	 ptr:%*d   siz:%*d   len:%*d\r\n", -3,httpPar.que[i], -3,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.siz[i], -17,httpPar.len[i] );	}
+				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 DbgVarDma2(1,200,"que:%*d 	nr:%*d 	 ptr:%*d   len:%*d\r\n", -3,httpPar.que[i], -3,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.len[i] );	}
 
 			}
 			else if(DEBUG_IsTxtReceive("s"))
 			{
 				if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
 				{
-					SendEmail(2, 1<<1, EMAIL_MEASURE);			/* z interia.pl musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
+					SendEmail(2, 1<<1, EMAIL_MEASURE);			/* z  'interia.pl'  i  'wp.pl'  musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
 
 					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
 						 WIFI_MODE_AP_STA == Const.wifiGeneral.mode)  &&  Const.emailSend[ EmailSendParam.whichSender ].IP )
@@ -2315,81 +1629,30 @@ void vtaskWifi(void *argument)
 				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
 				SendToEsp32(0,"AT+SYSTIMESTAMP?\r\n",arch);
 			}
-
-
-//SendToEsp32(0,"AT+CIPSSLCCONF?\r\n",arch);
-//SendToEsp32(0,"AT+CIPSSLCCONF=0,0\r\n",arch);
-
-//			AT+CWLAP
-//			AT+CWSAP?
-//			AT+CWQAP diconnect z softAP
-//			AT+CWLIF
-//			AT+CWAPPROTO?
-//			AT+CIPSNTPCFG=1,8,"cn.ntp.org.cn","ntp.sjtu.edu.cn"
-//			AT+CIPSNTPTIME?
-//			AT+CIPSNTPINTV?
-//			AT+CIPSNTPINTV=3600   //time every hour
-//			AT+CIPSSLCCONF?
-
-//SendToEsp32(0,"AT+CIPSSLCSNI=0,\"smtp.interia.pl\"\r\n",arch);
-
-
-//			// Single connection: (AT+CIPMUX=0)
-//			AT+CIPSSLCCONF=<auth_mode>[,<pki_number>][,<ca_number>]
-//			// Multiple connections: (AT+CIPMUX=1)
-//			AT+CIPSSLCCONF=<link ID>,<auth_mode>[,<pki_number>][,<ca_number>]
-
-
-
-			//AT+CIPSSLCCIPHER?
-//			AT+CIPSSLCCIPHER=2,0xC023,0xC0AD       // Single connection: (AT+CIPMUX=0), cipher suites are TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 and TLS_ECDHE_ECDSA_WITH_AES_256_CCM
-//			AT+CIPSSLCCIPHER=0,2,0xC023,0xC0AD    // Multiple connections: (AT+CIPMUX=1), cipher suites are TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 and TLS_ECDHE_ECDSA_WITH_AES_256_CCM
-
-
-
-
-
-
-
-			//AT+SYSMFG?	   //AT+SYSMFG=<operation>,<"namespace">[,<"key">]
-
-
-//			// Erase all key-value pairs of client_cert namespace (That is, erase all client␣
-//			,→certificates)
-//			AT+SYSMFG=0,"client_cert"
-//			// Erase the client_cert.0 key-value pair of client_cert namespace (That is, erase␣
-//			,→the first client certificate)
-//			AT+SYSMFG=0,"client_cert","client_cert.0"
-
-//			// Read all namespaces
-//			AT+SYSMFG=1
-//			// Read all key-value pairs of client_cert namespace
-//			AT+SYSMFG=1,"client_cert"
-//			// Read the value of client_cert.0 key in client_cert namespace
-//			AT+SYSMFG=1,"client_cert","client_cert.0"
-//			// Read the value of client_cert.0 key in client_cert namespace, from offset: 100␣
-//			,→place, read 200 bytes
-//			AT+SYSMFG=1,"client_cert","client_cert.0",100,200
-
-
-//			// Write a new value for client_cert.0 key into client_cert namespace (That is,␣
-//			,→update the 0th client certificate)
-//			AT+SYSMFG=2,"client_cert","client_cert.0",8,1164
-//			// Wait until AT command port returns ``>``, and then write 1164 bytes
-
-
-//SNTP aktualny czas
-// CIPSSLCCONF
-			//
-
-
+			else if(DEBUG_IsTxtReceive("o"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
+				SendToEsp32(0,"AT+CIPSTATUS\r\n",arch);						/* STATUS:3		+CIPSTATUS:4,"SSL","213.180.147.145",465,53751,0	  OK */
+			}
+			else if(DEBUG_IsTxtReceive("p"))
+			{
+				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
+				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
+				SendToEsp32(0,"AT+CIPSTATE?\r\n",arch);						/* 				+CIPSTATE:4,"SSL","213.180.147.145",465,53751,0		  OK */
+			}
+			else if(DEBUG_IsTxtReceive("c"))
+			{
+				DbgDma(DBG, Clr_"\r\n-------------------- Start -------------------- ");
+			}
+		/*
 			else if(DEBUG_IsTxtReceive("0")){ GoToTest(0); SendToEsp32(0,"AT+RFPOWER?\r\n",arch); }
 			else if(DEBUG_IsTxtReceive("1")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
 			else if(DEBUG_IsTxtReceive("2")){ GoToTest(0); SendToEsp32(0,"AT+CWSTATE?\r\n",arch); }
 			else if(DEBUG_IsTxtReceive("3")){ GoToTest(0); SendToEsp32(0,"AT+CWLAP\r\n",arch); }
-			else if(DEBUG_IsTxtReceive("4")){ GoToTest(0); SendToEsp32(0,"AT+CWSAP?\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("4")){ GoToTest(0); SendToEsp32(0,"AT+CWSAP?\r\n",arch); }			//wyswietla parametry swojej sieci AP
 			else if(DEBUG_IsTxtReceive("5")){ GoToTest(0); SendToEsp32(0,"AT+CWQAP\r\n",arch); }
-			else if(DEBUG_IsTxtReceive("6")){ GoToTest(0); SendToEsp32(0,"AT+CWLIF\r\n",arch); }
+			else if(DEBUG_IsTxtReceive("6")){ GoToTest(0); SendToEsp32(0,"AT+CWLIF\r\n",arch); }			//Obtain IP Address of the Station That Connects to an ESP SoftAP
 			else if(DEBUG_IsTxtReceive("7")){ GoToTest(0); SendToEsp32(0,"AT+CWAPPROTO?\r\n",arch); }
 			else if(DEBUG_IsTxtReceive("8")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPCFG=1,1,\"pool.ntp.org\"\r\n",arch); }   //"AT+CIPSNTPCFG=1,8,\"cn.ntp.org.cn\",\"ntp.sjtu.edu.cn\"\r\n"
 			else if(DEBUG_IsTxtReceive("9")){ GoToTest(0); SendToEsp32(0,"AT+CIPSNTPTIME?\r\n",arch); }
@@ -2401,22 +1664,19 @@ void vtaskWifi(void *argument)
 			else if(DEBUG_IsTxtReceive("y")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG?\r\n",arch);    }
 			else if(DEBUG_IsTxtReceive("i")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCONF=4,2,0,0\r\n",arch);    }  //aktywacja cert SMTP
 			else if(DEBUG_IsTxtReceive("d")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCCONF=4,0\r\n",arch);    }
-			else if(DEBUG_IsTxtReceive("k")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=2,\"client_ca\",\"client_ca.0\",8,807\r\n",arch);    }  //zapisz
-			else if(DEBUG_IsTxtReceive("j")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=1,\"client_ca\",\"client_ca.0\"\r\n",arch);    }  //odpytaj sprawdz czy zapisano     //client_ca.1,2,3.. to klejne certy
+			else if(DEBUG_IsTxtReceive("k")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=2,\"client_ca\",\"client_ca.0\",8,807\r\n",arch);    }  	//zapisz cert
+			else if(DEBUG_IsTxtReceive("j")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=1,\"client_ca\",\"client_ca.0\"\r\n",arch);    }  	//odpytaj sprawdz czy zapisano     //client_ca.1,2,3.. to klejne certy
 			else if(DEBUG_IsTxtReceive("h")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=1,\"client_ca\",\"client_ca.1\"\r\n",arch);    }
 			else if(DEBUG_IsTxtReceive("g")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCSNI=4,\"poczta.interia.pl\"\r\n",arch);    }
 			else if(DEBUG_IsTxtReceive("f")){ GoToTest(0); SendToEsp32(0,"AT+CIPSSLCSNI?\r\n",arch);    }
 			else if(DEBUG_IsTxtReceive("m")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=1,\"client_ca\",\"client_ca\"\r\n",arch);    }
 			else if(DEBUG_IsTxtReceive("n")){ GoToTest(0); SendToEsp32(0,"AT+SYSMFG=2,\"client_ca\",\"client_ca.1\",8,807\r\n",arch);    }
 
-
-
-
 			else if(DEBUG_IsTxtReceive("?"))
 			{
 				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
 				DbgDma(DBG, _S_"\r\nWysylam DATA cert "_E_);
-				//SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQdBmJ8V4vhx7DANBgkqhkiG9w0BAQsFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMMF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYN5QLuEZDY6ntPEGwihkagMrYueAtvxhgreZdkgy5y5CsBBe3N5nJJyXghQIGMC4gKs8Omc79w4Z89yr3DH4mTJUYisH6g6NnIKVWhm5O1LKQXwpAsBq6t8UR695QnNMc9asj6L4gqq8GAe4uM9N178gKv1Cyg9SxZg6Es747teA9Wh2BKRpoY32SWhF9b8SjK4769PkVqAhDJ1U0Y7FVThB4S960uG6P440dgE2B3S4Y6T6qv7vU76RAfB9CTh9K6GfFED7P1B2b4vP5lBp4mMc36X9U8v5eB6H8K5gJ2779EX0G2uLgWp4f9Jtw1F65A7GwIDAQABo2MwYTAOBgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QnvStFj8Q92bJv8ONM0OD8KgwHwYDVR0jBBgwFoAUA95QnvStFj8Q92bJv8ONM0OD8KgwDQYJKoZIhvcNAQELBQADggEBAF3m3EehIiKNtAsST6VKVDTjCejY373bTIi7P35XmKAVffv2yQth564v96f7y9S41U9fDxU8yX5VfJv+D0P/X7H7gqH5fU1FfZ/pX76V/0j8+y6b0g177p+p7gK4S9P6VfXf9C8=-----END CERTIFICATE-----",arch);  //1108
+				SendToEsp32(0,"-----BEGIN CERTIFICATE-----MIIDrzCCApegAwIBAgIQCDvgVpBCwQdBmJ8V4vhx7DANBgkqhkiG9w0BAQsFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xIDAeBgNVBAMMF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYN5QLuEZDY6ntPEGwihkagMrYueAtvxhgreZdkgy5y5CsBBe3N5nJJyXghQIGMC4gKs8Omc79w4Z89yr3DH4mTJUYisH6g6NnIKVWhm5O1LKQXwpAsBq6t8UR695QnNMc9asj6L4gqq8GAe4uM9N178gKv1Cyg9SxZg6Es747teA9Wh2BKRpoY32SWhF9b8SjK4769PkVqAhDJ1U0Y7FVThB4S960uG6P440dgE2B3S4Y6T6qv7vU76RAfB9CTh9K6GfFED7P1B2b4vP5lBp4mMc36X9U8v5eB6H8K5gJ2779EX0G2uLgWp4f9Jtw1F65A7GwIDAQABo2MwYTAOBgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QnvStFj8Q92bJv8ONM0OD8KgwHwYDVR0jBBgwFoAUA95QnvStFj8Q92bJv8ONM0OD8KgwDQYJKoZIhvcNAQELBQADggEBAF3m3EehIiKNtAsST6VKVDTjCejY373bTIi7P35XmKAVffv2yQth564v96f7y9S41U9fDxU8yX5VfJv+D0P/X7H7gqH5fU1FfZ/pX76V/0j8+y6b0g177p+p7gK4S9P6VfXf9C8=-----END CERTIFICATE-----",arch);  //1108
 				SendToEsp32(0,"-----BEGIN CERTIFICATE-----\nMIIDjjCCAnagAwIBAgIQAzrx5W63S0b6AE5BHSTHPTANBgkqhkiG9w0BAQsFADBh\nMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\nd3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH\nMjAeFw0zMDA4MDExMjAwMDBaFw01MDA4MDExMjAwMDBaMGExCzAJBgNVBAYTAlVT\nMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWcipWVydC5j\nb20xIDAeBgNVBAMMF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG\n9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1EQmYqrrXSVzXgS7OwtWc9L\nFBBg6snA5bVvOr4H7PDg3VU8qgifgJuogGxOn4UOFIOMpUMG7up6X8XSpYtH8Wwi\nhy67vvwbFJuINkwXgX6V1E24gwEsPDyDxa6e4T6kKvTOUeNANJMch80wFH57S875\nfA3lyWMa2L6+fThvAt04VIO4u30R73MD4b46p6UoMQk96Sbt8v60pYgCE6EAsvIK\nA67X9M1N9L04wREOcIEX3gS6g7LwK7Bf8XpBfXbSB3o9A7S3XfR7O2EDMA40OpFL\nwX10r8A7E+V2N8H4NURbY6K7J4wNURM9OhSgI==-----END CERTIFICATE-----",arch);   //807
 			}
 			else if(DEBUG_IsTxtReceive("6"))
@@ -2425,436 +1685,15 @@ void vtaskWifi(void *argument)
 				DbgDma(DBG, _S_"\r\nSend Test AT3 "_E_);
 				SendToEsp32(0,"AT+SYSFLASH?\r\n",arch);
 			}
-
-
-
-
-
-
-
-
-
-
-
-			else if(DEBUG_IsTxtReceive("o"))
-			{
-				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
-				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
-				SendToEsp32(0,"AT+CIPSTATUS\r\n",arch);
-			}
-			else if(DEBUG_IsTxtReceive("p"))
-			{
-				connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
-				DbgDma(DBG, _S_"\r\nSend Test AT "_E_);
-				SendToEsp32(0,"AT+CIPSTATE?\r\n",arch);
-			}
-//			else if(DEBUG_IsTxtReceive("z"))
-//			{
-//				DbgDma(DBG, _S_"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"_E_);
-//			}
-//			else if(DEBUG_IsTxtReceive("q"))
-//			{
-//				Dbg(DBG, _S_"\r\n uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue) "_E_);
-//			}
-//			else if(DEBUG_IsTxtReceive("c"))
-//			{
-//				DbgDma(DBG, Clr_"\r\n-------------------- Start -------------------- ");
-//			}
-
-
-
+		*/
 
 			uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue);
 			if ((ulPoprzedniaWartosc & BIT_DBG_SRV) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
-
-				asm("nop");
+				;
 			}
 		}
 	  }
 	}
-
-
-
-//	SEND_START: AT+CIPSTATUS
-//	SEND_STOP
-//
-//	RECV_TEST_000_START:STATUS:3
-//	+CIPSTATUS:4,"SSL","213.180.147.145",465,53751,0
-//
-//	OK
-//
-//	RECV_STOP
-//	Test OK
-//	Send Test AT
-//	SEND_START: AT+CIPSTATE?
-//	SEND_STOP
-//
-//	RECV_TEST_000_START:+CIPSTATE:4,"SSL","213.180.147.145",465,53751,0
-//
-//	OK
-//
-//	RECV_STOP
-//	Test OK
-
-
-/*
-	while (1)
-	{
-		if (true==isAnythingRecv())  //Cykliczne odpytatywanie czy nie zawieszony np AT
-		{
-			switch (connectionType)
-			{
-			case HTTP_CONNECTION:
-				if ((pHttp=RecvFromEsp(":GET /")))
-				{
-					GetSizeAndChannel(pHttp, &channel, &size);
-
-					while (GetDMACountByte()<size)
-						vTaskDelay(1);
-
-					if (RecvFromEsp(":GET /TME.txt")==0)
-						DisplayRequestGET(pHttp, 2000);
-
-					result=vSendDataHTTP(pHttp, channel);
-					DbgVar(DBG, 20, "\r\nSend Code: %d ", result);
-
-					result2=vCloseConnection(channel);
-					DbgVar(DBG, 20, "\r\nClose Code: %d ", result2);
-
-					if ((result==2)&&(result2==2))
-						SendDummyData(100);
-					RestartDMA();
-				}
-				break;
-
-			case SMTP_CONNECTION:
-				if (false==vCheckEmailAnswer(220))
-					goto GOTO_Email_Quit;
-				EmailSendParam.start=4;
-
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "EHLO %s\r\n", VAR_GetStr(Const_emailSend_name,EmailSendParam.whichSender));
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-				if (false==vCheckEmailAnswer(250))
-					goto GOTO_Email_Quit;
-
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "AUTH LOGIN\r\n");
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-				if (false==vCheckEmailAnswer(334))
-					goto GOTO_Email_Quit;
-
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "%s\r\n", base64_enc2(VAR_GetStr(Const_emailSend_login,EmailSendParam.whichSender)));
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-				if (false==vCheckEmailAnswer(334))
-					goto GOTO_Email_Quit;
-
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "%s\r\n", base64_enc2(VAR_GetStr(Const_emailSend_password,EmailSendParam.whichSender)));
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-				if (false==vCheckEmailAnswer(235))
-					goto GOTO_Email_Quit;
-
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "MAIL FROM:<%s>\r\n", VAR_GetStr(Const_emailSend_login,EmailSendParam.whichSender));
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-				if (false==vCheckEmailAnswer(250))
-					goto GOTO_Email_Quit;
-
-				j=0;
-				for (int i=0; i<MAX_EMAIL_RECIPIENTS; ++i)
-				{
-					if ((EmailSendParam.recepientsMask>>i)&0x01)
-					{
-						len=mini_snprintf(sendBuff, sizeof(sendBuff), "RCPT TO:<%s>\r\n", VAR_GetStr(Const_emailRecv_email,j));
-						if (vSendCommandSMTP(sendBuff, len))
-							goto GOTO_Email_Quit;
-						if (false==vCheckEmailAnswer(250))
-							goto GOTO_Email_Quit;
-					}
-					j++;
-				}
-
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "DATA\r\n");
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-				if (false==vCheckEmailAnswer(354))
-					goto GOTO_Email_Quit;
-
-				vTaskDelay(1);
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "FROM: %s\r\nSubject: %s\r\n", VAR_GetStr(Const_emailSend_login,EmailSendParam.whichSender), GetTitleEmail());
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-
-				vTaskDelay(1);
-				len=mini_snprintf(sendBuff, sizeof(sendBuff), "TO: ");
-				j=0;
-				for (int i=0; i<MAX_EMAIL_RECIPIENTS; ++i)
-				{
-					if ((EmailSendParam.recepientsMask>>i)&0x01)
-						len+=mini_snprintf(sendBuff+len, sizeof(sendBuff), "%s,", VAR_GetStr(Const_emailRecv_email,j));
-					j++;
-				}
-				len+=mini_snprintf(sendBuff+len, sizeof(sendBuff), "\r\n");
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-				DbgMulti(DBG,"\r\nRecv mail: ",sendBuff,"\r\n");
-
-				vTaskDelay(1);
-				len=mini_snprintf(sendBuff, PACKET_SEND_LEN, "Content-Transfer-Encoding: 8bit\r\n");
-				len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN, "Content-Type: text/html; charset=\"UTF-8\"");
-				len+=mini_snprintf(sendBuff+len, PACKET_SEND_LEN, "\r\n\r\n");
-				if (vSendCommandSMTP(sendBuff, len))
-					goto GOTO_Email_Quit;
-
-				vTaskDelay(1);
-				if ((result=vSendDataSMTP(EmailSendParam.id)))
-				{
-					DbgVar(DBG,50, "\r\nResult Error Send Data: %d ", result);
-					goto GOTO_Email_Quit;
-				}
-				if (false==vCheckEmailAnswer(250))
-					goto GOTO_Email_Quit;
-				else
-					SetEmailState(SMTP_SUCCESS);
-
-				GOTO_Email_Quit:
-				if ((RecvFromEsp("closing connection")==0)||(RecvFromEsp(",CLOSED")==0))
-				{
-					if (vSendDataPacket("quit\r\n", 6, ESP_EMAIL_CHANNEL));
-					switch (vGetEmailRecvCode(&channel))
-					{
-					case 221:
-						break;
-					default:
-						vTaskDelay(200);
-						break;
-					}
-				}
-				vCloseConnection(ESP_EMAIL_CHANNEL);
-
-				DbgVar(DBG, 40, "\r\nEMAIL STATUS: %d %s ", GetEmailCode(), GetStrEmailState());
-				ErrorServiceSMTP();
-
-				EmailSendParam.start=0;
-				connectionType=HTTP_CONNECTION;
-				vStartServer();
-				RestartDMA();
-				break;
-
-			case INIT_CONNECTION:
-				if (RecvFromEsp("ready"))
-				{
-					SendToEsp("ATE0\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-
-					mini_snprintf(sendBuff, sizeof(sendBuff), "AT+UART_CUR=%d,8,1,0,0\r\n", ESP_UART_BUADRATE);
-					SendToEsp(sendBuff);
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-					HAL_Delay(10);
-
-					ChangeUartBuadRate(ESP_UART_BUADRATE);
-					SendToEsp("AT+GMR\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-					Dbg(DBG, RecvBuffer);
-
-					len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWMODE=%d\r\n",VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB));
-					SendToEsp2(sendBuff,len);
-					DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-
-					if(WIFI_MODE_DISABLED==VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-					{
-						Dbg(DBG, "\r\nWifi DISABLED ");
-						break;
-					}
-
-					SendToEsp("AT+CWLAPOPT=1,23\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-
-					SendToEsp("AT+CIPMUX=1\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-
-					SendToEsp("AT+CWDHCP=0,3\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-
-					if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
-						1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
-					{
-						SendToEsp("AT+CWDHCP=1,1\r\n");
-						while (RecvFromEsp("\r\nOK")==0)
-							vTaskDelay(10);
-					}
-					else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
-							  0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
-					{
-						SendToEsp("AT+CWDHCP=1,2\r\n");
-						while (RecvFromEsp("\r\nOK")==0)
-							vTaskDelay(10);
-					}
-					else if(1==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))&&
-							  1==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)) )
-					{
-						SendToEsp("AT+CWDHCP=1,3\r\n");
-						while (RecvFromEsp("\r\nOK")==0)
-							vTaskDelay(10);
-					}
-
-					SendToEsp("AT+CWHOSTNAME=\"Elektronika_STM\"\r\n");
-					while (RecvFromEsp("\r\nOK")==0)  //WProwadzic variable dla hostName
-					{
-						if (RecvFromEsp("ERROR"))
-							break;
-						vTaskDelay(10);
-					}
-
-					switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-					{
-					case WIFI_MODE_STA:
-					case WIFI_MODE_AP_STA:
-						if(0==VAR_GetTabVal(Const_wifiSTA_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)))
-						{
-							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPSTA=\"%s\",\"%s\",\"%s\"\r\n",
-									IP2Str(VAR_GetTabVal(Const_wifiSTA_ip,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
-									IP2Str(VAR_GetTabVal(Const_wifiSTA_gate,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))),
-									IP2Str(VAR_GetTabVal(Const_wifiSTA_mask,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB))));
-							SendToEsp2(sendBuff,len);
-							DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-							while (RecvFromEsp("\r\nOK")==0)
-								vTaskDelay(10);
-						}
-						break;
-					}
-					switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-					{
-					case WIFI_MODE_AP:
-					case WIFI_MODE_AP_STA:
-						if(0==VAR_GetTabVal(Const_wifiAP_dhcp,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)))
-						{
-							len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CIPAP=\"%s\",\"%s\",\"%s\"\r\n",
-									IP2Str(VAR_GetTabVal(Const_wifiAP_ip,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
-									IP2Str(VAR_GetTabVal(Const_wifiAP_gate,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))),
-									IP2Str(VAR_GetTabVal(Const_wifiAP_mask,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB))));
-							SendToEsp2(sendBuff,len);
-							DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-							while (RecvFromEsp("\r\nOK")==0)
-								vTaskDelay(10);
-						}
-						break;
-					}
-
-					switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-					{
-					case WIFI_MODE_AP:
-					case WIFI_MODE_AP_STA:
-						len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWSAP=\"%s\",\"%s\",5,3\r\n",
-								VAR_GetStr(Const_wifiAP_name,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)),
-								VAR_GetStr(Const_wifiAP_pass,VAR_GetTabVal(Const_wifiGeneral_nrAP,NO_TAB)));
-						SendToEsp2(sendBuff,len);
-						DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-						while (RecvFromEsp("\r\nOK")==0)
-							vTaskDelay(10);
-						break;
-					}
-					switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-					{
-					case WIFI_MODE_STA:
-					case WIFI_MODE_AP_STA:
-						len=mini_snprintf(sendBuff, sizeof(sendBuff), "AT+CWJAP=\"%s\",\"%s\"\r\n",
-								VAR_GetStr(Const_wifiSTA_name,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)),
-								VAR_GetStr(Const_wifiSTA_pass,VAR_GetTabVal(Const_wifiGeneral_nrSTA,NO_TAB)));  // Timer do logowania !!!!!  i poprawic GetPort !! zamiast port na indeks
-						SendToEsp2(sendBuff,len);
-						DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-						result=vGetConnectionResultToSTA();
-						if(ESP_CONNECTION_OK!=result)
-							DbgVar(DBG,30,"\r\nERROR_ESP_CONNECTION: %d\r\n",result);
-						break;
-					}
-
-					SendToEsp("AT+CIFSR\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-					GetAddressesForConnection();
-					Dbg(DBG, RecvBuffer);
-
-					SendToEsp("AT+CIPSERVERMAXCONN=1\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-
-					len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPDNS=1,\"%s\",\"%s\",\"%s\"\r\n",
-							IP2Str(VAR_GetTabVal(Const_dns_IP1,NO_TAB)),
-							IP2Str(VAR_GetTabVal(Const_dns_IP2,NO_TAB)),
-							IP2Str(VAR_GetTabVal(Const_dns_IP3,NO_TAB)));
-					SendToEsp2(sendBuff,len);
-					DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(1);
-					Dbg(DBG, RecvBuffer);
-
-					len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSNTPCFG=1,%d,\"%s\",\"%s\"\r\n",
-							VAR_GetTabVal(Const_sntp_timezone,NO_TAB),
-							VAR_GetStr(Const_sntp_nameServer1,NO_TAB),
-							VAR_GetStr(Const_sntp_nameServer2,NO_TAB));
-					SendToEsp2(sendBuff,len);
-					DbgMulti(DBG,"\r\n",sendBuff,"\r\n");
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(1);
-					Dbg(DBG, RecvBuffer);
-
-					vStartServer();
-
-					len=mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSTO=%d\r\n",TCP_SERVER_TIMEOUT_S);
-					SendToEsp2(sendBuff,len);
-					while (RecvFromEsp("\r\nOK")==0)
-						vTaskDelay(10);
-
-					switch(VAR_GetTabVal(Const_wifiGeneral_mode,NO_TAB))
-					{
-						case WIFI_MODE_STA:
-						case WIFI_MODE_AP_STA:
-							vQueryAndReplaceEmailAddrName2AddrIP();
-							if(0==vQueryAndLoadTimeFromSNTP())
-								vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB));
-							break;
-						default:
-							vLoadTime(VAR_GetTabVal(Const_sntp_time,NO_TAB));
-							break;
-					}
-
-					Dbg(DBG, "\r\nESP INIT OK ");
-					RestartDMA();
-					connectionType=HTTP_CONNECTION;
-				}
-				break;
-			}
-		}
-
-		if (resetDMA==1)
-		{
-			resetDMA=0;
-			Dbg(DBG, "\r\nERROR USART6 ");
-			if (EmailSendParam.start==0)
-				SendDummyData(200);
-			RestartDMA();
-			EmailSendParam.start=0;
-			vRestartWifiServer();
-		}
-
-		if (EmailSendParam.start==1)
-			EmailSendParam.start++;
-		else if (EmailSendParam.start==2)
-			EmailSendStart();
-
-		vTaskDelay(20);
-	}*/
 }
 
 void CreateWifiTask(void)
@@ -2876,22 +1715,20 @@ void RestartWifiTask(void)
 	CreateWifiTask();
 }
 
-void WIFI_UartErrorService(void)
-{
-	resetDMA=1;  //Nie tak tylko semafor !!!!!
-}
 
 void WIFI_RxCallbackService(void)
 {
-	Dbg(DBG, "\r\n -----  USART6  HAL_UART_RxCpltCallback -------  ");  //xTaskNotify i do vLogTask !!!!
+	Dbg(DBG, "\r\n -----  USART6  HAL_UART_RxCpltCallback -------  ");   //Przerob aby w przerwaniach byly tylko xTaskNotify do vLog Task !!!!!!!!!!!!!!!!!!
 }
 
-//------------- ATTENTIONS ------------------------------
-/* AKTUALIZUJ firmware ESP przez strone ESp Home bo przez esp download tool nie dziala */   /* !!! BOOT pin (IO0) low,  EN high !!!		RXD0,TXDO -> do progr.  IO17,IO18 -> at commands*/
-/* https://web.esphome.io/ */
-/* https://docs.espressif.com/projects/esp-at/en/latest/esp32/AT_Binary_Lists/esp_at_binaries.html#firmware-esp32-wroom-32-series */
-/* Aby sprawdzic firmawer : at+gmr [enter]+[ctrl+j] */
+
+/* ------------- ATTENTIONS ------------------------------ */
 /*
+AKTUALIZUJ firmware ESP przez strone ESp Home bo przez esp download tool nie dziala */   /* !!! BOOT pin (IO0) low,  EN high !!!		RXD0,TXDO -> do progr.  IO17,IO18 -> at commands
+https://web.esphome.io/
+https://docs.espressif.com/projects/esp-at/en/latest/esp32/AT_Binary_Lists/esp_at_binaries.html#firmware-esp32-wroom-32-series
+Aby sprawdzic firmawer : at+gmr [enter]+[ctrl+j]
+
 AT version:2.1.0.0(883f7f2 - Jul 24 2020 11:50:07)
 SDK version:v4.0.1-193-ge7ac221
 compile time(0ad6331):Jul 28 2020 02:47:21
@@ -2904,88 +1741,5 @@ OK
 +CIFSR:STAMAC,"4c:11:ae:f9:45:54"
 
 OK
-
-AT+CIPSTAMAC="1a:fe:35:99:d5:4A"
-AT+CIFSR  //...jesli IP 0.0.0.0 to cyklicznie �aczyc z skoja�on� siecia CWJAP (CWSAP) az do polaczenia
-AT+CWJAP?  wyswietla parametry sieci do ktorej jest podlaczony
-AT+CWSAP?  wyswietla parametry swojej sieci AP
-AT+CWLIF: Obtain IP Address of the Station That Connects to an ESP SoftAP
-
-
 */
 
-
-
-
-
-
-
-
-
-//----------------------------- Mechanizmy RTOS-owe-----------------------------
-/*
- 1).......................
-if (xReceiverTaskHandle != NULL) {
-    xTaskNotifyGive(xReceiverTaskHandle);										// WYSYŁANIE: Zwiększ wartość powiadomienia odbiorcy o 1
-    printf("Nadawca: Wysłałem powiadomienie!\n");
-}
-
-ulNotificationValue = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);			// ODBIERANIE: Czekaj (blokuj wątek) aż przyjdzie powiadomienie			pdTRUE oznacza, że po odczycie licznik powiadomień zostanie wyzerowany
-
-if (ulNotificationValue > 0) {
-	printf("Odbiorca: Otrzymałem powiadomienie! Wysyłam e-mail...\n");
-	// Tutaj wstaw kod do wysyłki e-maila przez komendy AT
-}
-
-2).......................
-
-eSetValueWithOverwrite: 			Najczęstszy wybór. Odbiorca zawsze dostanie najnowszą wartość, stara (jeśli nie została odebrana) jest kasowana. Idealne do stanów i pomiarów.
-eSetValueWithoutOverwrite:			 Zapisze wartość tylko wtedy, gdy poprzednia została już odebrana. Jeśli nie – funkcja zwróci błąd (pdFAIL).
-eSetBits: 								Traktuje powiadomienie jako flagi (bit po bicie). Pozwala ustawić konkretne bity bez zmieniania pozostałych (jak w Event Groups).
-
-   sensorData = 25; // Przykładowa wartość (np. temperatura)
-   xTaskNotify(xReceiverTaskHandle, sensorData, eSetValueWithOverwrite);    	 // WYSYŁANIE:
-
-   if (xTaskNotifyWait(0, 0, &receivedValue, portMAX_DELAY) == pdPASS) {		// ODBIERANIE:		xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu.
-       printf("Odebrano wartość: %d\n", receivedValue);
-   }
-
-
- void ARCHIVE_SendEvent(char* eventDesc)
-{
-	char* eventMessage = pvPortMalloc(100 * sizeof(char));
-	if (NULL != eventMessage)
-	{
-		strncpy(eventMessage,eventDesc,100);
-		if(errQUEUE_FULL == xQueueSend(xMessageQueue, &eventMessage, 200))
-			vPortFree(eventMessage);
-	}
-}
-
-void ARCHIVE_SendServiceEvent(int ID)
-{
-	int* eventMessage = pvPortMalloc(sizeof(int));
-	if (NULL != eventMessage)
-	{
-		*eventMessage = ID;
-		if(NULL == xAuthorizedEventQueue)
-			xAuthorizedEventQueue = xQueueCreate(20, sizeof(int));
-		if(errQUEUE_FULL == xQueueSend(xAuthorizedEventQueue, &eventMessage, sizeof(int)))
-			vPortFree(eventMessage);
-	}
-}
-
-char archBufferEvent[150]={0};
-int queueSize = uxQueueMessagesWaiting(xMessageQueue);  //ile jest w kolejsce elemetow do odczytu
-  	for (int i = 0; i < queueSize; i++)
-	{
-		if (xQueueReceive(xMessageQueue, &(eventArchMessage), portMAX_DELAY))
-		{
-		   strcat(archBufferEvent,eventArchMessage);
-
-		   vPortFree(eventArchMessage);  // to WAZNE !!!
-			memset(archBufferEvent, 0, sizeof(archBufferEvent));
-		}
-	}
-
-*/
