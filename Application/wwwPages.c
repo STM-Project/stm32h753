@@ -26,9 +26,6 @@
 extern char* GETVAL_ptr();
 extern char buff[];
 
-//SDRAM char dataBufferHTTP[HTTP_BUFFER_SIZE];
-//SDRAM char dataBufferHTTP_pre[HTTP_BUFFER_SIZE_PRE];
-
 /* W NotePad nalezy zamienic '\r\n' -> '\\r\\n\\\r\n' */
 char HttpRefr[]="22:59:08 &nbsp;26/07/25120000000000000 111111111111111111 55555555555555  25.10 65%0  78.30 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0       6.0       5.7      ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0 V     V              0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0";
 
@@ -791,7 +788,7 @@ label {\r\n\
 	<td>                                                                           </td>\r\n\
 	</tr></table>\r\n\
 \r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp001a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora001a\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp001a\"><font color='#eee'>   --.- &deg;C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora001a\"></div>\r\n\
 <div id=\"tu_temp001b\" style=\"display: none;\"></div><div id=\"tu_lora001c\"></div><div id=\"tu_temp001c\" style=\"display: none;\"></div><div id=\"tu_lora001b\"></div><div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp002a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora002a\"></div>\r\n\
 <div id=\"tu_temp002b\" style=\"display: none;\"></div><div id=\"tu_lora002c\"></div><div id=\"tu_temp002c\" style=\"display: none;\"></div><div id=\"tu_lora002b\"></div><div id=\"tu_temp003a\" style=\"display: none;\"></div><div id=\"tu_lora003a\"></div><div id=\"tu_temp003b\" style=\"display: none;\"></div><div id=\"tu_lora003c\"></div><div id=\"tu_temp003c\" style=\"display: none;\"></div><div id=\"tu_lora003b\"></div><div id=\"tu_temp004a\" style=\"display: none;\"></div><div id=\"tu_lora004a\"></div><div id=\"tu_temp004b\" style=\"display: none;\"></div><div id=\"tu_lora004c\"></div><div id=\"tu_temp004c\" style=\"display: none;\"></div><div id=\"tu_lora004b\"></div><div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\"><font class=\"a\"><b><div id=\"tu_temp005b\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora005c\"></div><br>\r\n\
 <font class=\"a\"><b><div id=\"tu_temp005c\"><font color='#eee'>  --   %</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora005b\"></div></div></div>\r\n\
@@ -1512,7 +1509,7 @@ function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
 function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-var myVar = setInterval(loadXMLDoc, 5000       );\r\n\
+var myVar = setInterval(loadXMLDoc, 500      );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
  var txt2=[]; \r\n\
@@ -2390,7 +2387,7 @@ function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
 function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-var myVar = setInterval(loadXMLDoc, 5000       );\r\n\
+var myVar = setInterval(loadXMLDoc, 500       );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
  var txt2=[]; \r\n\
@@ -4361,7 +4358,7 @@ function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
 function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-var myVar = setInterval(loadXMLDoc, 5000       );\r\n\
+var myVar = setInterval(loadXMLDoc, 500       );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
  var txt2=[]; \r\n\
@@ -4549,14 +4546,6 @@ typedef struct
 	char a1[100];
 }aaa;
 SDRAM static aaa bbb[40];
-
-void ResetTestTab(void)  //do usuniecia !!!
-{
-//	for(int i=0;i<40;i++)
-//	{
-//		bbb[i].a1[0]=0;
-//	}
-}
 
 int IsValueInRangeLowHigh(int val, int low, int high)
 {
