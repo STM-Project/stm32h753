@@ -21,6 +21,5 @@ extern const char HttpMainReadPanel2[];
 extern const char HttpMainSettings[];
 
 DATA_TO_SEND* GetPageWWW(char *getHttpRequest);
-void ResetTestTab(void);
 
 #endif /* HTTP_WWWPAGES_H_ */
