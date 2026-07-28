@@ -179,6 +179,39 @@ _Min_Stack_Size - Służy on systemowi tylko w dwóch sytuacjach (w przypadku RT
   - Każde zadanie (Task), które tworzysz we FreeRTOS, otrzymuje swój własny, oddzielny stos. Pamięć na te stosy jest alokowana dynamicznie przez heap_4 z puli configTOTAL_HEAP_SIZE.	
  	
 	
+10---------------Mechanizmy RTOS`owe--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------		
+	
+	1).
+	if (xReceiverTaskHandle != NULL) {
+    	xTaskNotifyGive(xReceiverTaskHandle);								// WYSYŁANIE: Zwiększ wartość powiadomienia odbiorcy o 1
+    	printf("Nadawca: Wysłałem powiadomienie!\n");
+	}
+
+	ulNotificationValue = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);			// ODBIERANIE: Czekaj (blokuj wątek) aż przyjdzie powiadomienie			pdTRUE oznacza, że po odczycie licznik powiadomień zostanie wyzerowany
+
+	if (ulNotificationValue > 0) {
+		printf("Odbiorca: Otrzymałem powiadomienie! Wysyłam e-mail...\n");
+		// Tutaj wstaw kod do wysyłki e-maila przez komendy AT
+	}
+
+
+	2).
+	eSetValueWithOverwrite: 			Najczęstszy wybór. Odbiorca zawsze dostanie najnowszą wartość, stara (jeśli nie została odebrana) jest kasowana. Idealne do stanów i pomiarów.
+	eSetValueWithoutOverwrite:			Zapisze wartość tylko wtedy, gdy poprzednia została już odebrana. Jeśli nie – funkcja zwróci błąd (pdFAIL).
+	eSetBits: 							Traktuje powiadomienie jako flagi (bit po bicie). Pozwala ustawić konkretne bity bez zmieniania pozostałych (jak w Event Groups).
+
+   	sensorData = 25; 					// Przykładowa wartość (np. temperatura)
+   	xTaskNotify(xReceiverTaskHandle, sensorData, eSetValueWithOverwrite);    	 	// WYSYŁANIE:
+
+   	if (xTaskNotifyWait(0, 0, &receivedValue, portMAX_DELAY) == pdPASS) {			// ODBIERANIE:		xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu.
+       	printf("Odebrano wartość: %d\n", receivedValue);
+   	}
+
+
+11----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
+	
+	
+	
 	
 	
 	
