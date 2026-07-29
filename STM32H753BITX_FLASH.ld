@@ -49,6 +49,7 @@ MEMORY
   RAM_D2 (xrw)   : ORIGIN = 0x30000000, LENGTH = 288K
   RAM_D3 (xrw)   : ORIGIN = 0x38000000, LENGTH = 64K
   ITCMRAM (xrw)  : ORIGIN = 0x00000000, LENGTH = 64K
+  SDRAM   (xrw)  : ORIGIN = 0x60000000, LENGTH = 64M
 }
 
 /* Define output sections */
@@ -172,6 +173,15 @@ SECTIONS
     *(.d2_data)    /* To jest nazwa, której użyjemy w kodzie */
     . = ALIGN(32);
   } >RAM_D2
+
+  . = ALIGN(4);
+  .sdram (NOLOAD) :  /* do deklaracji atrybutu uzywania SDRAM */
+  {
+  . = ALIGN(4);
+  	*(.sdram)
+  	*(.sdram*)
+  . = ALIGN(4);
+  } >SDRAM
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
