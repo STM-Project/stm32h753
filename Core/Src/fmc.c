@@ -22,7 +22,161 @@
 #include "fmc.h"
 
 /* USER CODE BEGIN 0 */
+#include "errors_service.h"
 
+#define SDRAM_DEVICE_ADDR         ((uint32_t)0x60000000)
+#define SDRAM_DEVICE_SIZE         ((uint32_t)0x01000000) //16MB				//((uint32_t)0x03FFFFFF) //64MB
+
+#define SDRAM_TIMEOUT     ((uint32_t)0xFFFF)
+
+#define SDRAM_MODEREG_BURST_LENGTH_1             ((uint16_t)0x0000)
+#define SDRAM_MODEREG_BURST_LENGTH_2             ((uint16_t)0x0001)
+#define SDRAM_MODEREG_BURST_LENGTH_4             ((uint16_t)0x0002)
+#define SDRAM_MODEREG_BURST_LENGTH_8             ((uint16_t)0x0004)
+#define SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL      ((uint16_t)0x0000)
+#define SDRAM_MODEREG_BURST_TYPE_INTERLEAVED     ((uint16_t)0x0008)
+#define SDRAM_MODEREG_CAS_LATENCY_2              ((uint16_t)0x0020)
+#define SDRAM_MODEREG_CAS_LATENCY_3              ((uint16_t)0x0030)
+#define SDRAM_MODEREG_OPERATING_MODE_STANDARD    ((uint16_t)0x0000)
+#define SDRAM_MODEREG_WRITEBURST_MODE_PROGRAMMED ((uint16_t)0x0000)
+#define SDRAM_MODEREG_WRITEBURST_MODE_SINGLE     ((uint16_t)0x0200)
+
+FMC_SDRAM_CommandTypeDef command;
+
+void SDRAM_Initialization_Sequence(void)
+{
+	__IO uint32_t tmpmrd = 0;
+	/* Step 3:  Configure a clock configuration enable command */
+	command.CommandMode = FMC_SDRAM_CMD_CLK_ENABLE;
+	command.CommandTarget = FMC_SDRAM_CMD_TARGET_BANK1;
+	command.AutoRefreshNumber = 1;
+	command.ModeRegisterDefinition = 0;
+
+	/* Send the command */
+	HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT);
+
+	/* Step 4: Insert 100 us minimum delay */
+	/* Inserted delay is equal to 1 ms due to systick time base unit (ms) */
+	HAL_Delay(1);
+
+	/* Step 5: Configure a PALL (precharge all) command */
+	command.CommandMode = FMC_SDRAM_CMD_PALL;
+	command.CommandTarget = FMC_SDRAM_CMD_TARGET_BANK1;
+	command.AutoRefreshNumber = 1;
+	command.ModeRegisterDefinition = 0;
+
+	/* Send the command */
+	HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT);
+
+	/* Step 6 : Configure a Auto-Refresh command */
+	command.CommandMode = FMC_SDRAM_CMD_AUTOREFRESH_MODE;
+	command.CommandTarget = FMC_SDRAM_CMD_TARGET_BANK1;
+	command.AutoRefreshNumber = 8;
+	command.ModeRegisterDefinition = 0;
+
+	/* Send the command */
+	HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT);
+
+	/* Step 7: Program the external memory mode register */
+	tmpmrd = (uint32_t) SDRAM_MODEREG_BURST_LENGTH_4 |
+	SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL |
+	SDRAM_MODEREG_CAS_LATENCY_2 |
+	SDRAM_MODEREG_OPERATING_MODE_STANDARD |
+	SDRAM_MODEREG_WRITEBURST_MODE_SINGLE;
+
+	command.CommandMode = FMC_SDRAM_CMD_LOAD_MODE;
+	command.CommandTarget = FMC_SDRAM_CMD_TARGET_BANK1;
+	command.AutoRefreshNumber = 1;
+	command.ModeRegisterDefinition = tmpmrd;
+
+	/* Send the command */
+	HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT);
+
+	/* Step 8: Set the refresh rate counter */
+	/* (15.62 us x Freq) - 20 */
+	/* Set the device refresh counter */
+	hsdram1.Instance->SDRTR |= ((uint32_t) ((1292) << 1));
+}
+
+void TestSDRAM(void)
+{
+	uint32_t WriteReadAddr = 4;
+	uint32_t aTxBuffer;
+	uint32_t aRxBuffer;
+
+	uint32_t uwWriteReadStatus = 0;
+
+	uint32_t Sdram_addr = 0;
+	long int i, iter;
+
+	iter = SDRAM_DEVICE_SIZE / WriteReadAddr;
+
+	//-----------------------------START TEST 1-----------------------------
+
+	for (i = 0; i < iter; i++)
+	{
+		Sdram_addr = SDRAM_DEVICE_ADDR + WriteReadAddr * i;
+		aTxBuffer = Sdram_addr;
+		*(volatile uint32_t*) Sdram_addr = aTxBuffer;
+	}
+
+	for (i = 0; i < iter; i++)
+	{
+		aRxBuffer = 0x0;
+		Sdram_addr = SDRAM_DEVICE_ADDR + WriteReadAddr * i;
+		aRxBuffer = *(volatile uint32_t*) Sdram_addr;
+
+		if (aRxBuffer != Sdram_addr)
+			uwWriteReadStatus++;
+
+		if (uwWriteReadStatus)
+		{
+			ERROR_Sdram();
+			break;
+		}
+
+	}
+	if (!uwWriteReadStatus)
+	{
+
+	}
+
+	uwWriteReadStatus = 0;
+
+	//------------------------------END TEST 1------------------------------
+
+	//-----------------------------START TEST 2-----------------------------
+
+	for (i = 0; i < iter; i++)
+	{
+		Sdram_addr = SDRAM_DEVICE_ADDR + WriteReadAddr * i;
+		aTxBuffer = ~Sdram_addr;
+		*(volatile uint32_t*) Sdram_addr = aTxBuffer;
+	}
+
+	for (i = 0; i < iter; i++)
+	{
+		aRxBuffer = 0x0;
+		Sdram_addr = SDRAM_DEVICE_ADDR + WriteReadAddr * i;
+		aRxBuffer = *(volatile uint32_t*) Sdram_addr;
+
+		if (aRxBuffer != ~Sdram_addr)
+			uwWriteReadStatus++;
+
+		if (uwWriteReadStatus)
+		{
+			ERROR_Sdram();
+			break;
+		}
+
+	}
+	if (!uwWriteReadStatus)
+	{
+	}
+
+	uwWriteReadStatus = 0;
+	//------------------------------END TEST 2------------------------------
+}
 /* USER CODE END 0 */
 
 SDRAM_HandleTypeDef hsdram1;
