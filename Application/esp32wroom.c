@@ -1364,7 +1364,7 @@ void vtaskWifi(void *argument)
 
 //Ugupuj zmienne !!!!!
 //SMTP duzeilosci danych przygotuj kod !!!!!
-//SMTP jesli po uplywie czasu nie otrzymama odpowiedzi to WRACAM do HTTP !!!!!
+//SMTP jesli po uplywie czasu nie otrzymama odpowiedzi to WRACAM do HTTP (teraz wraca do http jesli otrzym ERROR) !!!!!
 
 
 				case SMTP_CONNECTION:
