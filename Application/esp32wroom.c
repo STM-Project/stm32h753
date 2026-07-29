@@ -128,6 +128,14 @@ typedef enum
 
 }ESP_ANSWER;
 
+typedef enum
+{
+	WWW_MAIN_SETTING,
+	WWW_MAIN_READ,
+	WWW_DATA_REFRESH,
+	WWW_FAVICON
+}WEB_WWW;
+
 static const char *freeAnswerTypes[] = {
     "WIFI CONNECTED",
     "WIFI GOT IP",
@@ -376,7 +384,7 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	if(len_ > PACKET_SEND_LEN-1)  len_=PACKET_SEND_LEN-1;
 	if(data != sendBuff && data != NULL){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;		/* memcpy(sendBuff, data, len_)  jest szybsze niż strncpy */
 
-		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_"SEND_STOP\r\n"_X_); }  //TU TEZ DAJ NUMERACJE SEND_START_001 !!!!!!!!!!!!
+		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_"SEND_STOP\r\n"_X_); }
 	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",sendBuff,"\r\n"); }
 
 	UpdateReadPos();
@@ -385,7 +393,7 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
 	RstTimeBtwnSendRcv();
-	//xTimerStart(xWaitOnSendTimeoutTimer, 0);
+	if(NULL!=xWaitOnSendTimeoutTimer) xTimerStart(xWaitOnSendTimeoutTimer, 0);
 	return result;
 }
 
@@ -395,7 +403,7 @@ static int SendToEsp32_http(int len, char *data, ARCHIVING_TYPE archType)							
 	if(len_ > PACKET_SEND_LEN-1)  len_=PACKET_SEND_LEN-1;
 	if(data != sendBuff && data != NULL){ strncpy(sendBuff,data,len_); }	sendBuff[len_]=0;		/* memcpy(sendBuff, data, len_)  jest szybsze niż strncpy */
 
-		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_"SEND_STOP\r\n"_X_); }  //TU TEZ DAJ NUMERACJE SEND_START_001 !!!!!!!!!!!!
+		 if(arch ==archType){ DbgMultiDma(DBG,CoR2_"\r\nSEND_START: "_X_,sendBuff,CoR2_"SEND_STOP\r\n"_X_); }
 	else if(arch2==archType){ DbgMultiDma(DBG,"\r\n",sendBuff,"\r\n"); }
 
 /*	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, PACKET_SEND_LEN);	*/							/* SCB_CleanDCache_by_Addr() takes only 4us */		/* Jesli w MPU ustawimy adres bufora 'sendBuff' w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_CleanDCache_by_Addr() nie jest potrzebny */
@@ -403,7 +411,7 @@ static int SendToEsp32_http(int len, char *data, ARCHIVING_TYPE archType)							
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
 	RstTimeBtwnSendRcv();
-	//xTimerStart(xWaitOnSendTimeoutTimer, 0);
+	if(NULL!=xWaitOnSendTimeoutTimer) xTimerStart(xWaitOnSendTimeoutTimer, 0);
 	return result;
 }
 
@@ -617,9 +625,23 @@ static int Is_ComplRecvSMTPpacket(void){
 	return (RecvFromEsp("\r\nRecv ") && RecvFromEsp("\r\n+IPD,"ESP_EMAIL_CHANNEL));
 }
 
+static void InitStructRqstToSendChnl(void){
+	httpPar.chnl = 0xFF;
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
+}
+
+static void HTTP_ShowHttpStruct(void){
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 DbgVarDma2(1,200,"que:%*d 	nr:%*d 	 ptr:%*d   len:%*d\r\n", -3,httpPar.que[i], -3,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.len[i] );	}
+}
+
 static void vWaitOnSendTimeoutTimerCallback(TimerHandle_t pxTimer)
 {
-	;
+	DbgDma(DBG,_SE_"\r\nTIMEOUT RECV "_E_);		DbgVarDma(DBG,100,_S_"connType:%d "_E_,connectionType);
+	switch(connectionType){
+		case HTTP_CONNECTION:	DbgDma(DBG,_S_"\r\n"_E_); HTTP_ShowHttpStruct(); DbgDma(DBG,_S_"\r\nRESET http chnl struct "_E_); InitStructRqstToSendChnl();	  break;	/* Propozycja: zamykac otwarte 'wiszace' polaczenia */
+		case INIT_CONNECTION:	break;
+		case SMTP_CONNECTION:	break;
+	}
 	xTimerStop(pxTimer, 0);
 }
 /*
@@ -628,24 +650,23 @@ static void GoToTest(char* txt){
 	DbgVarDma(DBG,50, _S_"%s"_E_,txt);
 }
 */
-static char* HTTP_SetWeb(int channel, int nrWWW)  //Zapytaj sie chata co mam wyslac dla favicon !!!!
+static char* HTTP_SetWeb(int channel, int nrWWW)
 {
 	LOOP_FOR(i,MAX_HTML_WEBs){  httpPar.web[channel][i] = NULL;		httpPar.siz[channel][i] = 0;  }
-
 	int nrPartWWW=0;
 	switch(nrWWW){
-	case 0:
+	case WWW_MAIN_READ:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
 		httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;		httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
 		break;
-	case 1:
+	case WWW_DATA_REFRESH:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpRefr;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpRefr);
 		break;
-	case 2:
+	case WWW_MAIN_SETTING:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
 		httpPar.web[channel][nrPartWWW] = (char*)HttpMainSettings;		httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainSettings);
 		break;
-	case 3:
+	case WWW_FAVICON:
 		httpPar.web[channel][nrPartWWW] = NULL;							httpPar.siz[channel][nrPartWWW++] = 0;
 		break;
 	default:
@@ -696,11 +717,6 @@ int CheckReadyToSendChnl(u8 chnlPrev){
 
 	}
 	return -1;
-}
-
-static void InitStructRqstToSendChnl(void){
-	httpPar.chnl = 0xFF;
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
 }
 
 static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl){
@@ -781,16 +797,10 @@ void vtaskWifi(void *argument)
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
 
-	//xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
+	xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 
 
-/*
-	AT+CWAUTOCONN=1: Włącza automatyczne łączenie z AP przy starcie (standardowo jest włączone).
-	AT+SYSSTORE=1:   Upewnia się, że zmiany w konfiguracji Wi-Fi (jak SSID i hasło) są zapisywane w pamięci flash, aby przetrwały restart.
-	AT+SYSMSG:       Pozwala na konfigurację dodatkowych komunikatów systemowych (np. o rozłączeniu), co jest dostępne w nowszych wersjach oprogramowania (powyżej v2.1.0.0).
 
-
-*/
 
 //	StartMeasureTime_us();
 //	StopMeasureTime_us("\r\nTEST_5");
@@ -1210,6 +1220,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
+					if(NULL!=xWaitOnSendTimeoutTimer) xTimerStop(xWaitOnSendTimeoutTimer, 0);
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
 					RstTimeBtwnSendRcv();
@@ -1230,25 +1241,33 @@ void vtaskWifi(void *argument)
 									if (strstr_(pHttp2,":GET / "))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,0);
+										SetRqstToSendChnl(channel,WWW_MAIN_READ);
 										HTTP_ShowInitChannel(channel,size,arch);
 									}
 									else if (strstr_(pHttp2,":GET /Set"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,2);
+										SetRqstToSendChnl(channel,WWW_MAIN_SETTING);
 										HTTP_ShowInitChannel(channel,size,arch);
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,3);
+										SetRqstToSendChnl(channel,WWW_FAVICON);
 										HTTP_ShowInitChannel(channel,size,arch);
+
+										/*	HTTP/1.1 200 OK\r\n
+											Content-Type: image/x-icon\r\n
+											Cache-Control: public, max-age=31536000, immutable\r\n
+											Content-Length: 0\r\n
+											Connection: keep-alive\r\n
+											\r\n
+										*/
 									}
 									else if (strstr_(pHttp2,":GET /TME.txt"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,1);
+										SetRqstToSendChnl(channel,WWW_DATA_REFRESH);
 										HTTP_ShowInitChannel(channel,size,arch);
 									}
 								}
@@ -1322,13 +1341,12 @@ void vtaskWifi(void *argument)
 					UpdateReadPos();
 					break;
 
-//i jesli nie bedzie odpowiedzi po np 30 sekund to timercallbak timeout !!!!!!
 //ZROB tablice allokacji !!!!!!!!!!!!!! wyswieltlanie na zadanie
-					//SPRAWDZ czy czasem razem nie moze isc HTTP i SMTP !!!!!!!
+//SPRAWDZ czy czasem razem nie moze isc HTTP i SMTP !!!!!!!
 
 
 				case TEST_CONNECTION:
-					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))  //DAJ ABY  RECV_START_TEST:  zastanow sie
+					if (CASE_Service(0,txt_OK,txt_ERR,typeRecvArch))
 					{
 						DbgVarDma(DBG,50, _SE_"\r\nTest OK "_E_);
 						BackToHttpService(&nrHTTPpacket);
@@ -1593,6 +1611,7 @@ void vtaskWifi(void *argument)
 
 		}
 
+
 		if (ulNotifiedValue & BIT_DBG_SRV)
 		{
 			DEBUG_InvalidateDCache();
@@ -1600,7 +1619,7 @@ void vtaskWifi(void *argument)
 			if(DEBUG_IsTxtReceive("a"))
 			{
 				DbgVarDma2(1,50,"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
-				LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 DbgVarDma2(1,200,"que:%*d 	nr:%*d 	 ptr:%*d   len:%*d\r\n", -3,httpPar.que[i], -3,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.len[i] );	}
+				HTTP_ShowHttpStruct();
 
 			}
 			else if(DEBUG_IsTxtReceive("s"))
@@ -1741,5 +1760,9 @@ OK
 +CIFSR:STAMAC,"4c:11:ae:f9:45:54"
 
 OK
+
+	AT+CWAUTOCONN=1: Włącza automatyczne łączenie z AP przy starcie (standardowo jest włączone).
+	AT+SYSSTORE=1:   Upewnia się, że zmiany w konfiguracji Wi-Fi (jak SSID i hasło) są zapisywane w pamięci flash, aby przetrwały restart.
+	AT+SYSMSG:       Pozwala na konfigurację dodatkowych komunikatów systemowych (np. o rozłączeniu), co jest dostępne w nowszych wersjach oprogramowania (powyżej v2.1.0.0).
 */
 
