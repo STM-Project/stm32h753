@@ -124,6 +124,9 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
 
+//	SDRAM_Initialization_Sequence();
+//	TestSDRAM();
+
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
