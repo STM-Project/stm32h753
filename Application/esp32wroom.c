@@ -70,7 +70,7 @@
 #define BIT_ESP_SRV			(1<<0)
 #define BIT_DBG_SRV			(1<<1)
 
-#define WAIT_ON_SEND_TIMEOUT_TIME_MS 	5000
+#define WAIT_ON_SEND_TIMEOUT_TIME_MS 	20000
 
 typedef enum
 {
@@ -165,7 +165,7 @@ struct HTTP_SEND_TEMP{
  	u32   len[ESP_MAX_HTTP_CONN];					/* actual packet len to send */
 }httpPar;
 
-TimerHandle_t xWaitOnSendTimeoutTimer;
+TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
 static char* pMem=NULL;
 static int DBG = 1;
@@ -722,8 +722,7 @@ int CheckReadyToSendChnl(u8 chnlPrev){
 static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl){
 	int nrQue=CheckReadyToSendChnl(prevChnl);
 	if(nrQue>-1){
-		//if(httpPar.ptr[nrQue]==NUL)  //sprawdz chyba to samo !!!
-		if(httpPar.web[nrQue][httpPar.nrWeb[nrQue]]==NULL){
+		if(httpPar.ptr[nrQue]==NULL){  								/* albo: if(httpPar.web[nrQue][httpPar.nrWeb[nrQue]]==NULL){   to jest to samo */
 			httpPar.nr[nrQue]=0;
 			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
 		}
@@ -797,7 +796,6 @@ void vtaskWifi(void *argument)
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
 
-	xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 
 
 
@@ -1124,6 +1122,7 @@ void vtaskWifi(void *argument)
 
 								connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 								UpdateReadPos();				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
+								//xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 							}
 							else
 							{
@@ -1132,6 +1131,7 @@ void vtaskWifi(void *argument)
 								{
 									UpdateReadPos();
 									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
+									//xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 								}
 								else
 								{
@@ -1342,7 +1342,7 @@ void vtaskWifi(void *argument)
 					break;
 
 //ZROB tablice allokacji !!!!!!!!!!!!!! wyswieltlanie na zadanie
-//SPRAWDZ czy czasem razem nie moze isc HTTP i SMTP !!!!!!!
+//Gdy ida razem HTTP i SMTP to moze nie otrzymac odpowiedzi od  AT+CIPSERVER=0 i WISI   (daj jesli w SMTP dlugo czeka na odpowiedz to po np 30 sekund wracaj do HTTP) !!!!!!!!!!!!!!
 
 
 				case TEST_CONNECTION:
@@ -1362,7 +1362,9 @@ void vtaskWifi(void *argument)
 //Musisz sprawdzac czy wisi jakies polaczenie za pomoca AT+CIPSTATUS jesi tak to at+cipclose=x
 //Send - timer start - timer over: callbackFunction Timer, ktory wysyla status jesli jest cos to zamyka,      KAZDY recv stopTimerCalback
 
-
+//Ugupuj zmienne !!!!!
+//SMTP duzeilosci danych przygotuj kod !!!!!
+//SMTP jesli po uplywie czasu nie otrzymama odpowiedzi to WRACAM do HTTP !!!!!
 
 
 				case SMTP_CONNECTION:
@@ -1584,8 +1586,10 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(98,ESP_EMAIL_CHANNEL",CLOSED\r\n"TXT_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ ; }
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeRecvArch );
+						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeRecvArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
+						//xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 
 					}
 					else if (CASE_Service(99,txt_OK,txt_ERR,typeRecvArch))
@@ -1622,10 +1626,15 @@ void vtaskWifi(void *argument)
 				HTTP_ShowHttpStruct();
 
 			}
+			else if(DEBUG_IsTxtReceive("b"))
+			{
+				DbgDma(DBG,_S_"\r\n"_E_); HTTP_ShowHttpStruct(); DbgDma(DBG,_S_"\r\nRESET http chnl struct "_E_); InitStructRqstToSendChnl();
+
+			}
 			else if(DEBUG_IsTxtReceive("s"))
 			{
-				if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
-				{
+				//if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
+				//{
 					SendEmail(2, 1<<1, EMAIL_MEASURE);			/* z  'interia.pl'  i  'wp.pl'  musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
 
 					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
@@ -1638,8 +1647,8 @@ void vtaskWifi(void *argument)
 						SendToEsp32(0,"AT+CIPSERVER=0\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 					}
-				}
-				else{ DbgDma(DBG, _S_"\r\nESP jest zajety..."_E_); }
+				//}
+				//else{ DbgDma(DBG, _S_"\r\nESP jest zajety..."_E_); }
 
 			}
 			else if(DEBUG_IsTxtReceive("x"))
