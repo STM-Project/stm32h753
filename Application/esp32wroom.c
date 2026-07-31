@@ -378,6 +378,40 @@ static int GetTimeBtwnSendRcv(void){
 	return CONDITION( xTaskGetTickCount()-tickCnt > PAUSE_BETWEEN_SEND_RECV_MS, 1, 0 );
 }
 
+static void InitStructRqstToSendChnl(void){
+	httpPar.chnl = 0xFF;
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
+}
+
+static void HTTP_ShowHttpStruct(void){
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 DbgVarDma2(1,200,"que:%*d 	nr:%*d 	 ptr:%*d   len:%*d\r\n", -3,httpPar.que[i], -3,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.len[i] );	}
+}
+
+static void BackFromEmail(int nrInfo);
+
+static void vWaitOnSendTimeoutTimerCallback(TimerHandle_t pxTimer)
+{
+	DbgDma(DBG,_SE_"\r\nTIMEOUT RECV "_E_);		DbgVarDma(DBG,100,_S_"connType:%d "_E_,connectionType);
+	switch(connectionType){
+		case HTTP_CONNECTION: case HTTP_CONNECTION_2:	DbgDma(DBG,_S_"\r\n"_E_); HTTP_ShowHttpStruct(); DbgDma(DBG,_S_"\r\nRESET http chnl struct "_E_); InitStructRqstToSendChnl();	  break;	/* Propozycja: zamykac otwarte 'wiszace' polaczenia */
+		case INIT_CONNECTION:	DbgDma(DBG,_SE_"\r\nINIT_ESP !!!"_E_);  break;
+		case SMTP_CONNECTION:	BackFromEmail(1);  break;
+	}
+	xTimerStop(pxTimer, 0);   /* HTTP_RcvTimeoutTimerStop() */
+}
+static int HTTP_RcvTimeoutTimerInit(void){
+	xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
+	if(NULL!=xWaitOnSendTimeoutTimer) return 1; else return 0;
+}
+static int HTTP_RcvTimeoutTimerStart(void){
+	if(NULL!=xWaitOnSendTimeoutTimer){  if(pdPASS==xTimerStart(xWaitOnSendTimeoutTimer, 0)) return 1;  }
+	return 0;
+}
+static int HTTP_RcvTimeoutTimerStop(void){
+	if(NULL!=xWaitOnSendTimeoutTimer){  if(pdPASS==xTimerStop(xWaitOnSendTimeoutTimer, 0)) return 1;  }
+	return 0;
+}
+
 static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* if data=NULL we use buffer 'sendBuff' as default. 		if len=0 we calculate length text. */
 {
 	int len_ = CONDITION( 0==len, mini_strlen(CONDITION(NULL==data,sendBuff,data)), len );
@@ -393,7 +427,7 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
 	RstTimeBtwnSendRcv();
-	if(NULL!=xWaitOnSendTimeoutTimer) xTimerStart(xWaitOnSendTimeoutTimer, 0);
+	HTTP_RcvTimeoutTimerStart();
 	return result;
 }
 
@@ -411,7 +445,7 @@ static int SendToEsp32_http(int len, char *data, ARCHIVING_TYPE archType)							
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
 	RstTimeBtwnSendRcv();
-	if(NULL!=xWaitOnSendTimeoutTimer) xTimerStart(xWaitOnSendTimeoutTimer, 0);
+	HTTP_RcvTimeoutTimerStart();
 	return result;
 }
 
@@ -434,7 +468,7 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
-	    if(flag){ DispRecvBuff(nrCase,archType); ESP32_FreeAnswers(0); }
+	    if(flag){ DispRecvBuff(nrCase,archType); ESP32_FreeAnswers(0); HTTP_RcvTimeoutTimerStop(); }
 	}
 	return flag;
 }
@@ -624,26 +658,6 @@ static void SMTP_Descr(char* ptr, int typeSendArch, int* channel, int* size, int
 static int Is_ComplRecvSMTPpacket(void){
 	return (RecvFromEsp("\r\nRecv ") && RecvFromEsp("\r\n+IPD,"ESP_EMAIL_CHANNEL));
 }
-
-static void InitStructRqstToSendChnl(void){
-	httpPar.chnl = 0xFF;
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
-}
-
-static void HTTP_ShowHttpStruct(void){
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 DbgVarDma2(1,200,"que:%*d 	nr:%*d 	 ptr:%*d   len:%*d\r\n", -3,httpPar.que[i], -3,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.len[i] );	}
-}
-
-static void vWaitOnSendTimeoutTimerCallback(TimerHandle_t pxTimer)
-{
-	DbgDma(DBG,_SE_"\r\nTIMEOUT RECV "_E_);		DbgVarDma(DBG,100,_S_"connType:%d "_E_,connectionType);
-	switch(connectionType){
-		case HTTP_CONNECTION:	DbgDma(DBG,_S_"\r\n"_E_); HTTP_ShowHttpStruct(); DbgDma(DBG,_S_"\r\nRESET http chnl struct "_E_); InitStructRqstToSendChnl();	  break;	/* Propozycja: zamykac otwarte 'wiszace' polaczenia */
-		case INIT_CONNECTION:	break;
-		case SMTP_CONNECTION:	break;
-	}
-	xTimerStop(pxTimer, 0);
-}
 /*
 static void GoToTest(char* txt){
 	connectionType=TEST_CONNECTION;   _SET_NEW_CASE_(0);
@@ -768,8 +782,6 @@ static void HTTP_ShowInitChannel(int channel,int size, ARCHIVING_TYPE archType){
 	if(archType!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 }
 
-
-
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;
@@ -792,16 +804,15 @@ void vtaskWifi(void *argument)
 	DefaultSettingsDNS();
 	DefaultSettingsSNTP();
 	InitStructRqstToSendChnl();
+	HTTP_RcvTimeoutTimerInit();
 
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
 
 
+//WYMUS CallbackTimeou np poprzez zamkniecie n agle przgladarki !!!!
 
 
-
-//	StartMeasureTime_us();
-//	StopMeasureTime_us("\r\nTEST_5");
 
 	//Cykliczne odpytatywanie czy nie zawieszony np AT
 
@@ -1122,7 +1133,6 @@ void vtaskWifi(void *argument)
 
 								connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 								UpdateReadPos();				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
-								//xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 							}
 							else
 							{
@@ -1131,7 +1141,6 @@ void vtaskWifi(void *argument)
 								{
 									UpdateReadPos();
 									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
-									//xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 								}
 								else
 								{
@@ -1150,6 +1159,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION_2:		/* Only for:  AT+CIPSERVERMAXCONN=1 */
+					HTTP_RcvTimeoutTimerStop();
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
 					RstTimeBtwnSendRcv();
 
@@ -1220,7 +1230,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-					if(NULL!=xWaitOnSendTimeoutTimer) xTimerStop(xWaitOnSendTimeoutTimer, 0);
+					HTTP_RcvTimeoutTimerStop();
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
 					RstTimeBtwnSendRcv();
@@ -1589,7 +1599,6 @@ void vtaskWifi(void *argument)
 						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeRecvArch );
 						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
-						//xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 
 					}
 					else if (CASE_Service(99,txt_OK,txt_ERR,typeRecvArch))
@@ -1633,8 +1642,8 @@ void vtaskWifi(void *argument)
 			}
 			else if(DEBUG_IsTxtReceive("s"))
 			{
-				//if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION)
-				//{
+				if (connectionType==HTTP_CONNECTION && xTimerIsTimerActive(xWaitOnSendTimeoutTimer) == pdFALSE)			/* if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION) */
+				{
 					SendEmail(2, 1<<1, EMAIL_MEASURE);			/* z  'interia.pl'  i  'wp.pl'  musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
 
 					if( (WIFI_MODE_STA 	  == Const.wifiGeneral.mode   ||
@@ -1647,8 +1656,8 @@ void vtaskWifi(void *argument)
 						SendToEsp32(0,"AT+CIPSERVER=0\r\n",typeSendArch);
 						COMMAND_Service(_SET,sendBuff);
 					}
-				//}
-				//else{ DbgDma(DBG, _S_"\r\nESP jest zajety..."_E_); }
+				}
+				else{ DbgDma(DBG, _S_"\r\nESP jest zajety..."_E_); }
 
 			}
 			else if(DEBUG_IsTxtReceive("x"))
