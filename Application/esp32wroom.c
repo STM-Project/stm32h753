@@ -397,17 +397,17 @@ static void vWaitOnSendTimeoutTimerCallback(TimerHandle_t pxTimer)
 		case INIT_CONNECTION:	DbgDma(DBG,_SE_"\r\nINIT_ESP !!!"_E_);  break;
 		case SMTP_CONNECTION:	BackFromEmail(1);  break;
 	}
-	xTimerStop(pxTimer, 0);   /* HTTP_RcvTimeoutTimerStop() */
+	xTimerStop(pxTimer, 0);   /* RcvTimeoutTimerStop() */
 }
-static int HTTP_RcvTimeoutTimerInit(void){
+static int RcvTimeoutTimerInit(void){
 	xWaitOnSendTimeoutTimer = xTimerCreate("WaitOnSendTimeoutTimer", WAIT_ON_SEND_TIMEOUT_TIME_MS, 0, ( void * ) 0, vWaitOnSendTimeoutTimerCallback);
 	if(NULL!=xWaitOnSendTimeoutTimer) return 1; else return 0;
 }
-static int HTTP_RcvTimeoutTimerStart(void){
+static int RcvTimeoutTimerStart(void){
 	if(NULL!=xWaitOnSendTimeoutTimer){  if(pdPASS==xTimerStart(xWaitOnSendTimeoutTimer, 0)) return 1;  }
 	return 0;
 }
-static int HTTP_RcvTimeoutTimerStop(void){
+static int RcvTimeoutTimerStop(void){
 	if(NULL!=xWaitOnSendTimeoutTimer){  if(pdPASS==xTimerStop(xWaitOnSendTimeoutTimer, 0)) return 1;  }
 	return 0;
 }
@@ -426,7 +426,7 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, CACHE_ALLIGN_LEN(len_)); 	 					/* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy   CACHE_LINE_BYTES = 32 */
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
-	HTTP_RcvTimeoutTimerStart();
+	RcvTimeoutTimerStart();
 	return result;
 }
 
@@ -443,7 +443,7 @@ static int SendToEsp32_http(int len, char *data, ARCHIVING_TYPE archType)							
 	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, CACHE_ALLIGN_LEN(len_)); 	 					/* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy   CACHE_LINE_BYTES = 32 */
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
-	HTTP_RcvTimeoutTimerStart();
+	RcvTimeoutTimerStart();
 	return result;
 }
 
@@ -466,7 +466,7 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
-	    if(flag){ DispRecvBuff(nrCase,archType); ESP32_FreeAnswers(0); HTTP_RcvTimeoutTimerStop(); }
+	    if(flag){ DispRecvBuff(nrCase,archType); ESP32_FreeAnswers(0); RcvTimeoutTimerStop(); }
 	}
 	return flag;
 }
@@ -802,7 +802,7 @@ void vtaskWifi(void *argument)
 	DefaultSettingsDNS();
 	DefaultSettingsSNTP();
 	InitStructRqstToSendChnl();
-	HTTP_RcvTimeoutTimerInit();
+	RcvTimeoutTimerInit();
 
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
@@ -1157,7 +1157,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION_2:		/* Only for:  AT+CIPSERVERMAXCONN=1 */
-					HTTP_RcvTimeoutTimerStop();
+					RcvTimeoutTimerStop();
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
 
 					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
@@ -1227,7 +1227,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-					HTTP_RcvTimeoutTimerStop();
+					RcvTimeoutTimerStop();
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
 
