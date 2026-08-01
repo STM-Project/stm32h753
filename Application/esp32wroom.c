@@ -28,7 +28,7 @@
 #include <time.h>
 #include "tim.h"
 
-#define PAUSE_BETWEEN_SEND_RECV_MS		3000
+#define TIME_AFTER_RELOAD_HTTP_MS		10000
 
 #define ESP_RECV_BUFF_SIZE		4096
 #define PACKET_SEND_LEN 		2048
@@ -371,11 +371,11 @@ static void ESP32_FreeAnswers(int whereCalled)						/* ESP32_FreeAnswers(1) - di
 	if(BytesToRead()==len && len)  read_pos = (read_pos+len) & (ESP_RECV_BUFF_SIZE-1);		/* Zmień pozycje odczytu bufora kołowego jeżeli przed komunikatami asynchronicznymi nie było innego rodzaju komunikatu */
 }
 
-static void RstTimeBtwnSendRcv(void){
+static void InitReloadHttpTime(void){
 	tickCnt = xTaskGetTickCount();
 }
-static int GetTimeBtwnSendRcv(void){
-	return CONDITION( xTaskGetTickCount()-tickCnt > PAUSE_BETWEEN_SEND_RECV_MS, 1, 0 );
+static int IsTimeoutForReloadHttp(void){
+	return CONDITION( xTaskGetTickCount()-tickCnt > TIME_AFTER_RELOAD_HTTP_MS, 1, 0 );
 }
 
 static void InitStructRqstToSendChnl(void){
@@ -426,7 +426,6 @@ static int SendToEsp32(int len, char *data, ARCHIVING_TYPE archType)								/* i
 	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, CACHE_ALLIGN_LEN(len_)); 	 					/* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy   CACHE_LINE_BYTES = 32 */
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
-	RstTimeBtwnSendRcv();
 	HTTP_RcvTimeoutTimerStart();
 	return result;
 }
@@ -444,7 +443,6 @@ static int SendToEsp32_http(int len, char *data, ARCHIVING_TYPE archType)							
 	SCB_CleanDCache_by_Addr((uint32_t*)sendBuff, CACHE_ALLIGN_LEN(len_)); 	 					/* Czyszczenie Cache z rozmiarem zaokrąglonym do pełnych linii 32-bajtowych, czyszczenie tylko tego fragmentu, który faktycznie wysyłamy   CACHE_LINE_BYTES = 32 */
 	int result = HAL_UART_Transmit_DMA(&ESP_UART_HANDLE, (uint8_t*) sendBuff, len_);
 	if(result != HAL_OK)  DbgVarDma(DBG,100,_SE_"\r\nHAL_ERROR: %d "_E_,result);
-	RstTimeBtwnSendRcv();
 	HTTP_RcvTimeoutTimerStart();
 	return result;
 }
@@ -794,7 +792,7 @@ void vtaskWifi(void *argument)
 	int typeSendArch = arch;
 	int typeRecvArch = arch;
 
-	RstTimeBtwnSendRcv();
+	InitReloadHttpTime();
 	StartDMA();
 	ESP_ON;
 
@@ -1161,7 +1159,6 @@ void vtaskWifi(void *argument)
 				case HTTP_CONNECTION_2:		/* Only for:  AT+CIPSERVERMAXCONN=1 */
 					HTTP_RcvTimeoutTimerStop();
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
-					RstTimeBtwnSendRcv();
 
 					if ((pHttp=strstr_(NULL,"0,CONNECT\r\n")))						/* RecvFromEsp("0,CONNECT\r\n")   0-channel */			/* Równoczesne właczenie różnych przegladarek pod ten sam adres IP powoduje że jedna czeka na zakończenie drugiego, w trakcie połączenia 0,CONNECT nie pojawia sie np 1,CONNECT tylko po zakończeniu 0,CONNECT pojawia sie z drugiej przegladarki rownież 0,CONNECT */
 					{
@@ -1233,7 +1230,6 @@ void vtaskWifi(void *argument)
 					HTTP_RcvTimeoutTimerStop();
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
-					RstTimeBtwnSendRcv();
 
 					if (RecvFromEsp("+IPD,")||RecvFromEsp(",CONNECT"))
 					{
@@ -1253,18 +1249,21 @@ void vtaskWifi(void *argument)
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,WWW_MAIN_READ);
 										HTTP_ShowInitChannel(channel,size,arch);
+										InitReloadHttpTime();
 									}
 									else if (strstr_(pHttp2,":GET /Set"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,WWW_MAIN_SETTING);
 										HTTP_ShowInitChannel(channel,size,arch);
+										InitReloadHttpTime();
 									}
 									else if (strstr_(pHttp2,":GET /favicon.ico"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,WWW_FAVICON);
 										HTTP_ShowInitChannel(channel,size,arch);
+										InitReloadHttpTime();
 
 										/*	HTTP/1.1 200 OK\r\n
 											Content-Type: image/x-icon\r\n
@@ -1642,7 +1641,7 @@ void vtaskWifi(void *argument)
 			}
 			else if(DEBUG_IsTxtReceive("s"))
 			{
-				if (connectionType==HTTP_CONNECTION && xTimerIsTimerActive(xWaitOnSendTimeoutTimer) == pdFALSE)			/* if(GetTimeBtwnSendRcv() && connectionType==HTTP_CONNECTION) */
+				if (connectionType==HTTP_CONNECTION && xTimerIsTimerActive(xWaitOnSendTimeoutTimer) == pdFALSE && IsTimeoutForReloadHttp())
 				{
 					SendEmail(2, 1<<1, EMAIL_MEASURE);			/* z  'interia.pl'  i  'wp.pl'  musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
 
