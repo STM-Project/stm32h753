@@ -383,6 +383,11 @@ static void InitStructRqstToSendChnl(void){
 	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
 }
 
+static int IsActiveAnyRqstToSendChnl(void){
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ if(httpPar.que[i]!=0xFF) return 1; }
+	return 0;
+}
+
 static void HTTP_ShowHttpStruct(void){
 	LOOP_FOR(i,ESP_MAX_HTTP_CONN){	 DbgVarDma2(1,200,"que:%*d 	nr:%*d 	 ptr:%*d   len:%*d\r\n", -3,httpPar.que[i], -3,httpPar.nr[i], -17,httpPar.ptr[i], -17,httpPar.len[i] );	}
 }
@@ -1641,7 +1646,7 @@ void vtaskWifi(void *argument)
 			}
 			else if(DEBUG_IsTxtReceive("s"))
 			{
-				if (connectionType==HTTP_CONNECTION && xTimerIsTimerActive(xWaitOnSendTimeoutTimer) == pdFALSE && IsTimeoutForReloadHttp())
+				if (connectionType==HTTP_CONNECTION  &&  xTimerIsTimerActive(xWaitOnSendTimeoutTimer)==pdFALSE  &&  IsTimeoutForReloadHttp()  &&  IsActiveAnyRqstToSendChnl())
 				{
 					SendEmail(2, 1<<1, EMAIL_MEASURE);			/* z  'interia.pl'  i  'wp.pl'  musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
 
