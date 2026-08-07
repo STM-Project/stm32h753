@@ -396,6 +396,13 @@ label {\r\n\
     color: #ffffff;\r\n\
 }\r\n\
 </style>\r\n\
+<style>\r\n\
+­iv { margin: 20px; }\r\n\
+ #tu_ant {\r\n\
+ padding: 15px 12px;\r\n\
+ margin-top: 11px;\r\n\
+ border-radius: 6px; background:   url('data:image/png;base64,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') no-repeat; }\r\n\
+ </style>\r\n\
 </head>";
 
 const char HttpMainReadPanel[]="\r\n\
@@ -1081,7 +1088,7 @@ window.location.href=\"lpc.cgi/n_GPIO_val_001=\" + active_id001[0]+active_id001[
  <script>\r\n\
  var nr_pwm; var val_pwm; var i,j,wst;  var txt=[]; \r\n\
  wst=0; \r\n\
- var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},500);\r\n\
+ var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},50);\r\n\
  function loadXMLDoc_PWM()\r\n\
  {var xmlhttp;       \r\n\
  if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
@@ -1144,7 +1151,7 @@ function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
 function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-var myVar = setInterval(loadXMLDoc, 500      );\r\n\
+var myVar = setInterval(loadXMLDoc, 5000      );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
  var txt2=[]; \r\n\
@@ -1614,7 +1621,7 @@ window.location.href=\"lpc.cgi/n_GPIO_val_005=\" + active_id005[0]+active_id005[
  <script>\r\n\
  var nr_pwm; var val_pwm; var i,j,wst;  var txt=[]; \r\n\
  wst=0; \r\n\
- var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},500);\r\n\
+ var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},50);\r\n\
  function loadXMLDoc_PWM()\r\n\
  {var xmlhttp;       \r\n\
  if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
@@ -1656,7 +1663,7 @@ function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
 function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-var myVar = setInterval(loadXMLDoc, 500       );\r\n\
+var myVar = setInterval(loadXMLDoc, 5000       );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
  var txt2=[]; \r\n\
@@ -3198,7 +3205,7 @@ window.location.href=\"lpc.cgi/n_GPIO_val_001=\" + active_id001[0]+active_id001[
  <script>\r\n\
  var nr_pwm; var val_pwm; var i,j,wst;  var txt=[]; \r\n\
  wst=0; \r\n\
- var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},500);\r\n\
+ var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},50);\r\n\
  function loadXMLDoc_PWM()\r\n\
  {var xmlhttp;       \r\n\
  if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
@@ -3261,7 +3268,7 @@ function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
 function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-var myVar = setInterval(loadXMLDoc, 500       );\r\n\
+var myVar = setInterval(loadXMLDoc, 5000      );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
  var txt2=[]; \r\n\
