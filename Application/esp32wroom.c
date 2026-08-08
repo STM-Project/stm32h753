@@ -1263,7 +1263,7 @@ void vtaskWifi(void *argument)
 										HTTP_ShowInitChannel(channel,size,arch);
 										InitReloadHttpTime();
 									}
-									else if (strstr_(pHttp2,":GET /favicon.ico"))
+									else if (strstr_(pHttp2,":GET /favicon.ico")||strstr_(pHttp2,":GET /mobile"))
 									{
 										GetHTTPpacketParam(pHttp2,&channel,&size);
 										SetRqstToSendChnl(channel,WWW_FAVICON);
