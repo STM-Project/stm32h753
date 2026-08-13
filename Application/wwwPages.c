@@ -23,8 +23,30 @@
 #define MAX_SIZE_CGI_VAL	100
 #define CGI_GET_STRING	"GET /lpc.cgi/"
 
+typedef enum{
+	HTTP_None,
+	HTTP_Temp,
+}HTTP_TEMPALTE_TYPE;
+
 extern char* GETVAL_ptr();
 extern char buff[];
+
+
+
+
+char HTTP_TEMPLATE_TempRhu(char* buff, u32 size, u8 type, u8 nr, float val1, float val2)
+{
+	int len=0;
+	if(HTTP_None!=type){  len=mini_snprintf(buff,size,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\">");  }
+
+
+
+
+	if(HTTP_None!=type){  len=mini_snprintf(buff,size,"</div></div>");  }
+
+}
+
+
 
 /* W NotePad nalezy zamienic '\r\n' -> '\\r\\n\\\r\n' */
 char HttpRefr[]="22:59:08 &nbsp;26/07/25120000000000000 111111111111111111 55555555555555  25.10 65%0  78.30 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0       6.0       5.7      ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0 V     V              0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0";
