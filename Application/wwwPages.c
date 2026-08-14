@@ -23,27 +23,26 @@
 #define MAX_SIZE_CGI_VAL	100
 #define CGI_GET_STRING	"GET /lpc.cgi/"
 
-typedef enum{
-	HTTP_None,
-	HTTP_Temp,
-}HTTP_TEMPALTE_TYPE;
-
 extern char* GETVAL_ptr();
 extern char buff[];
 
-
-
-
-char HTTP_TEMPLATE_TempRhu(char* buff, u32 size, u8 type, u8 nr, float val1, float val2)
+void HTTP_TEMPLATE_TempRhu(char* buff, u8 type,u8 nr, float val1,float val2, char* name1,char* name2)  //UWAGA na Float2Str() !!!! zmien aby byl wielwatkowy moze daj takkCritical emterExit albo mutex!!!
 {
-	int len=0;
-	if(HTTP_None!=type){  len=mini_snprintf(buff,size,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\">");  }
+	if(TEMPL_None!=type)
+		buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\">");
 
+	if	   (TEMPL_Temp==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03da\"><font color=\"#eee\">%s °C</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03da\"> </div>"
+				  	  	  	  ,nr, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
 
+	else if(TEMPL_TempRhu==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03db\"><font color=\"#eee\">%s °C</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03dc\"></div><br>\
+				 						 <font class=\"a\"><b><div id=\"tu_temp%03dc\"><font color=\"#eee\">%s % </font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03db\"> </div>"
+				  	  	  	  ,nr, Float2Str(val1,Space,3,Sign_minus,1), name1,nr
+							  ,nr, Float2Str(val2,Space,3,Sign_none, 0), name2,nr );
 
-
-	if(HTTP_None!=type){  len=mini_snprintf(buff,size,"</div></div>");  }
-
+	if(TEMPL_None!=type)
+		buff += mini_snprintf(buff,20,"</div></div>");
 }
 
 
