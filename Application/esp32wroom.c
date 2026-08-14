@@ -1686,6 +1686,13 @@ void vtaskWifi(void *argument)
 			{
 				DbgDma(DBG, Clr_"\r\n-------------------- Start -------------------- ");
 			}
+			else if(DEBUG_IsTxtReceive("x"))
+			{
+				DbgDma(DBG, _S_"\r\nTest "_E_);
+				char buffer[1000]={0};
+				HTTP_TEMPLATE_TempRhu(buffer,TEMPL_None,1, 21.6, 93, "Nazwa 1", "Nazwa 2");
+				DbgDma(DBG, buffer);
+			}
 		/*
 			else if(DEBUG_IsTxtReceive("0")){ GoToTest(0); SendToEsp32(0,"AT+RFPOWER?\r\n",arch); }
 			else if(DEBUG_IsTxtReceive("1")){ GoToTest(0); SendToEsp32(0,"AT+RFCAL\r\n",arch);    }
