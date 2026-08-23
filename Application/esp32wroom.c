@@ -28,6 +28,8 @@
 #include <time.h>
 #include "tim.h"
 
+char buffer[5000]={0}; //!!!!!!!!!!!!!!tympczasowy
+
 #define TIME_AFTER_RELOAD_HTTP_MS		10000
 
 #define ESP_RECV_BUFF_SIZE		4096
@@ -1686,11 +1688,11 @@ void vtaskWifi(void *argument)
 			{
 				DbgDma(DBG, Clr_"\r\n-------------------- Start -------------------- ");
 			}
-			else if(DEBUG_IsTxtReceive("x"))
+			else if(DEBUG_IsTxtReceive("m"))
 			{
 				DbgDma(DBG, _S_"\r\nTest "_E_);
-				char buffer[1000]={0};
-				HTTP_TEMPLATE_TempRhu(buffer,TEMPL_None,1, 21.6, 93, "Nazwa 1", "Nazwa 2");
+
+				HTTP_TEMPLATE_TempRhu(buffer,TEMPL_TempRhu,1, 21.6, 93, "Nazwa 1", "Nazwa 2");
 				DbgDma(DBG, buffer);
 			}
 		/*
