@@ -22,6 +22,7 @@ typedef enum{
 
 extern char HttpRefr[];
 extern const char HttpStyle[];
+extern const char HttpStructMainReadPanel[];
 extern const char HttpMainReadPanel[];
 extern const char HttpMainReadPanel2[];
 extern const char HttpMainSettings[];
