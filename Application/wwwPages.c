@@ -26,6 +26,11 @@
 extern char* GETVAL_ptr();
 extern char buff[];
 
+/*
+  var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},50);\r\n\			//,50 -
+  var myVar = setInterval(loadXMLDoc, 5000      );\r\n\								// 5000 - aby zawezic ten czas na np 500 to czas wyzej musi byc tez 50 a nie jak bylo zawsze 200
+ */
+
 
 //Test <div class="y" style="height:300px"><div class="x" style="height:270px"><font class="a"><b><div id="tu_temp001a"><font color="#eee">  21.6 °C</font></div></b></font><br><font class="b">Nazwa 1</font><div id="tu_lora001a"> </div></div></div>
 
@@ -431,143 +436,7 @@ label {\r\n\
  </style>\r\n\
 </head>";
 
-const char HttpMainReadPanel[]="\r\n\
-<body bgcolor=\"000000\">\r\n\
-\r\n\
-<table><tr><td>\r\n\
-	 <div class='menu'>\r\n\
-	 <ul>\r\n\
-	<li><a href='#' id='current'>Menu&nbsp;&#9660;</a>\r\n\
-	   <ul>\r\n\
-	    <div id=\"tu_menu\"> </div>\r\n\
-        <br><font size=\"1\" color='#777'>Nr ident. &nbsp;&nbsp;1122334455667788</font>\r\n\
-	   </ul>\r\n\
-	  </li>\r\n\
-	<br>\r\n\
-	</ul>\r\n\
-	</div>\r\n\
-	<br>\r\n\
-	</td>\r\n\
-	<td width=\"10px\"></td>\r\n\
-    <td><button class=\"n\"><div id=\"tu_zgr\"> Trwa analiza danych ... </div></button></td>\r\n\
-	<td width=\"10px\"></td>\r\n\
-	<td><button class=\"n\"><div id=\"tu_gsm\"> -- </div></button></td>\r\n\
-	<td width=\"10px\"></td>\r\n\
-	<td>                                                                           </td>\r\n\
-	</tr></table>\r\n\
-\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp001a\"><font color='#eee'>   --.- &deg;C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora001a\"></div>\r\n\
-<div id=\"tu_temp001b\" style=\"display: none;\"></div><div id=\"tu_lora001c\"></div><div id=\"tu_temp001c\" style=\"display: none;\"></div><div id=\"tu_lora001b\"></div><div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp002a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora002a\"></div>\r\n\
-<div id=\"tu_temp002b\" style=\"display: none;\"></div><div id=\"tu_lora002c\"></div><div id=\"tu_temp002c\" style=\"display: none;\"></div><div id=\"tu_lora002b\"></div><div id=\"tu_temp003a\" style=\"display: none;\"></div><div id=\"tu_lora003a\"></div><div id=\"tu_temp003b\" style=\"display: none;\"></div><div id=\"tu_lora003c\"></div><div id=\"tu_temp003c\" style=\"display: none;\"></div><div id=\"tu_lora003b\"></div><div id=\"tu_temp004a\" style=\"display: none;\"></div><div id=\"tu_lora004a\"></div><div id=\"tu_temp004b\" style=\"display: none;\"></div><div id=\"tu_lora004c\"></div><div id=\"tu_temp004c\" style=\"display: none;\"></div><div id=\"tu_lora004b\"></div><div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\"><font class=\"a\"><b><div id=\"tu_temp005b\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora005c\"></div><br>\r\n\
-<font class=\"a\"><b><div id=\"tu_temp005c\"><font color='#eee'>  --   %</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora005b\"></div></div></div>\r\n\
-<div id=\"tu_temp005a\" style=\"display: none;\"></div><div id=\"tu_lora005a\"></div><div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\"><font class=\"a\"><b><div id=\"tu_temp006b\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora006c\"></div><br>\r\n\
-<font class=\"a\"><b><div id=\"tu_temp006c\"><font color='#eee'>  --   %</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora006b\"></div></div></div>\r\n\
-<div id=\"tu_temp006a\" style=\"display: none;\"></div><div id=\"tu_lora006a\"></div><div id=\"tu_temp007a\" style=\"display: none;\"></div><div id=\"tu_lora007a\"></div><div id=\"tu_temp007b\" style=\"display: none;\"></div><div id=\"tu_lora007c\"></div><div id=\"tu_temp007c\" style=\"display: none;\"></div><div id=\"tu_lora007b\"></div><div id=\"tu_temp008a\" style=\"display: none;\"></div><div id=\"tu_lora008a\"></div><div id=\"tu_temp008b\" style=\"display: none;\"></div><div id=\"tu_lora008c\"></div><div id=\"tu_temp008c\" style=\"display: none;\"></div><div id=\"tu_lora008b\"></div><div id=\"tu_temp009a\" style=\"display: none;\"></div><div id=\"tu_lora009a\"></div><div id=\"tu_temp009b\" style=\"display: none;\"></div><div id=\"tu_lora009c\"></div><div id=\"tu_temp009c\" style=\"display: none;\"></div><div id=\"tu_lora009b\"></div><div id=\"tu_temp010a\" style=\"display: none;\"></div><div id=\"tu_lora010a\"></div><div id=\"tu_temp010b\" style=\"display: none;\"></div><div id=\"tu_lora010c\"></div><div id=\"tu_temp010c\" style=\"display: none;\"></div><div id=\"tu_lora010b\"></div><div id=\"tu_temp011a\" style=\"display: none;\"></div><div id=\"tu_lora011a\"></div><div id=\"tu_temp011b\" style=\"display: none;\"></div><div id=\"tu_lora011c\"></div><div id=\"tu_temp011c\" style=\"display: none;\"></div><div id=\"tu_lora011b\"></div><div id=\"tu_temp012a\" style=\"display: none;\"></div><div id=\"tu_lora012a\"></div><div id=\"tu_temp012b\" style=\"display: none;\"></div><div id=\"tu_lora012c\"></div><div id=\"tu_temp012c\" style=\"display: none;\"></div><div id=\"tu_lora012b\"></div><div id=\"tu_temp013a\" style=\"display: none;\"></div><div id=\"tu_lora013a\"></div><div id=\"tu_temp013b\" style=\"display: none;\"></div><div id=\"tu_lora013c\"></div><div id=\"tu_temp013c\" style=\"display: none;\"></div><div id=\"tu_lora013b\"></div><div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp014a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora014a\"></div>\r\n\
-<div id=\"tu_temp014b\" style=\"display: none;\"></div><div id=\"tu_lora014c\"></div><div id=\"tu_temp014c\" style=\"display: none;\"></div><div id=\"tu_lora014b\"></div><div id=\"tu_temp017a\" style=\"display: none;\"></div><div id=\"tu_lora017a\"></div><div id=\"tu_temp017b\" style=\"display: none;\"></div><div id=\"tu_lora017c\"></div><div id=\"tu_temp017c\" style=\"display: none;\"></div><div id=\"tu_lora017b\"></div><div id=\"tu_temp018a\" style=\"display: none;\"></div><div id=\"tu_lora018a\"></div><div id=\"tu_temp018b\" style=\"display: none;\"></div><div id=\"tu_lora018c\"></div><div id=\"tu_temp018c\" style=\"display: none;\"></div><div id=\"tu_lora018b\"></div><div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp019a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora019a\"></div>\r\n\
-<div id=\"tu_temp019b\" style=\"display: none;\"></div><div id=\"tu_lora019c\"></div><div id=\"tu_temp019c\" style=\"display: none;\"></div><div id=\"tu_lora019b\"></div><div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\"><font class=\"a\"><b><div id=\"tu_temp020b\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora020c\"></div><br>\r\n\
-<font class=\"a\"><b><div id=\"tu_temp020c\"><font color='#eee'>  --   %</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora020b\"></div></div></div>\r\n\
-<div id=\"tu_temp020a\" style=\"display: none;\"></div><div id=\"tu_lora020a\"></div><div class=\"y\" style=\"height:330px\"><div class=\"x\" style=\"height:300px\"><font class=\"z\" style=\"font-size: 43px;\"><b><div id=\"tu_imp0_017\">         0.000   KWh       </div></font></b><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp1_017\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;godzinny</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp2_017\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dobowy</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp3_017\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;tygodniowy</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp4_017\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;miesieczny</font><br><font class=\"b\">Nazwa portu nr 17     E1</font></div></div>\r\n\
-<div class=\"y\" style=\"height:330px\"><div class=\"x\" style=\"height:300px\"><font class=\"z\" style=\"font-size: 43px;\"><b><div id=\"tu_imp0_018\">         0.000   KWh       </div></font></b><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp1_018\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;godzinny</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp2_018\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dobowy</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp3_018\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;tygodniowy</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp4_018\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;miesieczny</font><br><font class=\"b\">Nazwa portu nr 18     E2</font></div></div>\r\n\
-<div id=\"tu_imp0_019\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp1_019\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp2_019\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp3_019\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp4_019\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp0_020\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp1_020\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp2_020\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp3_020\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_imp4_020\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_we001\" style=\"display: none;\"></div><div id=\"tu_lora001we\"></div>\r\n\
-<div id=\"tu_we002\" style=\"display: none;\"></div><div id=\"tu_lora002we\"></div>\r\n\
-<div id=\"tu_we003\" style=\"display: none;\"></div><div id=\"tu_lora003we\"></div>\r\n\
-<div id=\"tu_we004\" style=\"display: none;\"></div><div id=\"tu_lora004we\"></div>\r\n\
-<div id=\"tu_we005\" style=\"display: none;\"></div><div id=\"tu_lora005we\"></div>\r\n\
-<div id=\"tu_we006\" style=\"display: none;\"></div><div id=\"tu_lora006we\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"z\"><b><div id=\"tu_we007\"><font color='#eee'>Stan OFF</font></div></b></font><br><font class=\"b\">Nazwa dla Wejscia 7</font></div></div><div id=\"tu_lora007we\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"z\"><b><div id=\"tu_we008\"><font color='#eee'>Stan OFF</font></div></b></font><br><font class=\"b\">Nazwa dla Wejscia 8</font></div></div><div id=\"tu_lora008we\"></div>\r\n\
-<div id=\"tu_we009\" style=\"display: none;\"></div><div id=\"tu_lora009we\"></div>\r\n\
-<div id=\"tu_we010\" style=\"display: none;\"></div><div id=\"tu_lora010we\"></div>\r\n\
-<div id=\"tu_we011\" style=\"display: none;\"></div><div id=\"tu_lora011we\"></div>\r\n\
-<div id=\"tu_we012\" style=\"display: none;\"></div><div id=\"tu_lora012we\"></div>\r\n\
-<div id=\"tu_we013\" style=\"display: none;\"></div><div id=\"tu_lora013we\"></div>\r\n\
-<div id=\"tu_we014\" style=\"display: none;\"></div><div id=\"tu_lora014we\"></div>\r\n\
-<div id=\"tu_we017\" style=\"display: none;\"></div><div id=\"tu_lora017we\"></div>\r\n\
-<div id=\"tu_we018\" style=\"display: none;\"></div><div id=\"tu_lora018we\"></div>\r\n\
-<div id=\"tu_we019\" style=\"display: none;\"></div><div id=\"tu_lora019we\"></div>\r\n\
-<div id=\"tu_we020\" style=\"display: none;\"></div><div id=\"tu_lora020we\"></div>\r\n\
-<div id=\"tu_eol001\" style=\"display: none;\"></div><div id=\"tu_lora001eol\"></div>\r\n\
-<div id=\"tu_eol002\" style=\"display: none;\"></div><div id=\"tu_lora002eol\"></div>\r\n\
-<div id=\"tu_eol003\" style=\"display: none;\"></div><div id=\"tu_lora003eol\"></div>\r\n\
-<div id=\"tu_eol004\" style=\"display: none;\"></div><div id=\"tu_lora004eol\"></div>\r\n\
-<div id=\"tu_eol005\" style=\"display: none;\"></div><div id=\"tu_lora005eol\"></div>\r\n\
-<div id=\"tu_eol006\" style=\"display: none;\"></div><div id=\"tu_lora006eol\"></div>\r\n\
-<div id=\"tu_eol007\" style=\"display: none;\"></div><div id=\"tu_lora007eol\"></div>\r\n\
-<div id=\"tu_eol008\" style=\"display: none;\"></div><div id=\"tu_lora008eol\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"z\"><b><div id=\"tu_eol009\"><font color='#eee'>Stan OFF</font></div></b></font><br><font class=\"b\">Nazwa dla Wejscia 9</font></div></div><div id=\"tu_lora009eol\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"z\"><b><div id=\"tu_eol010\"><font color='#eee'>Stan OFF</font></div></b></font><br><font class=\"b\">Nazwa dla Wejscia 10</font></div></div><div id=\"tu_lora010eol\"></div>\r\n\
-<div id=\"tu_eol011\" style=\"display: none;\"></div><div id=\"tu_lora011eol\"></div>\r\n\
-<div id=\"tu_eol012\" style=\"display: none;\"></div><div id=\"tu_lora012eol\"></div>\r\n\
-<div id=\"tu_eol013\" style=\"display: none;\"></div><div id=\"tu_lora013eol\"></div>\r\n\
-<div id=\"tu_eol014\" style=\"display: none;\"></div><div id=\"tu_lora014eol\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_adc015\">8.8 V</div></b></font><br><font class=\"b\">Nazwa portu nr 15     0-10V</font></div></div>\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_adc016\">8.4 V</div></b></font><br><font class=\"b\">Nazwa portu nr 16     0-10V</font></div></div>\r\n\
-<div id=\"tu_ptt001\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt002\" style=\"display: none;\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_ptt003\"> --- °C</div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div>\r\n\
-<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_ptt004\"> --- °C</div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div>\r\n\
-<div id=\"tu_ptt005\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt006\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt007\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt008\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt009\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt010\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt011\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt012\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt013\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ptt014\" style=\"display: none;\"></div>\r\n\
-                                 <div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk021(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk021\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div><div id=\"tu_lora021wy\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk022(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk022\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div><div id=\"tu_lora022wy\"></div>\r\n\
-<div id=\"tu_pk023\" style=\"display: none;\"></div><div id=\"tu_lora023wy\"></div>\r\n\
-<div id=\"tu_pk024\" style=\"display: none;\"></div><div id=\"tu_lora024wy\"></div>\r\n\
-<div id=\"tu_pk025\" style=\"display: none;\"></div><div id=\"tu_lora025wy\"></div>\r\n\
-<div id=\"tu_pk026\" style=\"display: none;\"></div><div id=\"tu_lora026wy\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk027(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk027\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR</font></div></div><div id=\"tu_lora027wy\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk028(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk028\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie Przekaznikowe</font></div></div><div id=\"tu_lora028wy\"></div>\r\n\
-<div id=\"tu_pk029\" style=\"display: none;\"></div><div id=\"tu_lora029wy\"></div>\r\n\
-<div id=\"tu_pk030\" style=\"display: none;\"></div><div id=\"tu_lora030wy\"></div>\r\n\
-<div id=\"tu_pk031\" style=\"display: none;\"></div><div id=\"tu_lora031wy\"></div>\r\n\
-<div id=\"tu_pk032\" style=\"display: none;\"></div><div id=\"tu_lora032wy\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk033(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk033\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie Przekaznikowe</font></div></div><div id=\"tu_lora033wy\"></div>\r\n\
-<div id=\"tu_ti021\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ti022\" style=\"display: none;\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_ti023\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_ti024\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR</font></div></div>\r\n\
-<div id=\"tu_ti025\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ti026\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ti027\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ti028\" style=\"display: none;\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_ti029\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Moj przekaznik :)</font></div></div>\r\n\
-<div id=\"tu_ti030\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ti031\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ti032\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_ti033\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_te021\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_te022\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_te023\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_te024\" style=\"display: none;\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_te025\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR</font></div></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_te026\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR</font></div></div>\r\n\
-<div id=\"tu_te027\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_te028\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_te029\" style=\"display: none;\"></div>\r\n\
-<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_te030\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie Przekaznikowe</font></div></div>\r\n\
-<div id=\"tu_te031\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_te032\" style=\"display: none;\"></div>\r\n\
-<div id=\"tu_te033\" style=\"display: none;\"></div>\r\n\
-</div></div>\r\n\
-</div>\r\n\
-</body>\r\n\
+const char HttpStructMainReadPanel[]="\r\n\
 <script type=\"text/javascript\">\r\n\
 window.onload = function(){\r\n\
 Laduj();\r\n\
@@ -1177,7 +1046,7 @@ function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
 function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
 function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-var myVar = setInterval(loadXMLDoc, 5000      );\r\n\
+var myVar = setInterval(loadXMLDoc, 1000      );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
  var txt2=[]; \r\n\
@@ -1364,6 +1233,145 @@ j=0;for(i=0;i<17;i++){ txt5[i]=txt[450+14+1+23*3+4*18*3+18*3+23+i]; if((txt5[i]=
   var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li>\";\r\n\
   document.getElementById(\"tu_menu\").innerHTML=tyt;\r\n\
   </script>\r\n\
+";
+
+const char HttpMainReadPanel[]="\r\n\
+<body bgcolor=\"000000\">\r\n\
+\r\n\
+<table><tr><td>\r\n\
+	 <div class='menu'>\r\n\
+	 <ul>\r\n\
+	<li><a href='#' id='current'>Menu&nbsp;&#9660;</a>\r\n\
+	   <ul>\r\n\
+	    <div id=\"tu_menu\"> </div>\r\n\
+        <br><font size=\"1\" color='#777'>Nr ident. &nbsp;&nbsp;1122334455667788</font>\r\n\
+	   </ul>\r\n\
+	  </li>\r\n\
+	<br>\r\n\
+	</ul>\r\n\
+	</div>\r\n\
+	<br>\r\n\
+	</td>\r\n\
+	<td width=\"10px\"></td>\r\n\
+    <td><button class=\"n\"><div id=\"tu_zgr\"> Trwa analiza danych ... </div></button></td>\r\n\
+	<td width=\"10px\"></td>\r\n\
+	<td><button class=\"n\"><div id=\"tu_gsm\"> -- </div></button></td>\r\n\
+	<td width=\"10px\"></td>\r\n\
+	<td>                                                                           </td>\r\n\
+	</tr></table>\r\n\
+\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp001a\"><font color='#eee'>   --.- &deg;C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora001a\"></div>\r\n\
+<div id=\"tu_temp001b\" style=\"display: none;\"></div><div id=\"tu_lora001c\"></div><div id=\"tu_temp001c\" style=\"display: none;\"></div><div id=\"tu_lora001b\"></div><div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp002a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora002a\"></div>\r\n\
+<div id=\"tu_temp002b\" style=\"display: none;\"></div><div id=\"tu_lora002c\"></div><div id=\"tu_temp002c\" style=\"display: none;\"></div><div id=\"tu_lora002b\"></div><div id=\"tu_temp003a\" style=\"display: none;\"></div><div id=\"tu_lora003a\"></div><div id=\"tu_temp003b\" style=\"display: none;\"></div><div id=\"tu_lora003c\"></div><div id=\"tu_temp003c\" style=\"display: none;\"></div><div id=\"tu_lora003b\"></div><div id=\"tu_temp004a\" style=\"display: none;\"></div><div id=\"tu_lora004a\"></div><div id=\"tu_temp004b\" style=\"display: none;\"></div><div id=\"tu_lora004c\"></div><div id=\"tu_temp004c\" style=\"display: none;\"></div><div id=\"tu_lora004b\"></div><div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\"><font class=\"a\"><b><div id=\"tu_temp005b\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora005c\"></div><br>\r\n\
+<font class=\"a\"><b><div id=\"tu_temp005c\"><font color='#eee'>  --   %</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora005b\"></div></div></div>\r\n\
+<div id=\"tu_temp005a\" style=\"display: none;\"></div><div id=\"tu_lora005a\"></div><div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\"><font class=\"a\"><b><div id=\"tu_temp006b\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora006c\"></div><br>\r\n\
+<font class=\"a\"><b><div id=\"tu_temp006c\"><font color='#eee'>  --   %</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora006b\"></div></div></div>\r\n\
+<div id=\"tu_temp006a\" style=\"display: none;\"></div><div id=\"tu_lora006a\"></div><div id=\"tu_temp007a\" style=\"display: none;\"></div><div id=\"tu_lora007a\"></div><div id=\"tu_temp007b\" style=\"display: none;\"></div><div id=\"tu_lora007c\"></div><div id=\"tu_temp007c\" style=\"display: none;\"></div><div id=\"tu_lora007b\"></div><div id=\"tu_temp008a\" style=\"display: none;\"></div><div id=\"tu_lora008a\"></div><div id=\"tu_temp008b\" style=\"display: none;\"></div><div id=\"tu_lora008c\"></div><div id=\"tu_temp008c\" style=\"display: none;\"></div><div id=\"tu_lora008b\"></div><div id=\"tu_temp009a\" style=\"display: none;\"></div><div id=\"tu_lora009a\"></div><div id=\"tu_temp009b\" style=\"display: none;\"></div><div id=\"tu_lora009c\"></div><div id=\"tu_temp009c\" style=\"display: none;\"></div><div id=\"tu_lora009b\"></div><div id=\"tu_temp010a\" style=\"display: none;\"></div><div id=\"tu_lora010a\"></div><div id=\"tu_temp010b\" style=\"display: none;\"></div><div id=\"tu_lora010c\"></div><div id=\"tu_temp010c\" style=\"display: none;\"></div><div id=\"tu_lora010b\"></div><div id=\"tu_temp011a\" style=\"display: none;\"></div><div id=\"tu_lora011a\"></div><div id=\"tu_temp011b\" style=\"display: none;\"></div><div id=\"tu_lora011c\"></div><div id=\"tu_temp011c\" style=\"display: none;\"></div><div id=\"tu_lora011b\"></div><div id=\"tu_temp012a\" style=\"display: none;\"></div><div id=\"tu_lora012a\"></div><div id=\"tu_temp012b\" style=\"display: none;\"></div><div id=\"tu_lora012c\"></div><div id=\"tu_temp012c\" style=\"display: none;\"></div><div id=\"tu_lora012b\"></div><div id=\"tu_temp013a\" style=\"display: none;\"></div><div id=\"tu_lora013a\"></div><div id=\"tu_temp013b\" style=\"display: none;\"></div><div id=\"tu_lora013c\"></div><div id=\"tu_temp013c\" style=\"display: none;\"></div><div id=\"tu_lora013b\"></div><div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp014a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora014a\"></div>\r\n\
+<div id=\"tu_temp014b\" style=\"display: none;\"></div><div id=\"tu_lora014c\"></div><div id=\"tu_temp014c\" style=\"display: none;\"></div><div id=\"tu_lora014b\"></div><div id=\"tu_temp017a\" style=\"display: none;\"></div><div id=\"tu_lora017a\"></div><div id=\"tu_temp017b\" style=\"display: none;\"></div><div id=\"tu_lora017c\"></div><div id=\"tu_temp017c\" style=\"display: none;\"></div><div id=\"tu_lora017b\"></div><div id=\"tu_temp018a\" style=\"display: none;\"></div><div id=\"tu_lora018a\"></div><div id=\"tu_temp018b\" style=\"display: none;\"></div><div id=\"tu_lora018c\"></div><div id=\"tu_temp018c\" style=\"display: none;\"></div><div id=\"tu_lora018b\"></div><div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp019a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora019a\"></div>\r\n\
+<div id=\"tu_temp019b\" style=\"display: none;\"></div><div id=\"tu_lora019c\"></div><div id=\"tu_temp019c\" style=\"display: none;\"></div><div id=\"tu_lora019b\"></div><div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\"><font class=\"a\"><b><div id=\"tu_temp020b\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora020c\"></div><br>\r\n\
+<font class=\"a\"><b><div id=\"tu_temp020c\"><font color='#eee'>  --   %</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora020b\"></div></div></div>\r\n\
+<div id=\"tu_temp020a\" style=\"display: none;\"></div><div id=\"tu_lora020a\"></div><div class=\"y\" style=\"height:330px\"><div class=\"x\" style=\"height:300px\"><font class=\"z\" style=\"font-size: 43px;\"><b><div id=\"tu_imp0_017\">         0.000   KWh       </div></font></b><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp1_017\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;godzinny</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp2_017\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dobowy</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp3_017\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;tygodniowy</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp4_017\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;miesieczny</font><br><font class=\"b\">Nazwa portu nr 17     E1</font></div></div>\r\n\
+<div class=\"y\" style=\"height:330px\"><div class=\"x\" style=\"height:300px\"><font class=\"z\" style=\"font-size: 43px;\"><b><div id=\"tu_imp0_018\">         0.000   KWh       </div></font></b><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp1_018\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;godzinny</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp2_018\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dobowy</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp3_018\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;tygodniowy</font><br><font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp4_018\">         0.000  </div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;miesieczny</font><br><font class=\"b\">Nazwa portu nr 18     E2</font></div></div>\r\n\
+<div id=\"tu_imp0_019\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp1_019\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp2_019\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp3_019\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp4_019\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp0_020\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp1_020\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp2_020\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp3_020\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_imp4_020\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_we001\" style=\"display: none;\"></div><div id=\"tu_lora001we\"></div>\r\n\
+<div id=\"tu_we002\" style=\"display: none;\"></div><div id=\"tu_lora002we\"></div>\r\n\
+<div id=\"tu_we003\" style=\"display: none;\"></div><div id=\"tu_lora003we\"></div>\r\n\
+<div id=\"tu_we004\" style=\"display: none;\"></div><div id=\"tu_lora004we\"></div>\r\n\
+<div id=\"tu_we005\" style=\"display: none;\"></div><div id=\"tu_lora005we\"></div>\r\n\
+<div id=\"tu_we006\" style=\"display: none;\"></div><div id=\"tu_lora006we\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"z\"><b><div id=\"tu_we007\"><font color='#eee'>Stan OFF</font></div></b></font><br><font class=\"b\">Nazwa dla Wejscia 7</font></div></div><div id=\"tu_lora007we\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"z\"><b><div id=\"tu_we008\"><font color='#eee'>Stan OFF</font></div></b></font><br><font class=\"b\">Nazwa dla Wejscia 8</font></div></div><div id=\"tu_lora008we\"></div>\r\n\
+<div id=\"tu_we009\" style=\"display: none;\"></div><div id=\"tu_lora009we\"></div>\r\n\
+<div id=\"tu_we010\" style=\"display: none;\"></div><div id=\"tu_lora010we\"></div>\r\n\
+<div id=\"tu_we011\" style=\"display: none;\"></div><div id=\"tu_lora011we\"></div>\r\n\
+<div id=\"tu_we012\" style=\"display: none;\"></div><div id=\"tu_lora012we\"></div>\r\n\
+<div id=\"tu_we013\" style=\"display: none;\"></div><div id=\"tu_lora013we\"></div>\r\n\
+<div id=\"tu_we014\" style=\"display: none;\"></div><div id=\"tu_lora014we\"></div>\r\n\
+<div id=\"tu_we017\" style=\"display: none;\"></div><div id=\"tu_lora017we\"></div>\r\n\
+<div id=\"tu_we018\" style=\"display: none;\"></div><div id=\"tu_lora018we\"></div>\r\n\
+<div id=\"tu_we019\" style=\"display: none;\"></div><div id=\"tu_lora019we\"></div>\r\n\
+<div id=\"tu_we020\" style=\"display: none;\"></div><div id=\"tu_lora020we\"></div>\r\n\
+<div id=\"tu_eol001\" style=\"display: none;\"></div><div id=\"tu_lora001eol\"></div>\r\n\
+<div id=\"tu_eol002\" style=\"display: none;\"></div><div id=\"tu_lora002eol\"></div>\r\n\
+<div id=\"tu_eol003\" style=\"display: none;\"></div><div id=\"tu_lora003eol\"></div>\r\n\
+<div id=\"tu_eol004\" style=\"display: none;\"></div><div id=\"tu_lora004eol\"></div>\r\n\
+<div id=\"tu_eol005\" style=\"display: none;\"></div><div id=\"tu_lora005eol\"></div>\r\n\
+<div id=\"tu_eol006\" style=\"display: none;\"></div><div id=\"tu_lora006eol\"></div>\r\n\
+<div id=\"tu_eol007\" style=\"display: none;\"></div><div id=\"tu_lora007eol\"></div>\r\n\
+<div id=\"tu_eol008\" style=\"display: none;\"></div><div id=\"tu_lora008eol\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"z\"><b><div id=\"tu_eol009\"><font color='#eee'>Stan OFF</font></div></b></font><br><font class=\"b\">Nazwa dla Wejscia 9</font></div></div><div id=\"tu_lora009eol\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"z\"><b><div id=\"tu_eol010\"><font color='#eee'>Stan OFF</font></div></b></font><br><font class=\"b\">Nazwa dla Wejscia 10</font></div></div><div id=\"tu_lora010eol\"></div>\r\n\
+<div id=\"tu_eol011\" style=\"display: none;\"></div><div id=\"tu_lora011eol\"></div>\r\n\
+<div id=\"tu_eol012\" style=\"display: none;\"></div><div id=\"tu_lora012eol\"></div>\r\n\
+<div id=\"tu_eol013\" style=\"display: none;\"></div><div id=\"tu_lora013eol\"></div>\r\n\
+<div id=\"tu_eol014\" style=\"display: none;\"></div><div id=\"tu_lora014eol\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_adc015\">8.8 V</div></b></font><br><font class=\"b\">Nazwa portu nr 15     0-10V</font></div></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_adc016\">8.4 V</div></b></font><br><font class=\"b\">Nazwa portu nr 16     0-10V</font></div></div>\r\n\
+<div id=\"tu_ptt001\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt002\" style=\"display: none;\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_ptt003\"> --- °C</div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div>\r\n\
+<div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_ptt004\"> --- °C</div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div>\r\n\
+<div id=\"tu_ptt005\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt006\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt007\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt008\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt009\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt010\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt011\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt012\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt013\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ptt014\" style=\"display: none;\"></div>\r\n\
+                                 <div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk021(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk021\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div><div id=\"tu_lora021wy\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk022(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk022\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div><div id=\"tu_lora022wy\"></div>\r\n\
+<div id=\"tu_pk023\" style=\"display: none;\"></div><div id=\"tu_lora023wy\"></div>\r\n\
+<div id=\"tu_pk024\" style=\"display: none;\"></div><div id=\"tu_lora024wy\"></div>\r\n\
+<div id=\"tu_pk025\" style=\"display: none;\"></div><div id=\"tu_lora025wy\"></div>\r\n\
+<div id=\"tu_pk026\" style=\"display: none;\"></div><div id=\"tu_lora026wy\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk027(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk027\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR</font></div></div><div id=\"tu_lora027wy\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk028(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk028\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie Przekaznikowe</font></div></div><div id=\"tu_lora028wy\"></div>\r\n\
+<div id=\"tu_pk029\" style=\"display: none;\"></div><div id=\"tu_lora029wy\"></div>\r\n\
+<div id=\"tu_pk030\" style=\"display: none;\"></div><div id=\"tu_lora030wy\"></div>\r\n\
+<div id=\"tu_pk031\" style=\"display: none;\"></div><div id=\"tu_lora031wy\"></div>\r\n\
+<div id=\"tu_pk032\" style=\"display: none;\"></div><div id=\"tu_lora032wy\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk033(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk033\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie Przekaznikowe</font></div></div><div id=\"tu_lora033wy\"></div>\r\n\
+<div id=\"tu_ti021\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ti022\" style=\"display: none;\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_ti023\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_ti024\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR</font></div></div>\r\n\
+<div id=\"tu_ti025\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ti026\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ti027\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ti028\" style=\"display: none;\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_ti029\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Moj przekaznik :)</font></div></div>\r\n\
+<div id=\"tu_ti030\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ti031\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ti032\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_ti033\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_te021\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_te022\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_te023\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_te024\" style=\"display: none;\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_te025\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR</font></div></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_te026\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR</font></div></div>\r\n\
+<div id=\"tu_te027\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_te028\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_te029\" style=\"display: none;\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_te030\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie Przekaznikowe</font></div></div>\r\n\
+<div id=\"tu_te031\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_te032\" style=\"display: none;\"></div>\r\n\
+<div id=\"tu_te033\" style=\"display: none;\"></div>\r\n\
+</div></div>\r\n\
+</div>\r\n\
+</body>\r\n\
 \r\n\
   \r\n\
 </html>";
