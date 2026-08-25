@@ -28,8 +28,6 @@
 #include <time.h>
 #include "tim.h"
 
-char buffer[5000]={0}; //!!!!!!!!!!!!!!tympczasowy
-
 #define TIME_AFTER_RELOAD_HTTP_MS		10000
 
 #define ESP_RECV_BUFF_SIZE		4096
@@ -169,6 +167,7 @@ struct HTTP_SEND_TEMP{
 
 TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
+static char httpBuff[5000]={0}; //TO BEDZIE w SDRAM!!!
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
@@ -676,8 +675,13 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	switch(nrWWW){
 	case WWW_MAIN_READ:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
+		httpPar.web[channel][nrPartWWW] = (char*)HttpMainMenu;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainMenu);
+
+		HTTP_TEMPLATE_TempRhu(httpBuff,TEMPL_TempRhu,1, 89.6, 10, "Nazwa 1 a", "Nazwa 2 b");
+		httpPar.web[channel][nrPartWWW] = (char*)httpBuff;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(httpBuff);
+	  //httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;			httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
+
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStructMainReadPanel;	httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStructMainReadPanel);
-		httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;			httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
 		break;
 	case WWW_DATA_REFRESH:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpRefr;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpRefr);
@@ -1693,8 +1697,8 @@ void vtaskWifi(void *argument)
 			{
 				DbgDma(DBG, _S_"\r\nTest "_E_);
 
-				HTTP_TEMPLATE_TempRhu(buffer,TEMPL_TempRhu,1, 21.6, 93, "Nazwa 1", "Nazwa 2");
-				DbgDma(DBG, buffer);
+				HTTP_TEMPLATE_TempRhu(httpBuff,TEMPL_TempRhu,1, 21.6, 93, "Nazwa 1", "Nazwa 2");
+				DbgDma(DBG, httpBuff);
 			}
 		/*
 			else if(DEBUG_IsTxtReceive("0")){ GoToTest(0); SendToEsp32(0,"AT+RFPOWER?\r\n",arch); }
