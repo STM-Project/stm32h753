@@ -1233,9 +1233,13 @@ j=0;for(i=0;i<17;i++){ txt5[i]=txt[450+14+1+23*3+4*18*3+18*3+23+i]; if((txt5[i]=
   var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li>\";\r\n\
   document.getElementById(\"tu_menu\").innerHTML=tyt;\r\n\
   </script>\r\n\
-";
+</body>\r\n\
+\r\n\
+  \r\n\
+</html>";
 
-const char HttpMainReadPanel[]="\r\n\
+
+const char HttpMainMenu[]="\r\n\
 <body bgcolor=\"000000\">\r\n\
 \r\n\
 <table><tr><td>\r\n\
@@ -1260,6 +1264,9 @@ const char HttpMainReadPanel[]="\r\n\
 	<td>                                                                           </td>\r\n\
 	</tr></table>\r\n\
 \r\n\
+";
+
+const char HttpMainReadPanel[]="\r\n\
 <div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp001a\"><font color='#eee'>   --.- &deg;C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora001a\"></div>\r\n\
 <div id=\"tu_temp001b\" style=\"display: none;\"></div><div id=\"tu_lora001c\"></div><div id=\"tu_temp001c\" style=\"display: none;\"></div><div id=\"tu_lora001b\"></div><div class=\"y\"><div class=\"x\"><font class=\"a\"><b><div id=\"tu_temp002a\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font></div></div><div id=\"tu_lora002a\"></div>\r\n\
 <div id=\"tu_temp002b\" style=\"display: none;\"></div><div id=\"tu_lora002c\"></div><div id=\"tu_temp002c\" style=\"display: none;\"></div><div id=\"tu_lora002b\"></div><div id=\"tu_temp003a\" style=\"display: none;\"></div><div id=\"tu_lora003a\"></div><div id=\"tu_temp003b\" style=\"display: none;\"></div><div id=\"tu_lora003c\"></div><div id=\"tu_temp003c\" style=\"display: none;\"></div><div id=\"tu_lora003b\"></div><div id=\"tu_temp004a\" style=\"display: none;\"></div><div id=\"tu_lora004a\"></div><div id=\"tu_temp004b\" style=\"display: none;\"></div><div id=\"tu_lora004c\"></div><div id=\"tu_temp004c\" style=\"display: none;\"></div><div id=\"tu_lora004b\"></div><div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\"><font class=\"a\"><b><div id=\"tu_temp005b\"><font color='#eee'>   --.- °C</font></div></b></font><br><font class=\"b\">Nazwa czujnika</font><div id=\"tu_lora005c\"></div><br>\r\n\
@@ -1330,7 +1337,7 @@ const char HttpMainReadPanel[]="\r\n\
 <div id=\"tu_ptt012\" style=\"display: none;\"></div>\r\n\
 <div id=\"tu_ptt013\" style=\"display: none;\"></div>\r\n\
 <div id=\"tu_ptt014\" style=\"display: none;\"></div>\r\n\
-                                 <div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk021(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk021\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div><div id=\"tu_lora021wy\"></div>\r\n\
+<div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk021(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk021\"><font color=\"#000\">Stan OFF</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div><div id=\"tu_lora021wy\"></div>\r\n\
 <div class=\"y\"><div class=\"x\"><a href=\"#\" rel=\"external\" onClick=\"xpk022(); this.href='javascript:return false;';\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk022\"><font color=\"#fff\">Stan ON</font></div></b></a><br><font class=\"b\">Wyjscie typu OC,IR,PWM</font></div></div><div id=\"tu_lora022wy\"></div>\r\n\
 <div id=\"tu_pk023\" style=\"display: none;\"></div><div id=\"tu_lora023wy\"></div>\r\n\
 <div id=\"tu_pk024\" style=\"display: none;\"></div><div id=\"tu_lora024wy\"></div>\r\n\
@@ -1371,10 +1378,7 @@ const char HttpMainReadPanel[]="\r\n\
 <div id=\"tu_te033\" style=\"display: none;\"></div>\r\n\
 </div></div>\r\n\
 </div>\r\n\
-</body>\r\n\
-\r\n\
-  \r\n\
-</html>";
+";
 
 const char HttpMainReadPanel2[]="\r\n\
 <body bgcolor=\"000000\">\r\n\
