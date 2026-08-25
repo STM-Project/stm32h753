@@ -526,15 +526,15 @@ void DefaultSettingsWIFI(void)
 	for (i=0; i<WIFI_STA_MAX; ++i)
 	{
 		VAR_SetVal64(Const_wifiSTA_mac, i, 0x0c0078f505);
-		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,93));
+		VAR_SetTabVal(Const_wifiSTA_ip, i, LWIP_MAKEU32(192,168,2,94));
 		VAR_SetTabVal(Const_wifiSTA_mask, i, LWIP_MAKEU32(255,255,255,0));
 		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,2,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
-		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -675,8 +675,9 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	int nrPartWWW=0;
 	switch(nrWWW){
 	case WWW_MAIN_READ:
-		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
-		httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;		httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
+		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
+		httpPar.web[channel][nrPartWWW] = (char*)HttpStructMainReadPanel;	httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStructMainReadPanel);
+		httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;			httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
 		break;
 	case WWW_DATA_REFRESH:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpRefr;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpRefr);
