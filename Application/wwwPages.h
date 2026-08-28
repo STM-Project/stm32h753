@@ -28,7 +28,8 @@ extern const char HttpMainReadPanel[];
 extern const char HttpMainReadPanel2[];
 extern const char HttpMainSettings[];
 
-void HTTP_TEMPLATE_TempRhu(char* buff, u8 type,u8 nr, float val1,float val2, char* name1,char* name2);
+char* HTTP_TEMPLATE_TempRhu	(char* buff, u8 type,u8 nr, float val1,float val2, char* name1,char* name2);
+char* HTTP_TEMPLATE_Impl	(char* buff, u8 type,u8 nr, uint32_t val1,uint32_t val2,uint32_t val3,uint32_t val4,uint32_t val5,char* name);
 
 
 #endif /* HTTP_WWWPAGES_H_ */
