@@ -167,7 +167,7 @@ struct HTTP_SEND_TEMP{
 
 TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
-static char httpBuff[5000]={0}; //TO BEDZIE w SDRAM!!!
+static char httpBuff[10000]={0}; //TO BEDZIE w SDRAM!!!
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
@@ -671,13 +671,15 @@ static void GoToTest(char* txt){
 static char* HTTP_SetWeb(int channel, int nrWWW)
 {
 	LOOP_FOR(i,MAX_HTML_WEBs){  httpPar.web[channel][i] = NULL;		httpPar.siz[channel][i] = 0;  }
-	int nrPartWWW=0;
+	int nrPartWWW=0;	char* ptr=&httpBuff[0];
 	switch(nrWWW){
 	case WWW_MAIN_READ:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
 		httpPar.web[channel][nrPartWWW] = (char*)HttpMainMenu;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainMenu);
 
-		HTTP_TEMPLATE_TempRhu(httpBuff,TEMPL_TempRhu,1, 89.6, 10, "Nazwa 1 a", "Nazwa 2 b");
+		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_TempRhu,1, 89.6, 10, "Nazwa 1 a", "Nazwa 2 b");
+		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_TempRhu,2, 12.6, 56, "Nazwa 3 a", "Nazwa 4 b");
+		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_Temp,	3, 12.6, unUsed, "Nazwa 5 a", NULL);
 		httpPar.web[channel][nrPartWWW] = (char*)httpBuff;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(httpBuff);
 	  //httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;			httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
 
