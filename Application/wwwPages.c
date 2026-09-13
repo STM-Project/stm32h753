@@ -36,17 +36,19 @@ extern char buff[];
 //Test <div class="y" style="height:300px"><div class="x" style="height:270px"><font class="a"><b><div id="tu_temp001b"><font color="#eee">  21.6 °C</font></div></b></font><br><font class="b">Nazwa 1</font><div id="tu_lora001c"></div><br>                                <font class="a"><b><div id="tu_temp001c"><font color="#eee"> 93  </font></div></b></font><br><font class="b">Nazwa 2</font><div id="tu_lora001b"> </div></div></div>
 
 char* HTTP_TEMPLATE_TempRhu(char* buff, u8 type,u8 nr, float val1,float val2, char* name1,char* name2)  //UWAGA na Float2Str() !!!! zmien aby byl wielwatkowy moze daj takkCritical emterExit albo mutex!!!
-{
-	if(TEMPL_None!=type)
-		buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\">\r\n");
+{//char temp[30]={};		if(TEMPL_TempRhu==type) strcpy(temp," style=\"height:300px");
 
+	if(TEMPL_None!=type){
+		if(TEMPL_TempRhu==type) buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\">\r\n");
+		else					buff += mini_snprintf(buff,200,"<div class=\"y\">						<div class=\"x\">\r\n");
+	}
 	if	   (TEMPL_Temp==type)
 		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03da\"><font color=\"#eee\">%s °C</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03da\"> </div>"
 				  	  	  	  ,nr, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
 
 	else if(TEMPL_TempRhu==type)
-		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03db\"><font color=\"#eee\">%s °C</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03dc\"></div><br>\r\n\
-				 						 <font class=\"a\"><b><div id=\"tu_temp%03dc\"><font color=\"#eee\">%s % </font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03db\"> </div>\r\n"
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03db\"><font color=\"#eee\">%s °C	</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03dc\"></div><br>\r\n\
+				 						 <font class=\"a\"><b><div id=\"tu_temp%03dc\"><font color=\"#eee\">%s &#37;</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03db\"> </div>\r\n"
 				  	  	  	  ,nr, Float2Str(val1,Space,3,Sign_minus,1), name1,nr
 							  ,nr, Float2Str(val2,Space,3,Sign_none, 0), name2,nr );
 
