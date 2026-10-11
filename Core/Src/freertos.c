@@ -30,6 +30,7 @@
 #include "sd_card.h"
 #include "tim.h"
 #include "esp32wroom.h"
+#include "timer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -173,6 +174,8 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
+	InitAllMutex();
+
 	Dbg(1,"\r\nHello Tu nowy STM32H753BIT6 Rafal Markielowski 123456789 ");
 	MX_FATFS_Init();
 	DEBUG_Init();

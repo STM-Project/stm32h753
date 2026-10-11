@@ -677,9 +677,10 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
 		httpPar.web[channel][nrPartWWW] = (char*)HttpMainMenu;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainMenu);
 
-		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_TempRhu,1, 89.6, 10, "Nazwa 1 a", "Nazwa 2 b");
-		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_TempRhu,2, 12.6, 56, "Nazwa 3 a", "Nazwa 4 b");
-		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_Temp,	3, 12.6, unUsed, "Nazwa 5 a", NULL);
+		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_TempRhu,1, 89.6, 10, "Nazwa Temp 1", "Nazwa RHU 1");
+		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_TempRhu,2, 12.6, 56, "Nazwa Temp 2", "Nazwa RHU 2");
+		ptr=HTTP_TEMPLATE_TempRhu(ptr,TEMPL_Temp,	3, 26.7, unUsed, "Nazwa temp 3", NULL);
+		ptr=HTTP_TEMPLATE_Impl	 (ptr,TEMPL_Impl,	4, 123456,6100,7102,8203,9304,"Nazwa Impulsy");
 		httpPar.web[channel][nrPartWWW] = (char*)httpBuff;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(httpBuff);
 	  //httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;			httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
 

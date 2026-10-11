@@ -19,7 +19,8 @@ extern osMutexId		osDeviceMutex;
 typedef enum{
 	Semphr_sdram,
 	Semphr_fontImg,
-	Semphr_cardSD
+	Semphr_cardSD,
+	Semphr_strBuff,
 }SEMPHR_ID;
 
 typedef enum{

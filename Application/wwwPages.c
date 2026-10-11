@@ -35,12 +35,12 @@ extern char buff[];
 //Test <div class="y" style="height:300px"><div class="x" style="height:270px"><font class="a"><b><div id="tu_temp001a"><font color="#eee">  21.6 °C</font></div></b></font><br><font class="b">Nazwa 1</font><div id="tu_lora001a"> </div></div></div>
 //Test <div class="y" style="height:300px"><div class="x" style="height:270px"><font class="a"><b><div id="tu_temp001b"><font color="#eee">  21.6 °C</font></div></b></font><br><font class="b">Nazwa 1</font><div id="tu_lora001c"></div><br>                                <font class="a"><b><div id="tu_temp001c"><font color="#eee"> 93  </font></div></b></font><br><font class="b">Nazwa 2</font><div id="tu_lora001b"> </div></div></div>
 
-char* HTTP_TEMPLATE_TempRhu(char* buff, u8 type,u8 nr, float val1,float val2, char* name1,char* name2)  //UWAGA na Float2Str() !!!! zmien aby byl wielwatkowy moze daj takkCritical emterExit albo mutex!!!
-{//char temp[30]={};		if(TEMPL_TempRhu==type) strcpy(temp," style=\"height:300px");
-
+char* HTTP_TEMPLATE_TempRhu(char* buff, u8 type,u8 nr, float val1,float val2, char* name1,char* name2)
+{
 	if(TEMPL_None!=type){
+		/* char temp[30]={};		if(TEMPL_TempRhu==type) strcpy(temp," style=\"height:300px"); */
 		if(TEMPL_TempRhu==type) buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\">\r\n");
-		else					buff += mini_snprintf(buff,200,"<div class=\"y\">						<div class=\"x\">\r\n");
+		else					buff += mini_snprintf(buff,200,"<div class=\"y\">						<div class=\"x\">   				    \r\n");
 	}
 	if	   (TEMPL_Temp==type)
 		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03da\"><font color=\"#eee\">%s °C</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03da\"> </div>"
@@ -60,12 +60,13 @@ char* HTTP_TEMPLATE_TempRhu(char* buff, u8 type,u8 nr, float val1,float val2, ch
 char* HTTP_TEMPLATE_Impl(char* buff, u8 type,u8 nr, uint32_t val1,uint32_t val2,uint32_t val3,uint32_t val4,uint32_t val5,char* name)
 {
 	if(TEMPL_None!=type){
-		buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:300px\">\r\n");
-		buff += mini_snprintf(buff,1000,"<font class=\"z\" style=\"font-size: 43px;\"><b><div id=\"tu_imp0_%03d\">%d.%d<font color=\"#FFF\" size=\"6\">KWh  </font></div></b></font><br>", 															   nr, val1/1000, val1-1000*(val1/1000) );
+		buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:330px\"><div class=\"x\" style=\"height:300px\">\r\n");
+		buff += mini_snprintf(buff,1000,"<font class=\"z\" style=\"font-size: 43px;\"><b><div id=\"tu_imp0_%03d\">%d.%d<font color=\"#FFF\" size=\"6\"> KWh  </font></div></b></font><br>", 														   nr, val1/1000, val1-1000*(val1/1000) );
 		buff += mini_snprintf(buff,1000,"<font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp1_%03d\"><font color=\"#eee\">%d.%d</font></div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;godzinny</font><br>", 				   nr, val2/1000, val2-1000*(val2/1000) );
 		buff += mini_snprintf(buff,1000,"<font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp2_%03d\"><font color=\"#eee\">%d.%d</font></div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dobowy </font><br>", nr, val3/1000, val3-1000*(val3/1000) );
 		buff += mini_snprintf(buff,1000,"<font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp3_%03d\"><font color=\"#eee\">%d.%d</font></div></font><font color=\"#ccc\" size=\"4\"> &nbsp;tygodniowy</font><br>", 								   nr, val4/1000, val4-1000*(val4/1000) );
 		buff += mini_snprintf(buff,1000,"<font class=\"z\" style=\"color:#ccc\"><div id=\"tu_imp4_%03d\"><font color=\"#eee\">%d.%d</font></div></font><font color=\"#ccc\" size=\"4\"> &nbsp;&nbsp;miesieczny</font><br>", 						   nr, val5/1000, val5-1000*(val5/1000) );
+		buff += mini_snprintf(buff,1000,"<font class=\"b\">%s</font>",name );
 		buff += mini_snprintf(buff,20,"</div></div>\r\n");
 	}
 	return buff;

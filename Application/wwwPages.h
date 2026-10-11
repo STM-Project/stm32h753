@@ -18,6 +18,7 @@ typedef enum{
 	TEMPL_None,
 	TEMPL_Temp,
 	TEMPL_TempRhu,
+	TEMPL_Impl,
 }HTTP_TEMPALTE_TYPE;
 
 extern char HttpRefr[];

@@ -12,6 +12,7 @@
 #include "double_float.h"
 #include "common.h"
 #include "mini_printf.h"
+#include "timer.h"
 
 #define SIZE_STRBUFF		200
 #define SIZE_STRBUFF_OUT	150
@@ -128,117 +129,179 @@ char* Int2Str(int value, char freeSign, int maxDigits, int plusMinus)
 
 char* Float2Str(float value, char freeSign, int maxDigits, int plusMinus, int dec_digits)
 {
-	int i=10,k=1,j,idx_copy;
-	float absolutValue;
-	char sign;
+	char* str_ptr=NULL;
 
-	idx_copy=idx;
-
-	int _IsSign(void)
+	if(TakeMutex(Semphr_strBuff, 50))
 	{
-		if(value<0)
+		int i=10,k=1,j,idx_copy;
+		float absolutValue;
+		char sign;
+
+		idx_copy=idx;
+
+		int _IsSign(void)
 		{
-			switch(plusMinus)
+			if(value<0)
 			{
-			case Sign_plusMinus:
-			case Sign_minus:
-				return 1;
+				switch(plusMinus)
+				{
+				case Sign_plusMinus:
+				case Sign_minus:
+					return 1;
+				}
 			}
-		}
-		else if(value>0)
-		{
-			switch(plusMinus)
+			else if(value>0)
 			{
-			case Sign_plusMinus:
-			case Sign_plus:
-				return 1;
+				switch(plusMinus)
+				{
+				case Sign_plusMinus:
+				case Sign_plus:
+					return 1;
+				}
 			}
+			return 0;
 		}
-		return 0;
-	}
 
-	if(value<0){
-		absolutValue=-value;
-		sign='-';
-	}
-	else{
-		absolutValue=value;
-		sign='+';
-	}
+		if(value<0){
+			absolutValue=-value;
+			sign='-';
+		}
+		else{
+			absolutValue=value;
+			sign='+';
+		}
 
-	while(1)
-	{
-		if(absolutValue<i)
+		while(1)
 		{
-		   if(k<maxDigits)
+			if(absolutValue<i)
 			{
-		   	if(idx+maxDigits+dec_digits+1 >= SIZE_STRBUFF){
-		   		idx=0;
-		   		idx_copy=0;
-		   	}
+			   if(k<maxDigits)
+				{
+			   	if(idx+maxDigits+dec_digits+1 >= SIZE_STRBUFF){
+			   		idx=0;
+			   		idx_copy=0;
+			   	}
 
-		   	if(Sign_none!=plusMinus)
-		   	{
-		   		if(Space==freeSign)
-			   		strBuff[idx++]=Space;
-			   	else
+			   	if(Sign_none!=plusMinus)
+			   	{
+			   		if(Space==freeSign)
+				   		strBuff[idx++]=Space;
+				   	else
+				   	{
+				   		if(1==_IsSign())
+				   			strBuff[idx++]=sign;
+				   		else
+				   			strBuff[idx++]=Space;
+				   	}
+			   	}
+
+			   	if(None!=freeSign)
+			   	{
+				   	j=maxDigits-k;
+				   	memset(&strBuff[idx],freeSign,j);
+				   	idx+=j;
+			   	}
+
+			   	if(Space==freeSign)
+			   	{
+			   		if(1==_IsSign())
+			   			strBuff[idx-1]=sign;
+			   	}
+				}
+			   else
+			   {
+			   	if(idx+k+dec_digits+1 >= SIZE_STRBUFF){
+			   		idx=0;
+			   		idx_copy=0;
+			   	}
+
+			   	if(Sign_none!=plusMinus)
 			   	{
 			   		if(1==_IsSign())
 			   			strBuff[idx++]=sign;
 			   		else
 			   			strBuff[idx++]=Space;
 			   	}
-		   	}
-
-		   	if(None!=freeSign)
-		   	{
-			   	j=maxDigits-k;
-			   	memset(&strBuff[idx],freeSign,j);
-			   	idx+=j;
-		   	}
-
-		   	if(Space==freeSign)
-		   	{
-		   		if(1==_IsSign())
-		   			strBuff[idx-1]=sign;
-		   	}
+			   }
+				float2stri(&strBuff[idx], absolutValue,dec_digits);
+				idx+=k+dec_digits+1;
+				break;
 			}
-		   else
-		   {
-		   	if(idx+k+dec_digits+1 >= SIZE_STRBUFF){
-		   		idx=0;
-		   		idx_copy=0;
-		   	}
-
-		   	if(Sign_none!=plusMinus)
-		   	{
-		   		if(1==_IsSign())
-		   			strBuff[idx++]=sign;
-		   		else
-		   			strBuff[idx++]=Space;
-		   	}
-		   }
-			float2stri(&strBuff[idx], absolutValue,dec_digits);
-			idx+=k+dec_digits+1;
-			break;
+			else
+			{
+				i*=10;
+				k++;
+			}
 		}
-		else
-		{
-			i*=10;
-			k++;
-		}
+		strBuff[idx++]=0;
+		str_ptr = strBuff+idx_copy;
+		GiveMutex(Semphr_strBuff);
 	}
-	strBuff[idx++]=0;
-	return strBuff+idx_copy;
+	return str_ptr;
 }
 
-char* StrAll(int nmbStr, ...)
+/*
+#define configNUM_THREAD_LOCAL_STORAGE_POINTERS 1
+#define STRALL_TLS_INDEX 0
+
+char *StrAll(int nmbStr, ...)
+{
+	// .....
+    char *strBuffOut =
+        (char *)pvTaskGetThreadLocalStoragePointer(
+            NULL, STRALL_TLS_INDEX);
+
+    if (strBuffOut == NULL)
+        return NULL;
+
+    strBuffOut[0] = '\0';
+    // ......
+}
+
+void StartTask1(void *argument)
+{
+    char strBuffOut[SIZE_STRBUFF_OUT];
+
+    vTaskSetThreadLocalStoragePointer(
+        NULL, STRALL_TLS_INDEX, strBuffOut);
+
+    for (;;)
+    {
+        char *txt = StrAll(3,
+            "ADC=", "1234", "mV");
+
+        // Tutaj używamy txt
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
+void StartTask2(void *argument)
+{
+    char strBuffOut[SIZE_STRBUFF_OUT];
+
+    vTaskSetThreadLocalStoragePointer(
+        NULL, STRALL_TLS_INDEX, strBuffOut);
+
+    for (;;)
+    {
+        char *txt = StrAll(3,
+            "DAC=", "2500", "mV");
+
+        // Tutaj używamy txt
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+*/
+
+char* StrAll(int nmbStr, ...)		/* bez ochrony dla wielowatkowosci, uzywany tylko w jednym watku do obslugi wyswietlacza  */
 {
 	int i,len,lenOut;
 	char *ptr;
 	va_list va;
 
-	va_start(va,0);
+	va_start(va,0);		/* va_start(va, nmbStr); */
 	strBuffOut[0]=0;
 
 	for(i=0;i<nmbStr;++i)
