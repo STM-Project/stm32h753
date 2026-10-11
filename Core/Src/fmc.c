@@ -240,14 +240,16 @@ void MX_FMC_Init(void)
     Error_Handler( );
   }
 
+  HAL_SetFMCMemorySwappingConfig(FMC_SWAPBMAP_SDRAM_SRAM);
+
   /* USER CODE BEGIN FMC_Init 2 */
   /*
   	  0xC0000000 jako External Device memory,
   	  0x60000000 jako External Normal Memory, domyślnie z atrybutem Write-Back / Write-Allocate.    -> remap z 0xC0000000 do 0x60000000 poprzez funkcje:  HAL_SetFMCMemorySwappingConfig(FMC_SWAPBMAP_SDRAM_SRAM);
   */
-  HAL_SetFMCMemorySwappingConfig(FMC_SWAPBMAP_SDRAM_SRAM);
   SDRAM_Initialization_Sequence();
-  TestSDRAM(SDRAM_MEMORY_ADDR, SDRAM_DEVICE_SIZE);
+  TestSDRAM(SDRAM_MEMORY_ADDR, SDRAM_DEVICE_SIZE);		/* UWAGA ! Test SDRAM jest przeprowadzany przy WLACZONYM D-Cashe co moze test przejsc mimo fizycznych problemow z SDRAM. ! */
+  	  	  	  	  	  	  	  	  	  	  	  	  	  	/* PROPOZYCJA: Nie włączaj D-Cache przed tym testem, bo procesor może zapisać dane tylko do cache i potem odczytać je z cache — test może wyjść poprawnie mimo problemów z fizycznym SDRAM  */
   /* USER CODE END FMC_Init 2 */
 }
 
