@@ -50,7 +50,10 @@ static void SDRAM_Initialization_Sequence(void)
 	command.ModeRegisterDefinition = 0;
 
 	/* Send the command */
-	HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT);
+	if (HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT) != HAL_OK)
+    {
+        Error_Handler();
+    }
 
 	/* Step 4: Insert 100 us minimum delay */
 	/* Inserted delay is equal to 1 ms due to systick time base unit (ms) */
@@ -63,7 +66,10 @@ static void SDRAM_Initialization_Sequence(void)
 	command.ModeRegisterDefinition = 0;
 
 	/* Send the command */
-	HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT);
+	if (HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT) != HAL_OK)
+    {
+        Error_Handler();
+    }
 
 	/* Step 6 : Configure a Auto-Refresh command */
 	command.CommandMode = FMC_SDRAM_CMD_AUTOREFRESH_MODE;
@@ -72,7 +78,10 @@ static void SDRAM_Initialization_Sequence(void)
 	command.ModeRegisterDefinition = 0;
 
 	/* Send the command */
-	HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT);
+	if (HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT) != HAL_OK)
+    {
+        Error_Handler();
+    }
 
 	/* Step 7: Program the external memory mode register */
 	tmpmrd = (uint32_t) SDRAM_MODEREG_BURST_LENGTH_4 |
@@ -87,13 +96,24 @@ static void SDRAM_Initialization_Sequence(void)
 	command.ModeRegisterDefinition = tmpmrd;
 
 	/* Send the command */
-	HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT);
+	if (HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT) != HAL_OK)
+    {
+        Error_Handler();
+    }
 
 	/* Step 8: Set the refresh rate counter */
-	/* (15.62 us x Freq) - 20 */
-	/* Set the device refresh counter */
-	hsdram1.Instance->SDRTR |= ((uint32_t) ((1292) << 1));
-	//HAL_SDRAM_ProgramRefreshRate(&hsdram1, 1698);
+    /*
+      IS42S32400F:
+      4096 refresh / 64 ms
+      SDRAM clock = 100 MHz
+      64 ms / 4096 = 15.625 us
+      15.625 us * 100 MHz = 1562.5
+      1562.5 - 20 ≈ 1542
+     */
+    if (HAL_SDRAM_ProgramRefreshRate(&hsdram1,1542) != HAL_OK)
+    {
+        Error_Handler();
+    }
 }
 
 static void TestSDRAM(uint32_t sdramAddr, uint32_t sdramSize)
@@ -204,12 +224,12 @@ void MX_FMC_Init(void)
   hsdram1.Init.CASLatency = FMC_SDRAM_CAS_LATENCY_2;
   hsdram1.Init.WriteProtection = FMC_SDRAM_WRITE_PROTECTION_DISABLE;
   hsdram1.Init.SDClockPeriod = FMC_SDRAM_CLOCK_PERIOD_2;
-  hsdram1.Init.ReadBurst = FMC_SDRAM_RBURST_DISABLE;
+  hsdram1.Init.ReadBurst = FMC_SDRAM_RBURST_ENABLE;
   hsdram1.Init.ReadPipeDelay = FMC_SDRAM_RPIPE_DELAY_1;
   /* SdramTiming */
   SdramTiming.LoadToActiveDelay = 2;
   SdramTiming.ExitSelfRefreshDelay = 7;
-  SdramTiming.SelfRefreshTime = 4;
+  SdramTiming.SelfRefreshTime = 5;
   SdramTiming.RowCycleDelay = 7;
   SdramTiming.WriteRecoveryTime = 3;
   SdramTiming.RPDelay = 2;
@@ -248,7 +268,7 @@ static void HAL_FMC_MspInit(void){
   */
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_FMC;
     PeriphClkInitStruct.PLL2.PLL2M = 5;
-    PeriphClkInitStruct.PLL2.PLL2N = 45;
+    PeriphClkInitStruct.PLL2.PLL2N = 40;
     PeriphClkInitStruct.PLL2.PLL2P = 2;
     PeriphClkInitStruct.PLL2.PLL2Q = 5;
     PeriphClkInitStruct.PLL2.PLL2R = 1;
