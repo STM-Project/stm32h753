@@ -24,9 +24,6 @@
 /* USER CODE BEGIN 0 */
 #include "errors_service.h"
 
-#define SDRAM_DEVICE_ADDR         ((uint32_t)0xC0000000U)
-#define SDRAM_DEVICE_SIZE         ((uint32_t)0x01000000) //16MB				//((uint32_t)0x03FFFFFF) //64MB
-
 #define SDRAM_TIMEOUT     ((uint32_t)0xFFFF)
 
 #define SDRAM_MODEREG_BURST_LENGTH_1             ((uint16_t)0x0000)
@@ -43,7 +40,7 @@
 
 FMC_SDRAM_CommandTypeDef command;
 
-void SDRAM_Initialization_Sequence(void)
+static void SDRAM_Initialization_Sequence(void)
 {
 	__IO uint32_t tmpmrd = 0;
 	/* Step 3:  Configure a clock configuration enable command */
@@ -99,7 +96,7 @@ void SDRAM_Initialization_Sequence(void)
 	//HAL_SDRAM_ProgramRefreshRate(&hsdram1, 1698);
 }
 
-void TestSDRAM(void)
+static void TestSDRAM(uint32_t sdramAddr, uint32_t sdramSize)
 {
 	uint32_t WriteReadAddr = 4;
 	uint32_t aTxBuffer;
@@ -110,13 +107,13 @@ void TestSDRAM(void)
 	uint32_t Sdram_addr = 0;
 	long int i, iter;
 
-	iter = SDRAM_DEVICE_SIZE / WriteReadAddr;
+	iter = sdramSize / WriteReadAddr;
 
 	//-----------------------------START TEST 1-----------------------------
 
 	for (i = 0; i < iter; i++)
 	{
-		Sdram_addr = SDRAM_DEVICE_ADDR + WriteReadAddr * i;
+		Sdram_addr = sdramAddr + WriteReadAddr * i;
 		aTxBuffer = Sdram_addr;
 		*(volatile uint32_t*) Sdram_addr = aTxBuffer;
 	}
@@ -124,7 +121,7 @@ void TestSDRAM(void)
 	for (i = 0; i < iter; i++)
 	{
 		aRxBuffer = 0x0;
-		Sdram_addr = SDRAM_DEVICE_ADDR + WriteReadAddr * i;
+		Sdram_addr = sdramAddr + WriteReadAddr * i;
 		aRxBuffer = *(volatile uint32_t*) Sdram_addr;
 
 		if (aRxBuffer != Sdram_addr)
@@ -150,7 +147,7 @@ void TestSDRAM(void)
 
 	for (i = 0; i < iter; i++)
 	{
-		Sdram_addr = SDRAM_DEVICE_ADDR + WriteReadAddr * i;
+		Sdram_addr = sdramAddr + WriteReadAddr * i;
 		aTxBuffer = ~Sdram_addr;
 		*(volatile uint32_t*) Sdram_addr = aTxBuffer;
 	}
@@ -158,7 +155,7 @@ void TestSDRAM(void)
 	for (i = 0; i < iter; i++)
 	{
 		aRxBuffer = 0x0;
-		Sdram_addr = SDRAM_DEVICE_ADDR + WriteReadAddr * i;
+		Sdram_addr = sdramAddr + WriteReadAddr * i;
 		aRxBuffer = *(volatile uint32_t*) Sdram_addr;
 
 		if (aRxBuffer != ~Sdram_addr)
@@ -228,8 +225,9 @@ void MX_FMC_Init(void)
   	  0xC0000000 jako External Device memory,
   	  0x60000000 jako External Normal Memory, domyślnie z atrybutem Write-Back / Write-Allocate.    -> remap z 0xC0000000 do 0x60000000 poprzez funkcje:  HAL_SetFMCMemorySwappingConfig(FMC_SWAPBMAP_SDRAM_SRAM);
   */
-	SDRAM_Initialization_Sequence();
-	TestSDRAM();
+  HAL_SetFMCMemorySwappingConfig(FMC_SWAPBMAP_SDRAM_SRAM);
+  SDRAM_Initialization_Sequence();
+  TestSDRAM(SDRAM_MEMORY_ADDR, SDRAM_DEVICE_SIZE);
   /* USER CODE END FMC_Init 2 */
 }
 
