@@ -24,7 +24,7 @@
 /* USER CODE BEGIN 0 */
 #include "errors_service.h"
 
-#define SDRAM_DEVICE_ADDR         ((uint32_t)0x60000000)
+#define SDRAM_DEVICE_ADDR         ((uint32_t)0xC0000000U)
 #define SDRAM_DEVICE_SIZE         ((uint32_t)0x01000000) //16MB				//((uint32_t)0x03FFFFFF) //64MB
 
 #define SDRAM_TIMEOUT     ((uint32_t)0xFFFF)
@@ -96,6 +96,7 @@ void SDRAM_Initialization_Sequence(void)
 	/* (15.62 us x Freq) - 20 */
 	/* Set the device refresh counter */
 	hsdram1.Instance->SDRTR |= ((uint32_t) ((1292) << 1));
+	//HAL_SDRAM_ProgramRefreshRate(&hsdram1, 1698);
 }
 
 void TestSDRAM(void)
@@ -223,7 +224,12 @@ void MX_FMC_Init(void)
   }
 
   /* USER CODE BEGIN FMC_Init 2 */
-
+  /*
+  	  0xC0000000 jako External Device memory,
+  	  0x60000000 jako External Normal Memory, domyślnie z atrybutem Write-Back / Write-Allocate.    -> remap z 0xC0000000 do 0x60000000 poprzez funkcje:  HAL_SetFMCMemorySwappingConfig(FMC_SWAPBMAP_SDRAM_SRAM);
+  */
+	SDRAM_Initialization_Sequence();
+	TestSDRAM();
   /* USER CODE END FMC_Init 2 */
 }
 
