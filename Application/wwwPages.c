@@ -35,29 +35,38 @@ extern char buff[];
 //Test <div class="y" style="height:300px"><div class="x" style="height:270px"><font class="a"><b><div id="tu_temp001a"><font color="#eee">  21.6 °C</font></div></b></font><br><font class="b">Nazwa 1</font><div id="tu_lora001a"> </div></div></div>
 //Test <div class="y" style="height:300px"><div class="x" style="height:270px"><font class="a"><b><div id="tu_temp001b"><font color="#eee">  21.6 °C</font></div></b></font><br><font class="b">Nazwa 1</font><div id="tu_lora001c"></div><br>                                <font class="a"><b><div id="tu_temp001c"><font color="#eee"> 93  </font></div></b></font><br><font class="b">Nazwa 2</font><div id="tu_lora001b"> </div></div></div>
 
-char* HTTP_TEMPLATE_TempRhu(char* buff, u8 type,u8 nr, float val1,float val2, char* name1,char* name2)
+char* HTTP_TEMPLATE_AdcTempRhu(char* buff, u8 type,u8 nr, float val1,float val2, u32 color1,u32 color2, char* name1,char* name2)	/* #f88 - #eee - #8cf */
 {
 	if(TEMPL_None!=type){
 		/* char temp[30]={};		if(TEMPL_TempRhu==type) strcpy(temp," style=\"height:300px"); */
 		if(TEMPL_TempRhu==type) buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\">\r\n");
 		else					buff += mini_snprintf(buff,200,"<div class=\"y\">						<div class=\"x\">   				    \r\n");
 	}
-	if	   (TEMPL_Temp==type)
-		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03da\"><font color=\"#eee\">%s °C</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03da\"> </div>"
-				  	  	  	  ,nr, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
+
+	if(TEMPL_Temp==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03da\"><font color=\"#%x\">%s °C</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03da\"> </div>"
+				  	  	  	  ,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
 
 	else if(TEMPL_TempRhu==type)
-		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03db\"><font color=\"#eee\">%s °C	</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03dc\"></div><br>\r\n\
-				 						 <font class=\"a\"><b><div id=\"tu_temp%03dc\"><font color=\"#eee\">%s &#37;</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03db\"> </div>\r\n"
-				  	  	  	  ,nr, Float2Str(val1,Space,3,Sign_minus,1), name1,nr
-							  ,nr, Float2Str(val2,Space,3,Sign_none, 0), name2,nr );
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03db\"><font color=\"#%x\">%s °C   </font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03dc\"></div><br>\r\n\
+				 						 <font class=\"a\"><b><div id=\"tu_temp%03dc\"><font color=\"#%x\">%s &#37;</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03db\"> </div>\r\n"
+				  	  	  	  ,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr
+							  ,nr,color2, Float2Str(val2,Space,3,Sign_none, 0), name2,nr );
+
+	else if(TEMPL_Ptt==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_ptt%03d\"><font color=\"#%x\">%s °C</font></div></b></font><br><font class=\"b\">%s</font>"
+				  	  	  	  ,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
+
+	else if(TEMPL_Adc==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_adc%03d\"><font color=\"#%x\">%s V</font></div></b></font><br><font class=\"b\">%s</font>"
+				  	  	  	  ,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
 
 	if(TEMPL_None!=type)
 		buff += mini_snprintf(buff,20,"</div></div>\r\n");
 	return buff;
 }
 
-char* HTTP_TEMPLATE_Impl(char* buff, u8 type,u8 nr, uint32_t val1,uint32_t val2,uint32_t val3,uint32_t val4,uint32_t val5,char* name)
+char* HTTP_TEMPLATE_Impl(char* buff, u8 type,u8 nr, uint32_t val1,uint32_t val2,uint32_t val3,uint32_t val4,uint32_t val5, u32 color,char* name)
 {
 	if(TEMPL_None!=type){
 		buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:330px\"><div class=\"x\" style=\"height:300px\">\r\n");
@@ -72,7 +81,73 @@ char* HTTP_TEMPLATE_Impl(char* buff, u8 type,u8 nr, uint32_t val1,uint32_t val2,
 	return buff;
 }
 
+char* HTTP_TEMPLATE_In(char* buff, u8 type, u8 nr, char* name1, u32 color, char* name2)
+{
+	if(TEMPL_None!=type){
+		buff += mini_snprintf(buff,200,"<div class=\"y\"><div class=\"x\">\r\n");
+	}
 
+	if(TEMPL_In==type){
+		buff += mini_snprintf(buff,1000,"<font class=\"z\"><b><div id=\"tu_we%03d\"><font color=\"#%x\">%s</font></div></b></font><br>",nr,color,name1);
+		buff += mini_snprintf(buff,1000,"<font class=\"b\">%s</font><div id=\"tu_lora%03dwe\"> </div>",name2,nr);
+	}
+
+	else if(TEMPL_Eol==type){
+		buff += mini_snprintf(buff,1000,"<font class=\"z\"><b><div id=\"tu_eol%03d\"><font color=\"#%x\">%s</font></div></b></font><br>",nr,color,name1);
+		buff += mini_snprintf(buff,1000,"<font class=\"b\">%s</font><div id=\"tu_lora%03deol\"> </div>",name2,nr);
+	}
+
+	if(TEMPL_None!=type)
+		buff += mini_snprintf(buff,20,"</div></div>\r\n");
+
+	return buff;
+}
+
+char* HTTP_TEMPLATE_Out(char* buff, u8 type,u8 nr, char* name1, char* name2)
+{
+	if(TEMPL_None!=type){
+		buff += mini_snprintf(buff,200,"<div class=\"y\"><div class=\"x\">\r\n");
+	}
+
+	if(TEMPL_Pk==type){
+		buff += mini_snprintf(buff,1000,"<a href=\"#\" rel=\"external\" onclick=\"xpk%03d(); this.href=&#39;javascript:return false;&#39;;\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk%03d\"><font color=\"#000\">%s</font></div></b></a><br>",nr,nr,name1);
+		buff += mini_snprintf(buff,1000,"<font class=\"b\">%s</font><div id=\"tu_lora%03dwy\"> </div>",name2,nr);
+	}
+
+	else if(TEMPL_Ti==type){
+	}
+
+	else if(TEMPL_Te==type){
+	}
+
+	if(TEMPL_None!=type)
+		buff += mini_snprintf(buff,20,"</div></div>\r\n");
+
+	return buff;
+
+
+//	<div class="y"><div class="x">
+//	<a href="#" rel="external" onclick="xpk021(); this.href='javascript:return false;';" class="c" style="font-size: 25px;"><b><div id="tu_pk021"><font color="#000">Stan OFF X      </font></div></b></a>&nbsp;<span  id='tu_ant' style="display: inline-block; margin-top: 0px;"></span><br><font class="b">Wyjscie typu OC,IR,PWM</font>
+//	</div></div>
+
+//	<div class="y"><div class="x">
+//	<a href="http://192.168.1.11/#" rel="external" onclick="xpk022(); this.href=&#39;javascript:return false;&#39;;" class="c" style="font-size: 25px;"><b><div id="tu_pk022"><font color="#000">Stan OFF             </font></div></b></a><br><font class="b">Wyjscie typu OC,IR,PWM</font><div id="tu_lora022wy"> </div>
+//	</div></div>
+
+
+//
+//	<div class="y"><div class="x">
+//	<a class="c" style="font-size: 25px;"><b><div id="tu_ti023"><font color="#000">Stan OFF A             </font></div></b></a><br><font class="b">Wyjscie typu OC,IR,PWM</font>
+//	</div></div>
+//
+//	<div class="y"><div class="x">
+//	<a class="c" style="font-size: 25px;"><b><div id="tu_te025"><font color="#000">Stan OFF             </font></div></b></a><br><font class="b">Wyjscie typu OC,IR</font>
+//	</div></div>
+
+
+}
+
+SDRAM_ALIGN32 char HttpRefr_sdram[100000];
 
 /* W NotePad nalezy zamienic '\r\n' -> '\\r\\n\\\r\n' */
 char HttpRefr[]="22:59:08 &nbsp;26/07/25120000000000000 111111111111111111 55555555555555  25.10 65%0  78.30 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0       6.0       5.7      ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0 V     V              0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0";
