@@ -167,7 +167,7 @@ struct HTTP_SEND_TEMP{
 
 TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
-static char httpBuff[10000]={0}; //TO BEDZIE w SDRAM!!!
+static char httpBuff[100000]={0}; //TO BEDZIE w SDRAM!!!
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
@@ -530,10 +530,10 @@ void DefaultSettingsWIFI(void)
 		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
-		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -679,8 +679,9 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 
 		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_TempRhu,1, 89.6, 10, 0xf88, 0x8cf, "Nazwa Temp 1", "Nazwa RHU 1");
 		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_TempRhu,2, 12.6, 56, 0xeee, 0xeee, "Nazwa Temp 2", "Nazwa RHU 2");
-		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_Temp,   3, 26.7,  0, 0xeee, 0x0,   "Nazwa temp 3", NULL);
+		//ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_Temp,   3, 26.7,  0, 0xeee, 0x0,   "Nazwa temp 3", NULL);
 		ptr=HTTP_TEMPLATE_Impl	 	(ptr,TEMPL_Impl,   17, 123456,6100,7102,8203,9304, 0xfff,"Nazwa Impulsy");
+		ptr=HTTP_TEMPLATE_TestUsun	(ptr);
 		httpPar.web[channel][nrPartWWW] = (char*)httpBuff;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(httpBuff);
 	  //httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;			httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
 
