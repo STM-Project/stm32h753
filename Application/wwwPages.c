@@ -66,6 +66,48 @@ char* HTTP_TEMPLATE_AdcTempRhu(char* buff, u8 type,u8 nr, float val1,float val2,
 	return buff;
 }
 
+char* HTTP_TEMPLATE_TestUsun(char* buff)	/* #f88 - #eee - #8cf */
+{
+	for(int i=1;i<=20;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03da\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03da\"> </div>",i,i);
+	for(int i=3;i<=20;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03db\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03db\"> </div>",i,i);
+	for(int i=3;i<=20;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03dc\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03dc\"> </div>",i,i);
+
+
+	for(int i=21;i<=33;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_pk%03d\" style=\"display: none;\"><font color=\"#000\">  </font></div><div id=\"tu_lora%03dwy\"> </div>",i,i);
+	for(int i=21;i<=33;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_ti%03d\" style=\"display: none;\"><font color=\"#000\">  </font></div>",i);
+	for(int i=21;i<=33;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_te%03d\" style=\"display: none;\"><font color=\"#000\">  </font></div>",i);
+
+	for(int i=1;i<=20;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_we%03d\" style=\"display: none;\"><font color=\"#eee\">  </font></div><div id=\"tu_lora%03dwe\"> </div>",i,i);
+
+	for(int i=1;i<=14;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_eol%03d\" style=\"display: none;\"><font color=\"#f88\">  </font></div><div id=\"tu_lora%03deol\"> </div>",i,i);
+
+	for(int i=1;i<=14;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_ptt%03d\" style=\"display: none;\"><font color=\"#eee\">  </font></div>",i);
+
+	for(int i=18;i<=20;i++)//for(int i=17;i<=20;i++)
+	{
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_imp0_%03d\" style=\"display: none;\">  <font color=\"#FFF\" size=\"6\">KWh  </font></div>",i);
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_imp1_%03d\" style=\"display: none;\"><font color=\"#eee\">        0.000 </font></div>",i);
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_imp2_%03d\" style=\"display: none;\"><font color=\"#eee\">        0.000 </font></div>",i);
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_imp3_%03d\" style=\"display: none;\"><font color=\"#eee\">        0.000 </font></div>",i);
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_imp4_%03d\" style=\"display: none;\"><font color=\"#eee\">        0.000 </font></div>",i);
+	}
+
+	for(int i=15;i<=16;i++)
+		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_adc%03d\" style=\"display: none;\"><font color=\"#eee\">  </font></div>",i);
+
+
+	return buff;
+}
+
 char* HTTP_TEMPLATE_Impl(char* buff, u8 type,u8 nr, uint32_t val1,uint32_t val2,uint32_t val3,uint32_t val4,uint32_t val5, u32 color,char* name)
 {
 	if(TEMPL_None!=type){
