@@ -167,7 +167,7 @@ struct HTTP_SEND_TEMP{
 
 TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
-static char httpBuff[100000]={0}; //TO BEDZIE w SDRAM!!!
+SDRAM char httpBuff[100000];
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
@@ -530,10 +530,10 @@ void DefaultSettingsWIFI(void)
 		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
-//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -679,7 +679,7 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 
 		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_TempRhu,1, 89.6, 10, 0xf88, 0x8cf, "Nazwa Temp 1", "Nazwa RHU 1");
 		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_TempRhu,2, 12.6, 56, 0xeee, 0xeee, "Nazwa Temp 2", "Nazwa RHU 2");
-		//ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_Temp,   3, 26.7,  0, 0xeee, 0x0,   "Nazwa temp 3", NULL);
+		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_Temp,   3, 26.7,  0, 0xeee, 0x0,   "Nazwa temp 3", NULL);
 		ptr=HTTP_TEMPLATE_Impl	 	(ptr,TEMPL_Impl,   17, 123456,6100,7102,8203,9304, 0xfff,"Nazwa Impulsy");
 		ptr=HTTP_TEMPLATE_TestUsun	(ptr);
 		httpPar.web[channel][nrPartWWW] = (char*)httpBuff;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(httpBuff);
@@ -1704,7 +1704,7 @@ void vtaskWifi(void *argument)
 			else if(DEBUG_IsTxtReceive("m"))
 			{
 				DbgDma(DBG, _S_"\r\nTest "_E_);
-				mini_snprintf(HttpRefr_sdram,100000,"11:34:12 &nbsp;26/07/25280000000000000 111111111111111111 55555555555555  25.11 65%0  78.32 98%1 -56.01 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0       6.0       5.7      ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0 V     V              1.005   KWh            2.006  0          3.007  0          4.008  0          5.009  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0");
+				strcpy(HttpRefr_sdram,"11:34:12 &nbsp;26/07/25280000000000000 111111111111111111 55555555555555  25.11 65%0 -78.32 98%1 -56.01 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0       6.0       5.7      ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0 V     V              1.005   KWh            2.006  0          3.007  0          4.008  0          5.009  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0");
 				DbgDma(DBG, HttpRefr_sdram);
 			}
 		/*

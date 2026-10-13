@@ -68,8 +68,10 @@ char* HTTP_TEMPLATE_AdcTempRhu(char* buff, u8 type,u8 nr, float val1,float val2,
 
 char* HTTP_TEMPLATE_TestUsun(char* buff)	/* #f88 - #eee - #8cf */
 {
-	for(int i=1;i<=20;i++)
+	for(int i=1;i<=2;i++)
 		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03da\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03da\"> </div>",i,i);
+	for(int i=4;i<=20;i++)
+			buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03da\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03da\"> </div>",i,i);
 	for(int i=3;i<=20;i++)
 		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03db\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03db\"> </div>",i,i);
 	for(int i=3;i<=20;i++)
@@ -192,7 +194,7 @@ char* HTTP_TEMPLATE_Out(char* buff, u8 type,u8 nr, char* name1, char* name2)
 SDRAM_ALIGN32 char HttpRefr_sdram[100000];
 
 /* W NotePad nalezy zamienic '\r\n' -> '\\r\\n\\\r\n' */
-char HttpRefr[]="22:59:08 &nbsp;26/07/25120000000000000 111111111111111111 55555555555555  25.10 65%0  78.30 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0       6.0       5.7      ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0 V     V              0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0";
+char HttpRefr[]="22:59:08 &nbsp;26/07/25120000000000000 111111111111111111 55555555555555  25.10 65%0 -78.30 34%2  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0  --.-0 --%0       6.0       5.7      ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0   ---   0 V     V              0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0          0.000   KWh            0.000  0          0.000  0          0.000  0          0.000  0";
 
 const char HttpStyle[]="<!DOCTYPE html>\r\n\
 <html>\r\n\
