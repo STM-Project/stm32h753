@@ -165,7 +165,11 @@ char* HTTP_TEMPLATE_Out(char* buff, u8 type,u8 nr, float val, char* name1, char*
 	}
 
 	else if(TEMPL_Pwm==type){
-		buff += mini_snprintf(buff,1000,"<table><tr><td width=\"100px\"><output  class=\"v\" style=\"font-size:36px;\" id=\"volume%03d\">%d</output></td><td></td><td><input type=\"range\" name=\"n_pwm%d\"  min=\"0\" max=\"100\"  step=\"1\"  value=\"%d\"   oninput=\"outputUpdate%03d(value)\" onchange=\"x%03d(this.value);\"></input></td></tr></table><font class=\"b\">%s</font>",nr,val,nr-20,val,nr,nr,name1);
+		buff += mini_snprintf(buff,1000,"<table><tr><td width=\"100px\"><output  class=\"v\" style=\"font-size:36px;\" id=\"volume%03d\">%d</output></td><td></td><td><input type=\"range\" name=\"n_pwm%d\"  min=\"0\" max=\"100\"  step=\"1\"  value=\"%d\"   oninput=\"outputUpdate%03d(value)\" onchange=\"x%03d(this.value);\"></input></td></tr></table><font class=\"b\">%s</font>",nr,(u8)val,nr-20,(u8)val,nr,nr,name1);
+		//buff += mini_snprintf(buff,1000,"<table><tr><td width=\"100px\"><output  class=\"v\" style=\"font-size:36px;\" id=\"volume023\">45</output></td><td></td><td><input type=\"range\" name=\"n_pwm3\"  min=\"0\" max=\"100\"  step=\"1\"  value=\"45\"   oninput=\"outputUpdate023(value)\" onchange=\"x023(this.value);\"></input></td></tr></table><font class=\"b\">AAAA</font>");
+//		buff += mini_snprintf(buff,1000,"<table><tr><td width=\"100px\"><output  class=\"v\" style=\"font-size:36px;\" id=\"volume%03d\">%d</output></td><td></td><td><input type=\"range\" ",nr,(u8)val);
+//		buff += mini_snprintf(buff,1000,"name=\"n_pwm%d\"  min=\"0\" max=\"100\"  step=\"1\"  value=\"%d\"   ",nr-20,(u8)val);
+//		buff += mini_snprintf(buff,1000,"oninput=\"outputUpdate%03d(value)\" onchange=\"x%03d(this.value);\"></input></td></tr></table><font class=\"b\">%s</font>",nr,nr,name1);
 	}
 
 	if(TEMPL_None!=type)
