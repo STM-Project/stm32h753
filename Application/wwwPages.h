@@ -26,6 +26,7 @@ typedef enum{
 	TEMPL_Pk,
 	TEMPL_Te,
 	TEMPL_Ti,
+	TEMPL_Pwm,
 }HTTP_TEMPALTE_TYPE;
 
 extern char HttpRefr[];
@@ -39,7 +40,8 @@ extern const char HttpMainSettings[];
 
 char* HTTP_TEMPLATE_AdcTempRhu(char* buff, u8 type,u8 nr, float val1,float val2, u32 color1,u32 color2, char* name1,char* name2);
 char* HTTP_TEMPLATE_Impl	  (char* buff, u8 type,u8 nr, uint32_t val1,uint32_t val2,uint32_t val3,uint32_t val4,uint32_t val5, u32 color,char* name);
-char* HTTP_TEMPLATE_In		  (char* buff, u8 type, u8 nr, char* name1, u32 color, char* name2);
+char* HTTP_TEMPLATE_In		  (char* buff, u8 type,u8 nr, char* name1, u32 color, char* name2);
+char* HTTP_TEMPLATE_Out		  (char* buff, u8 type,u8 nr, float val, char* name1, char* name2);
 char* HTTP_TEMPLATE_TestUsun(char* buff);
 
 #endif /* HTTP_WWWPAGES_H_ */
