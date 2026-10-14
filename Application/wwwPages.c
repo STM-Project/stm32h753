@@ -68,10 +68,8 @@ char* HTTP_TEMPLATE_AdcTempRhu(char* buff, u8 type,u8 nr, float val1,float val2,
 
 char* HTTP_TEMPLATE_TestUsun(char* buff)	/* #f88 - #eee - #8cf */
 {
-	for(int i=1;i<=2;i++)
+	for(int i=1;i<=20;i++)
 		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03da\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03da\"> </div>",i,i);
-	for(int i=4;i<=20;i++)
-			buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03da\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03da\"> </div>",i,i);
 	for(int i=3;i<=20;i++)
 		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_temp%03db\" style=\"display: none;\"><font color=\"#eee\">  --.- °C</font></div><div id=\"tu_lora%03db\"> </div>",i,i);
 	for(int i=3;i<=20;i++)
@@ -85,9 +83,9 @@ char* HTTP_TEMPLATE_TestUsun(char* buff)	/* #f88 - #eee - #8cf */
 	for(int i=21;i<=33;i++)
 		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_te%03d\" style=\"display: none;\"><font color=\"#000\">  </font></div>",i);
 
-	for(int i=1;i<=20;i++)
+	for(int i=1;i<=20;i++){ if(i!=15&&i!=16){
 		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_we%03d\" style=\"display: none;\"><font color=\"#eee\">  </font></div><div id=\"tu_lora%03dwe\"> </div>",i,i);
-
+	}}
 	for(int i=1;i<=14;i++)
 		buff += mini_snprintf(buff,1000,"\r\n<div id=\"tu_eol%03d\" style=\"display: none;\"><font color=\"#f88\">  </font></div><div id=\"tu_lora%03deol\"> </div>",i,i);
 
@@ -147,7 +145,7 @@ char* HTTP_TEMPLATE_In(char* buff, u8 type, u8 nr, char* name1, u32 color, char*
 	return buff;
 }
 
-char* HTTP_TEMPLATE_Out(char* buff, u8 type,u8 nr, char* name1, char* name2)
+char* HTTP_TEMPLATE_Out(char* buff, u8 type,u8 nr, float val, char* name1, char* name2)
 {
 	if(TEMPL_None!=type){
 		buff += mini_snprintf(buff,200,"<div class=\"y\"><div class=\"x\">\r\n");
@@ -159,9 +157,15 @@ char* HTTP_TEMPLATE_Out(char* buff, u8 type,u8 nr, char* name1, char* name2)
 	}
 
 	else if(TEMPL_Ti==type){
+		buff += mini_snprintf(buff,1000,"<a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_ti%03d\"><font color=\"#000\">%s</font></div></b></a><br><font class=\"b\">%s</font>",nr,name1,name2);
 	}
 
 	else if(TEMPL_Te==type){
+		buff += mini_snprintf(buff,1000,"<a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_te%03d\"><font color=\"#000\">%s</font></div></b></a><br><font class=\"b\">%s</font>",nr,name1,name2);
+	}
+
+	else if(TEMPL_Pwm==type){
+		buff += mini_snprintf(buff,1000,"<table><tr><td width=\"100px\"><output  class=\"v\" style=\"font-size:36px;\" id=\"volume%03d\">%d</output></td><td></td><td><input type=\"range\" name=\"n_pwm%d\"  min=\"0\" max=\"100\"  step=\"1\"  value=\"%d\"   oninput=\"outputUpdate%03d(value)\" onchange=\"x%03d(this.value);\"></input></td></tr></table><font class=\"b\">%s</font>",nr,val,nr-20,val,nr,nr,name1);
 	}
 
 	if(TEMPL_None!=type)
