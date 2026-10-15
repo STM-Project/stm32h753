@@ -199,6 +199,127 @@ char* HTTP_TEMPLATE_Out(char* buff, u8 type,u8 nr, float val, char* name1, char*
 
 }
 
+/* Separate tile templates for HttpMainReadPanel2. */
+char* HTTP_TEMPLATE_AdcTempRhu2(char* buff, u8 type,u8 nr, float val1,float val2, u32 color1,u32 color2, char* name1,char* name2)	/* #f88 - #eee - #8cf */
+{
+	if(TEMPL_None!=type){
+		if(TEMPL_TempRhu==type) buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:300px\"><div class=\"x\" style=\"height:270px\">\r\n");
+		else					buff += mini_snprintf(buff,200,"<div class=\"y\">						<div class=\"x\">   				    \r\n");
+	}
+
+	if(TEMPL_Temp==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03da\"><font color=\"#%x\">%s °C</font></div></b></font><br><font class=\"b\">%s</font>"
+		,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1 );
+
+	else if(TEMPL_TempRhu==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03db\"><font color=\"#%x\">%s °C   </font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03dc\"></div><br>\r\n\
+			<font class=\"a\"><b><div id=\"tu_temp%03dc\"><font color=\"#%x\">%s &#37;</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03db\"> </div>\r\n"
+		,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr
+							  ,nr,color2, Float2Str(val2,Space,3,Sign_none, 0), name2,nr );
+
+	else if(TEMPL_Ptt==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_ptt%03d\"><font color=\"#%x\">%s °C</font></div></b></font><br><font class=\"b\">%s</font>"
+		,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1 );
+
+	else if(TEMPL_Adc==type)
+		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_adc%03d\"><font color=\"#%x\">%s V</font></div></b></font><br><font class=\"b\">%s</font>"
+		,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1 );
+
+	if(TEMPL_None!=type)
+		buff += mini_snprintf(buff,20,"</div></div>\r\n");
+	if(TEMPL_Temp==type)
+		buff += mini_snprintf(buff,100,"<div id=\"tu_lora%03da\"></div>\r\n",nr);
+	return buff;
+}
+
+char* HTTP_TEMPLATE_In2(char* buff, u8 type, u8 nr, char* name1, u32 color, char* name2)
+{
+	if(TEMPL_None!=type){
+		buff += mini_snprintf(buff,200,"<div class=\"y\"><div class=\"x\">\r\n");
+	}
+
+	if(TEMPL_In==type){
+		buff += mini_snprintf(buff,1000,"<font class=\"z\"><b><div id=\"tu_we%03d\"><font color=\"#%x\">%s</font></div></b></font><br>",nr,color,name1);
+		buff += mini_snprintf(buff,1000,"<font class=\"b\">%s</font>",name2);
+	}
+
+	else if(TEMPL_Eol==type){
+		buff += mini_snprintf(buff,1000,"<font class=\"z\"><b><div id=\"tu_eol%03d\"><font color=\"#%x\">%s</font></div></b></font><br>",nr,color,name1);
+		buff += mini_snprintf(buff,1000,"<font class=\"b\">%s</font>",name2);
+	}
+
+	if(TEMPL_None!=type)
+		buff += mini_snprintf(buff,20,"</div></div>\r\n");
+
+	if(TEMPL_In==type)
+		buff += mini_snprintf(buff,100,"<div id=\"tu_lora%03dwe\"></div>\r\n",nr);
+	else if(TEMPL_Eol==type)
+		buff += mini_snprintf(buff,100,"<div id=\"tu_lora%03deol\"></div>\r\n",nr);
+	return buff;
+}
+
+char* HTTP_TEMPLATE_Out2(char* buff, u8 type,u8 nr, float val, char* name1, char* name2)
+{
+	if(TEMPL_None!=type){
+		buff += mini_snprintf(buff,200,"<div class=\"y\"><div class=\"x\">\r\n");
+	}
+
+	if(TEMPL_Pk==type){
+		buff += mini_snprintf(buff,1000,"<a href=\"#\" rel=\"external\" onclick=\"xpk%03d(); this.href=&#39;javascript:return false;&#39;;\" class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_pk%03d\"><font color=\"#000\">%s</font></div></b></a><br>",nr,nr,name1);
+		buff += mini_snprintf(buff,1000,"<font class=\"b\">%s</font>",name2);
+	}
+
+	else if(TEMPL_Ti==type){
+		buff += mini_snprintf(buff,1000,"<a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_ti%03d\"><font color=\"#000\">%s</font></div></b></a><br><font class=\"b\">%s</font>",nr,name1,name2);
+	}
+
+	else if(TEMPL_Te==type){
+		buff += mini_snprintf(buff,1000,"<a class=\"c\" style=\"font-size: 25px;\"><b><div id=\"tu_te%03d\"><font color=\"#000\">%s</font></div></b></a><br><font class=\"b\">%s</font>",nr,name1,name2);
+	}
+
+	else if(TEMPL_Pwm==type){
+		buff += mini_snprintf(buff,1000,"<table><tr><td width=\"100px\"><output  class=\"v\" style=\"font-size:36px;\" id=\"volume%03d\">%d</output></td><td></td><td><input type=\"range\" name=\"n_pwm%d\"  min=\"0\" max=\"100\"  step=\"1\"  value=\"%d\"   oninput=\"outputUpdate%03d(value)\" onchange=\"x%03d(this.value);\"></input></td></tr></table><font class=\"b\">%s</font>",nr,(u8)val,nr-20,(u8)val,nr,nr,name1);
+	}
+
+	if(TEMPL_None!=type)
+		buff += mini_snprintf(buff,20,"</div></div>\r\n");
+
+	if(TEMPL_Pk==type)
+		buff += mini_snprintf(buff,100,"<div id=\"tu_lora%03dwy\"></div>\r\n",nr);
+	return buff;
+}
+
+/* Call once per port, after its visible template, to supply the inactive IDs.
+ * type is the visible template type; TEMPL_None hides every field for the port.
+ * Panel 2 uses input ports 5..10 and output ports 21..24, 28, 33.
+ */
+char* HTTP_TEMPLATE_Hidden2(char* buff, u8 type, u8 nr)
+{
+	if(nr<=20){
+		if(TEMPL_Temp!=type)
+			buff += mini_snprintf(buff,200,"<div id=\"tu_temp%03da\" style=\"display: none;\"></div><div id=\"tu_lora%03da\"></div>\r\n",nr,nr);
+		if(TEMPL_TempRhu!=type){
+			buff += mini_snprintf(buff,200,"<div id=\"tu_temp%03db\" style=\"display: none;\"></div><div id=\"tu_lora%03dc\"></div>\r\n",nr,nr);
+			buff += mini_snprintf(buff,200,"<div id=\"tu_temp%03dc\" style=\"display: none;\"></div><div id=\"tu_lora%03db\"></div>\r\n",nr,nr);
+		}
+		if(TEMPL_In!=type)
+			buff += mini_snprintf(buff,200,"<div id=\"tu_we%03d\" style=\"display: none;\"></div><div id=\"tu_lora%03dwe\"></div>\r\n",nr,nr);
+		if(TEMPL_Eol!=type)
+			buff += mini_snprintf(buff,200,"<div id=\"tu_eol%03d\" style=\"display: none;\"></div><div id=\"tu_lora%03deol\"></div>\r\n",nr,nr);
+		if(TEMPL_Ptt!=type)
+			buff += mini_snprintf(buff,100,"<div id=\"tu_ptt%03d\" style=\"display: none;\"></div>\r\n",nr);
+	}else{
+		if(TEMPL_Pk!=type)
+			buff += mini_snprintf(buff,200,"<div id=\"tu_pk%03d\" style=\"display: none;\"></div><div id=\"tu_lora%03dwy\"></div>\r\n",nr,nr);
+		if(TEMPL_Ti!=type)
+			buff += mini_snprintf(buff,100,"<div id=\"tu_ti%03d\" style=\"display: none;\"></div>\r\n",nr);
+		if(TEMPL_Te!=type)
+			buff += mini_snprintf(buff,100,"<div id=\"tu_te%03d\" style=\"display: none;\"></div>\r\n",nr);
+	}
+	return buff;
+}
+
+
 SDRAM_ALIGN32 char HttpRefr_sdram[100000];
 
 /* W NotePad nalezy zamienic '\r\n' -> '\\r\\n\\\r\n' */

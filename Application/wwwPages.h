@@ -44,4 +44,16 @@ char* HTTP_TEMPLATE_In		  (char* buff, u8 type,u8 nr, char* name1, u32 color, ch
 char* HTTP_TEMPLATE_Out		  (char* buff, u8 type,u8 nr, float val, char* name1, char* name2);
 char* HTTP_TEMPLATE_TestUsun(char* buff);
 
+/* HttpMainReadPanel2: each function returns the next free buffer position. */
+char* HTTP_TEMPLATE_AdcTempRhu2(char* buff, u8 type,u8 nr, float val1,float val2, u32 color1,u32 color2, char* name1,char* name2);
+char* HTTP_TEMPLATE_In2(char* buff, u8 type, u8 nr, char* name1, u32 color, char* name2);
+char* HTTP_TEMPLATE_Out2(char* buff, u8 type,u8 nr, float val, char* name1, char* name2);
+/* After rendering a port, emit its inactive IDs exactly once, e.g.:
+ * ptr = HTTP_TEMPLATE_In2(ptr,TEMPL_In,8,"Stan OFF",0xeee,"Wejscie 8");
+ * ptr = HTTP_TEMPLATE_Hidden2(ptr,TEMPL_In,8);
+ * Use TEMPL_None for a port without a visible tile. No buffer capacity check
+ * is performed, as in the original HTTP_TEMPLATE functions.
+ */
+char* HTTP_TEMPLATE_Hidden2(char* buff, u8 type, u8 nr);
+
 #endif /* HTTP_WWWPAGES_H_ */
