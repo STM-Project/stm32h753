@@ -268,6 +268,25 @@ def main():
                 requests.append(target)
                 result = library.HTTP_SettingsApplyTarget(target.encode(), len(target), None, None)
                 assert result == 1, (route, instance, "browser default GET was rejected", result)
+                boxes = [name for name, field in fields.items() if field.kind == CHECKBOX]
+                if boxes:
+                    # Use actual rendered values, including the browser's "on"
+                    # fallback: synthetic value=1 requests missed the timer bug.
+                    checked_controls = [(name, value) for name, value in form.controls if name not in boxes]
+                    checked_controls += [(name, form.fields[name].get("value", "on")) for name in boxes]
+                    target = "/lpc.cgi/A117?" + urlencode(checked_controls + form.submit)
+                    requests.append(target)
+                    assert library.HTTP_SettingsApplyTarget(target.encode(), len(target), None, None) == 1, (route, instance, "checked browser form rejected")
+                    saved_form = Form()
+                    saved_form.feed(render(library, page, instance))
+                    assert all("checked" in saved_form.fields[name] for name in boxes), (route, instance)
+                    cleared = [(name, value) for name, value in saved_form.controls if name not in boxes]
+                    target = "/lpc.cgi/A117?" + urlencode(cleared + saved_form.submit)
+                    requests.append(target)
+                    assert library.HTTP_SettingsApplyTarget(target.encode(), len(target), None, None) == 1
+                    cleared_form = Form()
+                    cleared_form.feed(render(library, page, instance))
+                    assert all("checked" not in cleared_form.fields[name] for name in boxes), (route, instance)
                 if route == "/logic":
                     assert len(fields) == 92
                     assert values["n_s_SigWy"] == str(instance - 1)

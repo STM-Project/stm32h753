@@ -178,6 +178,10 @@ def value_markers(text, fields):
         tag = re.sub(r'\bmaxlength="\d+"', f'maxlength="{field["max_length"]}"', tag)
         if field["kind"] == "CHECKBOX":
             tag = re.sub(r"\schecked(?:=\"[^\"]*\")?", "", tag)
+            # Without an explicit value, browsers submit "on", while the H7
+            # model stores checked/unchecked as the validated values 1/0.
+            tag = re.sub(r'\svalue="[^"]*"', "", tag)
+            tag = tag.replace("/>", ' value="1"/>') if tag.endswith("/>") else tag[:-1] + ' value="1">'
             tag = tag.replace("/>", f" {{{{C:{index}}}}}/>") if tag.endswith("/>") else tag[:-1] + f" {{{{C:{index}}}}}>"
         else:
             if field["kind"] == "SECRET":

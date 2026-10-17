@@ -132,11 +132,26 @@ def verify_h753_modes(pages):
     fields = {f["name"]: f for f in pages["/set"]["fields"]}
     defaults = [2, 2, 3, 3, 9, 9, 4, 4, 13, 13, 6, 6, 6, 2, 5, 5, 7, 7, 2, 9,
                 0, 0, 10, 10, 11, 11, 8, 0, 10, 11, 6, 6, 0]
+    # Exercise the actual getter: defaults now come from the catalog rather
+    # than a second, duplicated C array in wwwPages.c.
     source = (ROOT / "Application/wwwPages.c").read_text()
-    header = (ROOT / "Application/wwwPages.h").read_text()
-    codes = {name: int(value) for name, value in re.findall(r"(HTTP_MODE_\w+)\s*=\s*(\d+)", header)}
-    body = source.split("unsigned HTTP_SettingsPortMode(unsigned port)", 1)[1].split("};", 1)[0]
-    assert [codes[name] for name in re.findall(r"HTTP_MODE_\w+", body)] == defaults
+    getter = source[source.index("unsigned HTTP_SettingsPortMode(unsigned port)"):
+                    source.index("const char* HTTP_SettingsPortName(")]
+    program = ('#include <stdlib.h>\n#include <stdio.h>\n#include <assert.h>\n'
+               '#include "http_settings_model.h"\n#define mini_snprintf snprintf\n'
+               'enum { HTTP_MODE_DISABLED=6 };\n' + getter +
+               '\nint main(void){unsigned expected[]={' + ','.join(map(str, defaults)) +
+               '};assert(HTTP_SettingsModelInit(NULL,NULL,NULL)==0);'
+               'for(unsigned i=0;i<33;i++)assert(HTTP_SettingsPortMode(i+1)==expected[i]);'
+               'assert(HTTP_SettingsPortMode(0)==6 && HTTP_SettingsPortMode(34)==6);return 0;}')
+    with tempfile.TemporaryDirectory(prefix="settings-mode-defaults-") as directory:
+        test = Path(directory) / "modes.c"
+        test.write_text(program)
+        binary = Path(directory) / "modes"
+        subprocess.run(["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "Application"),
+                        str(test), str(ROOT / "Application/http_settings_catalog.c"),
+                        str(ROOT / "Application/http_settings_model.c"), "-o", str(binary)], check=True)
+        subprocess.run([str(binary)], check=True)
     assert Counter(f["form_id"] for f in fields.values()) == {0: 33, 1: 33}
     for port, mode in enumerate(defaults, 1):
         field = fields[f"n_GPIO_val_{port:03}"]
