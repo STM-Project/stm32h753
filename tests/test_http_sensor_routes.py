@@ -221,6 +221,7 @@ int main(void) {
     assert(strstr(html, "value=\"+85.0\""));
     assert(strstr(html, "value=\"01:30\""));
     assert(HTTP_SensorSettingsGet(5, 0)->max1 == 261);
+    assert(strstr(html, "window.history.replaceState(null,'','/temp005')"));
     assert(HTTP_SensorSettingsGet(5, 1)->max1 == 850);
     assert(HTTP_SensorSettingsInit(load, save, persisted) == 1);
     assert(HTTP_SensorSettingsGet(5, 0)->max1 == 261);

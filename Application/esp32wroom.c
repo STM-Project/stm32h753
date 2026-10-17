@@ -183,6 +183,7 @@ SDRAM static char httpPageBuff[ESP_MAX_HTTP_CONN][100000];
 SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][131072];
 SDRAM static HTTP_RequestStream httpRequestStream;
 static char httpResponseHeader[ESP_MAX_HTTP_CONN][192];
+static char httpCleanAddress[ESP_MAX_HTTP_CONN][384];
 static unsigned httpSensorPort[ESP_MAX_HTTP_CONN];
 static const char* httpSensorNotice[ESP_MAX_HTTP_CONN];
 static int httpResponseStatus[ESP_MAX_HTTP_CONN];
@@ -1000,6 +1001,24 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	case WWW_FAVICON:
 	default:
 		break;
+	}
+	/* A CGI response already contains the freshly rendered form and its save
+	 * result. Replace its URL without re-submitting the write or losing errors. */
+	if(httpSensorNotice[channel] && httpResponseStatus[channel]!=500){
+		char path[64]={0};
+		if(nrWWW==WWW_MAIN_SETTING) strcpy(path,"/set");
+		else if(nrWWW==WWW_SENSOR_SETTING)
+			snprintf(path,sizeof path,"/temp%03u",httpSensorPort[channel]);
+		else if(nrWWW==WWW_OTHER_SETTING)
+			HTTP_SettingsCatalogPath(httpSettingsPage[channel],httpSettingsInstance[channel],path,sizeof path);
+		if(path[0]){
+			int length=snprintf(httpCleanAddress[channel],sizeof httpCleanAddress[channel],
+				"<script>if(window.history&&window.history.replaceState){"
+				"window.history.replaceState(null,'','%s');}"
+				"else{window.location.replace('%s');}</script>",path,path);
+			httpPar.web[channel][nrPartWWW]=httpCleanAddress[channel];
+			httpPar.siz[channel][nrPartWWW++]=(u32)length;
+		}
 	}
 	/* HTTP/1.x clients require a status line, content type and a body boundary. */
 	{

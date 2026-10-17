@@ -333,6 +333,7 @@ int main(void) {
     assert(generic_saves == 1 && bindings_count == 1);
     body(0, html, sizeof html);
     assert(strstr(html, "Kuchnia &amp; &lt;ok&gt; Łódź"));
+    assert(strstr(html, "window.history.replaceState(null,'','/set')"));
     assert(!strcmp(HTTP_SettingsPortName(5, "fallback"), "Kuchnia & <ok> Łódź"));
     generic_form("/set", 1, 0, 1); request(0, generic_target);
     check_response(0, 200, "text/html; charset=UTF-8");
@@ -359,6 +360,7 @@ int main(void) {
     assert(!strcmp(HTTP_SettingsGetByName(adc, 1, "n_s_ttd0_099"), "1234"));
     assert(!strcmp(HTTP_SettingsGetByName(adc, 1, "n_s_ttm0_099"), "56"));
     body(0, html, sizeof html); assert(strstr(html, "value=\"1234\""));
+    assert(strstr(html, "window.history.replaceState(null,'','/nap001')"));
     assert(strstr(html, "value=\"56\""));
     const HTTP_SettingPage *sms = generic_form("/maskisms", 0, 1, 0);
     assert(strlen(generic_target) > 3072u);
@@ -386,6 +388,7 @@ int main(void) {
     assert(generic_saves == before + 1u); assert(bindings_count == before_bindings);
     assert(HTTP_SettingsPortMode(5) == HTTP_MODE_TEMP_RHU);
     body(0, html, sizeof html); assert(strstr(html, "Sprawdz karte SD."));
+    assert(strstr(html, "window.history.replaceState(null,'','/set')"));
     generic_failure = 0;
     check_main_route(5, "tu_temp005b", 1);
     puts("PASS: all Sandwitch settings routes/instances, explicit 501 actions, independent queued pages, UTF-8 HTTP lengths, /set name/mode persistence driving /main and / tiles, unique one-second refresh targets, mode-driven RH panel, fragmented 301-field ADC and complete SMS/mail forms, scoped checkbox clearing and 400/503 rollback.");

@@ -404,8 +404,11 @@ size_t HTTP_SettingsPageRender(char *out, size_t capacity,
     }
     PageTemplate(&writer, page->html);
     if (page->field_count != 0U && strcmp(page->route, "/logic") != 0) {
-        PageCardStart(&writer, "Zapis ustawien", 350, 200);
-        PageAppend(&writer, "<br><button type=\"submit\" name=\"n_109_zapisz\" "
+        PageAppend(&writer,
+                   "<div class=\"corner-radius2\" style=\"margin-left:0;width:350px;height:330px;overflow:visible;\">"
+                   "<div class=\"corner-radius\" style=\"margin-left:10px;width:320px;height:300px;overflow:visible;font-size:20px;\">"
+                   "<font class=\"css-font-style\" style=\"font-family:Courier;\"><b>Zapis ustawien</b></font>"
+                   "<br><br><button type=\"submit\" name=\"n_109_zapisz\" "
                    "class=\"css_button\">Zapisz</button><br>"
                    "<a href=\"/set\" class=\"n\">Wroc</a>");
         PageCardEnd(&writer);

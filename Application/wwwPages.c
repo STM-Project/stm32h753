@@ -1744,7 +1744,7 @@ static char* HTTP_TEMPLATE_2_Attribute(char* buff, const char* text)
 
 char* HTTP_TEMPLATE_2_NamesBegin(char* buff)
 {
-	buff=HTTP_TEMPLATE_2_Append(buff,"<form method=\"get\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">\r\n \r\n <input type=\"hidden\" name=\"h7_page\" value=\"/set\"><input type=\"hidden\" name=\"h7_form\" value=\"0\"><div class=\"corner-radius4\" style=\"margin-left: 0px; width: 340px; height:   1933px;   \">\r\n <div class=\"corner-radius3\" style=\"margin-left: 10px; width: 310px; height:  1903px;   \">\r\n <table><tr><td width=\"30px\"></td><td><font class=\"css-font-style\" style=\"font-family: Courier\"><b>Nazwa Portu Nr:</b></font></td></tr></table>\r\n");
+	buff=HTTP_TEMPLATE_2_Append(buff,"<style>.port-column{font-size:20px;line-height:normal;}.port-column>table{height:46px;width:100%;margin:0;border-spacing:2px;}.port-column>table:first-child{height:60px;}.port-column td{vertical-align:middle;}.port-column form{margin:0;}.port-readings>div[id]{height:46px;}.port-readings>div[id]>table{height:46px;margin:0;border-spacing:2px;}</style><form method=\"get\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">\r\n \r\n <input type=\"hidden\" name=\"h7_page\" value=\"/set\"><input type=\"hidden\" name=\"h7_form\" value=\"0\"><div class=\"corner-radius4\" style=\"margin-left: 0px; width: 340px; height:   1933px;   \">\r\n <div class=\"corner-radius3 port-column port-names\" style=\"margin-left: 10px; width: 310px; height:  1903px;   \">\r\n <table><tr><td width=\"30px\"></td><td><font class=\"css-font-style\" style=\"font-family: Courier\"><b>Nazwa Portu Nr:</b></font></td></tr></table>\r\n");
 	return buff;
 }
 
@@ -1756,7 +1756,7 @@ char* HTTP_TEMPLATE_2_NamesEnd(char* buff)
 
 char* HTTP_TEMPLATE_2_ModesBegin(char* buff)
 {
-	buff=HTTP_TEMPLATE_2_Append(buff,"<div class=\"corner-radius4\" style=\"margin-left: 0px; width: 340px; height:   1933px;   \">\r\n<div class=\"corner-radius3\" style=\"margin-left: 10px; width: 310px; height:  1903px;   \">\r\n<table><tr><td><font class=\"css-font-style\" style=\"font-family: Courier\"><b>Tryb Pracy Portu nr:</b></font><br></td></tr></table>\r\n\r\n");
+	buff=HTTP_TEMPLATE_2_Append(buff,"<div class=\"corner-radius4\" style=\"margin-left: 0px; width: 340px; height:   1933px;   \">\r\n<div class=\"corner-radius3 port-column port-modes\" style=\"margin-left: 10px; width: 310px; height:  1903px;   \">\r\n<table><tr><td><font class=\"css-font-style\" style=\"font-family: Courier\"><b>Tryb Pracy Portu nr:</b></font><br></td></tr></table>\r\n\r\n");
 	return buff;
 }
 
@@ -1768,7 +1768,7 @@ char* HTTP_TEMPLATE_2_ModesEnd(char* buff)
 
 char* HTTP_TEMPLATE_2_PanelBegin(char* buff)
 {
-	buff=HTTP_TEMPLATE_2_Append(buff,"<div class=\"corner-radius4\" style=\"margin-left: 0px; width: 370px; height:   1933px;   \">\r\n<div class=\"corner-radius3\" style=\"margin-left: 10px; width: 340px; height:  1903px;   \">\r\n<table><tr><td><font size=\"4\" color=\"73B10E\"><b>Ustaw</b></font></td><td width=\"50px\"></td><td><font size=\"4\" color=\"f0f0f0\"><b>Odczyty</b></font></td></tr></table>\r\n\r\n");
+	buff=HTTP_TEMPLATE_2_Append(buff,"<div class=\"corner-radius4\" style=\"margin-left: 0px; width: 370px; height:   1933px;   \">\r\n<div class=\"corner-radius3 port-column port-readings\" style=\"margin-left: 10px; width: 340px; height:  1903px;   \">\r\n<table><tr><td><font size=\"4\" color=\"73B10E\"><b>Ustaw</b></font></td><td width=\"50px\"></td><td><font size=\"4\" color=\"f0f0f0\"><b>Odczyty</b></font></td></tr></table>\r\n\r\n");
 	return buff;
 }
 
