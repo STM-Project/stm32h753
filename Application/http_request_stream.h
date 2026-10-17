@@ -13,7 +13,7 @@
 
 /* Encoded origin-form target, including the path and query string. */
 #ifndef HTTP_REQUEST_STREAM_MAX_TARGET
-#define HTTP_REQUEST_STREAM_MAX_TARGET 3072u
+#define HTTP_REQUEST_STREAM_MAX_TARGET 65535u
 #endif
 
 /* ESP-AT reports at most 65535 bytes in a normal +IPD frame. */
@@ -45,7 +45,7 @@ typedef struct {
     uint8_t saw_cr;
 } HTTP_RequestStreamChannel;
 
-/* Allocate this object statically (or in SDRAM); it is about 15.5 KiB with
+/* Allocate this object statically (or in SDRAM); it is about 320 KiB with
  * the default limits. All state is per object; no global state is used.
  * Members are implementation details and should not be modified directly.
  */

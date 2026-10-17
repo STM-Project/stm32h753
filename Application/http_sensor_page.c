@@ -153,7 +153,13 @@ size_t HTTP_SensorPageRender(char *out, size_t capacity, unsigned port,
         "</form>\r\n</body>\r\n<script>\r\n"
         "document.getElementById('tu_menu').innerHTML="
         "\"<li><a href='/'>Panel odczytowy</a></li>"
-        "<li><a href='/set'>Konfiguracja portow</a></li>\";\r\n"
+        "<li><a href='/set'>Konfiguracja portow</a></li>"
+        "<li><a href='/lan'>LAN / WWW</a></li><li><a href='/wifi'>WiFi</a></li>"
+        "<li><a href='/czas'>Czas</a></li><li><a href='/gsm'>GSM</a></li>"
+        "<li><a href='/maskisms'>Powiadomienia SMS</a></li><li><a href='/maskimail'>E-mail</a></li>"
+        "<li><a href='/nrf'>LoRa</a></li><li><a href='/rej'>Rejestrator</a></li>"
+        "<li><a href='/logic'>Operacje logiczne</a></li><li><a href='/Rot'>Rotacja</a></li>"
+        "<li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n"
         "</script>\r\n</html>\r\n");
     if (writer.failed) {
         out[0] = '\0';

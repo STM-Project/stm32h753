@@ -32,11 +32,16 @@ PREAMBLE = r'''
 #include "http_request_stream.h"
 #include "http_sensor_page.h"
 #include "http_sensor_settings.h"
+#include "http_settings_model.h"
+#include "http_settings_page.h"
 typedef uint8_t u8;
 typedef uint32_t u32;
 #define SDRAM
 #define LOOP_FOR(i,n) for (int i=0;i<(n);++i)
-static unsigned reload_count;
+static unsigned reload_count, bindings_count;
+static void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage *page, uint16_t instance) {
+    assert(page); (void)instance; ++bindings_count;
+}
 static void InitReloadHttpTime(void) { ++reload_count; }
 static char *OldReadTemplate(char *out) { *out++ = 'R'; *out = 0; return out; }
 #define HTTP_TEMPLATE_AdcTempRhu(out,...) OldReadTemplate(out)
@@ -145,6 +150,7 @@ int main(void) {
     HTTP_RequestStream stream;
     assert(HTTP_REQUEST_STREAM_CHANNELS >= ESP_MAX_HTTP_CONN);
     assert(HTTP_SensorSettingsInit(load, save, persisted) == 0);
+    assert(HTTP_SettingsModelInit(NULL, NULL, NULL) == 0);
     const char *aliases[] = {"/set", "/Set", "/3main"};
     for (unsigned i = 0; i < sizeof aliases / sizeof aliases[0]; ++i) {
         request(0, aliases[i]); check_response(0, 200, "text/html; charset=UTF-8");
@@ -180,6 +186,10 @@ int main(void) {
     HTTP_HandleTarget(1, "/temp001", 8, NULL);
     assert(slot_for(1) == 1); body(0, html, sizeof html);
     assert(strcmp(html, first) == 0);
+    body(1, html, sizeof html);
+    assert(strstr(html, "Temperatura Port 1"));
+    assert(!strstr(html, "Temperatura Port 5"));
+    assert(strcmp(html, first) != 0);
     assert(httpPar.web[0][1] != httpPar.web[1][1]);
     check_response(3, 200, "text/html; charset=UTF-8");
     check_response(1, 200, "text/html; charset=UTF-8");
@@ -223,13 +233,15 @@ int main(void) {
     HTTP_HandleTarget(ESP_MAX_HTTP_CONN, target, strlen(target), NULL);
     assert(saves == before);
     assert(reload_count > 20);
+    assert(bindings_count == 0);
     puts("PASS: /set aliases, sensor links/cards, strict routes, HTTP lengths/UTF-8, queued buffer isolation, all ESP channels and persistent CGI 200/400/503 responses.");
     return 0;
 }
 '''
 
 
-def main():
+def harness_source(tests=TESTS):
+    """Extract production routing for sensor and generic-page integration checks."""
     esp = (ROOT / "Application/esp32wroom.c").read_text()
     source = (ROOT / "Application/wwwPages.c").read_text()
     header = (ROOT / "Application/wwwPages.h").read_text()
@@ -246,7 +258,11 @@ def main():
     fragments = "\n".join(constant(source, name) for name in
                           ["HttpStyle", "HttpMainMenu", "HttpStructMainReadPanel", "HttpStructMainReadPanel2"])
     harness = (PREAMBLE + "\n#define ESP_MAX_HTTP_CONN " + channels + "\n" + web_enum + enums +
-               fragments + helpers + templates + queue + buffers + route + TESTS)
+               fragments + helpers + templates + queue + buffers + route + tests)
+    return harness
+
+
+def compile_and_run(harness):
     compiler = shutil.which("gcc") or shutil.which("clang")
     assert compiler, "A host C compiler is required"
     with tempfile.TemporaryDirectory(prefix="http-sensor-routes-") as directory:
@@ -261,9 +277,16 @@ def main():
                         str(test), str(ROOT / "Application/http_request_stream.c"),
                         str(ROOT / "Application/http_sensor_page.c"),
                         str(ROOT / "Application/http_sensor_settings.c"),
+                        str(ROOT / "Application/http_settings_catalog.c"),
+                        str(ROOT / "Application/http_settings_model.c"),
+                        str(ROOT / "Application/http_settings_page.c"),
                         str(ROOT / "Application/General_Utilities/mini_printf.c"),
                         "-o", str(executable)], check=True)
         subprocess.run([str(executable)], check=True)
+
+
+def main():
+    compile_and_run(harness_source())
 
 
 if __name__ == "__main__":

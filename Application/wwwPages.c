@@ -6,6 +6,7 @@
  */
 
 #include "wwwPages.h"
+#include "http_settings_model.h"
 #include "stm32h7xx_hal.h"
 #include <string.h>
 #include <stdlib.h>
@@ -1029,7 +1030,7 @@ j=0;for(i=0;i<17;i++){ txt5[i]=txt[450+14+1+23*3+4*18*3+18*3+23+i]; if((txt5[i]=
  }}\r\n\
  </script> \r\n\
     <script>\r\n\
-  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li>\";\r\n\
+  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n\
   document.getElementById(\"tu_menu\").innerHTML=tyt;\r\n\
   </script>\r\n\
 </body>\r\n\
@@ -1439,7 +1440,7 @@ document.forms['wybor033'].n_GPIO_val_033.onchange = Zmien033;\r\n\
  }\r\n\
 function zaladuj()\r\n\
 {\r\n\
-window.location.href=\"lpc.cgi/n_GPIO_val_005=\" + active_id005[0]+active_id005[1] +\r\n\
+window.location.href=\"/lpc.cgi/A117?h7_page=%2Fset&h7_form=1&n_GPIO_val_005=\" + active_id005[0]+active_id005[1] +\r\n\
 \"&n_GPIO_val_006=\" + active_id006[0]+active_id006[1]+\r\n\
 \"&n_GPIO_val_007=\" + active_id007[0]+active_id007[1]+\r\n\
 \"&n_GPIO_val_008=\" + active_id008[0]+active_id008[1]+\r\n\
@@ -1579,7 +1580,7 @@ for(i=0;i<10;i++) txt4[i]=txt[25+13+1+18+1+14+1+216+1+90+1+20+i];if(txt4[9]=='1'
  }}\r\n\
  </script> \r\n\
     <script>\r\n\
-  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li>\";\r\n\
+  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n\
   document.getElementById(\"tu_menu\").innerHTML=tyt;\r\n\
   </script>\r\n\
 \r\n\
@@ -1616,7 +1617,7 @@ static char* HTTP_TEMPLATE_2_Attribute(char* buff, const char* text)
 
 char* HTTP_TEMPLATE_2_NamesBegin(char* buff)
 {
-	buff=HTTP_TEMPLATE_2_Append(buff,"<form method=\"get\" action=\"lpc.cgi/A117\" data-ajax=\"false\">\r\n \r\n <div class=\"corner-radius4\" style=\"margin-left: 0px; width: 340px; height:   1933px;   \">\r\n <div class=\"corner-radius3\" style=\"margin-left: 10px; width: 310px; height:  1903px;   \">\r\n <table><tr><td width=\"30px\"></td><td><font class=\"css-font-style\" style=\"font-family: Courier\"><b>Nazwa Portu Nr:</b></font></td></tr></table>\r\n");
+	buff=HTTP_TEMPLATE_2_Append(buff,"<form method=\"get\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">\r\n \r\n <input type=\"hidden\" name=\"h7_page\" value=\"/set\"><input type=\"hidden\" name=\"h7_form\" value=\"0\"><div class=\"corner-radius4\" style=\"margin-left: 0px; width: 340px; height:   1933px;   \">\r\n <div class=\"corner-radius3\" style=\"margin-left: 10px; width: 310px; height:  1903px;   \">\r\n <table><tr><td width=\"30px\"></td><td><font class=\"css-font-style\" style=\"font-family: Courier\"><b>Nazwa Portu Nr:</b></font></td></tr></table>\r\n");
 	return buff;
 }
 
@@ -1696,7 +1697,21 @@ unsigned HTTP_SettingsPortMode(unsigned port)
 		HTTP_MODE_DISABLED,
 		HTTP_MODE_RELAY
 	};
-	return port>=1 && port<=33 ? modes[port-1] : HTTP_MODE_DISABLED;
+	if(port<1 || port>33) return HTTP_MODE_DISABLED;
+	uint16_t instance=0;
+	const HTTP_SettingPage* page=HTTP_SettingsCatalogFind("/set",&instance);
+	char field[32]; mini_snprintf(field,sizeof(field),"n_GPIO_val_%03u",port);
+	const char* saved=HTTP_SettingsGetSaved(page,instance,field);
+	return saved?(unsigned)atoi(saved):modes[port-1];
+}
+
+const char* HTTP_SettingsPortName(unsigned port, const char* fallback)
+{
+	uint16_t instance=0;
+	const HTTP_SettingPage* page=HTTP_SettingsCatalogFind("/set",&instance);
+	char field[40]; mini_snprintf(field,sizeof(field),"n_s_Port_nazwa%u_001",port);
+	const char* saved=HTTP_SettingsGetSaved(page,instance,field);
+	return saved?saved:fallback;
 }
 
 char* HTTP_TEMPLATE_2_Mode(char* buff, u8 nr, u8 mode)
@@ -2318,7 +2333,7 @@ const char HttpStructMainReadPanel2[]=
 " }\r\n"
 "function zaladuj()\r\n"
 "{\r\n"
-"window.location.href=\"lpc.cgi/n_GPIO_val_001=\" + active_id001[0]+active_id001[1] +\r\n"
+"window.location.href=\"/lpc.cgi/A117?h7_page=%2Fset&h7_form=1&n_GPIO_val_001=\" + active_id001[0]+active_id001[1] +\r\n"
 "\"&n_GPIO_val_002=\" + active_id002[0]+active_id002[1]+\r\n"
 "\"&n_GPIO_val_003=\" + active_id003[0]+active_id003[1]+\r\n"
 "\"&n_GPIO_val_004=\" + active_id004[0]+active_id004[1]+\r\n"
@@ -2589,7 +2604,7 @@ const char HttpStructMainReadPanel2[]=
 " }}\r\n"
 " </script> \r\n"
 "    <script>\r\n"
-"  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li>\";\r\n"
+"  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n"
 "  document.getElementById(\"tu_menu\").innerHTML=tyt;\r\n"
 "  </script>\r\n"
 "\r\n"

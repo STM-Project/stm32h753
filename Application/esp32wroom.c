@@ -9,6 +9,10 @@
 #include "http_sensor_page.h"
 #include "http_sensor_settings.h"
 #include "http_sensor_storage.h"
+#include "http_settings_model.h"
+#include "http_settings_page.h"
+#include "http_settings_storage.h"
+#include "http_settings_bindings.h"
 #include "http_request_stream.h"
 #include <string.h> /* memset */
 #include <stdlib.h> /* atoi */
@@ -139,6 +143,7 @@ typedef enum
 	WWW_DATA_REFRESH,
 	WWW_FAVICON,
 	WWW_SENSOR_SETTING,
+	WWW_OTHER_SETTING,
 	WWW_HTTP_ERROR
 }WEB_WWW;
 
@@ -175,12 +180,14 @@ TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
 /* Queued pages must retain their contents until that slot finishes sending. */
 SDRAM static char httpPageBuff[ESP_MAX_HTTP_CONN][100000];
-SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][24576];
+SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][131072];
 SDRAM static HTTP_RequestStream httpRequestStream;
 static char httpResponseHeader[ESP_MAX_HTTP_CONN][192];
 static unsigned httpSensorPort[ESP_MAX_HTTP_CONN];
 static const char* httpSensorNotice[ESP_MAX_HTTP_CONN];
 static int httpResponseStatus[ESP_MAX_HTTP_CONN];
+static const HTTP_SettingPage* httpSettingsPage[ESP_MAX_HTTP_CONN];
+static uint16_t httpSettingsInstance[ESP_MAX_HTTP_CONN];
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
@@ -719,40 +726,44 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		httpPar.siz[channel][nrPartWWW++]=mini_strlen(HttpStyle);
 		httpPar.web[channel][nrPartWWW]=(char*)HttpMainMenu;
 		httpPar.siz[channel][nrPartWWW++]=mini_strlen(HttpMainMenu);
+		if(httpSensorNotice[channel]){
+			httpPar.web[channel][nrPartWWW]=(char*)httpSensorNotice[channel];
+			httpPar.siz[channel][nrPartWWW++]=mini_strlen(httpSensorNotice[channel]);
+		}
 		ptr=HTTP_TEMPLATE_2_NamesBegin(ptr);
-		ptr=HTTP_TEMPLATE_2_Name(ptr,1,"Nazwa portu nr 1");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,2,"Nazwa portu nr 2");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,3,"Nazwa portu nr 3");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,4,"Nazwa portu nr 4");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,5,"Nazwa portu nr 5");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,6,"Nazwa portu nr 6");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,7,"Nazwa portu nr 7");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,8,"Nazwa portu nr 8");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,9,"Nazwa portu nr 9");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,10,"Nazwa portu nr 10");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,11,"Nazwa portu nr 11");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,12,"Nazwa portu nr 12");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,13,"Nazwa portu nr 13");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,14,"Nazwa portu nr 14");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,15,"Nazwa portu nr 15     0-10V");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,16,"Nazwa portu nr 16     0-10V");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,17,"Nazwa portu nr 17     E1");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,18,"Nazwa portu nr 18     E2");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,19,"Nazwa portu nr 19     E3");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,20,"Nazwa portu nr 20     E4");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,21,"Nazwa portu nr 21     PW1");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,22,"Nazwa portu nr 22     PW2");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,23,"Nazwa portu nr 23     PW3");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,24,"Nazwa portu nr 24     OC1");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,25,"Nazwa portu nr 25     OC2");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,26,"Nazwa portu nr 26     OC3");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,27,"Nazwa portu nr 27     OC4");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,28,"Nazwa portu nr 28     PK1");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,29,"Moj Przekaznik");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,30,"Nazwa portu nr 30     PK3");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,31,"Nazwa portu nr 31     PK4");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,32,"Nazwa portu nr 32     PK5");
-		ptr=HTTP_TEMPLATE_2_Name(ptr,33,"Nazwa portu nr 33     PK6");
+		ptr=HTTP_TEMPLATE_2_Name(ptr,1,HTTP_SettingsPortName(1,"Nazwa portu nr 1"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,2,HTTP_SettingsPortName(2,"Nazwa portu nr 2"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,3,HTTP_SettingsPortName(3,"Nazwa portu nr 3"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,4,HTTP_SettingsPortName(4,"Nazwa portu nr 4"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,5,HTTP_SettingsPortName(5,"Nazwa portu nr 5"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,6,HTTP_SettingsPortName(6,"Nazwa portu nr 6"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,7,HTTP_SettingsPortName(7,"Nazwa portu nr 7"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,8,HTTP_SettingsPortName(8,"Nazwa portu nr 8"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,9,HTTP_SettingsPortName(9,"Nazwa portu nr 9"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,10,HTTP_SettingsPortName(10,"Nazwa portu nr 10"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,11,HTTP_SettingsPortName(11,"Nazwa portu nr 11"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,12,HTTP_SettingsPortName(12,"Nazwa portu nr 12"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,13,HTTP_SettingsPortName(13,"Nazwa portu nr 13"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,14,HTTP_SettingsPortName(14,"Nazwa portu nr 14"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,15,HTTP_SettingsPortName(15,"Nazwa portu nr 15     0-10V"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,16,HTTP_SettingsPortName(16,"Nazwa portu nr 16     0-10V"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,17,HTTP_SettingsPortName(17,"Nazwa portu nr 17     E1"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,18,HTTP_SettingsPortName(18,"Nazwa portu nr 18     E2"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,19,HTTP_SettingsPortName(19,"Nazwa portu nr 19     E3"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,20,HTTP_SettingsPortName(20,"Nazwa portu nr 20     E4"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,21,HTTP_SettingsPortName(21,"Nazwa portu nr 21     PW1"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,22,HTTP_SettingsPortName(22,"Nazwa portu nr 22     PW2"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,23,HTTP_SettingsPortName(23,"Nazwa portu nr 23     PW3"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,24,HTTP_SettingsPortName(24,"Nazwa portu nr 24     OC1"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,25,HTTP_SettingsPortName(25,"Nazwa portu nr 25     OC2"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,26,HTTP_SettingsPortName(26,"Nazwa portu nr 26     OC3"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,27,HTTP_SettingsPortName(27,"Nazwa portu nr 27     OC4"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,28,HTTP_SettingsPortName(28,"Nazwa portu nr 28     PK1"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,29,HTTP_SettingsPortName(29,"Moj Przekaznik"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,30,HTTP_SettingsPortName(30,"Nazwa portu nr 30     PK3"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,31,HTTP_SettingsPortName(31,"Nazwa portu nr 31     PK4"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,32,HTTP_SettingsPortName(32,"Nazwa portu nr 32     PK5"));
+		ptr=HTTP_TEMPLATE_2_Name(ptr,33,HTTP_SettingsPortName(33,"Nazwa portu nr 33     PK6"));
 		ptr=HTTP_TEMPLATE_2_NamesEnd(ptr);
 		ptr=HTTP_TEMPLATE_2_ModesBegin(ptr);
 		ptr=HTTP_TEMPLATE_2_Mode(ptr,1,HTTP_SettingsPortMode(1));
@@ -978,6 +989,17 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 			httpPar.siz[channel][0]=mini_strlen(httpPar.web[channel][0]);
 		}
 		break;
+	case WWW_OTHER_SETTING:
+		httpPar.web[channel][nrPartWWW]=httpSensorBuff[channel];
+		httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_SettingsPageRender(
+			httpSensorBuff[channel],sizeof(httpSensorBuff[channel]),httpSettingsPage[channel],
+			httpSettingsInstance[channel],httpSensorNotice[channel]);
+		if(httpPar.siz[channel][0]==0){
+			httpResponseStatus[channel]=500;
+			httpPar.web[channel][0]="<html><body>Nie mozna utworzyc strony ustawien.</body></html>";
+			httpPar.siz[channel][0]=mini_strlen(httpPar.web[channel][0]);
+		}
+		break;
 	case WWW_HTTP_ERROR:
 		httpPar.web[channel][nrPartWWW]="<!doctype html><html><body><p>Niepoprawny lub nieobslugiwany adres.</p><a href='/set'>Ustawienia</a></body></html>";
 		httpPar.siz[channel][nrPartWWW++]=mini_strlen(httpPar.web[channel][0]);
@@ -993,7 +1015,8 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		const char* reason=httpResponseStatus[channel]==200?"OK":
 			httpResponseStatus[channel]==400?"Bad Request":
 			httpResponseStatus[channel]==404?"Not Found":
-			httpResponseStatus[channel]==503?"Service Unavailable":"Internal Server Error";
+			httpResponseStatus[channel]==503?"Service Unavailable":
+			httpResponseStatus[channel]==501?"Not Implemented":"Internal Server Error";
 		const char* contentType=nrWWW==WWW_DATA_REFRESH?"text/plain; charset=UTF-8":
 			nrWWW==WWW_FAVICON?"image/x-icon":"text/html; charset=UTF-8";
 		int headerSize=snprintf(httpResponseHeader[channel],sizeof(httpResponseHeader[channel]),
@@ -1013,7 +1036,8 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 }
 
 static int HTTP_QueueResponse(unsigned channel, int page, unsigned port,
-                              const char* notice, int status)
+                              const char* notice, int status,
+                              const HTTP_SettingPage* settingsPage, uint16_t settingsInstance)
 {
 	for(int i=0;i<ESP_MAX_HTTP_CONN;i++) if(httpPar.que[i]==channel) return -1;
 	for(int i=0;i<ESP_MAX_HTTP_CONN;i++) if(httpPar.que[i]==0xFF){
@@ -1021,6 +1045,7 @@ static int HTTP_QueueResponse(unsigned channel, int page, unsigned port,
 		httpSensorPort[i]=port;
 		httpSensorNotice[i]=notice;
 		httpResponseStatus[i]=status;
+		httpSettingsPage[i]=settingsPage; httpSettingsInstance[i]=settingsInstance;
 		httpPar.ptr[i]=HTTP_SetWeb(i,page);
 		httpPar.nr[i]=0; httpPar.len[i]=0;
 		return i;
@@ -1037,6 +1062,8 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 {
 	int page=WWW_HTTP_ERROR, status=404;
 	unsigned port=0;
+	const HTTP_SettingPage* settingsPage=NULL;
+	uint16_t settingsInstance=0;
 	const char* notice=NULL;
 	(void)context;
 	if(channel>=ESP_MAX_HTTP_CONN) return;
@@ -1057,20 +1084,40 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 		port=(unsigned)(target[5]-'0')*100+(unsigned)(target[6]-'0')*10+(unsigned)(target[7]-'0');
 		if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT && port!=15 && port!=16){page=WWW_SENSOR_SETTING; status=200;}
 	}else if(length>=14 && memcmp(target,"/lpc.cgi/A117?",14)==0){
-		int result=HTTP_SensorSettingsApplyTarget(target,length,&port);
-		if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT){
-			page=WWW_SENSOR_SETTING;
-			status=result==HTTP_SENSOR_SETTINGS_SAVED?200:result==HTTP_SENSOR_SETTINGS_STORAGE_ERROR?503:400;
-			notice=result==HTTP_SENSOR_SETTINGS_SAVED?"Zapisano ustawienia.":
-				result==HTTP_SENSOR_SETTINGS_STORAGE_ERROR?"Nie zapisano ustawien. Sprawdz karte SD.":
-				"Nie zapisano: sprawdz progi, histereze i czas zwloki.";
-		}else status=400;
+		int result=HTTP_SettingsApplyTarget(target,length,&settingsPage,&settingsInstance);
+		if(result!=HTTP_SETTINGS_NOT_HANDLED){
+			if(settingsPage){
+				page=strcmp(settingsPage->route,"/set")==0?WWW_MAIN_SETTING:WWW_OTHER_SETTING;
+				status=result==HTTP_SETTINGS_SAVED?200:
+					result==HTTP_SETTINGS_STORAGE_ERROR?503:400;
+				notice=result==HTTP_SETTINGS_SAVED?"<p style='color:#eee'>Zapisano ustawienia.</p>":
+					result==HTTP_SETTINGS_STORAGE_ERROR?"<p style='color:#eee'>Nie zapisano ustawien. Sprawdz karte SD.</p>":
+					"<p style='color:#eee'>Nie zapisano: sprawdz wartosci formularza.</p>";
+				if(page==WWW_OTHER_SETTING) notice=result==HTTP_SETTINGS_SAVED?"Zapisano ustawienia.":
+					result==HTTP_SETTINGS_STORAGE_ERROR?"Nie zapisano ustawien. Sprawdz karte SD.":"Nie zapisano: sprawdz wartosci formularza.";
+				if(result==HTTP_SETTINGS_SAVED) HTTP_SettingsBindingsCommitted(settingsPage,settingsInstance);
+			}else status=400;
+		}else{
+			result=HTTP_SensorSettingsApplyTarget(target,length,&port);
+			if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT){
+				page=WWW_SENSOR_SETTING;
+				status=result==HTTP_SENSOR_SETTINGS_SAVED?200:result==HTTP_SENSOR_SETTINGS_STORAGE_ERROR?503:400;
+				notice=result==HTTP_SENSOR_SETTINGS_SAVED?"Zapisano ustawienia.":
+					result==HTTP_SENSOR_SETTINGS_STORAGE_ERROR?"Nie zapisano ustawien. Sprawdz karte SD.":
+					"Nie zapisano: sprawdz progi, histereze i czas zwloki.";
+			}else status=400;
+		}
 	}else if(HTTP_TargetEquals(target,length,"/TME.txt")){
 		page=WWW_DATA_REFRESH; status=200;
 	}else if(HTTP_TargetEquals(target,length,"/favicon.ico") || (length>=8 && memcmp(target,"/mobile/",8)==0)){
 		page=WWW_FAVICON; status=200;
 	}
-	if(HTTP_QueueResponse(channel,page,port,notice,status)>=0) InitReloadHttpTime();
+	if(page==WWW_HTTP_ERROR && target && status==404 && length<64 && !memchr(target,'?',length)){
+		char path[64]; memcpy(path,target,length); path[length]=0;
+		settingsPage=HTTP_SettingsCatalogFind(path,&settingsInstance);
+		if(settingsPage){ page=WWW_OTHER_SETTING; status=settingsPage->field_count?200:501; }
+	}
+	if(HTTP_QueueResponse(channel,page,port,notice,status,settingsPage,settingsInstance)>=0) InitReloadHttpTime();
 }
 
 static void HTTP_FeedReceiveRing(void)
@@ -1192,6 +1239,8 @@ void vtaskWifi(void *argument)
 	DefaultSettingsDNS();
 	DefaultSettingsSNTP();
 	HTTP_SensorStorageInit();
+	HTTP_SettingsStorageInit();
+	HTTP_SettingsBindingsApply();
 	HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
 	InitStructRqstToSendChnl();
 	RcvTimeoutTimerInit();

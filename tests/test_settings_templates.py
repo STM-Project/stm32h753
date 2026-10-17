@@ -31,6 +31,8 @@ class Controls(HTMLParser):
             self.ids[attrs['id']] += 1
         if tag == 'a' and 'href' in attrs:
             self.links[attrs['href']] += 1
+        if attrs.get('type') == 'hidden' and attrs.get('name') in {'h7_page', 'h7_form'}:
+            return
         if 'name' in attrs:
             self.fields[tag, attrs['name']] += 1
         if tag == 'input':
@@ -57,10 +59,11 @@ def main():
     calls = esp[esp.index('case WWW_MAIN_SETTING:'):esp.index('case WWW_FAVICON:')]
     calls = '\n'.join(line for line in calls.splitlines() if 'ptr=HTTP_TEMPLATE_2_' in line)
     enums = '\n'.join(re.findall(r'typedef enum\{.*?\}\w+;',header,re.S))
-    preamble = '#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include <assert.h>\n#include "mini_printf.h"\ntypedef uint8_t u8;\n'
+    preamble = '#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include <assert.h>\n#include <stdlib.h>\n#include "http_settings_model.h"\n#include "mini_printf.h"\ntypedef uint8_t u8;\n'
     harness = preamble+enums+'\n'+helper+templates+'''
 int main(void) {
  static char buffer[100000]; char *ptr=buffer;
+ assert(HTTP_SettingsModelInit(NULL,NULL,NULL)==0);
 '''+calls+'''
  assert(ptr==buffer+strlen(buffer)); assert(ptr-buffer<100000);
  fwrite(buffer,1,ptr-buffer,stdout);
@@ -79,7 +82,9 @@ int main(void) {
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp); test = tmp/'settings.c'; test.write_text(harness)
         include = '-I'+str(ROOT/'Application/General_Utilities')
-        subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',include,str(test),str(ROOT/'Application/General_Utilities/mini_printf.c'),'-o',str(tmp/'test')],check=True)
+        app_include = '-I'+str(ROOT/'Application')
+        modules = [str(ROOT/'Application/http_settings_catalog.c'),str(ROOT/'Application/http_settings_model.c')]
+        subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',include,app_include,str(test),*modules,str(ROOT/'Application/General_Utilities/mini_printf.c'),'-o',str(tmp/'test')],check=True)
         body = subprocess.check_output([str(tmp/'test')]).decode()
         menu = literal(source,'HttpMainMenu')
         footer = literal(source,'HttpStructMainReadPanel2')
@@ -123,6 +128,7 @@ forms.wybor005.n_GPIO_val_005.onchange.call(forms.wybor005.n_GPIO_val_005);
 assert.equal(nodes['09p005'].style.display,'none');
 assert.equal(nodes['02p005'].style.display,'block');
 context.zaladuj();
+assert(context.window.location.href.startsWith('/lpc.cgi/A117?h7_page=%2Fset&h7_form=1&'));
 assert(context.window.location.href.includes('n_GPIO_val_005=02'));
 assert.equal((context.window.location.href.match(/n_GPIO_val_/g)||[]).length,33);
 console.log('PASS: settings JavaScript initializes 33 ports, switches modes and saves all 33 CGI values.');
@@ -131,7 +137,7 @@ console.log('PASS: settings JavaScript initializes 33 ports, switches modes and 
             subprocess.run(['node',str(js)],check=True)
         arm = Path('/workspace/.stm32-tools/root/usr/bin/arm-none-eabi-gcc')
         if arm.exists():
-            subprocess.run([str(arm),'-mcpu=cortex-m7','-mthumb','-mfpu=fpv5-d16','-mfloat-abi=hard','--specs=nano.specs','-Wall','-Wextra','-Werror',include,'-c',str(test),'-o',str(tmp/'test.o')],check=True)
+            subprocess.run([str(arm),'-mcpu=cortex-m7','-mthumb','-mfpu=fpv5-d16','-mfloat-abi=hard','--specs=nano.specs','-Wall','-Wextra','-Werror',include,app_include,'-c',str(test),'-o',str(tmp/'test.o')],check=True)
             print('PASS: ARM Cortex-M7 compilation.')
         print(f'PASS: 33 forms, 429 mode sections, HTML attribute escaping, buffer checks, ASan/UBSan and JavaScript syntax; dynamic body {len(body.encode())} bytes.')
 
