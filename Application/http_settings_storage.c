@@ -3,6 +3,7 @@
 #include "timer.h"
 #include "ff.h"
 #include <string.h>
+#include <stdio.h>
 
 /* Large snapshots belong in initialized external SDRAM, not the HTTP task stack
  * or internal SRAM. Host fault tests use the regular data segment. */
@@ -29,6 +30,7 @@ _Static_assert(HTTP_SETTINGS_BLOB_SIZE <= (UINT)~(UINT)0,
                "FatFs UINT cannot represent the complete settings blob");
 static HttpSettingsStorageStatus storageStatus = HTTP_SETTINGS_STORAGE_NOT_INITIALIZED;
 static FRESULT storageFatFsError = FR_OK;
+static int settingsLoaded;
 
 enum {
     SETTINGS_FILE_MISSING = 0,
@@ -221,7 +223,14 @@ done:
 
 int HTTP_SettingsStorageInit(void)
 {
-    return HTTP_SettingsModelInit(SettingsLoad, SettingsSave, NULL);
+    int result = HTTP_SettingsModelInit(SettingsLoad, SettingsSave, NULL);
+    settingsLoaded = result >= 0;
+    return result;
+}
+
+int HTTP_SettingsStorageRetryLoad(void)
+{
+    return !settingsLoaded && HTTP_SettingsStorageInit() >= 0;
 }
 
 HttpSettingsStorageStatus HTTP_SettingsStorageGetStatus(void)
@@ -232,4 +241,28 @@ HttpSettingsStorageStatus HTTP_SettingsStorageGetStatus(void)
 int HTTP_SettingsStorageGetFatFsError(void)
 {
     return (int)storageFatFsError;
+}
+
+const char *HTTP_SettingsStorageGetErrorMessage(void)
+{
+    static char message[224];
+    const char *reason;
+    if (storageStatus == HTTP_SETTINGS_STORAGE_CORRUPT)
+        return "Nie zapisano ustawien: plik h7conf.bin lub h7conf.bak jest uszkodzony albo niezgodny z firmware. Zachowaj kopie plikow konfiguracji.";
+    if (storageStatus == HTTP_SETTINGS_STORAGE_LOCK_TIMEOUT)
+        return "Nie zapisano ustawien: karta SD jest zajeta. Sprobuj zapisac ponownie.";
+    if (storageStatus == HTTP_SETTINGS_STORAGE_NOT_INITIALIZED)
+        return "Nie zapisano ustawien: nie uruchomiono obslugi konfiguracji na karcie SD.";
+    switch (storageFatFsError) {
+    case FR_NOT_READY: reason = "karta SD jest niedostepna (FR_NOT_READY)"; break;
+    case FR_NO_FILESYSTEM: reason = "brak obslugiwanego systemu plikow na karcie (FR_NO_FILESYSTEM)"; break;
+    case FR_WRITE_PROTECTED: reason = "karta SD jest zabezpieczona przed zapisem (FR_WRITE_PROTECTED)"; break;
+    case FR_DENIED: reason = "brak miejsca lub odmowa zapisu na karcie (FR_DENIED)"; break;
+    case FR_NOT_ENABLED: reason = "system plikow karty SD nie jest zamontowany (FR_NOT_ENABLED)"; break;
+    case FR_DISK_ERR: reason = "blad odczytu lub zapisu karty SD (FR_DISK_ERR)"; break;
+    case FR_TIMEOUT: reason = "przekroczony czas dostepu do karty SD (FR_TIMEOUT)"; break;
+    default: reason = "blad dostepu do konfiguracji na karcie SD"; break;
+    }
+    snprintf(message, sizeof message, "Nie zapisano ustawien: %s. Kod FatFs: %d.", reason, (int)storageFatFsError);
+    return message;
 }

@@ -45,6 +45,10 @@ static void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage *page, uint16_
     assert(page); (void)instance; ++bindings_count;
 }
 static void InitReloadHttpTime(void) { ++reload_count; }
+static int HTTP_SettingsStorageRetryLoad(void) { return 0; }
+static const char *HTTP_SettingsStorageGetErrorMessage(void) {
+    return "Nie zapisano ustawien. Sprawdz karte SD.";
+}
 /* Formatting normally uses a mutex-protected STM32 scratch buffer. Keep only
  * that platform dependency out of this harness, not the layout or mode logic. */
 char *Float2Str(float value, char fill, int digits, int sign, int decimals) {

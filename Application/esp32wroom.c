@@ -184,6 +184,7 @@ SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][131072];
 SDRAM static HTTP_RequestStream httpRequestStream;
 static char httpResponseHeader[ESP_MAX_HTTP_CONN][192];
 static char httpCleanAddress[ESP_MAX_HTTP_CONN][384];
+static char httpStorageNotice[ESP_MAX_HTTP_CONN][320];
 static unsigned httpSensorPort[ESP_MAX_HTTP_CONN];
 static const char* httpSensorNotice[ESP_MAX_HTTP_CONN];
 static int httpResponseStatus[ESP_MAX_HTTP_CONN];
@@ -1097,6 +1098,10 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 		if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT && port!=15 && port!=16){page=WWW_SENSOR_SETTING; status=200;}
 	}else if(length>=14 && memcmp(target,"/lpc.cgi/A117?",14)==0){
 		int result=HTTP_SettingsApplyTarget(target,length,&settingsPage,&settingsInstance);
+		/* A failed boot-time SD read previously left the save callback unset.
+		 * Load existing settings before retrying, so other saved fields survive. */
+		if(result==HTTP_SETTINGS_STORAGE_ERROR && HTTP_SettingsStorageRetryLoad())
+			result=HTTP_SettingsApplyTarget(target,length,&settingsPage,&settingsInstance);
 		if(result!=HTTP_SETTINGS_NOT_HANDLED){
 			if(settingsPage){
 				page=strcmp(settingsPage->route,"/set")==0?WWW_MAIN_SETTING:WWW_OTHER_SETTING;
@@ -1107,6 +1112,13 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 					"<p style='color:#eee'>Nie zapisano: sprawdz wartosci formularza.</p>";
 				if(page==WWW_OTHER_SETTING) notice=result==HTTP_SETTINGS_SAVED?"Zapisano ustawienia.":
 					result==HTTP_SETTINGS_STORAGE_ERROR?"Nie zapisano ustawien. Sprawdz karte SD.":"Nie zapisano: sprawdz wartosci formularza.";
+				if(result==HTTP_SETTINGS_STORAGE_ERROR){
+					const char* message=HTTP_SettingsStorageGetErrorMessage();
+					if(page==WWW_MAIN_SETTING){
+						snprintf(httpStorageNotice[channel],sizeof httpStorageNotice[channel],"<p style='color:#eee'>%s</p>",message);
+						notice=httpStorageNotice[channel];
+					}else notice=message;
+				}
 				if(result==HTTP_SETTINGS_SAVED) HTTP_SettingsBindingsCommitted(settingsPage,settingsInstance);
 			}else status=400;
 		}else{

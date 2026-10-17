@@ -18,8 +18,12 @@ typedef enum {
  * Corrupt files are retained and are not overwritten by a settings save.
  */
 int HTTP_SettingsStorageInit(void);
+/* Retry an unsuccessful initial load after the card becomes available.
+ * Returns 1 only when a retry restored the model; never reloads a live model. */
+int HTTP_SettingsStorageRetryLoad(void);
 HttpSettingsStorageStatus HTTP_SettingsStorageGetStatus(void);
 /* Last FatFs FRESULT, as an int so the public header stays hardware-neutral. */
 int HTTP_SettingsStorageGetFatFsError(void);
+const char *HTTP_SettingsStorageGetErrorMessage(void);
 
 #endif /* HTTP_SETTINGS_STORAGE_H_ */

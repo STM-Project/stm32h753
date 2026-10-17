@@ -93,6 +93,11 @@ int main(void) {
     reset();seed(1,2);files[1].data[3]=9;assert(HTTP_SettingsStorageInit()==-1);assert(save(3)==-1);assert(!files[0].exists&&files[1].data[3]==9);
     reset();lockFail=1;assert(HTTP_SettingsStorageInit()==-1);assert(HTTP_SettingsStorageGetStatus()==HTTP_SETTINGS_STORAGE_LOCK_TIMEOUT);
     reset();failOpen=1;assert(HTTP_SettingsStorageInit()==-1);assert(HTTP_SettingsStorageGetStatus()==HTTP_SETTINGS_STORAGE_IO_ERROR);assert(save(2)==-1);
+    assert(strstr(HTTP_SettingsStorageGetErrorMessage(),"Kod FatFs:"));
+    failOpen=0;
+    assert(HTTP_SettingsStorageRetryLoad()==1);
+    assert(save(2)==1);expectValue(0,2);
+    assert(HTTP_SettingsStorageRetryLoad()==0); /* Never reload a live model. */
     for(int i=0;i<11;i++) {
         reset();seed(0,1);seed(1,4);assert(HTTP_SettingsStorageInit()==1);
         switch(i){case 0:failWrite=1;break;case 1:shortWrite=1;break;case 2:failSync=1;break;case 3:failClose=1;break;case 4:failUnlink=1;break;case 5:failRotate=1;break;case 6:failPublish=1;break;case 7:failPublish=failRollback=1;break;case 8:failReadback=1;break;case 9:corruptStaging=1;break;case 10:staleStaging=1;break;}
