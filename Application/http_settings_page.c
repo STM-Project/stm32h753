@@ -134,10 +134,14 @@ static void SettingsMasksRender(SettingsWriter *writer)
     char name[64];
     PageCardStart(writer, sms ? "Numery Uzytkownikow" : "E-mail'e Uzytkownikow",
                   sms ? 450U : 390U, 660U);
+    /* Sandwitch uses size 4 for these labels; unstyled table cells inherit
+     * the shared card's 40px font. Keep the original sizes and colours here. */
     PageAppend(writer,
-        "<font class=\"css-font-style2\">Powiadamianie uzytkownikow<br>"
+        "<font size=\"4\" color=\"#ccc\">Powiadamianie uzytkownikow<br>"
         "o zaistnialych zdarzeniach</font><table>"
-        "<tr><th>Numer / adres</th>%s<th>Raport</th></tr>", sms ? "<th>Dzwon</th>" : "");
+        "<tr><td><font size=\"4\" color=\"#9edf0f\">Numer / adres</font></td>%s"
+        "<td><font size=\"4\" color=\"#9edf0f\">Raport</font></td></tr>",
+        sms ? "<td><font size=\"4\" color=\"#9edf0f\">Dzwon</font></td>" : "");
     for (contact = 1; contact <= 8; ++contact) {
         PageAppend(writer, "<tr><td><font class=\"css_list\">%u.</font>", contact);
         snprintf(name, sizeof name, sms ? "n_s_nrtel%u_000" : "n_s_email_odb%u_000", contact);
@@ -156,13 +160,15 @@ static void SettingsMasksRender(SettingsWriter *writer)
     PageCardEnd(writer);
     PageCardStart(writer, sms ? "Wybor portow dla powiadamiania SMS" : "Wybor portow dla powiadamiania E-mail",
                   1050, 660);
-    PageAppend(writer, "<div style=\"overflow:auto;\"><table><thead><tr><th>Port:</th>");
+    PageAppend(writer, "<div style=\"overflow:auto;\"><table><thead><tr>"
+               "<th><font size=\"4\" color=\"#9edf0f\">Port:</font></th>");
     for (port = 1; port <= 20; ++port)
-        PageAppend(writer, "<th style=\"min-width:40px;\">%u</th>", port);
-    PageAppend(writer, "</tr><tr><th>Typ:</th>");
+        PageAppend(writer, "<th style=\"min-width:40px;\"><font size=\"4\" color=\"#9edf0f\">%u</font></th>", port);
+    PageAppend(writer, "</tr><tr><td><font size=\"4\" color=\"#ccc\">Typ:</font></td>");
     for (port = 1; port <= 20; ++port) {
         unsigned mode = HTTP_SettingsPortMode(port);
-        PageAppend(writer, "<td>%s</td>", (mode == 4U || mode == 13U) ? "We" : "Te");
+        PageAppend(writer, "<td><font size=\"4\" color=\"#ccc\">%s</font></td>",
+                   (mode == 4U || mode == 13U) ? "We" : "Te");
     }
     PageAppend(writer, "</tr></thead><tbody>");
     for (contact = 1; contact <= 8; ++contact) {
@@ -175,11 +181,11 @@ static void SettingsMasksRender(SettingsWriter *writer)
         }
         PageAppend(writer, "</tr>");
     }
-    PageAppend(writer, "</tbody></table></div><font class=\"css-font-style2\">"
+    PageAppend(writer, "</tbody></table></div><font size=\"4\" color=\"#ccc\">"
                "Te - temperatura, wilgotnosc; We - wejscie cyfrowe</font>");
     PageCardEnd(writer);
     PageCardStart(writer, "Ustawianie Raportow", 350, 660);
-    PageAppend(writer, "<font class=\"css-font-style2\">Raport wysylany codziennie<br>o godz. </font>");
+    PageAppend(writer, "<font size=\"4\" color=\"#9edf0f\">Raport wysylany codziennie<br>o godz. </font>");
     PageInput(writer, "n_s_RR_godzON1_000", "text", 50, 5);
     PageCardEnd(writer);
 }
