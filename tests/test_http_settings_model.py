@@ -168,7 +168,8 @@ static void parser_tests(void) {
 }
 static const char *runtime_default(const HTTP_SettingPage *page, uint16_t instance,
                                    const HTTP_SettingField *field, void *context) {
-    assert(context == saved && instance == 0u);
+    assert(context == saved);
+    if (instance != 0u) return NULL;
     if (strcmp(page->route, "/wifi") == 0) {
         if (strcmp(field->name, "n_s_Wifi_ssid_002") == 0) return "Existing WiFi";
         if (strcmp(field->name, "n_s_Lan_ip_002") == 0) return "invalid IPv4";

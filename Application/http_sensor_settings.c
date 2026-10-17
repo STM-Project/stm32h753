@@ -1,4 +1,13 @@
 #include "http_sensor_settings.h"
+#include "http_all_settings.h"
+
+/* Sensor-only builds can use this module without the generic settings model.
+ * The full firmware links its strong implementation in http_settings_model.c. */
+__attribute__((weak)) void HTTP_SettingsSensorsUpdate(const HttpSensorSettings *values, size_t count)
+{
+    (void)values;
+    (void)count;
+}
 
 #include <string.h>
 
@@ -126,12 +135,14 @@ int HTTP_SensorSettingsInit(HttpSensorSettingsLoad load,
     memset(settings, 0, sizeof settings);
     for (i = 0; i < HTTP_SENSOR_COUNT; ++i)
         strcpy(settings[i].name, (i & 1u) ? "Wilgotnosc" : "Temperatura");
+    HTTP_SettingsSensorsUpdate(settings, HTTP_SENSOR_COUNT);
     if (!load) return 0;
     result = load(blob, sizeof blob, context);
     if (result == 0) return 0;
     if (result != 1 || !HTTP_SensorSettingsValidateBlob(blob, sizeof blob)) return -1;
     for (i = 0; i < HTTP_SENSOR_COUNT; ++i)
         decode_record(&settings[i], blob + 16u + i * SENSOR_RECORD_SIZE);
+    HTTP_SettingsSensorsUpdate(settings, HTTP_SENSOR_COUNT);
     return 1;
 }
 
@@ -349,5 +360,6 @@ int HTTP_SensorSettingsApplyTarget(const char *target, size_t length, unsigned *
         return HTTP_SENSOR_SETTINGS_STORAGE_ERROR;
     settings[(selected_port - 1u) * 2u] = candidate[0];
     if (masks[1]) settings[(selected_port - 1u) * 2u + 1u] = candidate[1];
+    HTTP_SettingsSensorsUpdate(settings, HTTP_SENSOR_COUNT);
     return HTTP_SENSOR_SETTINGS_SAVED;
 }

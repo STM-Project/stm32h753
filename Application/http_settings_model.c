@@ -1,4 +1,5 @@
 #include "http_settings_model.h"
+#include "http_all_settings.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -25,11 +26,13 @@ static uint32_t saved_count;
 static int initialized;
 
 static int valid_value(const HTTP_SettingField *field, const char *value);
+static void SettingsRefreshAll(void);
 
 void HTTP_SettingsSetDefaultResolver(HTTP_SettingsDefaultResolver resolver, void *context)
 {
     resolve_default = resolver;
     default_context = context;
+    SettingsRefreshAll();
 }
 
 static uint16_t get16(const unsigned char *p)
@@ -188,12 +191,18 @@ static const unsigned char *record_at(const unsigned char *blob, uint32_t index)
 
 static const char *find_saved(unsigned p, unsigned instance, unsigned f)
 {
-    uint32_t i;
+    uint32_t low = 0, high = saved_count;
     if (!initialized) return NULL;
-    for (i = 0; i < saved_count; ++i) {
-        const unsigned char *record = record_at(current_blob, i);
-        if (get16(record) == p && get16(record + 2) == instance && get16(record + 4) == f)
-            return (const char *)record + 8;
+    /* Validated blobs and successful commits are sorted by page/instance/field.
+     * The full typed view reads every field, so avoid a linear scan per value. */
+    while (low < high) {
+        uint32_t middle = low + (high - low) / 2u;
+        const unsigned char *record = record_at(current_blob, middle);
+        unsigned rp = get16(record), ri = get16(record + 2), rf = get16(record + 4);
+        if (rp == p && ri == instance && rf == f) return (const char *)record + 8;
+        if (rp < p || (rp == p && (ri < instance || (ri == instance && rf < f))))
+            low = middle + 1u;
+        else high = middle;
     }
     return NULL;
 }
@@ -487,6 +496,7 @@ int HTTP_SettingsModelInit(HTTP_SettingsLoad load, HTTP_SettingsSave save, void 
     if (result == 1) memcpy(current_blob, work_blob, sizeof current_blob);
     else memset(current_blob, 0, sizeof current_blob);
     memset(work_blob, 0, sizeof work_blob);
+    SettingsRefreshAll();
     return result;
 }
 
@@ -674,5 +684,10 @@ int HTTP_SettingsApplyTarget(const char *target, size_t length,
     memcpy(current_blob, work_blob, sizeof current_blob);
     saved_count = count;
     initialized = 1;
+    SettingsRefreshAll();
     return HTTP_SETTINGS_SAVED;
 }
+
+/* Keep the public typed structure in this translation unit so existing model
+ * consumers need no extra link dependency. The disk format stays unchanged. */
+#include "http_all_settings.inc"
