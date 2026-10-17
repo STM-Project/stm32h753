@@ -15,6 +15,7 @@ static unsigned char generic_persisted[HTTP_SETTINGS_BLOB_SIZE];
 static unsigned generic_saves;
 static int generic_saved, generic_failure;
 static char generic_target[HTTP_SETTINGS_TARGET_MAX + 1u];
+static const char *main_mode_override[34];
 
 static int generic_load(void *out, size_t size, void *context) {
     assert(context == generic_persisted); assert(size == sizeof generic_persisted);
@@ -71,6 +72,11 @@ static const HTTP_SettingPage *generic_form(const char *route, unsigned form_id,
         if (!strcmp(name, "n_s_ttm0_099")) value = "56";
         if (!strcmp(name, "n_s_nrtel1_000")) value = "+48123456789";
         if (!strcmp(name, "n_s_email_odb1_000")) value = "test@example.invalid";
+        if (!strncmp(name, "n_GPIO_val_", 11u)) {
+            unsigned port = (unsigned)atoi(name + 11u);
+            assert(port >= 1u && port <= 33u);
+            if (main_mode_override[port]) value = main_mode_override[port];
+        }
         strcat(generic_target, "&"); encode_append(name);
         strcat(generic_target, "="); encode_append(value);
     }
@@ -109,6 +115,161 @@ static void check_masks(const HTTP_SettingPage *page, int checked) {
         ++boxes;
     }
     assert(boxes >= 160u);
+}
+
+/* Follow the rendered DOM rather than matching a particular tile implementation:
+ * refresh targets must be unique, and a disabled mode may keep hidden targets
+ * so the original one-second refresh script can still update every port. */
+static int main_id_visible(const char *html, const char *id) {
+    unsigned count = 0, depth = 0;
+    int visibility = 0, hidden[128] = {0};
+    char quoted[128], single[128];
+    snprintf(quoted, sizeof quoted, "id=\"%s\"", id);
+    snprintf(single, sizeof single, "id='%s'", id);
+    for (const char *p = html; (p = strchr(p, '<')) != NULL;) {
+        const char *end = strchr(p, '>');
+        assert(end);
+        if (!strncmp(p, "<script", 7u)) {
+            p = strstr(end, "</script>"); assert(p); p += 9u; continue;
+        }
+        if (!strncmp(p, "<style", 6u)) {
+            p = strstr(end, "</style>"); assert(p); p += 8u; continue;
+        }
+        if (!strncmp(p, "</div", 5u)) {
+            assert(depth > 0u); --depth;
+        } else {
+            char tag[2048];
+            assert((size_t)(end - p) < sizeof tag);
+            memcpy(tag, p, (size_t)(end - p)); tag[end - p] = 0;
+            const int is_div = !strncmp(p, "<div", 4u) &&
+                (p[4] == ' ' || p[4] == '\t' || p[4] == '\r' || p[4] == '\n' || p[4] == '>');
+            int own_hidden = 0;
+            const char *style = strstr(tag, "display:");
+            if (style) {
+                style += 8u;
+                while (*style == ' ') ++style;
+                own_hidden = !strncmp(style, "none", 4u);
+            }
+            int tag_hidden = hidden[depth] || own_hidden;
+            const char *found = strstr(tag, quoted);
+            if (!found) found = strstr(tag, single);
+            if (found) { ++count; visibility = !tag_hidden; }
+            if (is_div) {
+                assert(depth + 1u < sizeof hidden / sizeof hidden[0]);
+                hidden[++depth] = tag_hidden;
+            }
+        }
+        p = end + 1u;
+    }
+    if (count != 1u) fprintf(stderr, "Main DOM target %s occurs %u times\n", id, count);
+    assert(count == 1u);
+    return visibility;
+}
+static void check_main_refresh_dom(const char *html) {
+    /* These IDs are taken from the real retained refresh JavaScript. Checking
+     * every lookup catches missing/duplicate inactive targets after mode changes. */
+    static const char lookup[] = "document.getElementById(\"";
+    const char *p = HttpStructMainReadPanel;
+    unsigned lookups = 0;
+    while ((p = strstr(p, lookup)) != NULL) {
+        char id[64]; p += sizeof lookup - 1u;
+        const char *end = strchr(p, '"');
+        assert(end && (size_t)(end - p) < sizeof id);
+        memcpy(id, p, (size_t)(end - p)); id[end - p] = 0;
+        (void)main_id_visible(html, id); ++lookups; p = end + 1u;
+    }
+    assert(lookups > 150u);
+    assert(strstr(html, "setInterval(loadXMLDoc, 1000"));
+}
+static void check_main_route(unsigned port, const char *id, int visible) {
+    static char html[250000], alias[250000];
+    request(0, "/main"); check_response(0, 200, "text/html; charset=UTF-8");
+    body(0, html, sizeof html);
+    assert(main_id_visible(html, id) == visible);
+    check_main_refresh_dom(html);
+    if (port == 5u) {
+        assert((strstr(html, "Kuchnia &amp; &lt;ok&gt; Łódź") != NULL) == visible);
+        assert(!strstr(html, "Kuchnia & <ok> Łódź"));
+    }
+    request(0, "/"); check_response(0, 200, "text/html; charset=UTF-8");
+    body(0, alias, sizeof alias); assert(!strcmp(html, alias));
+}
+static void check_main_settings_integration(void) {
+    static const struct { unsigned port; const char *mode, *id; int visible; } cases[] = {
+        {5, "02", "tu_temp005a", 1}, {5, "09", "tu_temp005b", 1},
+        {5, "04", "tu_we005", 1}, {5, "13", "tu_eol005", 1},
+        {5, "03", "tu_ptt005", 1}, {5, "06", "tu_temp005a", 0},
+        {15, "05", "tu_adc015", 1}, {15, "06", "tu_adc015", 0},
+        {17, "07", "tu_imp0_017", 1}, {17, "02", "tu_temp017a", 1},
+        {17, "09", "tu_temp017b", 1}, {17, "04", "tu_we017", 1},
+        {17, "06", "tu_imp0_017", 0},
+        {21, "00", "tu_pk021", 1}, {21, "01", "volume021", 1},
+        {21, "08", "tu_pk021", 1}, {21, "10", "tu_ti021", 1},
+        {21, "11", "tu_te021", 1}, {21, "06", "tu_pk021", 0}
+    };
+    static char html[250000], queued[250000];
+    /* The complete panel must respect its caller's capacity, including the
+     * terminator, even though individual legacy templates use scratch space. */
+    size_t length = HTTP_MainReadPanelRender(html, sizeof html);
+    assert(length > 4096u && length == strlen(html));
+    assert(HTTP_MainReadPanelRender(NULL, sizeof html) == 0);
+    const size_t capacities[] = {0, 1, 127, 4096, length, length + 1u};
+    for (unsigned i = 0; i < sizeof capacities / sizeof capacities[0]; ++i) {
+        size_t capacity = capacities[i];
+        memset(queued, 0x55, sizeof queued);
+        size_t result = HTTP_MainReadPanelRender(queued + 1, capacity);
+        assert((unsigned char)queued[0] == 0x55);
+        assert((unsigned char)queued[capacity + 1u] == 0x55);
+        if (capacity > length) {
+            assert(result == length && !strcmp(queued + 1, html));
+        } else {
+            assert(result == 0);
+            assert(capacity == 0 || queued[1] == 0);
+        }
+    }
+    check_main_route(5, "tu_temp005b", 1);
+    for (unsigned i = 0; i < sizeof cases / sizeof cases[0]; ++i) {
+        unsigned port = cases[i].port;
+        memset(main_mode_override, 0, sizeof main_mode_override);
+        main_mode_override[port] = cases[i].mode;
+        generic_form("/set", 1, 0, 0);
+        unsigned before = generic_saves;
+        request(0, generic_target); check_response(0, 200, "text/html; charset=UTF-8");
+        assert(generic_saves == before + 1u);
+        assert(HTTP_SettingsPortMode(port) == (unsigned)atoi(cases[i].mode));
+        check_main_route(port, cases[i].id, cases[i].visible);
+        if (port == 5u && !strcmp(cases[i].mode, "02")) {
+            body(0, html, sizeof html);
+            assert(!main_id_visible(html, "tu_temp005b"));
+            assert(!main_id_visible(html, "tu_temp005c"));
+        }
+        if (port == 5u && !strcmp(cases[i].mode, "09")) {
+            body(0, html, sizeof html);
+            assert(!main_id_visible(html, "tu_temp005a"));
+            assert(main_id_visible(html, "tu_temp005c"));
+        }
+    }
+    memset(main_mode_override, 0, sizeof main_mode_override);
+    generic_form("/set", 1, 0, 0); request(0, generic_target);
+    assert(HTTP_SettingsModelInit(generic_load, generic_save, generic_persisted) == 1);
+    check_main_route(5, "tu_temp005b", 1);
+
+    /* /main must not reuse another queue slot's generated bytes. A settings
+     * save on a second channel changes only subsequent main responses. */
+    clear_queue(); HTTP_HandleTarget(4, "/main", 5u, NULL);
+    body(0, queued, sizeof queued);
+    main_mode_override[5] = "04"; generic_form("/set", 1, 0, 0);
+    HTTP_HandleTarget(2, generic_target, strlen(generic_target), NULL);
+    check_response(2, 200, "text/html; charset=UTF-8");
+    assert(slot_for(2) == 1); body(0, html, sizeof html); assert(!strcmp(html, queued));
+    HTTP_HandleTarget(1, "/main", 5u, NULL);
+    assert(slot_for(1) == 2); body(2, html, sizeof html);
+    assert(main_id_visible(html, "tu_we005"));
+    assert(!main_id_visible(html, "tu_temp005b"));
+    body(0, html, sizeof html); assert(!strcmp(html, queued));
+    main_mode_override[5] = NULL;
+    generic_form("/set", 1, 0, 0); request(0, generic_target);
+    check_main_route(5, "tu_temp005b", 1);
 }
 int main(void) {
     static char html[250000], snapshot[ESP_MAX_HTTP_CONN][250000];
@@ -187,6 +348,7 @@ int main(void) {
     assert(HTTP_SettingsPortMode(5) == HTTP_MODE_TEMP_RHU);
     request(0, "/temp005"); body(0, html, sizeof html);
     assert(strstr(html, "Wilgotnosc Port 5"));
+    check_main_settings_integration();
 
     /* Real browser ADC tables and complete masks exceed the old target limit. */
     const HTTP_SettingPage *adc = generic_form("/nap001", 0, 0, 0);
@@ -225,7 +387,8 @@ int main(void) {
     assert(HTTP_SettingsPortMode(5) == HTTP_MODE_TEMP_RHU);
     body(0, html, sizeof html); assert(strstr(html, "Sprawdz karte SD."));
     generic_failure = 0;
-    puts("PASS: all Sandwitch settings routes/instances, explicit 501 actions, five independent queued pages, UTF-8 HTTP lengths, /set name/mode persistence, mode-driven RH panel, fragmented 301-field ADC and complete SMS/mail forms, scoped checkbox clearing and 400/503 rollback.");
+    check_main_route(5, "tu_temp005b", 1);
+    puts("PASS: all Sandwitch settings routes/instances, explicit 501 actions, independent queued pages, UTF-8 HTTP lengths, /set name/mode persistence driving /main and / tiles, unique one-second refresh targets, mode-driven RH panel, fragmented 301-field ADC and complete SMS/mail forms, scoped checkbox clearing and 400/503 rollback.");
     return 0;
 }
 '''

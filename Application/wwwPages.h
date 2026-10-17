@@ -8,6 +8,7 @@
 #ifndef HTTP_WWWPAGES_H_
 #define HTTP_WWWPAGES_H_
 
+#include <stddef.h>
 #include "stm32h7xx_hal.h"
 #include "common.h"
 
@@ -43,6 +44,11 @@ char* HTTP_TEMPLATE_Impl	  (char* buff, u8 type,u8 nr, uint32_t val1,uint32_t va
 char* HTTP_TEMPLATE_In		  (char* buff, u8 type,u8 nr, char* name1, u32 color, char* name2);
 char* HTTP_TEMPLATE_Out		  (char* buff, u8 type,u8 nr, float val, char* name1, char* name2);
 char* HTTP_TEMPLATE_TestUsun(char* buff);
+
+/* Render the main tiles from the committed /set configuration, including the
+ * inactive IDs needed by polling. Returns zero on insufficient capacity.
+ * Uses shared scratch space; call from the single HTTP task. */
+size_t HTTP_MainReadPanelRender(char* out, size_t capacity);
 
 /* HttpMainReadPanel2: each function returns the next free buffer position. */
 char* HTTP_TEMPLATE_AdcTempRhu2(char* buff, u8 type,u8 nr, float val1,float val2, u32 color1,u32 color2, char* name1,char* name2);
@@ -106,6 +112,7 @@ char* HTTP_TEMPLATE_2_PanelBegin(char* buff);
 char* HTTP_TEMPLATE_2_PanelEnd(char* buff);
 char* HTTP_TEMPLATE_2_Name(char* buff, u8 nr, const char* name);
 unsigned HTTP_SettingsPortMode(unsigned port);
+/* A NULL fallback selects the /set catalog default for an untouched name. */
 const char* HTTP_SettingsPortName(unsigned port, const char* fallback);
 char* HTTP_TEMPLATE_2_Mode(char* buff, u8 nr, u8 mode);
 char* HTTP_TEMPLATE_2_Hidden(char* buff, u8 nr);

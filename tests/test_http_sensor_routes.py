@@ -2,8 +2,8 @@
 """Exercise the real ESP HTTP routing, queued pages and sensor form round trip.
 
 The hardware-free harness extracts the production HTTP response functions and
-settings templates. Only the unrelated old read-panel templates and the reload
-timer are stubbed; the request stream, page renderer and settings model are real.
+settings templates. The read-panel renderer and its templates are real; only
+number formatting, hardware bindings and the reload timer are stubbed.
 Run: python3 tests/test_http_sensor_routes.py
 """
 from pathlib import Path
@@ -25,10 +25,12 @@ def constant(source, name):
 PREAMBLE = r'''
 #include <assert.h>
 #include <stdint.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "mini_printf.h"
+#include "string_oper.h"
 #include "http_request_stream.h"
 #include "http_sensor_page.h"
 #include "http_sensor_settings.h"
@@ -43,12 +45,19 @@ static void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage *page, uint16_
     assert(page); (void)instance; ++bindings_count;
 }
 static void InitReloadHttpTime(void) { ++reload_count; }
-static char *OldReadTemplate(char *out) { *out++ = 'R'; *out = 0; return out; }
-#define HTTP_TEMPLATE_AdcTempRhu(out,...) OldReadTemplate(out)
-#define HTTP_TEMPLATE_In(out,...) OldReadTemplate(out)
-#define HTTP_TEMPLATE_Impl(out,...) OldReadTemplate(out)
-#define HTTP_TEMPLATE_Out(out,...) OldReadTemplate(out)
-#define HTTP_TEMPLATE_TestUsun(out) OldReadTemplate(out)
+/* Formatting normally uses a mutex-protected STM32 scratch buffer. Keep only
+ * that platform dependency out of this harness, not the layout or mode logic. */
+char *Float2Str(float value, char fill, int digits, int sign, int decimals) {
+    static char values[8][64];
+    static unsigned next;
+    char *out = values[next++ % 8u];
+    (void)fill; (void)digits; (void)sign;
+    snprintf(out, sizeof values[0], "%.*f", decimals, (double)value);
+    return out;
+}
+unsigned HTTP_SettingsPortMode(unsigned port);
+const char *HTTP_SettingsPortName(unsigned port, const char *fallback);
+char *HTTP_TEMPLATE_Hidden2(char *out, u8 type, u8 port);
 static char HttpRefr[]="refresh";
 static char HttpRefr_sdram[]="refresh";
 '''
@@ -253,12 +262,14 @@ def harness_source(tests=TESTS):
     buffers = esp[esp.index("/* Queued pages must retain"):esp.index("static char* pMem=NULL;")]
     buffers = re.sub(r"^SDRAM static HTTP_RequestStream.*?;\n", "", buffers, flags=re.M)
     route = esp[esp.index("static char* HTTP_SetWeb("):esp.index("static void HTTP_FeedReceiveRing(")]
+    read_templates = source[source.index("char* HTTP_TEMPLATE_AdcTempRhu("):source.index("/* Separate tile templates for HttpMainReadPanel2.")]
+    read_hidden = source[source.index("char* HTTP_TEMPLATE_Hidden2("):source.index("/* Mode values are CGI")]
     helpers = source[source.index("/* Mode values are CGI"):source.index("SDRAM_ALIGN32 char HttpRefr_sdram")]
     templates = source[source.index("/* Settings page templates."):source.index("const char HttpStructMainReadPanel2")]
     fragments = "\n".join(constant(source, name) for name in
                           ["HttpStyle", "HttpMainMenu", "HttpStructMainReadPanel", "HttpStructMainReadPanel2"])
     harness = (PREAMBLE + "\n#define ESP_MAX_HTTP_CONN " + channels + "\n" + web_enum + enums +
-               fragments + helpers + templates + queue + buffers + route + tests)
+               fragments + read_templates + read_hidden + helpers + templates + queue + buffers + route + tests)
     return harness
 
 

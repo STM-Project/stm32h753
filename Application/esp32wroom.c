@@ -697,23 +697,16 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
 		httpPar.web[channel][nrPartWWW] = (char*)HttpMainMenu;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainMenu);
 
-		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_TempRhu,1, 89.6, 10, 0xf88, 0x8cf, "1. nazwa temp/wilg", "Nazwa RHU 1");
-		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_TempRhu,2, 12.6, 56, 0xeee, 0xeee, "2. nazwa temp/wilg", "Nazwa RHU 2");
-		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_Temp,   3, 26.7,  0, 0xeee, 0x0,   "3. nazwa temp", NULL);
-		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_Ptt,   4, 345,  0, 0xeee, 0x0,   "4. nazwa ptt", NULL);
-		ptr=HTTP_TEMPLATE_In		(ptr,TEMPL_In,	  5, "TEMPL_In", 0xeee, "5. nazwa wejscia");
-		ptr=HTTP_TEMPLATE_In		(ptr,TEMPL_Eol,	  6, "TEMPL_Eol", 0xeee, "6. nazwa wejscia eol");
-		ptr=HTTP_TEMPLATE_AdcTempRhu(ptr,TEMPL_Adc,   15, 15.6,  0, 0xeee, 0x0,   "15. nazwa adc", NULL);
-		ptr=HTTP_TEMPLATE_Impl	 	(ptr,TEMPL_Impl,  17, 123456,6100,7102,8203,9304, 0xfff,"17. Nazwa Impulsy");
-		ptr=HTTP_TEMPLATE_Out		(ptr,TEMPL_Pk,	  21, 0, "TEMPL_Pk", "21. nazwa wyjscia pk");
-		ptr=HTTP_TEMPLATE_Out		(ptr,TEMPL_Pk,	  22, 0, "TEMPL_Pk", "22. nazwa wyjscia pk");
-		ptr=HTTP_TEMPLATE_Out		(ptr,TEMPL_Pwm,	  23, 51,"TEMPL_Pwm","23. nazwa wyjscia te");
-		ptr=HTTP_TEMPLATE_Out		(ptr,TEMPL_Te,	  24, 0, "TEMPL_Te", "24. nazwa wyjscia te");
-		ptr=HTTP_TEMPLATE_Out		(ptr,TEMPL_Ti,	  25, 0, "TEMPL_Ti", "25. nazwa wyjscia ti");
-		ptr=HTTP_TEMPLATE_Out		(ptr,TEMPL_Ti,	  26, 0, "TEMPL_Ti", "26. nazwa wyjscia ti");
-		ptr=HTTP_TEMPLATE_TestUsun	(ptr);
-		httpPar.web[channel][nrPartWWW] = (char*)httpBuff;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(httpBuff);
-	  //httpPar.web[channel][nrPartWWW] = (char*)HttpMainReadPanel;			httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainReadPanel);
+		{
+			size_t length=HTTP_MainReadPanelRender(httpBuff,sizeof(httpPageBuff[channel]));
+			if(!length){
+				httpResponseStatus[channel]=500;
+				strcpy(httpBuff,"<p>Nie mozna wygenerowac strony glownej.</p>");
+				length=strlen(httpBuff);
+			}
+			httpPar.web[channel][nrPartWWW]=httpBuff;
+			httpPar.siz[channel][nrPartWWW++]=(u32)length;
+		}
 
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStructMainReadPanel;	httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStructMainReadPanel);
 		break;

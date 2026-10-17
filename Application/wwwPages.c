@@ -10,6 +10,7 @@
 #include "stm32h7xx_hal.h"
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "sd_card.h"
 #include "mini_printf.h"
 #include "common.h"
@@ -46,21 +47,21 @@ char* HTTP_TEMPLATE_AdcTempRhu(char* buff, u8 type,u8 nr, float val1,float val2,
 
 	if(TEMPL_Temp==type)
 		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03da\"><font color=\"#%x\">%s °C</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03da\"> </div>"
-				  	  	  	  ,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
+			,nr,color1, isnan(val1) ? " --.-" : Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
 
 	else if(TEMPL_TempRhu==type)
 		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_temp%03db\"><font color=\"#%x\">%s °C   </font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03dc\"></div><br>\r\n\
 				 						 <font class=\"a\"><b><div id=\"tu_temp%03dc\"><font color=\"#%x\">%s &#37;</font></div></b></font><br><font class=\"b\">%s</font><div id=\"tu_lora%03db\"> </div>\r\n"
-				  	  	  	  ,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr
-							  ,nr,color2, Float2Str(val2,Space,3,Sign_none, 0), name2,nr );
+			,nr,color1, isnan(val1) ? " --.-" : Float2Str(val1,Space,3,Sign_minus,1), name1,nr
+			,nr,color2, isnan(val2) ? " --" : Float2Str(val2,Space,3,Sign_none, 0), name2,nr );
 
 	else if(TEMPL_Ptt==type)
 		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_ptt%03d\"><font color=\"#%x\">%s °C</font></div></b></font><br><font class=\"b\">%s</font>"
-				  	  	  	  ,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
+			,nr,color1, isnan(val1) ? " ---" : Float2Str(val1,Space,3,Sign_minus,1), name1 );
 
 	else if(TEMPL_Adc==type)
 		buff += mini_snprintf(buff,1000,"<font class=\"a\"><b><div id=\"tu_adc%03d\"><font color=\"#%x\">%s V</font></div></b></font><br><font class=\"b\">%s</font>"
-				  	  	  	  ,nr,color1, Float2Str(val1,Space,3,Sign_minus,1), name1,nr );
+			,nr,color1, isnan(val1) ? " --.-" : Float2Str(val1,Space,3,Sign_minus,1), name1 );
 
 	if(TEMPL_None!=type)
 		buff += mini_snprintf(buff,20,"</div></div>\r\n");
@@ -111,6 +112,7 @@ char* HTTP_TEMPLATE_TestUsun(char* buff)	/* #f88 - #eee - #8cf */
 
 char* HTTP_TEMPLATE_Impl(char* buff, u8 type,u8 nr, uint32_t val1,uint32_t val2,uint32_t val3,uint32_t val4,uint32_t val5, u32 color,char* name)
 {
+	(void)color;
 	if(TEMPL_None!=type){
 		buff += mini_snprintf(buff,200,"<div class=\"y\" style=\"height:330px\"><div class=\"x\" style=\"height:300px\">\r\n");
 		buff += mini_snprintf(buff,1000,"<font class=\"z\" style=\"font-size: 43px;\"><b><div id=\"tu_imp0_%03d\">%d.%d<font color=\"#FFF\" size=\"6\"> KWh  </font></div></b></font><br>", 														   nr, val1/1000, val1-1000*(val1/1000) );
@@ -198,6 +200,131 @@ char* HTTP_TEMPLATE_Out(char* buff, u8 type,u8 nr, float val, char* name1, char*
 //	</div></div>
 
 
+}
+
+/* Main read panel: saved /set modes select tiles, not demonstration calls. */
+static u8 HTTP_MainPortTemplate(unsigned port)
+{
+	switch(HTTP_SettingsPortMode(port)){
+	case HTTP_MODE_TEMP: return TEMPL_Temp;
+	case HTTP_MODE_TEMP_RHU: return TEMPL_TempRhu;
+	case HTTP_MODE_PT1000: return TEMPL_Ptt;
+	case HTTP_MODE_ADC: return TEMPL_Adc;
+	case HTTP_MODE_COUNTER: return TEMPL_Impl;
+	case HTTP_MODE_INPUT: return TEMPL_In;
+	case HTTP_MODE_EOL: return TEMPL_Eol;
+	case HTTP_MODE_RELAY:
+	case HTTP_MODE_IR: return TEMPL_Pk;
+	case HTTP_MODE_TIMER: return TEMPL_Ti;
+	case HTTP_MODE_THERMOSTAT: return TEMPL_Te;
+	case HTTP_MODE_PWM: return TEMPL_Pwm;
+	default: return TEMPL_None;
+	}
+}
+
+static unsigned HTTP_MainTemplateGroup(u8 type)
+{
+	switch(type){
+	case TEMPL_Temp:
+	case TEMPL_TempRhu: return 0;
+	case TEMPL_Impl: return 1;
+	case TEMPL_In: return 2;
+	case TEMPL_Eol: return 3;
+	case TEMPL_Adc:
+	case TEMPL_Ptt: return 4;
+	case TEMPL_Pwm: return 5;
+	case TEMPL_Pk: return 6;
+	case TEMPL_Ti:
+	case TEMPL_Te: return 7;
+	default: return 8;
+	}
+}
+
+static int HTTP_MainAppend(char* out, size_t capacity, size_t* used, const char* tile)
+{
+	size_t length=strlen(tile);
+	if(length>=capacity-*used) return 0;
+	memcpy(out+*used,tile,length+1);
+	*used+=length;
+	return 1;
+}
+
+size_t HTTP_MainReadPanelRender(char* out, size_t capacity)
+{
+	/* Existing templates write fixed, individually bounded fragments. This
+	 * scratch buffer holds a complete tile before copying into the response;
+	 * it also avoids using the WiFi task's small stack for the HTML. */
+	static char tile[8192];
+	char name[30*6+1];
+	size_t used=0;
+	u8 types[33];
+	if(!out || !capacity) return 0;
+	out[0]=0;
+	for(unsigned port=1;port<=33;port++) types[port-1]=HTTP_MainPortTemplate(port);
+	/* Preserve Sandwitch's order: sensors, counters, inputs, EOL, ADC/Pt1000,
+	 * PWM, relay/IR, then timers and thermostats. */
+	for(unsigned group=0;group<8;group++) for(unsigned port=1;port<=33;port++){
+		u8 type=types[port-1];
+		if(HTTP_MainTemplateGroup(type)!=group) continue;
+		const char* saved=HTTP_SettingsPortName(port,NULL);
+		char* next=name;
+		/* /set names are limited to 30 bytes; escape before legacy templates
+		 * interpolate them into HTML text. */
+		for(unsigned i=0;saved && saved[i] && i<30;i++){
+			const char* escaped=NULL;
+			switch(saved[i]){
+			case '&': escaped="&amp;"; break;
+			case '<': escaped="&lt;"; break;
+			case '>': escaped="&gt;"; break;
+			case '"': escaped="&quot;"; break;
+			case '\'': escaped="&#39;"; break;
+			default: *next++=saved[i]; break;
+			}
+			if(escaped){size_t length=strlen(escaped);memcpy(next,escaped,length);next+=length;}
+		}
+		*next=0;
+		tile[0]=0;
+		switch(type){
+		case TEMPL_Temp:
+		case TEMPL_TempRhu:
+		case TEMPL_Ptt:
+		case TEMPL_Adc:
+			/* No measured H7 port value is available here yet. Polling supplies
+			 * the existing data stream after the page is loaded. */
+			HTTP_TEMPLATE_AdcTempRhu(tile,type,port,NAN,NAN,0xeee,0xeee,name,name);
+			break;
+		case TEMPL_Impl:
+			HTTP_TEMPLATE_Impl(tile,type,port,0,0,0,0,0,0xeee,name);
+			break;
+		case TEMPL_In:
+		case TEMPL_Eol:
+			HTTP_TEMPLATE_In(tile,type,port,"---",0xeee,name);
+			break;
+		case TEMPL_Pwm:
+			HTTP_TEMPLATE_Out(tile,type,port,0,name,name);
+			break;
+		default:
+			HTTP_TEMPLATE_Out(tile,type,port,0,"---",name);
+			break;
+		}
+		if(!HTTP_MainAppend(out,capacity,&used,tile)) goto too_small;
+	}
+	/* Polling addresses every supported mode, including inactive ones. Emit
+	 * each ID once, keeping disabled ports invisible and active IDs unique. */
+	for(unsigned port=1;port<=33;port++){
+		u8 type=types[port-1];
+		char* next=HTTP_TEMPLATE_Hidden2(tile,type,port);
+		if(port>=15 && port<=16 && type!=TEMPL_Adc)
+			next+=mini_snprintf(next,100,"<div id=\"tu_adc%03u\" style=\"display:none;\"></div>",port);
+		if(port>=17 && port<=20 && type!=TEMPL_Impl)
+			for(unsigned period=0;period<5;period++)
+				next+=mini_snprintf(next,100,"<div id=\"tu_imp%u_%03u\" style=\"display:none;\"></div>",period,port);
+		if(!HTTP_MainAppend(out,capacity,&used,tile)) goto too_small;
+	}
+	return used;
+too_small:
+	out[0]=0;
+	return 0;
 }
 
 /* Separate tile templates for HttpMainReadPanel2. */
@@ -1662,56 +1789,24 @@ char* HTTP_TEMPLATE_2_Name(char* buff, u8 nr, const char* name)
 
 unsigned HTTP_SettingsPortMode(unsigned port)
 {
-	static const unsigned modes[]={
-		HTTP_MODE_TEMP,
-		HTTP_MODE_TEMP,
-		HTTP_MODE_PT1000,
-		HTTP_MODE_PT1000,
-		HTTP_MODE_TEMP_RHU,
-		HTTP_MODE_TEMP_RHU,
-		HTTP_MODE_INPUT,
-		HTTP_MODE_INPUT,
-		HTTP_MODE_EOL,
-		HTTP_MODE_EOL,
-		HTTP_MODE_DISABLED,
-		HTTP_MODE_DISABLED,
-		HTTP_MODE_DISABLED,
-		HTTP_MODE_TEMP,
-		HTTP_MODE_ADC,
-		HTTP_MODE_ADC,
-		HTTP_MODE_COUNTER,
-		HTTP_MODE_COUNTER,
-		HTTP_MODE_TEMP,
-		HTTP_MODE_TEMP_RHU,
-		HTTP_MODE_RELAY,
-		HTTP_MODE_RELAY,
-		HTTP_MODE_TIMER,
-		HTTP_MODE_TIMER,
-		HTTP_MODE_THERMOSTAT,
-		HTTP_MODE_THERMOSTAT,
-		HTTP_MODE_IR,
-		HTTP_MODE_RELAY,
-		HTTP_MODE_TIMER,
-		HTTP_MODE_THERMOSTAT,
-		HTTP_MODE_DISABLED,
-		HTTP_MODE_DISABLED,
-		HTTP_MODE_RELAY
-	};
 	if(port<1 || port>33) return HTTP_MODE_DISABLED;
 	uint16_t instance=0;
 	const HTTP_SettingPage* page=HTTP_SettingsCatalogFind("/set",&instance);
 	char field[32]; mini_snprintf(field,sizeof(field),"n_GPIO_val_%03u",port);
-	const char* saved=HTTP_SettingsGetSaved(page,instance,field);
-	return saved?(unsigned)atoi(saved):modes[port-1];
+	const char* value=HTTP_SettingsGetByName(page,instance,field);
+	return value?(unsigned)atoi(value):HTTP_MODE_DISABLED;
 }
 
 const char* HTTP_SettingsPortName(unsigned port, const char* fallback)
 {
+	if(port<1 || port>33) return fallback;
 	uint16_t instance=0;
 	const HTTP_SettingPage* page=HTTP_SettingsCatalogFind("/set",&instance);
 	char field[40]; mini_snprintf(field,sizeof(field),"n_s_Port_nazwa%u_001",port);
 	const char* saved=HTTP_SettingsGetSaved(page,instance,field);
-	return saved?saved:fallback;
+	if(saved) return saved;
+	if(fallback) return fallback;
+	return HTTP_SettingsGetByName(page,instance,field);
 }
 
 char* HTTP_TEMPLATE_2_Mode(char* buff, u8 nr, u8 mode)
