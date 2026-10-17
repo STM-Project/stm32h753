@@ -33,7 +33,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "relay_states.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -123,7 +123,7 @@ int main(void)
   MX_LTDC_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-
+  RELAY_ResetStates();
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
