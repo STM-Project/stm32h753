@@ -9,7 +9,7 @@
 #define GENERAL_UTILITIES_TIMER_H_
 
 #include "stm32h7xx_hal.h"
-#include "freeRTOS.h"
+#include "FreeRTOS.h"
 #include "cmsis_os.h"
 
 extern osSemaphoreId LcdUpdateSemaphoreId;

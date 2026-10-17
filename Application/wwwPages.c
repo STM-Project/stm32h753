@@ -9,7 +9,7 @@
 #include "stm32h7xx_hal.h"
 #include <string.h>
 #include <stdlib.h>
-#include "SD_Card.h"
+#include "sd_card.h"
 #include "mini_printf.h"
 #include "common.h"
 #include "_debug.h"
@@ -1657,6 +1657,46 @@ char* HTTP_TEMPLATE_2_Name(char* buff, u8 nr, const char* name)
 	buff=HTTP_TEMPLATE_2_Attribute(buff,name);
 	buff=HTTP_TEMPLATE_2_Append(buff,"\"></td></tr></table>\r\n");
 	return buff;
+}
+
+unsigned HTTP_SettingsPortMode(unsigned port)
+{
+	static const unsigned modes[]={
+		HTTP_MODE_TEMP,
+		HTTP_MODE_TEMP,
+		HTTP_MODE_PT1000,
+		HTTP_MODE_PT1000,
+		HTTP_MODE_TEMP_RHU,
+		HTTP_MODE_TEMP_RHU,
+		HTTP_MODE_INPUT,
+		HTTP_MODE_INPUT,
+		HTTP_MODE_EOL,
+		HTTP_MODE_EOL,
+		HTTP_MODE_DISABLED,
+		HTTP_MODE_DISABLED,
+		HTTP_MODE_DISABLED,
+		HTTP_MODE_TEMP,
+		HTTP_MODE_ADC,
+		HTTP_MODE_ADC,
+		HTTP_MODE_COUNTER,
+		HTTP_MODE_COUNTER,
+		HTTP_MODE_TEMP,
+		HTTP_MODE_TEMP_RHU,
+		HTTP_MODE_RELAY,
+		HTTP_MODE_RELAY,
+		HTTP_MODE_TIMER,
+		HTTP_MODE_TIMER,
+		HTTP_MODE_THERMOSTAT,
+		HTTP_MODE_THERMOSTAT,
+		HTTP_MODE_IR,
+		HTTP_MODE_RELAY,
+		HTTP_MODE_TIMER,
+		HTTP_MODE_THERMOSTAT,
+		HTTP_MODE_DISABLED,
+		HTTP_MODE_DISABLED,
+		HTTP_MODE_RELAY
+	};
+	return port>=1 && port<=33 ? modes[port-1] : HTTP_MODE_DISABLED;
 }
 
 char* HTTP_TEMPLATE_2_Mode(char* buff, u8 nr, u8 mode)

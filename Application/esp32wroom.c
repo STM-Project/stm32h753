@@ -6,6 +6,10 @@
  */
 #include "esp32wroom.h"
 #include "wwwPages.h"
+#include "http_sensor_page.h"
+#include "http_sensor_settings.h"
+#include "http_sensor_storage.h"
+#include "http_request_stream.h"
 #include <string.h> /* memset */
 #include <stdlib.h> /* atoi */
 #include "stm32h7xx_hal.h"
@@ -18,7 +22,7 @@
 #include "_debug.h"
 #include "mini_printf.h"
 #include "main.h"
-#include "SD_Card.h"
+#include "sd_card.h"
 #include "_smtp.h"
 #include "variables.h"
 #include "float.h"
@@ -133,7 +137,9 @@ typedef enum
 	WWW_MAIN_SETTING,
 	WWW_MAIN_READ,
 	WWW_DATA_REFRESH,
-	WWW_FAVICON
+	WWW_FAVICON,
+	WWW_SENSOR_SETTING,
+	WWW_HTTP_ERROR
 }WEB_WWW;
 
 static const char *freeAnswerTypes[] = {
@@ -167,7 +173,14 @@ struct HTTP_SEND_TEMP{
 
 TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
-SDRAM char httpBuff[100000];
+/* Queued pages must retain their contents until that slot finishes sending. */
+SDRAM static char httpPageBuff[ESP_MAX_HTTP_CONN][100000];
+SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][24576];
+SDRAM static HTTP_RequestStream httpRequestStream;
+static char httpResponseHeader[ESP_MAX_HTTP_CONN][192];
+static unsigned httpSensorPort[ESP_MAX_HTTP_CONN];
+static const char* httpSensorNotice[ESP_MAX_HTTP_CONN];
+static int httpResponseStatus[ESP_MAX_HTTP_CONN];
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
@@ -671,7 +684,7 @@ static void GoToTest(char* txt){
 static char* HTTP_SetWeb(int channel, int nrWWW)
 {
 	LOOP_FOR(i,MAX_HTML_WEBs){  httpPar.web[channel][i] = NULL;		httpPar.siz[channel][i] = 0;  }
-	int nrPartWWW=0;	char* ptr=&httpBuff[0];
+	int nrPartWWW=0;	char* httpBuff=httpPageBuff[channel];	char* ptr=httpBuff;
 	switch(nrWWW){
 	case WWW_MAIN_READ:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
@@ -742,39 +755,39 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		ptr=HTTP_TEMPLATE_2_Name(ptr,33,"Nazwa portu nr 33     PK6");
 		ptr=HTTP_TEMPLATE_2_NamesEnd(ptr);
 		ptr=HTTP_TEMPLATE_2_ModesBegin(ptr);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,1,HTTP_MODE_TEMP);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,2,HTTP_MODE_TEMP);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,3,HTTP_MODE_PT1000);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,4,HTTP_MODE_PT1000);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,5,HTTP_MODE_TEMP_RHU);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,6,HTTP_MODE_TEMP_RHU);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,7,HTTP_MODE_INPUT);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,8,HTTP_MODE_INPUT);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,9,HTTP_MODE_EOL);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,10,HTTP_MODE_EOL);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,11,HTTP_MODE_DISABLED);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,12,HTTP_MODE_DISABLED);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,13,HTTP_MODE_DISABLED);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,14,HTTP_MODE_TEMP);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,15,HTTP_MODE_ADC);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,16,HTTP_MODE_ADC);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,17,HTTP_MODE_COUNTER);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,18,HTTP_MODE_COUNTER);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,19,HTTP_MODE_TEMP);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,20,HTTP_MODE_TEMP_RHU);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,21,HTTP_MODE_RELAY);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,22,HTTP_MODE_RELAY);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,23,HTTP_MODE_TIMER);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,24,HTTP_MODE_TIMER);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,25,HTTP_MODE_THERMOSTAT);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,26,HTTP_MODE_THERMOSTAT);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,27,HTTP_MODE_IR);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,28,HTTP_MODE_RELAY);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,29,HTTP_MODE_TIMER);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,30,HTTP_MODE_THERMOSTAT);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,31,HTTP_MODE_DISABLED);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,32,HTTP_MODE_DISABLED);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,33,HTTP_MODE_RELAY);
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,1,HTTP_SettingsPortMode(1));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,2,HTTP_SettingsPortMode(2));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,3,HTTP_SettingsPortMode(3));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,4,HTTP_SettingsPortMode(4));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,5,HTTP_SettingsPortMode(5));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,6,HTTP_SettingsPortMode(6));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,7,HTTP_SettingsPortMode(7));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,8,HTTP_SettingsPortMode(8));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,9,HTTP_SettingsPortMode(9));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,10,HTTP_SettingsPortMode(10));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,11,HTTP_SettingsPortMode(11));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,12,HTTP_SettingsPortMode(12));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,13,HTTP_SettingsPortMode(13));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,14,HTTP_SettingsPortMode(14));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,15,HTTP_SettingsPortMode(15));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,16,HTTP_SettingsPortMode(16));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,17,HTTP_SettingsPortMode(17));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,18,HTTP_SettingsPortMode(18));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,19,HTTP_SettingsPortMode(19));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,20,HTTP_SettingsPortMode(20));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,21,HTTP_SettingsPortMode(21));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,22,HTTP_SettingsPortMode(22));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,23,HTTP_SettingsPortMode(23));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,24,HTTP_SettingsPortMode(24));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,25,HTTP_SettingsPortMode(25));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,26,HTTP_SettingsPortMode(26));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,27,HTTP_SettingsPortMode(27));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,28,HTTP_SettingsPortMode(28));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,29,HTTP_SettingsPortMode(29));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,30,HTTP_SettingsPortMode(30));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,31,HTTP_SettingsPortMode(31));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,32,HTTP_SettingsPortMode(32));
+		ptr=HTTP_TEMPLATE_2_Mode(ptr,33,HTTP_SettingsPortMode(33));
 		ptr=HTTP_TEMPLATE_2_ModesEnd(ptr);
 		ptr=HTTP_TEMPLATE_2_PanelBegin(ptr);
 		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,1,1,"<font color='#000'>   --.- °C</font>",NULL,0);
@@ -953,21 +966,123 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		httpPar.web[channel][nrPartWWW]=(char*)HttpStructMainReadPanel2;
 		httpPar.siz[channel][nrPartWWW++]=mini_strlen(HttpStructMainReadPanel2);
 		break;
-	case WWW_FAVICON:
-		httpPar.web[channel][nrPartWWW] = NULL;							httpPar.siz[channel][nrPartWWW++] = 0;
+	case WWW_SENSOR_SETTING:
+		httpPar.web[channel][nrPartWWW]=httpSensorBuff[channel];
+		httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_SensorPageRender(
+			httpSensorBuff[channel],sizeof(httpSensorBuff[channel]),httpSensorPort[channel],
+			HTTP_SettingsPortMode(httpSensorPort[channel])==HTTP_MODE_TEMP_RHU,
+			httpSensorNotice[channel]);
+		if(httpPar.siz[channel][0]==0){
+			httpResponseStatus[channel]=500;
+			httpPar.web[channel][0]="<html><body>Nie mozna utworzyc strony.</body></html>";
+			httpPar.siz[channel][0]=mini_strlen(httpPar.web[channel][0]);
+		}
 		break;
+	case WWW_HTTP_ERROR:
+		httpPar.web[channel][nrPartWWW]="<!doctype html><html><body><p>Niepoprawny lub nieobslugiwany adres.</p><a href='/set'>Ustawienia</a></body></html>";
+		httpPar.siz[channel][nrPartWWW++]=mini_strlen(httpPar.web[channel][0]);
+		break;
+	case WWW_FAVICON:
 	default:
 		break;
 	}
-	httpPar.web[channel][nrPartWWW] = NULL;		httpPar.siz[channel][nrPartWWW] = 0;	 httpPar.nrWeb[channel]=0;
+	/* HTTP/1.x clients require a status line, content type and a body boundary. */
+	{
+		u32 bodySize=0;
+		for(int i=0;i<nrPartWWW;i++) bodySize+=httpPar.siz[channel][i];
+		const char* reason=httpResponseStatus[channel]==200?"OK":
+			httpResponseStatus[channel]==400?"Bad Request":
+			httpResponseStatus[channel]==404?"Not Found":
+			httpResponseStatus[channel]==503?"Service Unavailable":"Internal Server Error";
+		const char* contentType=nrWWW==WWW_DATA_REFRESH?"text/plain; charset=UTF-8":
+			nrWWW==WWW_FAVICON?"image/x-icon":"text/html; charset=UTF-8";
+		int headerSize=snprintf(httpResponseHeader[channel],sizeof(httpResponseHeader[channel]),
+			"HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %lu\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n",
+			httpResponseStatus[channel],reason,contentType,(unsigned long)bodySize);
+		for(int i=nrPartWWW;i>0;i--){
+			httpPar.web[channel][i]=httpPar.web[channel][i-1];
+			httpPar.siz[channel][i]=httpPar.siz[channel][i-1];
+		}
+		httpPar.web[channel][0]=httpResponseHeader[channel];
+		httpPar.siz[channel][0]=(u32)headerSize;
+		nrPartWWW++;
+	}
+	httpPar.web[channel][nrPartWWW]=NULL; httpPar.siz[channel][nrPartWWW]=0;
+	httpPar.nrWeb[channel]=0;
 	return httpPar.web[channel][0];
 }
 
-static int SetRqstToSendChnl(int channel, int nrWWW){
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){	if(httpPar.que[i]==channel){ DbgDma(DBG,_SE_"\r\nQue: its ALREADY "_E_); 					   					   				 return -1;  }  }
-	for(int i=0;i<ESP_MAX_HTTP_CONN;++i){   if(httpPar.que[i]==0xFF)   { httpPar.que[i]=channel;  httpPar.ptr[i]=HTTP_SetWeb(i,nrWWW);  httpPar.nr[i]=0;  httpPar.len[i]=0;  return i;   }  }
-	DbgDma(DBG,_SE_"\r\nQue: FULL "_E_);
-	return -2;
+static int HTTP_QueueResponse(unsigned channel, int page, unsigned port,
+                              const char* notice, int status)
+{
+	for(int i=0;i<ESP_MAX_HTTP_CONN;i++) if(httpPar.que[i]==channel) return -1;
+	for(int i=0;i<ESP_MAX_HTTP_CONN;i++) if(httpPar.que[i]==0xFF){
+		httpPar.que[i]=(u8)channel;
+		httpSensorPort[i]=port;
+		httpSensorNotice[i]=notice;
+		httpResponseStatus[i]=status;
+		httpPar.ptr[i]=HTTP_SetWeb(i,page);
+		httpPar.nr[i]=0; httpPar.len[i]=0;
+		return i;
+	}
+	return -1;
+}
+
+static int HTTP_TargetEquals(const char* target, size_t length, const char* expected)
+{
+	return strlen(expected)==length && memcmp(target,expected,length)==0;
+}
+
+static void HTTP_HandleTarget(unsigned channel, const char* target, size_t length, void* context)
+{
+	int page=WWW_HTTP_ERROR, status=404;
+	unsigned port=0;
+	const char* notice=NULL;
+	(void)context;
+	if(channel>=ESP_MAX_HTTP_CONN) return;
+	/* Do not execute a write if its response cannot be queued. */
+	int freeSlot=0;
+	for(int i=0;i<ESP_MAX_HTTP_CONN;i++){
+		if(httpPar.que[i]==channel) return;
+		if(httpPar.que[i]==0xFF) freeSlot=1;
+	}
+	if(!freeSlot) return;
+	if(!target){ status=400; }
+	else if(HTTP_TargetEquals(target,length,"/") || HTTP_TargetEquals(target,length,"/main")){
+		page=WWW_MAIN_READ; status=200;
+	}else if(HTTP_TargetEquals(target,length,"/set") || HTTP_TargetEquals(target,length,"/Set") || HTTP_TargetEquals(target,length,"/3main")){
+		page=WWW_MAIN_SETTING; status=200;
+	}else if(length==8 && memcmp(target,"/temp",5)==0 &&
+		target[5]>='0' && target[5]<='9' && target[6]>='0' && target[6]<='9' && target[7]>='0' && target[7]<='9'){
+		port=(unsigned)(target[5]-'0')*100+(unsigned)(target[6]-'0')*10+(unsigned)(target[7]-'0');
+		if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT && port!=15 && port!=16){page=WWW_SENSOR_SETTING; status=200;}
+	}else if(length>=14 && memcmp(target,"/lpc.cgi/A117?",14)==0){
+		int result=HTTP_SensorSettingsApplyTarget(target,length,&port);
+		if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT){
+			page=WWW_SENSOR_SETTING;
+			status=result==HTTP_SENSOR_SETTINGS_SAVED?200:result==HTTP_SENSOR_SETTINGS_STORAGE_ERROR?503:400;
+			notice=result==HTTP_SENSOR_SETTINGS_SAVED?"Zapisano ustawienia.":
+				result==HTTP_SENSOR_SETTINGS_STORAGE_ERROR?"Nie zapisano ustawien. Sprawdz karte SD.":
+				"Nie zapisano: sprawdz progi, histereze i czas zwloki.";
+		}else status=400;
+	}else if(HTTP_TargetEquals(target,length,"/TME.txt")){
+		page=WWW_DATA_REFRESH; status=200;
+	}else if(HTTP_TargetEquals(target,length,"/favicon.ico") || (length>=8 && memcmp(target,"/mobile/",8)==0)){
+		page=WWW_FAVICON; status=200;
+	}
+	if(HTTP_QueueResponse(channel,page,port,notice,status)>=0) InitReloadHttpTime();
+}
+
+static void HTTP_FeedReceiveRing(void)
+{
+	/* Feed the producer snapshot once. Incomplete +IPD and GET lines survive
+	 * subsequent DMA notifications and may wrap at the end of RecvBuffer. */
+	int position=read_pos;
+	const int end=recvByteFromEsp_copy;
+	while(position!=end){
+		HTTP_RequestStreamFeed(&httpRequestStream,(const uint8_t*)&RecvBuffer[position],1);
+		IncPos(&position);
+	}
 }
 
 int CheckReadyToSendChnl(u8 chnlPrev){
@@ -1076,6 +1191,8 @@ void vtaskWifi(void *argument)
 	DefaultSettingsEmail();
 	DefaultSettingsDNS();
 	DefaultSettingsSNTP();
+	HTTP_SensorStorageInit();
+	HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
 	InitStructRqstToSendChnl();
 	RcvTimeoutTimerInit();
 
@@ -1509,60 +1626,9 @@ void vtaskWifi(void *argument)
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
 
-					if (RecvFromEsp("+IPD,")||RecvFromEsp(",CONNECT"))
-					{
-						 DispRecvBuff(++nrHTTPpacket,arch);		/* Show only GET Http */
-						if (RecvFromEsp("+IPD,"))
-						{
-							char answ[20]={0};
-							pHttp = NULL;
-							LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN)
-							{
-								mini_snprintf(answ,sizeof(answ)-1,"+IPD,%d",nrChnl);
+					HTTP_FeedReceiveRing();
+					HTTP_SendCloseChnl(typeSendArch,-1);
 
-								if ((pHttp2=strstr_(pHttp,answ)))
-								{
-									if (strstr_(pHttp2,":GET / "))
-									{
-										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,WWW_MAIN_READ);
-										HTTP_ShowInitChannel(channel,size,arch);
-										InitReloadHttpTime();
-									}
-									else if (strstr_(pHttp2,":GET /Set"))
-									{
-										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,WWW_MAIN_SETTING);
-										HTTP_ShowInitChannel(channel,size,arch);
-										InitReloadHttpTime();
-									}
-									else if (strstr_(pHttp2,":GET /favicon.ico")||strstr_(pHttp2,":GET /mobile"))
-									{
-										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,WWW_FAVICON);
-										HTTP_ShowInitChannel(channel,size,arch);
-										InitReloadHttpTime();
-
-										/*	HTTP/1.1 200 OK\r\n
-											Content-Type: image/x-icon\r\n
-											Cache-Control: public, max-age=31536000, immutable\r\n
-											Content-Length: 0\r\n
-											Connection: keep-alive\r\n
-											\r\n
-										*/
-									}
-									else if (strstr_(pHttp2,":GET /TME.txt"))
-									{
-										GetHTTPpacketParam(pHttp2,&channel,&size);
-										SetRqstToSendChnl(channel,WWW_DATA_REFRESH);
-										HTTP_ShowInitChannel(channel,size,arch);
-									}
-								}
-							}
-						}
-						HTTP_SendCloseChnl(typeSendArch,-1);
-
-					}
 					if ((pHttp=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
 						int nr = SearchChnl(httpPar.chnl);

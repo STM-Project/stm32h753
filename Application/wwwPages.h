@@ -105,6 +105,7 @@ char* HTTP_TEMPLATE_2_ModesEnd(char* buff);
 char* HTTP_TEMPLATE_2_PanelBegin(char* buff);
 char* HTTP_TEMPLATE_2_PanelEnd(char* buff);
 char* HTTP_TEMPLATE_2_Name(char* buff, u8 nr, const char* name);
+unsigned HTTP_SettingsPortMode(unsigned port);
 char* HTTP_TEMPLATE_2_Mode(char* buff, u8 nr, u8 mode);
 char* HTTP_TEMPLATE_2_Hidden(char* buff, u8 nr);
 
