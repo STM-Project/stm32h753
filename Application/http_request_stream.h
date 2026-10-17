@@ -1,4 +1,4 @@
-/* Incremental ESP-AT +IPD framing and HTTP request-line decoder.
+/* Incremental ESP-AT +IPD framing and HTTP GET/POST decoder.
  * This module has no STM32, RTOS, allocation, or socket dependencies.
  */
 #ifndef HTTP_REQUEST_STREAM_H_
@@ -27,7 +27,10 @@
 extern "C" {
 #endif
 
-/* Exactly one event is delivered per channel until ResetChannel is called.
+/* POST /lpc.cgi/A117 accepts application/x-www-form-urlencoded with an
+ * explicit Content-Length. Once the full body arrives it is normalized to
+ * /lpc.cgi/A117?<body> for the existing settings decoder (not a wire GET).
+ * Exactly one event is delivered per channel until ResetChannel is called.
  * A NULL target and zero length report a malformed or oversized request.
  * Otherwise target is NUL terminated, and length excludes the terminator.
  * The target belongs to stream and must be copied during the callback if it
@@ -41,6 +44,9 @@ typedef void (*HTTP_RequestStreamCallback)(unsigned channel,
 typedef struct {
     char line[HTTP_REQUEST_STREAM_LINE_CAPACITY];
     size_t length;
+    char header[1024];
+    size_t header_length, header_bytes, content_length, body_received;
+    uint8_t phase, has_length, has_type;
     uint8_t finished;
     uint8_t saw_cr;
 } HTTP_RequestStreamChannel;

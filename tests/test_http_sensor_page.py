@@ -184,7 +184,7 @@ def main():
                 assert controls.classes["corner-radius2"] == cards + 1
                 assert controls.classes["corner-radius"] == cards + 1
                 assert controls.forms == [{
-                    "method": "get", "action": "/lpc.cgi/A117", "data-ajax": "false",
+                    "method": "post", "action": "/lpc.cgi/A117", "data-ajax": "false",
                 }]
                 assert len([b for b in controls.buttons if b.get("name") == "n_109_zapisz"]) == 1
                 assert "/set" in controls.links

@@ -119,7 +119,9 @@ const nodes={}; for(const id of IDS) nodes[id]={style:{},innerHTML:''};
 const forms={}; for(const name in selected){
  const nr=name.slice(-3); forms['wybor'+nr]={[name]:{value:selected[name]}};
 }
-const context={document:{forms,getElementById:id=>nodes[id]},window:{location:{}},setInterval:()=>1,pageScroll:()=>{}};
+let submitted;
+const document={forms,getElementById:id=>nodes[id],querySelectorAll:()=>Object.values(forms).map(f=>Object.entries(f)[0]).map(([name,input])=>({name,value:input.value})),createElement:()=>({children:[],appendChild(i){this.children.push(i);},submit(){submitted=this;}}),body:{appendChild(){}}};
+const context={document,window:{location:{}},setInterval:()=>1,pageScroll:()=>{}};
 vm.createContext(context); vm.runInContext(SCRIPTS,context);
 context.window.onload();
 for(const name in selected) assert.equal(nodes[selected[name]].style.display,'block');
@@ -128,9 +130,11 @@ forms.wybor005.n_GPIO_val_005.onchange.call(forms.wybor005.n_GPIO_val_005);
 assert.equal(nodes['09p005'].style.display,'none');
 assert.equal(nodes['02p005'].style.display,'block');
 context.zaladuj();
-assert(context.window.location.href.startsWith('/lpc.cgi/A117?h7_page=%2Fset&h7_form=1&'));
-assert(context.window.location.href.includes('n_GPIO_val_005=02'));
-assert.equal((context.window.location.href.match(/n_GPIO_val_/g)||[]).length,33);
+assert.equal(submitted.method,'post');assert.equal(submitted.action,'/lpc.cgi/A117');
+const data=Object.fromEntries(submitted.children.map(i=>[i.name,i.value]));
+assert.equal(data.h7_page,'/set');assert.equal(data.h7_form,'1');
+assert.equal(data.n_GPIO_val_005,'02');
+assert.equal(Object.keys(data).filter(k=>k.startsWith('n_GPIO_val_')).length,33);
 console.log('PASS: settings JavaScript initializes 33 ports, switches modes and saves all 33 CGI values.');
 """.replace('SELECTED',json.dumps(selected)).replace('IDS',json.dumps(list(controls.ids))).replace('SCRIPTS',json.dumps('\n'.join(scripts)))
             js=tmp/'behavior.js'; js.write_text(js_test)

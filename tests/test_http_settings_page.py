@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the imported Sandwitch pages as browser forms and real GET requests.
+"""Exercise the imported Sandwitch pages as browser POST forms and decoded parameters.
 
 Run: python3 tests/test_http_settings_page.py
 The host harness uses the production catalog/model/renderer, real shared CSS,
@@ -38,7 +38,7 @@ class Page(C.Structure):
 
 
 class Form(HTMLParser):
-    """Apply successful-control rules used by a normal browser GET form."""
+    """Apply successful-control rules used by a normal browser POST form."""
     def __init__(self):
         super().__init__()
         self.forms = []
@@ -154,13 +154,13 @@ int main(int argc, char **argv)
         assert(HTTP_SettingsModelInit(NULL, save, NULL) == 0);
         int result = HTTP_SettingsApplyTarget(target, length, &page, &instance);
         if (result != HTTP_SETTINGS_SAVED)
-            fprintf(stderr, "GET roundtrip failed: %s (%d)\n", page ? page->route : "unknown", result);
+            fprintf(stderr, "form roundtrip failed: %s (%d)\n", page ? page->route : "unknown", result);
         assert(result == HTTP_SETTINGS_SAVED);
         assert(HTTP_SettingsPageRender(body, 131072, page, instance, NULL) > 0);
         ++tested;
     }
     assert(fclose(requests) == 0);
-    printf("PASS: ASan/UBSan boundaries on every page; %zu browser GET roundtrips; largest page %zu bytes.\n", tested, longest);
+    printf("PASS: ASan/UBSan boundaries on every page; %zu browser form roundtrips; largest page %zu bytes.\n", tested, longest);
     free(target); free(guard); free(body);
     return 0;
 }
@@ -237,7 +237,7 @@ def main():
                 if not schema.field_count:
                     assert not form.forms and not form.submit and not form.fields, route
                     continue
-                assert form.forms == [{"method": "get", "action": "/lpc.cgi/A117", "data-ajax": "false"}], route
+                assert form.forms == [{"method": "post", "action": "/lpc.cgi/A117", "data-ajax": "false"}], route
                 assert len(form.submit) == 1, (route, form.submit)
                 fields = {}
                 for field_index in range(schema.field_count):
@@ -267,7 +267,7 @@ def main():
                 assert len(target) <= 65535
                 requests.append(target)
                 result = library.HTTP_SettingsApplyTarget(target.encode(), len(target), None, None)
-                assert result == 1, (route, instance, "browser default GET was rejected", result)
+                assert result == 1, (route, instance, "browser default form was rejected", result)
                 boxes = [name for name, field in fields.items() if field.kind == CHECKBOX]
                 if boxes:
                     # Use actual rendered values, including the browser's "on"

@@ -316,8 +316,64 @@ static void ordered_connect_and_closed(void)
     valid(1u, 0u, "/connected");
 }
 
+
+static void post_requests(void)
+{
+    const char request[]="POST /lpc.cgi/A117 HTTP/1.1\r\nHost: stm32\r\ncOnTeNt-TyPe: application/x-www-form-urlencoded; charset=UTF-8\r\nContent-Length: 13\r\n\r\nx=1&text=%2B2";
+    const size_t size=sizeof(request)-1;
+    for(size_t split=0;split<=size;++split){
+        init(); frame(0,request,split);
+        if(split<size) assert(event_count==0);
+        frame(0,request+split,size-split);
+        assert(event_count==1); valid(0,0,"/lpc.cgi/A117?x=1&text=%2B2");
+    }
+    init();
+    frame_text(0,"POST /lpc.cgi/A117 HTTP/1.1\r\nContent-Length: 3\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\na=");
+    assert(event_count==0);
+    frame_text(1,"GET /set HTTP/1.1\r\n"); valid(0,1,"/set");
+    frame_text(0,"1"); valid(1,0,"/lpc.cgi/A117?a=1");
+
+    /* The aggregate normalized target must fit exactly, including CGI prefix. */
+    {
+        static char body[HTTP_REQUEST_STREAM_MAX_TARGET];
+        char headers[256];
+        const size_t count=HTTP_REQUEST_STREAM_MAX_TARGET-14u;
+        memset(body,'a',count);
+        int length=snprintf(headers,sizeof headers,"POST /lpc.cgi/A117 HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %zu\r\n\r\n",count);
+        assert(length>0 && (size_t)length<sizeof headers);
+        init(); frame_text(0,headers);
+        for(size_t offset=0;offset<count;){
+            size_t part=count-offset;if(part>100u)part=100u;
+            frame(0,body+offset,part);offset+=part;
+            if(offset<count)assert(event_count==0);
+        }
+        assert(event_count==1 && !events[0].error && events[0].length==HTTP_REQUEST_STREAM_MAX_TARGET);
+        snprintf(headers,sizeof headers,"POST /lpc.cgi/A117 HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %zu\r\n\r\n",count+1u);
+        init();frame_text(0,headers);assert(event_count==1);bad(0,0);
+    }
+    const char *invalid[]={
+        "Content-Type: application/x-www-form-urlencoded\r\n\r\n",
+        "Content-Length: 0\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n",
+        "Content-Length: -1\r\n\r\n",
+        "Content-Length: 99999999999999999999999999\r\n\r\n",
+        "Content-Length: 3\r\nContent-Length: 3\r\n\r\n",
+        "Content-Length: 3\r\nContent-Type: text/plain\r\n\r\n",
+        "Content-Length: 3\r\n\r\n",
+        "Transfer-Encoding: chunked\r\n\r\n",
+        "Content-Length: 3\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\na\n1",
+    };
+    for(size_t i=0;i<sizeof(invalid)/sizeof(invalid[0]);++i){
+        init();frame_text(0,"POST /lpc.cgi/A117 HTTP/1.1\r\n");
+        assert(event_count==0);frame_text(0,invalid[i]);assert(event_count==1);bad(0,0);
+    }
+    init();frame_text(0,"POST /lpc.cgi/A117 HTTP/1.1\r\nContent-Length: 3\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\na=");
+    text("\r\n0,CLOSED\r\n0,CONNECT\r\n");
+    frame_text(0,"GET /set HTTP/1.1\r\n");assert(event_count==1);valid(0,0,"/set");
+}
+
 int main(void)
 {
+    post_requests();
     split_everywhere();
     fragments_and_channels();
     do_not_parse_payload_as_at();

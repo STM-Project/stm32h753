@@ -61,7 +61,8 @@ const char *HTTP_SettingsGetSaved(const HTTP_SettingPage *page, uint16_t instanc
  * Other fields and distinct instances, including logic banks, stay separate.
  */
 
-/* Parse a GET request target containing h7_page=<expanded route>, h7_form=<id>
+/* Parse a normalized settings target (POST body joined to the CGI path by
+ * http_request_stream, or a legacy GET target) containing h7_page=<expanded route>, h7_form=<id>
  * and a recognized submit button. Decode %xx/+, reject unknown/duplicate fields,
  * validate the full form, and clear absent checkboxes only in that form.
  * An empty secret retains the prior value; nonempty secrets replace it.

@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "http_settings_catalog.h"
 
-/* Complete Sandwitch settings page, one persistent GET form per settings route.
+/* Complete Sandwitch settings page, one persistent POST form per settings route.
  * Informational/action-only pages have no save control; /set is rendered by the
  * existing per-port HTTP_TEMPLATE_2_* functions and is deliberately rejected.
  * Values and notices are escaped, passwords stay empty to preserve saved values;

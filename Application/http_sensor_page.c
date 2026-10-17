@@ -140,7 +140,7 @@ size_t HTTP_SensorPageRender(char *out, size_t capacity, unsigned port,
         PageAppend(&writer, "</p>\r\n");
     }
     PageAppend(&writer,
-        "<form method=\"get\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">\r\n");
+        "<form method=\"post\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">\r\n");
     PageCard(&writer, port, 0);
     if (humidity_enabled)
         PageCard(&writer, port, 1);

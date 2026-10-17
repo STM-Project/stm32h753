@@ -147,8 +147,10 @@ static void form(char *target, unsigned port, int humidity) {
 static void feed_request(HTTP_RequestStream *stream, unsigned channel,
                          const char *target, unsigned chunk) {
     char request[4096], frame[4200];
-    int size = snprintf(request, sizeof request,
-        "GET %s HTTP/1.1\r\nHost: stm32\r\n\r\n", target);
+    int size;
+    if (strncmp(target,"/lpc.cgi/A117?",14)==0)
+        size=snprintf(request,sizeof request,"POST /lpc.cgi/A117 HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %zu\r\n\r\n%s",strlen(target+14),target+14);
+    else size=snprintf(request,sizeof request,"GET %s HTTP/1.1\r\nHost: stm32\r\n\r\n",target);
     assert(size > 0 && (size_t)size < sizeof request);
     size = snprintf(frame, sizeof frame, "+IPD,%u,%d:%s", channel, size, request);
     assert(size > 0 && (size_t)size < sizeof frame);

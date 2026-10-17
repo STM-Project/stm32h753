@@ -105,9 +105,12 @@ static void http_stream_complete_line(HTTP_RequestStream *stream,
     size_t suffix;
     size_t target_length;
     size_t index;
+    size_t start = 4u;
+    int post = channel->length >= 5u && memcmp(channel->line, "POST ", 5u) == 0;
+    if (post) start = 5u;
 
     /* "GET / HTTP/1.1" is the shortest supported request line. */
-    if (channel->length < 14u || memcmp(channel->line, "GET ", 4u) != 0) {
+    if (channel->length < 14u || (memcmp(channel->line, "GET ", 4u) != 0 && !post)) {
         http_stream_bad_request(stream);
         return;
     }
@@ -119,14 +122,14 @@ static void http_stream_complete_line(HTTP_RequestStream *stream,
         return;
     }
 
-    target_length = suffix - 4u;
+    target_length = suffix - start;
     if (target_length == 0u || target_length > HTTP_REQUEST_STREAM_MAX_TARGET ||
-        channel->line[4] != '/') {
+        channel->line[start] != '/') {
         http_stream_bad_request(stream);
         return;
     }
 
-    for (index = 4u; index < suffix; ++index) {
+    for (index = start; index < suffix; ++index) {
         unsigned char byte = (unsigned char)channel->line[index];
         /* Origin-form has no whitespace or fragment; encode non-ASCII data
          * as percent escapes before sending it in an HTTP request target.
@@ -137,12 +140,81 @@ static void http_stream_complete_line(HTTP_RequestStream *stream,
         }
     }
 
+    if (post) {
+        if (target_length != 13u || memcmp(channel->line + start, "/lpc.cgi/A117", 13u) != 0) {
+            http_stream_bad_request(stream);
+            return;
+        }
+        memmove(channel->line, channel->line + start, target_length);
+        channel->line[target_length] = '?';
+        channel->length = target_length + 1u;
+        channel->phase = 1u;
+        channel->saw_cr = 0u;
+        return;
+    }
     channel->line[suffix] = '\0';
     channel->finished = 1u;
     if (stream->callback != NULL) {
         stream->callback((unsigned)stream->frame_channel,
                          channel->line + 4u, target_length, stream->context);
     }
+}
+
+static int http_header_name(const char *text, size_t length, const char *name)
+{
+    size_t i;
+    if (strlen(name) != length) return 0;
+    for (i=0; i<length; ++i) {
+        unsigned char c=(unsigned char)text[i];
+        if (c>='A' && c<='Z') c=(unsigned char)(c+'a'-'A');
+        if (c!=(unsigned char)name[i]) return 0;
+    }
+    return 1;
+}
+
+static void http_post_header(HTTP_RequestStream *stream, HTTP_RequestStreamChannel *c)
+{
+    char *colon, *value, *end;
+    size_t n=0u;
+    c->header[c->header_length]='\0';
+    if (!c->header_length) {
+        if (!c->has_length || !c->has_type || !c->content_length ||
+            c->length > HTTP_REQUEST_STREAM_MAX_TARGET ||
+            c->content_length > HTTP_REQUEST_STREAM_MAX_TARGET-c->length) {
+            http_stream_bad_request(stream); return;
+        }
+        c->phase=2u;
+        return;
+    }
+    colon=strchr(c->header, ':');
+    if (!colon || colon==c->header || c->header[0]==' ' || c->header[0]=='\t') {
+        http_stream_bad_request(stream); return;
+    }
+    value=colon+1;
+    while (*value==' ' || *value=='\t') ++value;
+    end=value+strlen(value);
+    while (end>value && (end[-1]==' ' || end[-1]=='\t')) --end;
+    *end='\0';
+    if (http_header_name(c->header,(size_t)(colon-c->header),"content-length")) {
+        if(c->has_length || value==end) {http_stream_bad_request(stream); return;}
+        for (; value<end; ++value) {
+            if (*value<'0' || *value>'9' || n>(HTTP_REQUEST_STREAM_MAX_TARGET-(unsigned)(*value-'0'))/10u) {
+                http_stream_bad_request(stream); return;
+            }
+            n=n*10u+(unsigned)(*value-'0');
+        }
+        c->has_length=1u; c->content_length=n;
+    } else if (http_header_name(c->header,(size_t)(colon-c->header),"content-type")) {
+        char *semi=strchr(value,';');
+        if (semi) {end=semi; while(end>value && end[-1]==' ') --end;}
+        if(c->has_type || !http_header_name(value,(size_t)(end-value),"application/x-www-form-urlencoded")) {
+            http_stream_bad_request(stream); return;
+        }
+        c->has_type=1u;
+    } else if (http_header_name(c->header,(size_t)(colon-c->header),"transfer-encoding")) {
+        http_stream_bad_request(stream);
+    }
+    c->header_length=0u;
 }
 
 static void http_stream_payload(HTTP_RequestStream *stream, uint8_t byte)
@@ -156,6 +228,32 @@ static void http_stream_payload(HTTP_RequestStream *stream, uint8_t byte)
 
     channel = &stream->channels[stream->frame_channel];
     if (channel->finished) {
+        return;
+    }
+
+    if (channel->phase == 2u) {
+        if (byte <= 0x20u || byte >= 0x7fu || byte == '#') {
+            http_stream_bad_request(stream); return;
+        }
+        channel->line[channel->length++]=(char)byte;
+        if (++channel->body_received == channel->content_length) {
+            channel->line[channel->length]='\0';
+            channel->finished=1u;
+            if (stream->callback) stream->callback((unsigned)stream->frame_channel,
+                channel->line,channel->length,stream->context);
+        }
+        return;
+    }
+    if (channel->phase == 1u) {
+        if (++channel->header_bytes > 8192u) {http_stream_bad_request(stream);return;}
+        if (channel->saw_cr) {
+            channel->saw_cr=0u;
+            if (byte!='\n') {http_stream_bad_request(stream);return;}
+            http_post_header(stream,channel);
+        } else if (byte=='\r') channel->saw_cr=1u;
+        else if ((byte<0x20u && byte!='\t') || byte>=0x7fu ||
+                 channel->header_length>=sizeof(channel->header)-1u) http_stream_bad_request(stream);
+        else channel->header[channel->header_length++]=(char)byte;
         return;
     }
 

@@ -397,7 +397,7 @@ size_t HTTP_SettingsPageRender(char *out, size_t capacity,
         PageAppend(&writer, "</p>");
     }
     if (page->field_count != 0U) {
-        PageAppend(&writer, "<form method=\"get\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">"
+        PageAppend(&writer, "<form method=\"post\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">"
                "<input type=\"hidden\" name=\"h7_page\" value=\"");
         PageEscape(&writer, path);
         PageAppend(&writer, "\"><input type=\"hidden\" name=\"h7_form\" value=\"0\">");

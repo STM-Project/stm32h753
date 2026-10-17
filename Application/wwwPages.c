@@ -468,7 +468,7 @@ static char* HTTP_TEMPLATE_ModeSelect2(char* buff, u8 nr, u8 mode, const u8* mod
 	int supported=0;
 	for(i=0;i<count;i++) if(modes[i]==mode) supported=1;
 	if(!supported) mode=HTTP_MODE_DISABLED;
-	buff += mini_snprintf(buff,300,"<table><tr><td><form name=\"wybor%03d\" method=\"get\" action=\"lpc.cgi/A117\" data-ajax=\"false\">\r\n",nr);
+	buff += mini_snprintf(buff,300,"<table><tr><td><form name=\"wybor%03d\" method=\"post\" action=\"lpc.cgi/A117\" data-ajax=\"false\">\r\n",nr);
 	buff += mini_snprintf(buff,200,"<select name=\"n_GPIO_val_%03d\" data-http-mode=\"%03d\" style=\"width: 290px\">\r\n",nr,nr);
 	for(i=0;i<count;i++)
 		buff += mini_snprintf(buff,200,"<option value=\"%02dp%03d\"%s>%d &nbsp;%s</option>\r\n",modes[i],nr,modes[i]==mode ? " selected" : "",nr,labels[modes[i]]);
@@ -516,12 +516,8 @@ char* HTTP_TEMPLATE_ModeScript2(char* buff)
 		"for(var i=0;i<selects.length;i++){"
 		"HTTPModeApply2(selects[i]);"
 		"selects[i].addEventListener('change',function(){HTTPModeApply2(this);});}});\r\n");
-	buff += mini_snprintf(buff,600,
-		"function HTTPModeSave2(){"
-		"var selects=document.querySelectorAll('select[data-http-mode]');var args=[];"
-		"for(var i=0;i<selects.length;i++){"
-		"args.push(encodeURIComponent(selects[i].name)+'='+encodeURIComponent(selects[i].value.slice(0,2)));}"
-		"if(args.length) window.location.href='lpc.cgi/'+args.join('&')+'&n_109_zapisz=';}\r\n");
+	buff += mini_snprintf(buff,1000,
+		"function HTTPModeSave2(){var f=document.createElement('form');f.method='post';f.action='/lpc.cgi/A117';function add(n,v){var i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;f.appendChild(i);}add('h7_page','/set');add('h7_form','1');var a=document.querySelectorAll('select[data-http-mode]');for(var j=0;j<a.length;j++)add(a[j].name,a[j].value.slice(0,2));add('n_109_zapisz','');document.body.appendChild(f);f.submit();}\r\n");
 	buff += mini_snprintf(buff,50,"</script>\r\n");
 	return buff;
 }
@@ -1572,22 +1568,7 @@ document.forms['wybor033'].n_GPIO_val_033.onchange = Zmien033;\r\n\
  blok.style.display = \"block\";\r\n\
  active_id033 = this.value;\r\n\
  }\r\n\
-function zaladuj()\r\n\
-{\r\n\
-window.location.href=\"/lpc.cgi/A117?h7_page=%2Fset&h7_form=1&n_GPIO_val_005=\" + active_id005[0]+active_id005[1] +\r\n\
-\"&n_GPIO_val_006=\" + active_id006[0]+active_id006[1]+\r\n\
-\"&n_GPIO_val_007=\" + active_id007[0]+active_id007[1]+\r\n\
-\"&n_GPIO_val_008=\" + active_id008[0]+active_id008[1]+\r\n\
-\"&n_GPIO_val_009=\" + active_id009[0]+active_id009[1]+\r\n\
-\"&n_GPIO_val_010=\" + active_id010[0]+active_id010[1]+\r\n\
-\"&n_GPIO_val_028=\" + active_id028[0]+active_id028[1]+\r\n\
-\"&n_GPIO_val_021=\" + active_id021[0]+active_id021[1]+\r\n\
-\"&n_GPIO_val_022=\" + active_id022[0]+active_id022[1]+\r\n\
-\"&n_GPIO_val_023=\" + active_id023[0]+active_id023[1]+\r\n\
-\"&n_GPIO_val_024=\" + active_id024[0]+active_id024[1]+\r\n\
-\"&n_GPIO_val_033=\" + active_id033[0]+active_id033[1]+\r\n\
-\"&n_109_zapisz=\";\r\n\
- }\r\n\
+function zaladuj(){var f=document.createElement('form');f.method='post';f.action='/lpc.cgi/A117';function add(n,v){var i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;f.appendChild(i);}add('h7_page','/set');add('h7_form','1');var a=document.querySelectorAll('select[data-http-mode]');for(var j=0;j<a.length;j++)add(a[j].name,a[j].value.slice(0,2));add('n_109_zapisz','');document.body.appendChild(f);f.submit();}\r\n\
   </script>\r\n\
  \r\n\
  <script>\r\n\
@@ -1751,7 +1732,7 @@ static char* HTTP_TEMPLATE_2_Attribute(char* buff, const char* text)
 
 char* HTTP_TEMPLATE_2_NamesBegin(char* buff)
 {
-	buff=HTTP_TEMPLATE_2_Append(buff,"<style>.port-column{font-size:20px;line-height:normal;}.port-column>table{height:46px;width:100%;margin:0;border-spacing:2px;}.port-column>table:first-child{height:60px;}.port-column td{vertical-align:middle;}.port-column form{margin:0;}.port-readings>div[id]{height:46px;}.port-readings>div[id]>table{height:46px;margin:0;border-spacing:2px;}.port-readings table,.port-readings tbody{display:block;}.port-readings tr{display:flex;align-items:center;gap:10px;height:46px;box-sizing:border-box;padding-left:8px;}.port-readings td{display:flex;align-items:center;flex:0 0 auto;width:auto;padding:0;text-align:left;}.port-readings td:empty{display:none;}.port-readings>div[id] td:nth-child(2),.port-readings>table:first-child td:first-child{flex-basis:48px;width:48px;text-align:center;justify-content:center;}.port-readings>table:first-child tr{height:60px;}.port-readings>table:first-child td:nth-child(2){flex-basis:124px;justify-content:center;text-align:center;}.port-column>table.port-actions tr{display:flex;align-items:center;justify-content:center;height:46px;}.port-column>table.port-actions td{padding:0;}.port-column>table.port-actions td:empty{display:none;}.port-readings>div.port-unassigned[id] td:nth-child(2){flex-basis:auto;width:auto;margin-left:58px;justify-content:flex-start;white-space:nowrap;}.port-readings .shiny-button{box-sizing:border-box;min-width:34px;}.port-readings .m,.port-readings .c{box-sizing:border-box;min-width:124px;}.port-readings .v{height:auto;width:42px;line-height:normal;}.port-readings input[type=range]{width:110px;}</style><form method=\"get\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">\r\n \r\n <input type=\"hidden\" name=\"h7_page\" value=\"/set\"><input type=\"hidden\" name=\"h7_form\" value=\"0\"><div class=\"corner-radius4\" style=\"margin-left: 0px; width: 340px; height:   1670px;   \">\r\n <div class=\"corner-radius3 port-column port-names\" style=\"margin-left: 10px; width: 310px; height:  1640px;   \">\r\n <table><tr><td width=\"30px\"></td><td><font class=\"css-font-style\" style=\"font-family: Courier\"><b>Nazwa Portu Nr:</b></font></td></tr></table>\r\n");
+	buff=HTTP_TEMPLATE_2_Append(buff,"<style>.port-column{font-size:20px;line-height:normal;}.port-column>table{height:46px;width:100%;margin:0;border-spacing:2px;}.port-column>table:first-child{height:60px;}.port-column td{vertical-align:middle;}.port-column form{margin:0;}.port-readings>div[id]{height:46px;}.port-readings>div[id]>table{height:46px;margin:0;border-spacing:2px;}.port-readings table,.port-readings tbody{display:block;}.port-readings tr{display:flex;align-items:center;gap:10px;height:46px;box-sizing:border-box;padding-left:8px;}.port-readings td{display:flex;align-items:center;flex:0 0 auto;width:auto;padding:0;text-align:left;}.port-readings td:empty{display:none;}.port-readings>div[id] td:nth-child(2),.port-readings>table:first-child td:first-child{flex-basis:48px;width:48px;text-align:center;justify-content:center;}.port-readings>table:first-child tr{height:60px;}.port-readings>table:first-child td:nth-child(2){flex-basis:124px;justify-content:center;text-align:center;}.port-column>table.port-actions tr{display:flex;align-items:center;justify-content:center;height:46px;}.port-column>table.port-actions td{padding:0;}.port-column>table.port-actions td:empty{display:none;}.port-readings>div.port-unassigned[id] td:nth-child(2){flex-basis:auto;width:auto;margin-left:58px;justify-content:flex-start;white-space:nowrap;}.port-readings .shiny-button{box-sizing:border-box;min-width:34px;}.port-readings .m,.port-readings .c{box-sizing:border-box;min-width:124px;}.port-readings .v{height:auto;width:42px;line-height:normal;}.port-readings input[type=range]{width:110px;}</style><form method=\"post\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">\r\n \r\n <input type=\"hidden\" name=\"h7_page\" value=\"/set\"><input type=\"hidden\" name=\"h7_form\" value=\"0\"><div class=\"corner-radius4\" style=\"margin-left: 0px; width: 340px; height:   1670px;   \">\r\n <div class=\"corner-radius3 port-column port-names\" style=\"margin-left: 10px; width: 310px; height:  1640px;   \">\r\n <table><tr><td width=\"30px\"></td><td><font class=\"css-font-style\" style=\"font-family: Courier\"><b>Nazwa Portu Nr:</b></font></td></tr></table>\r\n");
 	return buff;
 }
 
@@ -2439,43 +2420,7 @@ const char HttpStructMainReadPanel2[]=
 " blok.style.display = \"block\";\r\n"
 " active_id033 = this.value;\r\n"
 " }\r\n"
-"function zaladuj()\r\n"
-"{\r\n"
-"window.location.href=\"/lpc.cgi/A117?h7_page=%2Fset&h7_form=1&n_GPIO_val_001=\" + active_id001[0]+active_id001[1] +\r\n"
-"\"&n_GPIO_val_002=\" + active_id002[0]+active_id002[1]+\r\n"
-"\"&n_GPIO_val_003=\" + active_id003[0]+active_id003[1]+\r\n"
-"\"&n_GPIO_val_004=\" + active_id004[0]+active_id004[1]+\r\n"
-"\"&n_GPIO_val_005=\" + active_id005[0]+active_id005[1]+\r\n"
-"\"&n_GPIO_val_006=\" + active_id006[0]+active_id006[1]+\r\n"
-"\"&n_GPIO_val_007=\" + active_id007[0]+active_id007[1]+\r\n"
-"\"&n_GPIO_val_008=\" + active_id008[0]+active_id008[1]+\r\n"
-"\"&n_GPIO_val_009=\" + active_id009[0]+active_id009[1]+\r\n"
-"\"&n_GPIO_val_010=\" + active_id010[0]+active_id010[1]+\r\n"
-"\"&n_GPIO_val_011=\" + active_id011[0]+active_id011[1]+\r\n"
-"\"&n_GPIO_val_012=\" + active_id012[0]+active_id012[1]+\r\n"
-"\"&n_GPIO_val_013=\" + active_id013[0]+active_id013[1]+\r\n"
-"\"&n_GPIO_val_014=\" + active_id014[0]+active_id014[1]+\r\n"
-"\"&n_GPIO_val_015=\" + active_id015[0]+active_id015[1]+\r\n"
-"\"&n_GPIO_val_016=\" + active_id016[0]+active_id016[1]+\r\n"
-"\"&n_GPIO_val_017=\" + active_id017[0]+active_id017[1]+\r\n"
-"\"&n_GPIO_val_018=\" + active_id018[0]+active_id018[1]+\r\n"
-"\"&n_GPIO_val_019=\" + active_id019[0]+active_id019[1]+\r\n"
-"\"&n_GPIO_val_020=\" + active_id020[0]+active_id020[1]+\r\n"
-"\"&n_GPIO_val_021=\" + active_id021[0]+active_id021[1]+\r\n"
-"\"&n_GPIO_val_022=\" + active_id022[0]+active_id022[1]+\r\n"
-"\"&n_GPIO_val_023=\" + active_id023[0]+active_id023[1]+\r\n"
-"\"&n_GPIO_val_024=\" + active_id024[0]+active_id024[1]+\r\n"
-"\"&n_GPIO_val_025=\" + active_id025[0]+active_id025[1]+\r\n"
-"\"&n_GPIO_val_026=\" + active_id026[0]+active_id026[1]+\r\n"
-"\"&n_GPIO_val_027=\" + active_id027[0]+active_id027[1]+\r\n"
-"\"&n_GPIO_val_028=\" + active_id028[0]+active_id028[1]+\r\n"
-"\"&n_GPIO_val_029=\" + active_id029[0]+active_id029[1]+\r\n"
-"\"&n_GPIO_val_030=\" + active_id030[0]+active_id030[1]+\r\n"
-"\"&n_GPIO_val_031=\" + active_id031[0]+active_id031[1]+\r\n"
-"\"&n_GPIO_val_032=\" + active_id032[0]+active_id032[1]+\r\n"
-"\"&n_GPIO_val_033=\" + active_id033[0]+active_id033[1]+\r\n"
-"\"&n_109_zapisz=\";\r\n"
-" }\r\n"
+"function zaladuj(){var f=document.createElement('form');f.method='post';f.action='/lpc.cgi/A117';function add(n,v){var i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;f.appendChild(i);}add('h7_page','/set');add('h7_form','1');var a=document.querySelectorAll('select[data-http-mode]');for(var j=0;j<a.length;j++)add(a[j].name,a[j].value.slice(0,2));add('n_109_zapisz','');document.body.appendChild(f);f.submit();}\r\n"
 "  </script>\r\n"
 " \r\n"
 " <script>\r\n"

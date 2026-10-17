@@ -84,10 +84,10 @@ static const HTTP_SettingPage *generic_form(const char *route, unsigned form_id,
     return page;
 }
 static void feed_large_request(HTTP_RequestStream *stream, unsigned channel) {
-    static char request_line[HTTP_SETTINGS_TARGET_MAX + 128u];
+    static char request_line[HTTP_SETTINGS_TARGET_MAX + 256u];
     char prefix[64];
     int length = snprintf(request_line, sizeof request_line,
-        "GET %s HTTP/1.1\r\nHost: stm32\r\n\r\n", generic_target);
+        "POST /lpc.cgi/A117 HTTP/1.1\r\nHost: stm32\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %zu\r\n\r\n%s", strlen(generic_target + 14), generic_target + 14);
     assert(length > 0 && (size_t)length < sizeof request_line);
     clear_queue(); HTTP_RequestStreamInit(stream, HTTP_HandleTarget, NULL);
     for (size_t used = 0; used < (size_t)length;) {
@@ -195,6 +195,7 @@ static void check_main_route(unsigned port, const char *id, int visible) {
     body(0, alias, sizeof alias); assert(!strcmp(html, alias));
 }
 static void check_main_settings_integration(void) {
+    static HTTP_RequestStream stream;
     static const struct { unsigned port; const char *mode, *id; int visible; } cases[] = {
         {5, "02", "tu_temp005a", 1}, {5, "09", "tu_temp005b", 1},
         {5, "04", "tu_we005", 1}, {5, "13", "tu_eol005", 1},
@@ -234,7 +235,7 @@ static void check_main_settings_integration(void) {
         main_mode_override[port] = cases[i].mode;
         generic_form("/set", 1, 0, 0);
         unsigned before = generic_saves;
-        request(0, generic_target); check_response(0, 200, "text/html; charset=UTF-8");
+        feed_large_request(&stream, 0); check_response(0, 200, "text/html; charset=UTF-8");
         assert(generic_saves == before + 1u);
         assert(HTTP_SettingsPortMode(port) == (unsigned)atoi(cases[i].mode));
         check_main_route(port, cases[i].id, cases[i].visible);
@@ -329,7 +330,7 @@ int main(void) {
     assert(generic_saves == 0);
 
     /* Names and modes use distinct forms and both survive model reload. */
-    request(0, generic_target); check_response(0, 200, "text/html; charset=UTF-8");
+    feed_large_request(&stream, 0); check_response(0, 200, "text/html; charset=UTF-8");
     assert(generic_saves == 1 && bindings_count == 1);
     body(0, html, sizeof html);
     assert(strstr(html, "Kuchnia &amp; &lt;ok&gt; Łódź"));
