@@ -59,7 +59,7 @@ def main():
     calls = esp[esp.index('case WWW_MAIN_SETTING:'):esp.index('case WWW_FAVICON:')]
     calls = '\n'.join(line for line in calls.splitlines() if 'ptr=HTTP_TEMPLATE_2_' in line)
     enums = '\n'.join(re.findall(r'typedef enum\{.*?\}\w+;',header,re.S))
-    preamble = '#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include <assert.h>\n#include <stdlib.h>\n#include "http_settings_model.h"\n#include "mini_printf.h"\ntypedef uint8_t u8;\n'
+    preamble = '#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include <assert.h>\n#include <stdlib.h>\n#include "http_settings_model.h"\n#include "relay_states.h"\n#include "mini_printf.h"\ntypedef uint8_t u8;\n'
     harness = preamble+enums+'\n'+helper+templates+'''
 int main(void) {
  static char buffer[100000]; char *ptr=buffer;
@@ -83,7 +83,7 @@ int main(void) {
         tmp = Path(tmp); test = tmp/'settings.c'; test.write_text(harness)
         include = '-I'+str(ROOT/'Application/General_Utilities')
         app_include = '-I'+str(ROOT/'Application')
-        modules = [str(ROOT/'Application/http_settings_catalog.c'),str(ROOT/'Application/http_settings_model.c')]
+        modules = [str(ROOT/'Application/http_settings_catalog.c'),str(ROOT/'Application/http_settings_model.c'),str(ROOT/'Application/relay_states.c')]
         subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',include,app_include,str(test),*modules,str(ROOT/'Application/General_Utilities/mini_printf.c'),'-o',str(tmp/'test')],check=True)
         body = subprocess.check_output([str(tmp/'test')]).decode()
         menu = literal(source,'HttpMainMenu')

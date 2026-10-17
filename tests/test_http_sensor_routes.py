@@ -36,6 +36,8 @@ PREAMBLE = r'''
 #include "http_sensor_settings.h"
 #include "http_settings_model.h"
 #include "http_settings_page.h"
+#include "http_output_control.h"
+#include "relay_states.h"
 typedef uint8_t u8;
 typedef uint32_t u32;
 #define SDRAM
@@ -62,8 +64,7 @@ char *Float2Str(float value, char fill, int digits, int sign, int decimals) {
 unsigned HTTP_SettingsPortMode(unsigned port);
 const char *HTTP_SettingsPortName(unsigned port, const char *fallback);
 char *HTTP_TEMPLATE_Hidden2(char *out, u8 type, u8 port);
-static char HttpRefr[]="refresh";
-static char HttpRefr_sdram[]="refresh";
+static char HttpRefr_sdram[2048]="refresh";
 '''
 
 TESTS = r'''
@@ -291,6 +292,8 @@ def compile_and_run(harness):
                         "-I" + str(ROOT / "Application"),
                         "-I" + str(ROOT / "Application/General_Utilities"),
                         str(test), str(ROOT / "Application/http_request_stream.c"),
+                        str(ROOT / "Application/http_output_control.c"),
+                        str(ROOT / "Application/relay_states.c"),
                         str(ROOT / "Application/http_sensor_page.c"),
                         str(ROOT / "Application/http_sensor_settings.c"),
                         str(ROOT / "Application/http_settings_catalog.c"),

@@ -7,6 +7,7 @@
 
 #include "wwwPages.h"
 #include "http_settings_model.h"
+#include "relay_states.h"
 #include "stm32h7xx_hal.h"
 #include <string.h>
 #include <stdlib.h>
@@ -301,10 +302,16 @@ size_t HTTP_MainReadPanelRender(char* out, size_t capacity)
 			HTTP_TEMPLATE_In(tile,type,port,"---",0xeee,name);
 			break;
 		case TEMPL_Pwm:
-			HTTP_TEMPLATE_Out(tile,type,port,0,name,name);
+			{
+				const RelayState* state=RELAY_GetState(port);
+				HTTP_TEMPLATE_Out(tile,type,port,state && state->pwm_valid?state->pwm_percent:0,name,name);
+			}
 			break;
 		default:
-			HTTP_TEMPLATE_Out(tile,type,port,0,"---",name);
+			{
+				int state=RELAY_GetDisplayState(port);
+				HTTP_TEMPLATE_Out(tile,type,port,0,state<0?"---":state?"Stan ON":"Stan OFF",name);
+			}
 			break;
 		}
 		if(!HTTP_MainAppend(out,capacity,&used,tile)) goto too_small;
@@ -911,68 +918,68 @@ const char HttpStructMainReadPanel[]="\r\n\
  var nr_pwm; var val_pwm; var i,j,wst;  var txt=[]; \r\n\
  wst=0; \r\n\
  var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},50);\r\n\
- function loadXMLDoc_PWM()\r\n\
- {var xmlhttp;       \r\n\
+ var pwmBusy=[],pwmPending=[];function loadXMLDoc_PWM()\r\n\
+ {var pwmChannel=nr_pwm,pwmValue=val_pwm;if(pwmBusy[pwmChannel]){pwmPending[pwmChannel]=pwmValue;return;}pwmBusy[pwmChannel]=true;var xmlhttp;       \r\n\
  if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
  else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");  \r\n\
- xmlhttp.open(\"GET\",\"/lpc.cgi/n_pwm\"+nr_pwm+\"=\"+val_pwm+\"&n_115_zapisz=\", true);\r\n\
+ xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){pwmBusy[pwmChannel]=false;if(pwmPending[pwmChannel]!==undefined){var latest=pwmPending[pwmChannel];delete pwmPending[pwmChannel];nr_pwm=pwmChannel;val_pwm=latest;loadXMLDoc_PWM();}}};xmlhttp.open(\"GET\",\"/lpc.cgi/n_pwm\"+pwmChannel+\"=\"+pwmValue+\"&n_115_zapisz=\", true);\r\n\
  xmlhttp.send();\r\n\
  }\r\n\
  function loadXMLDoc_PK()\r\n\
- { var xmlhttp;       \r\n\
+ { var xmlhttp; var controlPort=nr_pwm;       \r\n\
    if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
    else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");  \r\n\
    xmlhttp.onreadystatechange=function()\r\n\
    { if (xmlhttp.readyState==4 && xmlhttp.status==200){\r\n\
 	  txt= xmlhttp.responseText;\r\n\
 	  if(txt[0]=='<'){\r\n\
-if(nr_pwm==21) document.getElementById(\"tu_pk021\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==22) document.getElementById(\"tu_pk022\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==23) document.getElementById(\"tu_pk023\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==24) document.getElementById(\"tu_pk024\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==25) document.getElementById(\"tu_pk025\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==26) document.getElementById(\"tu_pk026\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==27) document.getElementById(\"tu_pk027\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==28) document.getElementById(\"tu_pk028\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==29) document.getElementById(\"tu_pk029\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==30) document.getElementById(\"tu_pk030\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==31) document.getElementById(\"tu_pk031\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==32) document.getElementById(\"tu_pk032\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==33) document.getElementById(\"tu_pk033\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==21) document.getElementById(\"tu_pk021\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==22) document.getElementById(\"tu_pk022\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==23) document.getElementById(\"tu_pk023\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==24) document.getElementById(\"tu_pk024\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==25) document.getElementById(\"tu_pk025\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==26) document.getElementById(\"tu_pk026\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==27) document.getElementById(\"tu_pk027\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==28) document.getElementById(\"tu_pk028\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==29) document.getElementById(\"tu_pk029\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==30) document.getElementById(\"tu_pk030\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==31) document.getElementById(\"tu_pk031\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==32) document.getElementById(\"tu_pk032\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==33) document.getElementById(\"tu_pk033\").innerHTML=xmlhttp.responseText;\r\n\
 }\r\n\
 }\r\n\
 }\r\n\
-if(nr_pwm==21) xmlhttp.open(\"GET\",\"/mobile/pk011\", true);\r\n\
-if(nr_pwm==22) xmlhttp.open(\"GET\",\"/mobile/pk012\", true);\r\n\
-if(nr_pwm==23) xmlhttp.open(\"GET\",\"/mobile/pk013\", true);\r\n\
-if(nr_pwm==24) xmlhttp.open(\"GET\",\"/mobile/pk007\", true);\r\n\
-if(nr_pwm==25) xmlhttp.open(\"GET\",\"/mobile/pk008\", true);\r\n\
-if(nr_pwm==26) xmlhttp.open(\"GET\",\"/mobile/pk009\", true);\r\n\
-if(nr_pwm==27) xmlhttp.open(\"GET\",\"/mobile/pk010\", true);\r\n\
-if(nr_pwm==28) xmlhttp.open(\"GET\",\"/mobile/pk001\", true);\r\n\
-if(nr_pwm==29) xmlhttp.open(\"GET\",\"/mobile/pk002\", true);\r\n\
-if(nr_pwm==30) xmlhttp.open(\"GET\",\"/mobile/pk003\", true);\r\n\
-if(nr_pwm==31) xmlhttp.open(\"GET\",\"/mobile/pk004\", true);\r\n\
-if(nr_pwm==32) xmlhttp.open(\"GET\",\"/mobile/pk005\", true);\r\n\
-if(nr_pwm==33) xmlhttp.open(\"GET\",\"/mobile/pk006\", true);\r\n\
+if(controlPort==21) xmlhttp.open(\"GET\",\"/mobile/pk011\", true);\r\n\
+if(controlPort==22) xmlhttp.open(\"GET\",\"/mobile/pk012\", true);\r\n\
+if(controlPort==23) xmlhttp.open(\"GET\",\"/mobile/pk013\", true);\r\n\
+if(controlPort==24) xmlhttp.open(\"GET\",\"/mobile/pk007\", true);\r\n\
+if(controlPort==25) xmlhttp.open(\"GET\",\"/mobile/pk008\", true);\r\n\
+if(controlPort==26) xmlhttp.open(\"GET\",\"/mobile/pk009\", true);\r\n\
+if(controlPort==27) xmlhttp.open(\"GET\",\"/mobile/pk010\", true);\r\n\
+if(controlPort==28) xmlhttp.open(\"GET\",\"/mobile/pk001\", true);\r\n\
+if(controlPort==29) xmlhttp.open(\"GET\",\"/mobile/pk002\", true);\r\n\
+if(controlPort==30) xmlhttp.open(\"GET\",\"/mobile/pk003\", true);\r\n\
+if(controlPort==31) xmlhttp.open(\"GET\",\"/mobile/pk004\", true);\r\n\
+if(controlPort==32) xmlhttp.open(\"GET\",\"/mobile/pk005\", true);\r\n\
+if(controlPort==33) xmlhttp.open(\"GET\",\"/mobile/pk006\", true);\r\n\
 xmlhttp.send();\r\n\
 }\r\n\
-function xpk021(){if(wst==0){wst=1;now=0;nr_pwm=21;loadXMLDoc_PK(); }}\r\n\
-function xpk022(){if(wst==0){wst=1;now=0;nr_pwm=22;loadXMLDoc_PK(); }}\r\n\
-function xpk023(){if(wst==0){wst=1;now=0;nr_pwm=23;loadXMLDoc_PK(); }}\r\n\
-function xpk024(){if(wst==0){wst=1;now=0;nr_pwm=24;loadXMLDoc_PK(); }}\r\n\
-function xpk025(){if(wst==0){wst=1;now=0;nr_pwm=25;loadXMLDoc_PK(); }}\r\n\
-function xpk026(){if(wst==0){wst=1;now=0;nr_pwm=26;loadXMLDoc_PK(); }}\r\n\
-function xpk027(){if(wst==0){wst=1;now=0;nr_pwm=27;loadXMLDoc_PK(); }}\r\n\
-function xpk028(){if(wst==0){wst=1;now=0;nr_pwm=28;loadXMLDoc_PK(); }}\r\n\
-function xpk029(){if(wst==0){wst=1;now=0;nr_pwm=29;loadXMLDoc_PK(); }}\r\n\
-function xpk030(){if(wst==0){wst=1;now=0;nr_pwm=30;loadXMLDoc_PK(); }}\r\n\
-function xpk031(){if(wst==0){wst=1;now=0;nr_pwm=31;loadXMLDoc_PK(); }}\r\n\
-function xpk032(){if(wst==0){wst=1;now=0;nr_pwm=32;loadXMLDoc_PK(); }}\r\n\
-function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
-function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
+function xpk021(){nr_pwm=21;loadXMLDoc_PK();}\r\n\
+function xpk022(){nr_pwm=22;loadXMLDoc_PK();}\r\n\
+function xpk023(){nr_pwm=23;loadXMLDoc_PK();}\r\n\
+function xpk024(){nr_pwm=24;loadXMLDoc_PK();}\r\n\
+function xpk025(){nr_pwm=25;loadXMLDoc_PK();}\r\n\
+function xpk026(){nr_pwm=26;loadXMLDoc_PK();}\r\n\
+function xpk027(){nr_pwm=27;loadXMLDoc_PK();}\r\n\
+function xpk028(){nr_pwm=28;loadXMLDoc_PK();}\r\n\
+function xpk029(){nr_pwm=29;loadXMLDoc_PK();}\r\n\
+function xpk030(){nr_pwm=30;loadXMLDoc_PK();}\r\n\
+function xpk031(){nr_pwm=31;loadXMLDoc_PK();}\r\n\
+function xpk032(){nr_pwm=32;loadXMLDoc_PK();}\r\n\
+function xpk033(){nr_pwm=33;loadXMLDoc_PK();}\r\n\
+function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){nr_pwm=1;val_pwm=val;loadXMLDoc_PWM();}\r\n\
+function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){nr_pwm=2;val_pwm=val;loadXMLDoc_PWM();}\r\n\
+function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){nr_pwm=3;val_pwm=val;loadXMLDoc_PWM();}\r\n\
 var myVar = setInterval(loadXMLDoc, 1000      );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
@@ -1587,47 +1594,47 @@ window.location.href=\"/lpc.cgi/A117?h7_page=%2Fset&h7_form=1&n_GPIO_val_005=\" 
  var nr_pwm; var val_pwm; var i,j,wst;  var txt=[]; \r\n\
  wst=0; \r\n\
  var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},50);\r\n\
- function loadXMLDoc_PWM()\r\n\
- {var xmlhttp;       \r\n\
+ var pwmBusy=[],pwmPending=[];function loadXMLDoc_PWM()\r\n\
+ {var pwmChannel=nr_pwm,pwmValue=val_pwm;if(pwmBusy[pwmChannel]){pwmPending[pwmChannel]=pwmValue;return;}pwmBusy[pwmChannel]=true;var xmlhttp;       \r\n\
  if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
  else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");  \r\n\
- xmlhttp.open(\"GET\",\"/lpc.cgi/n_pwm\"+nr_pwm+\"=\"+val_pwm+\"&n_115_zapisz=\", true);\r\n\
+ xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){pwmBusy[pwmChannel]=false;if(pwmPending[pwmChannel]!==undefined){var latest=pwmPending[pwmChannel];delete pwmPending[pwmChannel];nr_pwm=pwmChannel;val_pwm=latest;loadXMLDoc_PWM();}}};xmlhttp.open(\"GET\",\"/lpc.cgi/n_pwm\"+pwmChannel+\"=\"+pwmValue+\"&n_115_zapisz=\", true);\r\n\
  xmlhttp.send();\r\n\
  }\r\n\
  function loadXMLDoc_PK()\r\n\
- { var xmlhttp;       \r\n\
+ { var xmlhttp; var controlPort=nr_pwm;       \r\n\
    if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
    else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");  \r\n\
    xmlhttp.onreadystatechange=function()\r\n\
    { if (xmlhttp.readyState==4 && xmlhttp.status==200){\r\n\
 	  txt= xmlhttp.responseText;\r\n\
 	  if(txt[0]=='<'){\r\n\
-if(nr_pwm==28) document.getElementById(\"tu_pk028\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==21) document.getElementById(\"tu_pk021\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==22) document.getElementById(\"tu_pk022\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==23) document.getElementById(\"tu_pk023\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==24) document.getElementById(\"tu_pk024\").innerHTML=xmlhttp.responseText;\r\n\
-if(nr_pwm==33) document.getElementById(\"tu_pk033\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==28) document.getElementById(\"tu_pk028\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==21) document.getElementById(\"tu_pk021\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==22) document.getElementById(\"tu_pk022\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==23) document.getElementById(\"tu_pk023\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==24) document.getElementById(\"tu_pk024\").innerHTML=xmlhttp.responseText;\r\n\
+if(controlPort==33) document.getElementById(\"tu_pk033\").innerHTML=xmlhttp.responseText;\r\n\
 }\r\n\
 }\r\n\
 }\r\n\
-if(nr_pwm==28) xmlhttp.open(\"GET\",\"/mobile/pk001\", true);\r\n\
-if(nr_pwm==21) xmlhttp.open(\"GET\",\"/mobile/pk011\", true);\r\n\
-if(nr_pwm==22) xmlhttp.open(\"GET\",\"/mobile/pk012\", true);\r\n\
-if(nr_pwm==23) xmlhttp.open(\"GET\",\"/mobile/pk013\", true);\r\n\
-if(nr_pwm==24) xmlhttp.open(\"GET\",\"/mobile/pk007\", true);\r\n\
-if(nr_pwm==33) xmlhttp.open(\"GET\",\"/mobile/pk006\", true);\r\n\
+if(controlPort==28) xmlhttp.open(\"GET\",\"/mobile/pk001\", true);\r\n\
+if(controlPort==21) xmlhttp.open(\"GET\",\"/mobile/pk011\", true);\r\n\
+if(controlPort==22) xmlhttp.open(\"GET\",\"/mobile/pk012\", true);\r\n\
+if(controlPort==23) xmlhttp.open(\"GET\",\"/mobile/pk013\", true);\r\n\
+if(controlPort==24) xmlhttp.open(\"GET\",\"/mobile/pk007\", true);\r\n\
+if(controlPort==33) xmlhttp.open(\"GET\",\"/mobile/pk006\", true);\r\n\
 xmlhttp.send();\r\n\
 }\r\n\
-function xpk028(){if(wst==0){wst=1;now=0;nr_pwm=28;loadXMLDoc_PK(); }}\r\n\
-function xpk021(){if(wst==0){wst=1;now=0;nr_pwm=21;loadXMLDoc_PK(); }}\r\n\
-function xpk022(){if(wst==0){wst=1;now=0;nr_pwm=22;loadXMLDoc_PK(); }}\r\n\
-function xpk023(){if(wst==0){wst=1;now=0;nr_pwm=23;loadXMLDoc_PK(); }}\r\n\
-function xpk024(){if(wst==0){wst=1;now=0;nr_pwm=24;loadXMLDoc_PK(); }}\r\n\
-function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n\
-function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
-function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n\
+function xpk028(){controlPort=28;loadXMLDoc_PK();}\r\n\
+function xpk021(){nr_pwm=21;loadXMLDoc_PK();}\r\n\
+function xpk022(){nr_pwm=22;loadXMLDoc_PK();}\r\n\
+function xpk023(){nr_pwm=23;loadXMLDoc_PK();}\r\n\
+function xpk024(){nr_pwm=24;loadXMLDoc_PK();}\r\n\
+function xpk033(){nr_pwm=33;loadXMLDoc_PK();}\r\n\
+function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){nr_pwm=1;val_pwm=val;loadXMLDoc_PWM();}\r\n\
+function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){nr_pwm=2;val_pwm=val;loadXMLDoc_PWM();}\r\n\
+function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){nr_pwm=3;val_pwm=val;loadXMLDoc_PWM();}\r\n\
 var myVar = setInterval(loadXMLDoc, 5000       );\r\n\
  var txt=[]; \r\n\
  var txt1=[]; \r\n\
@@ -1878,6 +1885,12 @@ char* HTTP_TEMPLATE_2_Out(char* buff, u8 type, u8 nr, u8 route, const char* valu
 {
 	(void)route; (void)value1; (void)value2; (void)pwm;
 	if(nr<1 || nr>33) return buff;
+	const RelayState* state=RELAY_GetState(nr);
+	if(type==HTTP_MODE_PWM && state && state->pwm_valid) pwm=state->pwm_percent;
+	if(type==HTTP_MODE_RELAY || type==HTTP_MODE_IR){
+		int display=RELAY_GetDisplayState(nr);
+		if(display>=0) value1=display?"<font color='#000'>Stan ON</font>":"<font color='#000'>Stan OFF</font>";
+	}
 	switch(type){
 	case HTTP_MODE_RELAY:
 		if(!value1) value1="<font color=\"#000\">Stan OFF</font>";
@@ -2469,68 +2482,68 @@ const char HttpStructMainReadPanel2[]=
 " var nr_pwm; var val_pwm; var i,j,wst;  var txt=[]; \r\n"
 " wst=0; \r\n"
 " var now=0;void setInterval(function(){now++;if(now==2){wst=0;}},50);\r\n"
-" function loadXMLDoc_PWM()\r\n"
-" {var xmlhttp;       \r\n"
+" var pwmBusy=[],pwmPending=[];function loadXMLDoc_PWM()\r\n"
+" {var pwmChannel=nr_pwm,pwmValue=val_pwm;if(pwmBusy[pwmChannel]){pwmPending[pwmChannel]=pwmValue;return;}pwmBusy[pwmChannel]=true;var xmlhttp;       \r\n"
 " if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n"
 " else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");  \r\n"
-" xmlhttp.open(\"GET\",\"/lpc.cgi/n_pwm\"+nr_pwm+\"=\"+val_pwm+\"&n_115_zapisz=\", true);\r\n"
+" xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){pwmBusy[pwmChannel]=false;if(pwmPending[pwmChannel]!==undefined){var latest=pwmPending[pwmChannel];delete pwmPending[pwmChannel];nr_pwm=pwmChannel;val_pwm=latest;loadXMLDoc_PWM();}}};xmlhttp.open(\"GET\",\"/lpc.cgi/n_pwm\"+pwmChannel+\"=\"+pwmValue+\"&n_115_zapisz=\", true);\r\n"
 " xmlhttp.send();\r\n"
 " }\r\n"
 " function loadXMLDoc_PK()\r\n"
-" { var xmlhttp;       \r\n"
+" { var xmlhttp; var controlPort=nr_pwm;       \r\n"
 "   if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n"
 "   else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");  \r\n"
 "   xmlhttp.onreadystatechange=function()\r\n"
 "   { if (xmlhttp.readyState==4 && xmlhttp.status==200){\r\n"
 "\t  txt= xmlhttp.responseText;\r\n"
 "\t  if(txt[0]=='<'){\r\n"
-"if(nr_pwm==21) document.getElementById(\"tu_pk021\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==22) document.getElementById(\"tu_pk022\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==23) document.getElementById(\"tu_pk023\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==24) document.getElementById(\"tu_pk024\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==25) document.getElementById(\"tu_pk025\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==26) document.getElementById(\"tu_pk026\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==27) document.getElementById(\"tu_pk027\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==28) document.getElementById(\"tu_pk028\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==29) document.getElementById(\"tu_pk029\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==30) document.getElementById(\"tu_pk030\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==31) document.getElementById(\"tu_pk031\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==32) document.getElementById(\"tu_pk032\").innerHTML=xmlhttp.responseText;\r\n"
-"if(nr_pwm==33) document.getElementById(\"tu_pk033\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==21) document.getElementById(\"tu_pk021\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==22) document.getElementById(\"tu_pk022\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==23) document.getElementById(\"tu_pk023\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==24) document.getElementById(\"tu_pk024\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==25) document.getElementById(\"tu_pk025\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==26) document.getElementById(\"tu_pk026\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==27) document.getElementById(\"tu_pk027\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==28) document.getElementById(\"tu_pk028\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==29) document.getElementById(\"tu_pk029\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==30) document.getElementById(\"tu_pk030\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==31) document.getElementById(\"tu_pk031\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==32) document.getElementById(\"tu_pk032\").innerHTML=xmlhttp.responseText;\r\n"
+"if(controlPort==33) document.getElementById(\"tu_pk033\").innerHTML=xmlhttp.responseText;\r\n"
 "}\r\n"
 "}\r\n"
 "}\r\n"
-"if(nr_pwm==21) xmlhttp.open(\"GET\",\"/mobile/pk011\", true);\r\n"
-"if(nr_pwm==22) xmlhttp.open(\"GET\",\"/mobile/pk012\", true);\r\n"
-"if(nr_pwm==23) xmlhttp.open(\"GET\",\"/mobile/pk013\", true);\r\n"
-"if(nr_pwm==24) xmlhttp.open(\"GET\",\"/mobile/pk007\", true);\r\n"
-"if(nr_pwm==25) xmlhttp.open(\"GET\",\"/mobile/pk008\", true);\r\n"
-"if(nr_pwm==26) xmlhttp.open(\"GET\",\"/mobile/pk009\", true);\r\n"
-"if(nr_pwm==27) xmlhttp.open(\"GET\",\"/mobile/pk010\", true);\r\n"
-"if(nr_pwm==28) xmlhttp.open(\"GET\",\"/mobile/pk001\", true);\r\n"
-"if(nr_pwm==29) xmlhttp.open(\"GET\",\"/mobile/pk002\", true);\r\n"
-"if(nr_pwm==30) xmlhttp.open(\"GET\",\"/mobile/pk003\", true);\r\n"
-"if(nr_pwm==31) xmlhttp.open(\"GET\",\"/mobile/pk004\", true);\r\n"
-"if(nr_pwm==32) xmlhttp.open(\"GET\",\"/mobile/pk005\", true);\r\n"
-"if(nr_pwm==33) xmlhttp.open(\"GET\",\"/mobile/pk006\", true);\r\n"
+"if(controlPort==21) xmlhttp.open(\"GET\",\"/mobile/pk011\", true);\r\n"
+"if(controlPort==22) xmlhttp.open(\"GET\",\"/mobile/pk012\", true);\r\n"
+"if(controlPort==23) xmlhttp.open(\"GET\",\"/mobile/pk013\", true);\r\n"
+"if(controlPort==24) xmlhttp.open(\"GET\",\"/mobile/pk007\", true);\r\n"
+"if(controlPort==25) xmlhttp.open(\"GET\",\"/mobile/pk008\", true);\r\n"
+"if(controlPort==26) xmlhttp.open(\"GET\",\"/mobile/pk009\", true);\r\n"
+"if(controlPort==27) xmlhttp.open(\"GET\",\"/mobile/pk010\", true);\r\n"
+"if(controlPort==28) xmlhttp.open(\"GET\",\"/mobile/pk001\", true);\r\n"
+"if(controlPort==29) xmlhttp.open(\"GET\",\"/mobile/pk002\", true);\r\n"
+"if(controlPort==30) xmlhttp.open(\"GET\",\"/mobile/pk003\", true);\r\n"
+"if(controlPort==31) xmlhttp.open(\"GET\",\"/mobile/pk004\", true);\r\n"
+"if(controlPort==32) xmlhttp.open(\"GET\",\"/mobile/pk005\", true);\r\n"
+"if(controlPort==33) xmlhttp.open(\"GET\",\"/mobile/pk006\", true);\r\n"
 "xmlhttp.send();\r\n"
 "}\r\n"
-"function xpk021(){if(wst==0){wst=1;now=0;nr_pwm=21;loadXMLDoc_PK(); }}\r\n"
-"function xpk022(){if(wst==0){wst=1;now=0;nr_pwm=22;loadXMLDoc_PK(); }}\r\n"
-"function xpk023(){if(wst==0){wst=1;now=0;nr_pwm=23;loadXMLDoc_PK(); }}\r\n"
-"function xpk024(){if(wst==0){wst=1;now=0;nr_pwm=24;loadXMLDoc_PK(); }}\r\n"
-"function xpk025(){if(wst==0){wst=1;now=0;nr_pwm=25;loadXMLDoc_PK(); }}\r\n"
-"function xpk026(){if(wst==0){wst=1;now=0;nr_pwm=26;loadXMLDoc_PK(); }}\r\n"
-"function xpk027(){if(wst==0){wst=1;now=0;nr_pwm=27;loadXMLDoc_PK(); }}\r\n"
-"function xpk028(){if(wst==0){wst=1;now=0;nr_pwm=28;loadXMLDoc_PK(); }}\r\n"
-"function xpk029(){if(wst==0){wst=1;now=0;nr_pwm=29;loadXMLDoc_PK(); }}\r\n"
-"function xpk030(){if(wst==0){wst=1;now=0;nr_pwm=30;loadXMLDoc_PK(); }}\r\n"
-"function xpk031(){if(wst==0){wst=1;now=0;nr_pwm=31;loadXMLDoc_PK(); }}\r\n"
-"function xpk032(){if(wst==0){wst=1;now=0;nr_pwm=32;loadXMLDoc_PK(); }}\r\n"
-"function xpk033(){if(wst==0){wst=1;now=0;nr_pwm=33;loadXMLDoc_PK(); }}\r\n"
-"function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){if(wst==0){wst=1;now=0;nr_pwm=1; val_pwm=val; loadXMLDoc_PWM();}}\r\n"
-"function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){if(wst==0){wst=1;now=0;nr_pwm=2; val_pwm=val; loadXMLDoc_PWM();}}\r\n"
-"function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){if(wst==0){wst=1;now=0;nr_pwm=3; val_pwm=val; loadXMLDoc_PWM();}}\r\n"
+"function xpk021(){nr_pwm=21;loadXMLDoc_PK();}\r\n"
+"function xpk022(){nr_pwm=22;loadXMLDoc_PK();}\r\n"
+"function xpk023(){nr_pwm=23;loadXMLDoc_PK();}\r\n"
+"function xpk024(){nr_pwm=24;loadXMLDoc_PK();}\r\n"
+"function xpk025(){nr_pwm=25;loadXMLDoc_PK();}\r\n"
+"function xpk026(){nr_pwm=26;loadXMLDoc_PK();}\r\n"
+"function xpk027(){nr_pwm=27;loadXMLDoc_PK();}\r\n"
+"function xpk028(){nr_pwm=28;loadXMLDoc_PK();}\r\n"
+"function xpk029(){nr_pwm=29;loadXMLDoc_PK();}\r\n"
+"function xpk030(){nr_pwm=30;loadXMLDoc_PK();}\r\n"
+"function xpk031(){nr_pwm=31;loadXMLDoc_PK();}\r\n"
+"function xpk032(){nr_pwm=32;loadXMLDoc_PK();}\r\n"
+"function xpk033(){nr_pwm=33;loadXMLDoc_PK();}\r\n"
+"function outputUpdate021(vol){document.querySelector('#volume021').value=vol;}function x021(val){nr_pwm=1;val_pwm=val;loadXMLDoc_PWM();}\r\n"
+"function outputUpdate022(vol){document.querySelector('#volume022').value=vol;}function x022(val){nr_pwm=2;val_pwm=val;loadXMLDoc_PWM();}\r\n"
+"function outputUpdate023(vol){document.querySelector('#volume023').value=vol;}function x023(val){nr_pwm=3;val_pwm=val;loadXMLDoc_PWM();}\r\n"
 "var myVar = setInterval(loadXMLDoc, 5000      );\r\n"
 " var txt=[]; \r\n"
 " var txt1=[]; \r\n"

@@ -35,7 +35,17 @@ int main(void) {
     RELAY_ResetStates();assert(RELAY_GetStates()==states);
     for(unsigned i=0;i<RELAY_OUTPUT_COUNT;i++)
         assert(states->outputs[i].port==ports[i] && !states->outputs[i].on && !states->outputs[i].valid);
-    puts("PASS: stable pointer, 13 mapped outputs, unknown startup, reports, invalidation, reset and rejected invalid input.");
+    assert(RELAY_RequestToggle(28));assert(states->outputs[0].requested_on && states->outputs[0].request_valid);
+    assert(!states->outputs[0].valid);assert(RELAY_RequestToggle(28));assert(!states->outputs[0].requested_on);
+    assert(RELAY_UpdateState(29,1));assert(RELAY_RequestToggle(29));
+    assert(states->outputs[1].valid && states->outputs[1].on && !states->outputs[1].requested_on);
+    assert(RELAY_RequestPwm(21,37));const RelayState *pwm=RELAY_GetState(21);
+    assert(pwm->pwm_percent==37 && pwm->pwm_valid && pwm->requested_on && !pwm->valid);
+    memcpy(&saved,states,sizeof saved);
+    assert(!RELAY_RequestPwm(21,101));assert(!RELAY_RequestPwm(24,50));assert(!RELAY_RequestToggle(0));
+    assert(!memcmp(&saved,states,sizeof saved));
+    RELAY_ResetStates();assert(!pwm->pwm_valid && !pwm->request_valid && !pwm->valid);
+    puts("PASS: stable pointer, mapped outputs, feedback/commands, PWM limits, reset and rejected invalid input.");
     return 0;
 }
 '''

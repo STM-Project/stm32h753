@@ -14,6 +14,8 @@
 #include "http_settings_storage.h"
 #include "http_settings_bindings.h"
 #include "http_request_stream.h"
+#include "http_output_control.h"
+#include "relay_states.h"
 #include <string.h> /* memset */
 #include <stdlib.h> /* atoi */
 #include "stm32h7xx_hal.h"
@@ -141,6 +143,7 @@ typedef enum
 	WWW_MAIN_SETTING,
 	WWW_MAIN_READ,
 	WWW_DATA_REFRESH,
+	WWW_OUTPUT_CONTROL,
 	WWW_FAVICON,
 	WWW_SENSOR_SETTING,
 	WWW_OTHER_SETTING,
@@ -713,8 +716,26 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStructMainReadPanel;	httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStructMainReadPanel);
 		break;
 	case WWW_DATA_REFRESH:
-		//httpPar.web[channel][nrPartWWW] = (char*)HttpRefr;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpRefr);
-		httpPar.web[channel][nrPartWWW] = (char*)HttpRefr_sdram;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpRefr);
+		/* Retain this slot's snapshot and overlay requested/reported output
+		 * states in the legacy protocol's 13-byte output block. */
+		strcpy(httpBuff,HttpRefr_sdram);
+		for(unsigned i=0;i<RELAY_OUTPUT_COUNT && strlen(httpBuff)>25u+i;i++){
+			int state=RELAY_GetDisplayState(RELAY_GetStates()->outputs[i].port);
+			if(state>=0) httpBuff[25u+i]=(char)('0'+state);
+		}
+		httpPar.web[channel][nrPartWWW]=httpBuff;
+		httpPar.siz[channel][nrPartWWW++]=(u32)strlen(httpBuff);
+		break;
+	case WWW_OUTPUT_CONTROL:
+		{
+			const RelayState* state=RELAY_GetState(httpSensorPort[channel]);
+			if(httpSensorNotice[channel])
+				snprintf(httpBuff,sizeof(httpPageBuff[channel]),"%u",state->pwm_percent);
+			else snprintf(httpBuff,sizeof(httpPageBuff[channel]),
+				"<font color='#000'>Stan %s</font>",state->requested_on?"ON":"OFF");
+			httpPar.web[channel][nrPartWWW]=httpBuff;
+			httpPar.siz[channel][nrPartWWW++]=(u32)strlen(httpBuff);
+		}
 		break;
 	case WWW_MAIN_SETTING:
 		httpPar.web[channel][nrPartWWW]=(char*)HttpStyle;
@@ -1030,7 +1051,8 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 			httpResponseStatus[channel]==404?"Not Found":
 			httpResponseStatus[channel]==503?"Service Unavailable":
 			httpResponseStatus[channel]==501?"Not Implemented":"Internal Server Error";
-		const char* contentType=nrWWW==WWW_DATA_REFRESH?"text/plain; charset=UTF-8":
+		const char* contentType=(nrWWW==WWW_DATA_REFRESH ||
+			(nrWWW==WWW_OUTPUT_CONTROL && httpSensorNotice[channel]))?"text/plain; charset=UTF-8":
 			nrWWW==WWW_FAVICON?"image/x-icon":"text/html; charset=UTF-8";
 		int headerSize=snprintf(httpResponseHeader[channel],sizeof(httpResponseHeader[channel]),
 			"HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %lu\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n",
@@ -1087,7 +1109,21 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 		if(httpPar.que[i]==0xFF) freeSlot=1;
 	}
 	if(!freeSlot) return;
-	if(!target){ status=400; }
+	HTTP_OutputCommand command;
+	int outputCommand=HTTP_OutputControlParse(target,length,&command);
+	if(outputCommand){
+		status=400;
+		if(outputCommand>0){
+			unsigned mode=HTTP_SettingsPortMode(command.port);
+			int accepted=command.kind==HTTP_OUTPUT_PWM?
+				(mode==HTTP_MODE_PWM && RELAY_RequestPwm(command.port,command.value)):
+				((mode==HTTP_MODE_RELAY || mode==HTTP_MODE_IR) && RELAY_RequestToggle(command.port));
+			if(accepted){
+				page=WWW_OUTPUT_CONTROL; status=200; port=command.port;
+				notice=command.kind==HTTP_OUTPUT_PWM?"pwm":NULL;
+			}
+		}
+	}else if(!target){ status=400; }
 	else if(HTTP_TargetEquals(target,length,"/") || HTTP_TargetEquals(target,length,"/main")){
 		page=WWW_MAIN_READ; status=200;
 	}else if(HTTP_TargetEquals(target,length,"/set") || HTTP_TargetEquals(target,length,"/Set") || HTTP_TargetEquals(target,length,"/3main")){
