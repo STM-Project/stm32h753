@@ -86,3 +86,15 @@ umieszczone w `HttpRefr_sdram`, w tym dane testowe, jeśli takie zawiera bufor.
 Alternatywny interfejs `HTTP_LpcSetTemperature()`, `HTTP_LpcSetInput()` oraz
 `HTTP_LpcPanelJson()` pozostał dostępny dla kodu korzystającego z osobnej
 struktury `HTTP_LpcMeasurementsData`. Nie jest domyślnym źródłem `/nowa`.
+
+## Kolor i wysyłanie strony
+
+Kolor cieczy termometru zmienia się płynnie od niebieskiego przy dolnym progu
+przez fioletowy do czerwonego przy górnym progu. Wartości poza skalą przyjmują
+kolor najbliższego końca skali, a liczbowy odczyt pozostaje nieobcięty.
+
+Kolejkę HTTP modyfikuje wyłącznie zadanie Wi-Fi. Callback timeoutu zgłasza reset,
+który to zadanie wykonuje przed kolejną obsługą. Każdy pakiet ma sprawdzony
+indeks fragmentu, offset i długość; spóźnione/powtórzone prompty i potwierdzenia
+nie przesuwają kursora ponownie. Test `tests/test_http_tx.py` przesyła całą
+stronę i sprawdza przeplatanie kanałów oraz błędne zdarzenia pod ASan/UBSan.

@@ -197,10 +197,15 @@ static int httpResponseStatus[ESP_MAX_HTTP_CONN];
 static const HTTP_SettingPage* httpSettingsPage[ESP_MAX_HTTP_CONN];
 static uint16_t httpSettingsInstance[ESP_MAX_HTTP_CONN];
 static const HTTP_LpcAsset* httpLpcAsset[ESP_MAX_HTTP_CONN];
+/* WiFi task owns all transmit state. 1=prompt pending, 2=SEND OK pending,
+ * 3=close pending. Offset counts bytes, not issued CIPSEND commands. */
+static uint8_t httpTxPhase[ESP_MAX_HTTP_CONN];
+static uint32_t httpTxOffset[ESP_MAX_HTTP_CONN];
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
 static xTaskHandle vtaskWifiHandle=NULL;
+static volatile uint8_t httpResetRequested;
 
 RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];			/* ESP_RECV_BUFF_SIZE musi byc wielokrotnoscia 32 jesli uzylem _ALIGN32 */
 RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];
@@ -410,7 +415,7 @@ static int IsTimeoutForReloadHttp(void){
 
 static void InitStructRqstToSendChnl(void){
 	httpPar.chnl = 0xFF;
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
+	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpTxPhase[i]=0; httpTxOffset[i]=0; httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
 }
 
 static int IsActiveAnyRqstToSendChnl(void){
@@ -428,7 +433,11 @@ static void vWaitOnSendTimeoutTimerCallback(TimerHandle_t pxTimer)
 {
 	DbgDma(DBG,_SE_"\r\nTIMEOUT RECV "_E_);		DbgVarDma(DBG,100,_S_"connType:%d "_E_,connectionType);
 	switch(connectionType){
-		case HTTP_CONNECTION: case HTTP_CONNECTION_2:	DbgDma(DBG,_S_"\r\n"_E_); HTTP_ShowHttpStruct(); DbgDma(DBG,_S_"\r\nRESET http chnl struct "_E_); InitStructRqstToSendChnl();	  break;	/* Propozycja: zamykac otwarte 'wiszace' polaczenia */
+        case HTTP_CONNECTION: case HTTP_CONNECTION_2:
+            /* Never clear pointers underneath the WiFi task's packet copy. */
+            httpResetRequested=1;
+            if(vtaskWifiHandle)xTaskNotify(vtaskWifiHandle,BIT_ESP_SRV,eSetBits);
+            break;
 		case INIT_CONNECTION:	DbgDma(DBG,_SE_"\r\nINIT_ESP !!!"_E_);  break;
 		case SMTP_CONNECTION:	BackFromEmail(1);  break;
 	}
@@ -1097,6 +1106,7 @@ static int HTTP_QueueResponse(unsigned channel, int page, unsigned port,
 		httpResponseStatus[i]=status;
 		httpSettingsPage[i]=settingsPage; httpSettingsInstance[i]=settingsInstance;
         httpLpcAsset[i]=asset;
+        httpTxPhase[i]=0; httpTxOffset[i]=0;
 		httpPar.ptr[i]=HTTP_SetWeb(i,page);
 		httpPar.nr[i]=0; httpPar.len[i]=0;
 		return i;
@@ -1217,7 +1227,7 @@ static void HTTP_FeedReceiveRing(void)
 	}
 }
 
-int CheckReadyToSendChnl(u8 chnlPrev){
+int CheckReadyToSendChnl(int chnlPrev){
 	if(httpPar.chnl==0xFF)		/* gdy nie ma w tle oczekiwania na SEND OK */
 	{
 		if(chnlPrev==-1)
@@ -1253,25 +1263,77 @@ int CheckReadyToSendChnl(u8 chnlPrev){
 	return -1;
 }
 
-static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl){
-	int nrQue=CheckReadyToSendChnl(prevChnl);
-	if(nrQue>-1){
-		if(httpPar.ptr[nrQue]==NULL){  								/* albo: if(httpPar.web[nrQue][httpPar.nrWeb[nrQue]]==NULL){   to jest to samo */
-			httpPar.nr[nrQue]=0;
-			SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl), NULL, archType);		/* Czas wykonania SendToEsp32() to 28us */
-		}
-		else{
-			int packetSizeToSend = httpPar.siz[nrQue][httpPar.nrWeb[nrQue]]-httpPar.nr[nrQue]*ETH_PACKET_LEN;			if(archType==noArch) DbgVarDma(1,5,"%d",httpPar.chnl);
-			if(packetSizeToSend <= ETH_PACKET_LEN){	 SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,packetSizeToSend),NULL,archType );	httpPar.len[nrQue]=packetSizeToSend;  	}
-			else{									 SendToEsp32_http( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%d\r\n",httpPar.chnl,ETH_PACKET_LEN),	 NULL,archType ); 	httpPar.len[nrQue]=ETH_PACKET_LEN;   	}
-			httpPar.nr[nrQue]++;
-}}}
+static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl)
+{
+    int slot=CheckReadyToSendChnl(prevChnl);
+    if(slot<0)return;
+    /* Skip empty fragments and validate the index before every array access. */
+    while(httpPar.nrWeb[slot]<MAX_HTML_WEBs){
+        unsigned part=httpPar.nrWeb[slot];
+        if(!httpPar.web[slot][part])break;
+        if(httpTxOffset[slot]>httpPar.siz[slot][part])break;
+        if(httpTxOffset[slot]<httpPar.siz[slot][part])break;
+        ++httpPar.nrWeb[slot];httpTxOffset[slot]=0;httpPar.nr[slot]=0;
+    }
+    unsigned part=httpPar.nrWeb[slot];
+    if(part>=MAX_HTML_WEBs || !httpPar.web[slot][part] ||
+       httpTxOffset[slot]>httpPar.siz[slot][part]){
+        httpPar.ptr[slot]=NULL;httpPar.len[slot]=0;httpTxPhase[slot]=3;
+        SendToEsp32_http(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl),NULL,archType);
+        return;
+    }
+    uint32_t remaining=httpPar.siz[slot][part]-httpTxOffset[slot];
+    uint32_t length=remaining>ETH_PACKET_LEN?ETH_PACKET_LEN:remaining;
+    if(!length || length>=sizeof(sendBuff)){httpPar.chnl=0xFF;return;}
+    httpPar.ptr[slot]=httpPar.web[slot][part]+httpTxOffset[slot];
+    httpPar.len[slot]=length;httpTxPhase[slot]=1;
+    int status=SendToEsp32_http(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%lu\r\n",httpPar.chnl,(unsigned long)length),NULL,archType);
+    if(status!=HAL_OK){httpTxPhase[slot]=0;httpPar.len[slot]=0;httpPar.chnl=0xFF;}
+}
 
 static int SearchChnl(u8 channel){
 	LOOP_FOR(nrChnl,ESP_MAX_HTTP_CONN){
 		if(httpPar.que[nrChnl]!=0xFF){   if(channel==httpPar.que[nrChnl]) return nrChnl;  }
 	}
 	return -1;
+}
+
+/* A prompt may be duplicated/stale after a close or a timeout. Copy only a
+ * packet that was explicitly planned for this live slot and fragment. */
+static int HTTP_SendPayload(ARCHIVING_TYPE archType)
+{
+    int slot=SearchChnl(httpPar.chnl);
+    if(slot<0 || httpTxPhase[slot]!=1)return 0;
+    unsigned part=httpPar.nrWeb[slot];
+    uint32_t length=httpPar.len[slot],offset=httpTxOffset[slot];
+    if(part>=MAX_HTML_WEBs || !httpPar.web[slot][part] || !httpPar.ptr[slot] ||
+       !length || length>ETH_PACKET_LEN || length>=sizeof(sendBuff) ||
+       offset>httpPar.siz[slot][part] || length>httpPar.siz[slot][part]-offset ||
+       httpPar.ptr[slot]!=httpPar.web[slot][part]+offset){
+        httpPar.ptr[slot]=NULL;httpPar.len[slot]=0;
+        httpPar.nrWeb[slot]=MAX_HTML_WEBs;httpTxPhase[slot]=0;httpPar.chnl=0xFF;
+        return 0;
+    }
+    memcpy(sendBuff,httpPar.ptr[slot],length);
+    if(SendToEsp32((int)length,NULL,archType)!=HAL_OK){
+        httpPar.len[slot]=0;httpTxPhase[slot]=0;httpPar.chnl=0xFF;
+        return 0;
+    }
+    httpTxOffset[slot]+=length;
+    httpPar.ptr[slot]=httpPar.web[slot][part]+httpTxOffset[slot];
+    httpPar.len[slot]=0;httpTxPhase[slot]=2;
+    ++httpPar.nr[slot];
+    return 1;
+}
+
+static int HTTP_SendAcknowledged(ARCHIVING_TYPE archType)
+{
+    int slot=SearchChnl(httpPar.chnl);
+    if(slot<0 || httpTxPhase[slot]!=2)return 0;
+    int previous=httpPar.chnl;
+    httpTxPhase[slot]=0;httpPar.chnl=0xFF;
+    HTTP_SendCloseChnl(archType,previous);
+    return 1;
 }
 
 static int HTTP_GetClosedChannel(char* ptr){
@@ -1345,7 +1407,13 @@ void vtaskWifi(void *argument)
 
 	while(1)
 	{
-
+        /* Check before waiting, so a timeout cannot be lost if its notify bit
+         * was already set and cleared at the end of the previous iteration. */
+        if(httpResetRequested){
+            taskENTER_CRITICAL();httpResetRequested=0;taskEXIT_CRITICAL();
+            InitStructRqstToSendChnl();
+            UpdateReadPos();
+        }
 	  if(xTaskNotifyWait(0x00, 0x00, &ulNotifiedValue, portMAX_DELAY) == pdPASS)			/* xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu.   Problem: Jeśli w tym samym momencie (ułamek sekundy po wybudzeniu zadania, ale przed zakończeniem tej funkcji) inne zadanie lub przerwanie (ISR) przyśle nowy bit, zostanie on bezpowrotnie skasowany i utracony. Dlatego najbezpieczniejsze jest uzycie pod koniec obslugi tego zdarzenia reczne czyszczenie aktualnego bitu funkcją ulTaskNotifyValueClear(NULL, ulNotifiedValue) */
 	  {
 	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
@@ -1765,19 +1833,9 @@ void vtaskWifi(void *argument)
 
 					if ((pHttp=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
-						int nr = SearchChnl(httpPar.chnl);
-						if(nr>=0){   LOOP_FOR(i,httpPar.len[nr]) sendBuff[i]=*(httpPar.ptr[nr]+i);    SendToEsp32(httpPar.len[nr],NULL,/*arch*/typeSendArch);    httpPar.ptr[nr]+=httpPar.len[nr];  			/* strcpy(sendBuff,HTML_TXT_CODE);  SendToEsp32_http(2039,NULL,typeSendArch); */
+                        HTTP_SendPayload(typeSendArch);
+                    }
 
-						 //if(httpPar.siz[nrQue][httpPar.nrWeb[nrQue]] >= httpPar.nr[nrQue]*ETH_PACKET_LEN){  //chyba to samo ???
-							if(httpPar.nr[nr] > httpPar.siz[nr][httpPar.nrWeb[nr]]/ETH_PACKET_LEN  ||  httpPar.siz[nr][httpPar.nrWeb[nr]]==httpPar.nr[nr]*ETH_PACKET_LEN){			/* Jesli koniec aktualnej sub strony, przechodzimy do nastepnej sub strony */
-								httpPar.nrWeb[nr]++;
-								httpPar.ptr[nr]=httpPar.web[nr][httpPar.nrWeb[nr]];
-								httpPar.nr[nr]=0;
-								httpPar.len[nr]=0;
-							}
-						}
-
-					}
 					if ((pHttp=RecvFromEsp(",CLOSED\r\n")))
 					{
 						u8 chnlClose=HTTP_GetClosedChannel(pHttp);
@@ -1787,7 +1845,8 @@ void vtaskWifi(void *argument)
 						{
 							int nr = SearchChnl(httpPar.chnl);
 							if(nr>=0){
-								httpPar.que[nr]=0xFF;  // daj jako funkcja zerujaca to szwszystko
+								httpTxPhase[nr]=0;httpTxOffset[nr]=0;
+                                httpPar.que[nr]=0xFF;  // daj jako funkcja zerujaca to szwszystko
 								httpPar.nr[nr]=0;
 								httpPar.ptr[nr]=NULL;
 								httpPar.siz[nr][0]=0;
@@ -1802,7 +1861,8 @@ void vtaskWifi(void *argument)
 						{
 							int nr = SearchChnl(chnlClose);
 							if(nr>=0){
-								httpPar.que[nr]=0xFF;
+								httpTxPhase[nr]=0;httpTxOffset[nr]=0;
+                                httpPar.que[nr]=0xFF;
 								httpPar.nr[nr]=0;
 								httpPar.ptr[nr]=NULL;
 								httpPar.siz[nr][0]=0;
@@ -1820,9 +1880,7 @@ void vtaskWifi(void *argument)
 					}
 					if ((pHttp=RecvFromEsp("\r\nSEND OK")))
 					{
-						int prevChnl=httpPar.chnl;
-						httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
-						HTTP_SendCloseChnl(typeSendArch,prevChnl);
+                        HTTP_SendAcknowledged(typeSendArch);
 
 					}
 					UpdateReadPos();

@@ -60,6 +60,8 @@ with sync_playwright() as p:
  assert page.locator('#name-temp-1 b').count()==0
  assert page.locator('.temperatures svg').count()==3
  assert page.locator('#container svg').count()==1
+ colours=page.evaluate("""() => {const f=$('#fixture').thermometer('option','liquidColour');return [f(0),f(40),f(80)];}""")
+ assert colours==['rgb(0,128,255)','rgb(128,64,128)','rgb(255,0,0)'],colours
  assert not errors,errors
  assert requests.count('/nowa')==1 and set(requests)<={'/nowa','/api/nowa','/mobile/pk001'},requests
  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
