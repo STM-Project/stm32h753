@@ -65,18 +65,31 @@ with zipfile.ZipFile(SRC/'sdcard.zip') as z:
 from playwright.sync_api import sync_playwright
 with zipfile.ZipFile(SRC/'sdcard.zip') as archive, sync_playwright() as playwright:
  browser=playwright.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
- for number in [1,2,3,10,50,100,195]:
-  page=browser.new_page();errors=[]
+ for number in range(1,196):
+  page=browser.new_page();errors=[];requests=[];violations=[]
   page.on('pageerror',lambda error:errors.append(str(error)))
+  page.on('console',lambda message:violations.append(message.text) if message.type=='error' else None)
   def respond(route):
    url=route.request.url
+   requests.append(url)
    if '/api/lpcdata' in url:route.fulfill(json={'temperatures':[],'inputs':[],'outputs':[]})
    elif '/api/lpc' in url:route.fulfill(json={'fields':{}})
-   else:route.fulfill(body=archive.read('LPC/P%05d.HTM'%number),content_type='text/html; charset=utf-8')
+   elif url=='http://stm32.test/nowa'+str(number):route.fulfill(body=archive.read('LPC/P%05d.HTM'%number),content_type='text/html; charset=utf-8')
+   else:route.abort()
   page.route('**/*',respond)
-  page.goto('http://stm32.test/nowa'+str(number));page.wait_for_timeout(200)
+  page.goto('http://stm32.test/nowa'+str(number));page.wait_for_timeout(70)
   assert page.locator('#lpc-status').count()==1
   assert not errors,(number,errors)
+  assert not violations,(number,violations)
+  allowed={'http://stm32.test/nowa'+str(number),'http://stm32.test/api/lpc'+str(number),'http://stm32.test/api/lpcdata'}
+  assert set(requests)<=allowed,(number,requests)
+  assert page.locator('#lpc-content').is_visible()
+  # A partial HTTP body must show the navigation/status before any library arrives.
+  if number==12:
+   document=archive.read('LPC/P%05d.HTM'%number).decode()
+   prefix=document[:document.index('<script>')]
+   page.set_content(prefix,wait_until='domcontentloaded')
+   assert page.locator('#lpc-status').is_visible()
   page.close()
  browser.close()
-print('PASS: 7 representative imported pages execute in Chromium.')
+print('PASS: all 195 pages render in Chromium; no external resources or CSP/JS errors; /nowa12 visible before scripts arrive.')

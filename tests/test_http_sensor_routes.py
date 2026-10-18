@@ -74,6 +74,7 @@ const char *HTTP_SettingsPortName(unsigned port, const char *fallback);
 char *HTTP_TEMPLATE_Hidden2(char *out, u8 type, u8 port);
 static char HttpRefr_sdram[2048]="refresh";
 static const char *lpc_test_page;
+const char *LPC_StoragePageError(void){return "brak pliku testowego";}
 size_t LPC_StorageReadPage(unsigned page,char *out,size_t capacity){
     (void)page;if(!lpc_test_page)return 0;size_t n=strlen(lpc_test_page);
     if(n>=capacity)return 0;
@@ -189,6 +190,17 @@ int main(void) {
     assert(HTTP_REQUEST_STREAM_CHANNELS >= ESP_MAX_HTTP_CONN);
     assert(HTTP_SensorSettingsInit(load, save, persisted) == 0);
     assert(HTTP_SettingsModelInit(NULL, NULL, NULL) == 0);
+    lpc_test_page="<!doctype html><p>SD LPC OK</p>";
+    for(unsigned page=1;page<=LPC_PAGE_COUNT;page++){
+        char path[32];snprintf(path,sizeof path,"/nowa%u",page);
+        request(page%ESP_MAX_HTTP_CONN,path);
+        check_response(page%ESP_MAX_HTTP_CONN,200,"text/html; charset=UTF-8");
+        int slot=slot_for(page%ESP_MAX_HTTP_CONN);
+        body((unsigned)slot,html,sizeof html);assert(!strcmp(html,lpc_test_page));
+    }
+    lpc_test_page=NULL;
+    request(0,"/nowa12");check_response(0,503,"text/html; charset=UTF-8");
+    body(0,html,sizeof html);assert(strstr(html,"brak pliku testowego"));
     const char *aliases[] = {"/set", "/Set", "/3main"};
     for (unsigned i = 0; i < sizeof aliases / sizeof aliases[0]; ++i) {
         request(0, aliases[i]); check_response(0, 200, "text/html; charset=UTF-8");

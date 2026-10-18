@@ -151,3 +151,23 @@ Poprzednie bufory 5 × 2 MiB powodowały przekroczenie fizycznej pamięci przez
 `httpRequestStream`; całkowita sekcja SDRAM miała 16 894 976 bajtów.
 Bufory 5 × 768 KiB mieszczą wszystkie aktualne strony z zapasem, a test paczki
 sprawdza limit każdego HTML. Nadmiar pamięci zostanie teraz odrzucony przy linkowaniu.
+
+## Samodzielne dokumenty `/nowaN` i diagnostyka ładowania
+
+Każdy dokument SD zawiera własne biblioteki JavaScript, style, SVG, ikony oraz
+obraz tła `tlo364.jpg` jako dane wewnątrz HTML. Skrypty znajdują się po treści,
+a widoczność strony przed zakończeniem transmisji nie trzeba czekać na jQuery
+Mobile. Nagłówek CSP blokuje pobieranie zewnętrznych skryptów i obrazów.
+Generator sprawdza odwołania do zasobów. Test Chromium otwiera wszystkie 195
+stron, kontroluje ich widoczność oraz dozwolone żądania: dokument, konfigurację
+`/api/lpcN`, odczyty `/api/lpcdata`. Dodatkowe żądania skryptów, stylów, fontów
+lub obrazów są błędem testu. Odświeżanie danych nadal wymaga kolejnych żądań API.
+
+Po aktualizacji wymień folder `LPC` na SD zawartością nowego `sdcard.zip`
+i wgraj nowy firmware. Samo wgranie firmware nie aktualizuje HTML na karcie.
+Czytnik stron używa wyrównanego bufora pośredniego w wewnętrznym RAM
+i odczytów po maksymalnie 4096 bajtów, kopiowanych do bufora odpowiedzi SDRAM.
+Na konsoli są komunikaty `HTTP LPC: ... odczyt SD`, `SD OK, ... bajtow`,
+błąd z kodem FatFs lub informacja o wysłaniu całej odpowiedzi. Brak pliku,
+niepełny odczyt, zajęta karta i przekroczenie bufora zwracają HTTP 503
+z konkretną przyczyną na stronie.

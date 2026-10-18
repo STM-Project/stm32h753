@@ -1,5 +1,5 @@
 #include "lpc_pages.h"
-#include "../General_Utilities/timer.h"
+#include "timer.h"
 #include "ff.h"
 #include <stdio.h>
 #include <string.h>
@@ -51,17 +51,52 @@ static int save(const void *data,size_t length,void *context)
     GiveMutex(Semphr_cardSD);return ok?1:-1;
 }
 int LPC_StorageInit(void){int result=LPC_SettingsInit(load,save,NULL);settings_ready=result>=0;return result;}
+/* DMA reads use internal, cache-line-aligned staging memory. Copy completed
+ * chunks to the queued SDRAM response; never issue a whole-page DMA transfer. */
+static unsigned char pageReadBuffer[4096] __attribute__((aligned(32)));
+static char pageError[128];
+const char *LPC_StoragePageError(void){return pageError;}
 size_t LPC_StorageReadPage(unsigned page,char *out,size_t capacity)
 {
+    pageError[0]=0;
     if(!page || page>LPC_PAGE_COUNT || !out || capacity<2)return 0;
     if(!settings_ready)LPC_StorageInit();
-    out[0]=0;char path[32];snprintf(path,sizeof path,"0:/LPC/P%05u.HTM",page);
-    if(!TakeMutex(Semphr_cardSD,1000))return 0;
-    size_t size=0;UINT got=0;
-    if(f_open(&file,path,FA_READ)==FR_OK){
-        size=(size_t)f_size(&file);
-        if(!size || size>=capacity || f_read(&file,out,(UINT)size,&got)!=FR_OK || got!=size)size=0;
-        if(f_close(&file)!=FR_OK)size=0;
+    out[0]=0;
+    char path[32];
+    snprintf(path,sizeof path,"0:/LPC/P%05u.HTM",page);
+    if(!TakeMutex(Semphr_cardSD,1000)){
+        snprintf(pageError,sizeof pageError,"SD zajeta: nie uzyskano mutexu.");
+        return 0;
     }
-    GiveMutex(Semphr_cardSD);out[size]=0;return size;
+    size_t size=0,offset=0;
+    FRESULT result=f_open(&file,path,FA_READ);
+    if(result!=FR_OK){
+        snprintf(pageError,sizeof pageError,"Nie otwarto %s (FatFs=%u).",path,(unsigned)result);
+    }else{
+        size=(size_t)f_size(&file);
+        if(!size || size>=capacity){
+            snprintf(pageError,sizeof pageError,"Plik %s ma %u bajtow; limit %u.",path,(unsigned)size,(unsigned)(capacity-1));
+            size=0;
+        }
+        while(offset<size){
+            UINT chunk=(UINT)(size-offset),got=0;
+            if(chunk>sizeof pageReadBuffer)chunk=sizeof pageReadBuffer;
+            result=f_read(&file,pageReadBuffer,chunk,&got);
+            if(result!=FR_OK || got!=chunk){
+                snprintf(pageError,sizeof pageError,"Blad odczytu %s po %u bajtach (FatFs=%u).",path,(unsigned)offset,(unsigned)result);
+                size=0;
+                break;
+            }
+            memcpy(out+offset,pageReadBuffer,chunk);
+            offset+=chunk;
+        }
+        result=f_close(&file);
+        if(result!=FR_OK){
+            snprintf(pageError,sizeof pageError,"Blad zamkniecia %s (FatFs=%u).",path,(unsigned)result);
+            size=0;
+        }
+    }
+    GiveMutex(Semphr_cardSD);
+    out[size]=0;
+    return size;
 }

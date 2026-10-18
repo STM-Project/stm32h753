@@ -2,8 +2,22 @@
 """Build the LPC2148 SD package and the bounded firmware route/settings manifest."""
 import argparse,base64,hashlib,json,re,zipfile,io
 from pathlib import Path
+from html.parser import HTMLParser
 from generate_assets import build_html,WEB
 HERE=Path(__file__).resolve().parent
+
+class InlineResources(HTMLParser):
+ def handle_starttag(self,tag,attrs):
+  attrs=dict(attrs)
+  for name in ('src','srcset','background','poster','data'):
+   value=attrs.get(name,'')
+   if value and not value.startswith(('data:','#')):
+    raise ValueError('Non-inline resource: '+tag+' '+name+'='+value)
+  if tag=='link' and attrs.get('href') and not attrs['href'].startswith('data:'):
+   raise ValueError('Non-inline link resource')
+  if '@import' in attrs.get('style','').lower():raise ValueError('External CSS import')
+ def handle_startendtag(self,tag,attrs):self.handle_starttag(tag,attrs)
+
 
 def build():
  spec=json.loads((HERE/'pages.json').read_text());fields=spec['fields'];index={f['name']:i for i,f in enumerate(fields)}
@@ -34,8 +48,15 @@ def build():
  # All resources are inline in each SD document, preserving one request per page.
  for page in spec['pages']:
   page['body']=re.sub(r'\sdata-role=[\"\']page[\"\']', '', page['body'])
- root=build_html();head=root[:root.rindex('</head><body>')+7+6]
- common_css='''<style>.lpc-navigation{padding:12px;background:#e8eef5}.lpc-status{padding:10px;color:#17476e}body{margin:0}body img{max-width:100%}#lpc-content{padding:15px;overflow-x:auto}#lpc-content table{max-width:100%}#lpc-content>div{max-width:100%}.lpc-disabled{opacity:.5}.lpc-catalog{font-size:16px}#lpc-content input,#lpc-content select{max-width:100%}</style>'''
+ root=build_html();head=root[:root.rindex('</head><body>')]
+ # Render the body before the large inline libraries arrive over ESP/UART.
+ # Extract only actual script elements; escaped </script in JS stays intact.
+ scripts=re.findall(r'<script\b[^>]*>.*?</script\s*>',head,re.I|re.S)
+ head=re.sub(r'<script\b[^>]*>.*?</script\s*>','',head,flags=re.I|re.S)
+ head+='<link rel="icon" href="data:,">'
+ head+="<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self' data:; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'self'; object-src 'none'\">"
+ head+='</head><body>'
+ common_css='''<style>.ui-page{display:block}.lpc-navigation{padding:12px;background:#e8eef5}.lpc-status{padding:10px;color:#17476e}body{margin:0}body img{max-width:100%}#lpc-content{padding:15px;overflow-x:auto}#lpc-content table{max-width:100%}#lpc-content>div{max-width:100%}.lpc-disabled{opacity:.5}.lpc-catalog{font-size:16px}#lpc-content input,#lpc-content select{max-width:100%}</style>'''
  adapter=(WEB/'legacy.js').read_text()
  nav='<nav class="lpc-navigation"><a href="/nowa">Panel /nowa</a> | <a href="/lpc">Wszystkie strony LPC2148</a> | <a href="/set">Konfiguracja portów H7</a></nav><div id="lpc-status" class="lpc-status" role="status">Wczytywanie ustawień i danych…</div>'
  # Map legacy navigation to numbered destinations, using source file names.
@@ -44,6 +65,14 @@ def build():
  rows=[];items=[]
  for p in spec['pages']:
   body=p['body']
+  def css_image(match):
+   name=match[1].strip(' \"\'')
+   if name.startswith('data:'):return match[0]
+   image=next((path for path in WEB.rglob('*') if path.is_file() and path.relative_to(WEB).as_posix().lower()==name.lstrip('/').lower()),None)
+   if image is None:raise ValueError('Missing inline CSS image '+name)
+   mime={'.jpg':'image/jpeg','.png':'image/png','.gif':'image/gif','.svg':'image/svg+xml'}[image.suffix.lower()]
+   return 'url(data:'+mime+';base64,'+base64.b64encode(image.read_bytes()).decode()+')'
+  body=re.sub(r'url\(([^)]*)\)',css_image,body,flags=re.I)
   def link(m):
    value=m[1]
    if value.startswith('#'):return m[0]
@@ -55,8 +84,8 @@ def build():
    return 'href="'+(target or '/lpc')+'"'
   body=re.sub(r'href="([^"]*)"',link,body)
   boot='<script>window.LPC_PAGE='+str(p['number'])+';window.LPC_FORM_FIELDS='+json.dumps([[name for name in form['fields']] for form in p['forms']])+ ';window.LPC_FORM_ACTIONS='+json.dumps([form['submit'] for form in p['forms']])+ ';window.LPC_SOURCES='+json.dumps(p['source'])+';</script>'
-  html=head+common_css+boot+'<div data-role="page"><div data-role="content">'+nav+'<main id="lpc-content">'+body+'</main></div></div><script>'+adapter.replace('</script','<\\/script')+'</script></body></html>'
-  if re.search(r'<(?:script[^>]*src|link[^>]*stylesheet)',html,re.I):raise ValueError('External resource '+p['source'])
+  html=head+common_css+'<div data-role="page"><div data-role="content">'+nav+'<main id="lpc-content">'+body+'</main></div></div>'+''.join(scripts)+boot+'<script>'+adapter.replace('</script','<\\/script')+'</script></body></html>'
+  InlineResources().feed(html)
   items.append((f'LPC/P{p["number"]:05d}.HTM',html.encode()))
   rows.append({'address':p['path'],'source':p['source'],'title':p['title'],'forms':len(p['forms'])})
  readme='Kopiuj folder LPC do katalogu głównego karty SD (FAT/FAT32).\n/nowa pozostaje we Flash; /nowa1.. wymagają tego pakietu.\nLista stron: /lpc lub STRONY.csv.\n'

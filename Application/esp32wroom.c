@@ -715,12 +715,16 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	int nrPartWWW=0;	char* httpBuff=httpPageBuff[channel];	char* ptr=httpBuff;
 	switch(nrWWW){
     case WWW_LPC_SD:
+        DbgVarDma(1,120,"\r\nHTTP LPC: TCP=%u /nowa%u odczyt SD...\r\n",(unsigned)httpPar.que[channel]+1u,httpSensorPort[channel]);
         httpPar.web[channel][nrPartWWW]=httpLpcSdBuff[channel];
         httpPar.siz[channel][nrPartWWW++]=(u32)LPC_StorageReadPage(httpSensorPort[channel],httpLpcSdBuff[channel],sizeof httpLpcSdBuff[channel]);
         if(!httpPar.siz[channel][0]){
             httpResponseStatus[channel]=503;
-            strcpy(httpBuff,"<!doctype html><meta charset='UTF-8'><p>Nie wczytano strony z karty SD. Rozpakuj sdcard.zip i skopiuj folder LPC do katalogu glownego karty.</p><a href='/lpc'>Lista stron</a> | <a href='/nowa'>Panel we Flash</a>");
+            snprintf(httpBuff,sizeof httpPageBuff[channel],"<!doctype html><meta charset='UTF-8'><p>Nie wczytano strony z karty SD.</p><p>%s</p><p>Rozpakuj sdcard.zip i skopiuj folder LPC do katalogu glownego karty.</p><a href='/lpc'>Lista stron</a> | <a href='/nowa'>Panel we Flash</a>",LPC_StoragePageError());
+            DbgVarDma(1,200,"\r\nHTTP LPC: /nowa%u BLAD: %s\r\n",httpSensorPort[channel],LPC_StoragePageError());
             httpPar.web[channel][0]=httpBuff;httpPar.siz[channel][0]=(u32)strlen(httpBuff);
+        }else{
+            DbgVarDma(1,128,"\r\nHTTP LPC: /nowa%u SD OK, %u bajtow do wyslania\r\n",httpSensorPort[channel],(unsigned)httpPar.siz[channel][0]);
         }
         break;
     case WWW_LPC_CONFIG:
@@ -1329,6 +1333,8 @@ static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl)
     if(part>=MAX_HTML_WEBs || !httpPar.web[slot][part] ||
        httpTxOffset[slot]>httpPar.siz[slot][part]){
         httpPar.ptr[slot]=NULL;httpPar.len[slot]=0;httpTxPhase[slot]=3;
+        if(httpPar.web[slot][1]==httpLpcSdBuff[slot])
+            DbgVarDma(1,120,"\r\nHTTP LPC: TCP=%u cala odpowiedz wyslana, zamykam polaczenie\r\n",(unsigned)httpPar.chnl+1u);
         SendToEsp32_http(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl),NULL,archType);
         return;
     }

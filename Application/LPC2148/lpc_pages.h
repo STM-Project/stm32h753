@@ -35,5 +35,6 @@ unsigned LPC_ResolveSettingsApi(const char *target,size_t length);
 size_t LPC_CatalogRender(char *out,size_t capacity);
 /* FatFs adapters; do not hold the SD mutex while sending HTTP data. */
 int LPC_StorageInit(void);
+const char *LPC_StoragePageError(void);
 size_t LPC_StorageReadPage(unsigned page,char *out,size_t capacity);
 #endif
