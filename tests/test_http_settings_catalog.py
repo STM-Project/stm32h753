@@ -130,8 +130,7 @@ def verify_procedural_fields(pages):
 
 def verify_h753_modes(pages):
     fields = {f["name"]: f for f in pages["/set"]["fields"]}
-    defaults = [2, 2, 3, 3, 9, 9, 4, 4, 13, 13, 6, 6, 6, 2, 5, 5, 7, 7, 2, 9,
-                0, 0, 10, 10, 11, 11, 8, 0, 10, 11, 6, 6, 0]
+    defaults = [2] * 3 + [4] * 7 + [6] * 17 + [0] * 4 + [6] * 2
     # Exercise the actual getter: defaults now come from the catalog rather
     # than a second, duplicated C array in wwwPages.c.
     source = (ROOT / "Application/wwwPages.c").read_text()

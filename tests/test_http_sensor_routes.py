@@ -162,7 +162,14 @@ static void feed_request(HTTP_RequestStream *stream, unsigned channel,
     }
 }
 
+/* Explicit RHU test fixture: production defaults now match /nowa. */
+static const char *sensor_test_mode(const HTTP_SettingPage *page,uint16_t instance,
+                                   const HTTP_SettingField *field,void *context) {
+    (void)page;(void)instance;(void)context;
+    return !strcmp(field->name,"n_GPIO_val_005")?"09":NULL;
+}
 int main(void) {
+    HTTP_SettingsSetDefaultResolver(sensor_test_mode,NULL);
     static char html[250000], first[250000], target[HTTP_SENSOR_TARGET_MAX];
     HTTP_RequestStream stream;
     assert(HTTP_REQUEST_STREAM_CHANNELS >= ESP_MAX_HTTP_CONN);
@@ -252,6 +259,7 @@ int main(void) {
     assert(saves == before);
     assert(reload_count > 20);
     assert(bindings_count == 0);
+    HTTP_SettingsSetDefaultResolver(NULL,NULL);
     puts("PASS: /set aliases, sensor links/cards, strict routes, HTTP lengths/UTF-8, queued buffer isolation, all ESP channels and persistent CGI 200/400/503 responses.");
     return 0;
 }

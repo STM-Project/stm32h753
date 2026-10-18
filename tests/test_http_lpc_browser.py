@@ -32,7 +32,8 @@ with sync_playwright() as p:
  page.goto('http://stm32.test/nowa',wait_until='networkidle')
  page.wait_for_function("document.querySelector('#connection').textContent.includes('Ostatni odczyt')")
  assert page.locator('#tu_temp001').inner_text()=='brak danych'
- assert not page.locator('[data-output="1"]').is_disabled()
+ for channel in range(1,5):
+  assert not page.locator('[data-output="'+str(channel)+'"]').is_disabled()
  for port,value in [(1,251),(2,-123),(3,405)]:assert l.HTTP_LpcSetTemperature(port,value,1)
  assert l.HTTP_LpcSetInput(4,1,1);assert l.HTTP_LpcSetInput(5,0,1);assert l.RELAY_UpdateState(28,1)
  page.wait_for_function("document.querySelector('#tu_temp001').textContent==='25.1'")

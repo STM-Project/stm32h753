@@ -41,6 +41,12 @@ Są to numery logiczne portów, **nie numery pinów GPIO**.
 | Wejście 1–7 | 4, 5, 6, 7, 8, 9, 10 |
 | PK1–PK4 | 28, 29, 30, 31 |
 
+Domyślne tryby `/set` odpowiadają temu przypisaniu: porty 1–3 — temperatura,
+4–10 — wejście cyfrowe, 28–31 — przekaźnik. Pozostałe porty są domyślnie
+wyłączone. Konfiguracja zapisana wcześniej na SD ma pierwszeństwo i nie jest
+nadpisywana aktualizacją firmware. Na urządzeniu z wcześniejszą konfiguracją
+ustaw te tryby w `/set` i wybierz „Zapisz Tryb”.
+
 Tablice `HTTP_LpcTemperaturePorts`, `HTTP_LpcInputPorts` i
 `HTTP_LpcOutputPorts` są w `http_lpc_panel.c`. PK1–PK4 wykorzystują istniejące
 polecenia `/mobile/pk001`–`004`; ich numery muszą odpowiadać mapowaniu

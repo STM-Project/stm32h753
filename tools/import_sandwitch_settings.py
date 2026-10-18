@@ -250,10 +250,9 @@ def build_pages(templates):
     for nr, label in {15: "0-10V", 16: "0-10V", 17: "E1", 18: "E2", 19: "E3", 20: "E4", 21: "PW1", 22: "PW2", 23: "PW3", 24: "OC1", 25: "OC2", 26: "OC3", 27: "OC4", 28: "PK1", 30: "PK3", 31: "PK4", 32: "PK5", 33: "PK6"}.items():
         names[nr - 1] += "     " + label
     names[28] = "Moj Przekaznik"
-    # Same defaults as HTTP_SettingsPortMode in wwwPages.c (CGI HTTP_MODE_*,
-    # not the older template type enum or legacy Sandwitch GPIO defaults).
-    modes = [2, 2, 3, 3, 9, 9, 4, 4, 13, 13, 6, 6, 6, 2, 5, 5, 7, 7, 2, 9,
-             0, 0, 10, 10, 11, 11, 8, 0, 10, 11, 6, 6, 0]
+    # /nowa: three temperatures, seven digital inputs and PK1..4.
+    # Other ports start disabled; persisted SD settings still take precedence.
+    modes = [2] * 3 + [4] * 7 + [6] * 17 + [0] * 4 + [6] * 2
     for nr in range(1, 34):
         port_fields.append(dict(name=f"n_s_Port_nazwa{nr}_001", default_value=names[nr - 1], kind="TEXT", max_length=30, flags=1, form_id=0))
     for nr in range(1, 34):

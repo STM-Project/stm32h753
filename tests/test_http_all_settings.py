@@ -27,7 +27,7 @@ int main(void) {
     assert(HTTP_SensorSettingsInit(NULL,sensor_save,NULL)==0);
     const HTTP_AllSettings *cfg=HTTP_SettingsGetAll();
     assert(cfg==&HTTP_AllSettingsData);
-    assert(cfg->ports[0].mode==2 && cfg->ports[32].mode==0);
+    assert(cfg->ports[0].mode==2 && cfg->ports[32].mode==6);
     assert(!strcmp(cfg->ports[0].name,"Nazwa portu nr 1"));
     assert(!strcmp(cfg->sensors[0][0].name,"Temperatura"));
     clear_overrides();change("n_s_Tim_godzON1_001","08:30:45");

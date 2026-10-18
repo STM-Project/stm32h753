@@ -102,10 +102,15 @@ int main(void) {
         # Semantic fingerprints of the original HttpMainSettings controls.
         # The original uu_pk027 typo is corrected to match its refresh target.
         expected = json.loads((ROOT/'tests/fixtures/settings_controls.sha256.json').read_text())
+        # Mode defaults intentionally follow /nowa; verify every port explicitly.
+        modes = [2] * 3 + [4] * 7 + [6] * 17 + [0] * 4 + [6] * 2
+        assert controls.selected == collections.Counter({
+            (f'n_GPIO_val_{port:03}', f'{mode:02}p{port:03}'): 1
+            for port, mode in enumerate(modes, 1)})
         for name, digest in expected.items():
             actual = hashlib.sha256(json.dumps(sorted(getattr(controls,name).items()),ensure_ascii=False).encode()).hexdigest()
             assert actual == digest, f'Original settings controls changed: {name}'
-        print('PASS: original IDs, links, fields, options, selected modes and input values preserved.')
+        print('PASS: original IDs, links, fields, options and input values preserved; /nowa mode defaults verified.')
         scripts = re.findall(r'<script[^>]*>(.*?)</script>',rendered,re.S)
         for i,script in enumerate(scripts):
             js=tmp/f'script{i}.js'; js.write_text(script)
@@ -127,7 +132,7 @@ context.window.onload();
 for(const name in selected) assert.equal(nodes[selected[name]].style.display,'block');
 forms.wybor005.n_GPIO_val_005.value='02p005';
 forms.wybor005.n_GPIO_val_005.onchange.call(forms.wybor005.n_GPIO_val_005);
-assert.equal(nodes['09p005'].style.display,'none');
+assert.equal(nodes['04p005'].style.display,'none');
 assert.equal(nodes['02p005'].style.display,'block');
 context.zaladuj();
 assert.equal(submitted.method,'post');assert.equal(submitted.action,'/lpc.cgi/A117');
