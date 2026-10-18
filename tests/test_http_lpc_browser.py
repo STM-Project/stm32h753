@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Optional Chromium/Playwright test of the offline LPC panel and real C data model."""
 from pathlib import Path
-import subprocess,ctypes as c,json,tempfile
+import subprocess,ctypes as c,json,tempfile,sys
 work=tempfile.TemporaryDirectory(prefix="lpc-browser-")
 library=str(Path(work.name)/"live.so")
 from urllib.parse import urlsplit,urlencode
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1];app=root/'Application'
+sys.path.insert(0,str(root/'tools'))
+from generate_lpc_assets import build_html
+html=build_html()
 subprocess.run(['gcc','-shared','-fPIC','-std=c11','-I'+str(app),'-I'+str(app/'HTTP'),*[str(app/n) for n in ['HTTP/http_lpc_panel.c','HTTP/http_sensor_settings.c','HTTP/http_settings_model.c','HTTP/http_settings_catalog.c','relay_states.c']],'-o',library],check=True)
 l=c.CDLL(library);l.HTTP_LpcPanelJson.argtypes=[c.c_char_p,c.c_size_t];l.HTTP_LpcPanelJson.restype=c.c_size_t
 save_sensor=c.CFUNCTYPE(c.c_int,c.c_void_p,c.c_size_t,c.c_void_p)(lambda *_:1)
@@ -23,11 +26,8 @@ with sync_playwright() as p:
   if url.path=='/mobile/pk001':
    assert l.RELAY_RequestToggle(28);route.fulfill(content_type='text/plain',body='OK');return
   if url.path=='/api/nowa':route.fulfill(content_type='application/json',body=data());return
-  name='index.html' if url.path=='/nowa' else url.path.removeprefix('/lpc/')
-  path=root/'web/lpc2148'/name
-  assert path.is_file(),path
-  types={'.js':'application/javascript','.css':'text/css','.html':'text/html','.svg':'image/svg+xml','.png':'image/png','.gif':'image/gif'}
-  route.fulfill(content_type=types[path.suffix],body=path.read_bytes())
+  assert url.path=='/nowa',('Unexpected resource request',url.path)
+  route.fulfill(content_type='text/html; charset=UTF-8',body=html)
  page.route('**/*',respond)
  page.goto('http://stm32.test/nowa',wait_until='networkidle')
  page.wait_for_function("document.querySelector('#connection').textContent.includes('Ostatni odczyt')")
@@ -57,6 +57,7 @@ with sync_playwright() as p:
  assert page.locator('.temperatures svg').count()==3
  assert page.locator('#container svg').count()==1
  assert not errors,errors
+ assert requests.count('/nowa')==1 and set(requests)<={'/nowa','/api/nowa','/mobile/pk001'},requests
  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
  page.screenshot(path=str(Path(work.name)/"desktop.png"),full_page=True)
  page.set_viewport_size({'width':390,'height':844});page.wait_for_timeout(600)

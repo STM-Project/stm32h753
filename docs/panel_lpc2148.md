@@ -19,6 +19,12 @@ Wykres przechowuje ostatnie 300 odczytów w przeglądarce; nie jest archiwum SD.
 - `Application/HTTP/http_lpc_assets.c`: wygenerowane, stałe zasoby Flash.
 - `tools/generate_lpc_assets.py`: regeneracja po zmianie HTML/JS/CSS/obrazów.
 
+Generator łączy skrypty i style z HTML, kod SVG osadza jako tekst, a obrazy
+CSS jako data URI. Otwarcie `/nowa` pobiera tylko jeden dokument, bez żądań
+o biblioteki, CSS i SVG. Pomiary i przyciski nadal używają osobnych żądań HTTP;
+serwer zamyka połączenie po każdej odpowiedzi. Nie jest to jedno trwałe
+połączenie TCP na całą sesję.
+
 Strona i biblioteki mieszczą się w wewnętrznej pamięci Flash 2 MB, dlatego
 nie wymagają kopiowania plików na SD ani dostępu do Internetu. Zasoby są wysyłane
 bez kopiowania całych bibliotek do RAM. Karta SD nadal służy do zapisu ustawień.

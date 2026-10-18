@@ -9,19 +9,16 @@ int main(void) {
     HTTP_SettingsModelInit(NULL,discard_save,NULL);
     HTTP_SensorSettingsInit(NULL,NULL,NULL);
     RELAY_ResetStates();HTTP_LpcResetMeasurements();
-    request(0,"/nowa");check_response(0,200,"text/html; charset=UTF-8");
+    request(0,"/nowa");assert(strstr(httpPar.web[0][0],"HTTP/1.1 200 OK"));
     const HTTP_LpcAsset *page=HTTP_LpcFindAsset("/nowa",5);
     assert(page && strstr(page->data,"id=\"fixture3\"") && !strstr(page->data,"<%"));
     assert(!HTTP_LpcFindAsset("/lpc/../index.html",18));
-    const char *paths[]={"/lpc/panel.js","/lpc/jquery/jquery-1.8.2.min.js","/lpc/jquery/jquery.mobile-1.2.0.min.js","/lpc/jquery/highcharts.js","/lpc/jquery/jquery.thermometer.js","/lpc/svg/thermo-bottom.svg","/lpc/jquery/jquery.mobile-1.2.0.min.css","/lpc/jquery/images/icons-18-white.png","/lpc/jquery/images/ajax-loader.gif"};
-    for(unsigned i=0;i<sizeof(paths)/sizeof(paths[0]);i++){
-        const HTTP_LpcAsset *asset=HTTP_LpcFindAsset(paths[i],strlen(paths[i]));assert(asset && asset->length);
-        request(0,paths[i]);
-        if(strncmp(asset->content_type,"image/",6))check_response(0,200,asset->content_type);
-        else {assert(strstr(httpPar.web[0][0],"HTTP/1.1 200 OK"));assert(strstr(httpPar.web[0][0],asset->content_type));}
-        assert(httpPar.siz[0][1]==asset->length);
-        assert(!memcmp(httpPar.web[0][1],asset->data,asset->length));
-    }
+    assert(page->length>400000u && httpPar.siz[0][1]==page->length);
+    assert(!strstr(page->data,"<script src="));
+    assert(!strstr(page->data,"<link rel=\"stylesheet\""));
+    assert(strstr(page->data,"window.HTTP_LPC_SVG="));
+    assert(!HTTP_LpcFindAsset("/lpc/panel.js",13));
+    assert(httpPar.web[0][1]==page->data);
     request(0,"/api/nowa");check_response(0,200,"application/json; charset=UTF-8");
     body(0,data,sizeof data);assert(strstr(data,"\"tenths\":null"));assert(strstr(data,"\"state\":null"));
     for(unsigned i=0;i<HTTP_LPC_TEMPERATURE_COUNT;i++)assert(HTTP_LpcSetTemperature(i+1,251+(int)i,1));

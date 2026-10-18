@@ -28,7 +28,7 @@
             if (!thermometers[i]) {
                 $(fixture).thermometer({startValue:0, height:150, width:'100%', minValue:0,
                     maxValue:bounds[1]-bounds[0], bottomText:String(bounds[0]), topText:String(bounds[1]),
-                    pathToSVG:'/lpc/svg/thermo-bottom.svg', animationSpeed:300,
+                    svgMarkup:window.HTTP_LPC_SVG, animationSpeed:300,
                     liquidColour:function(v){var p=Math.max(0,Math.min(1,v/(bounds[1]-bounds[0])));return 'rgb(255,'+Math.round(255*(1-p))+',0)';}});
                 thermometers[i] = {key:key, bounds:bounds, element:$(fixture)};
             } else if (thermometers[i].key !== key) {
@@ -36,7 +36,7 @@
                 $(fixture).thermometer('destroy');$(fixture).empty();thermometers[i]=null;
             }
             var widget = thermometers[i];
-            /* The original widget loads its SVG asynchronously. */
+            /* SVG is embedded in this document; no additional connection. */
             if (widget && $(fixture).find('svg').length) {
                 $(fixture).thermometer('setValue', value === null ? 0 : value - bounds[0]);
             }

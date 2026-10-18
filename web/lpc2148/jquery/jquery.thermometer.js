@@ -136,7 +136,8 @@
 			this.element.append( div );
 			this.fixtureId = this.element.attr('id');
 
-			div.load( this.options.pathToSVG, null, function() {
+			div.html(this.options.svgMarkup);
+            (function() {
 				// Scale the SVG to the options provided.
 				var svg = $(this).find("svg");
 				self._setupSVGLinks(svg);
@@ -159,7 +160,7 @@
 				if( self.options.onLoad ) {
 					self.options.onLoad();
 				}
-			} );
+			}).call(div[0]);
 		},
 
 		_update: function() {
@@ -226,7 +227,7 @@
 			tickColour: '#000000',
 			liquidColour: "#ff0000",
 			animationSpeed: 1000,
-			pathToSVG: "svg/thermo-bottom.svg",
+			svgMarkup: "",
 			valueChanged: undefined,
 			onLoad: undefined
 		}
