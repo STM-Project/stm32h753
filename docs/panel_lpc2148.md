@@ -55,38 +55,34 @@ ustawionego w `/set`. Panel nie zmienia zapisanych trybów automatycznie.
 Nazwy wejść/wyjść pochodzą z `/set`, a nazwy, progi termometrów i korekcja
 z `/temp001`–`/temp003`. Jeśli zakres progów jest pusty, skala wynosi -10..50°C.
 
-## Przekazywanie rzeczywistych odczytów
+## Źródło odczytów — bufor SDRAM
 
-```c
-#include "HTTP/http_lpc_panel.h"  /* z pliku w Application */
-#include "relay_states.h"
+`/api/nowa` odczytuje bezpośrednio `HttpRefr_sdram`, czyli ten sam bufor, który
+obsługuje `/TME.txt`. Aktualizowanie bufora przez dotychczasowy kod od razu
+aktualizuje nowy panel. Nie trzeba dodatkowo wywoływać funkcji publikujących.
 
-/* Po odczycie czujników: wartości surowe, w dziesiątych częściach stopnia. */
-HTTP_LpcSetTemperature(1, 251, 1);  /* 25,1°C */
-HTTP_LpcSetTemperature(2, -123, 1); /* -12,3°C */
-HTTP_LpcSetTemperature(3, 405, 1);  /* 40,5°C */
-HTTP_LpcSetInput(4, 1, 1);         /* pierwsze wejście: ON */
-HTTP_LpcSetInput(5, 0, 1);         /* drugie wejście: OFF */
+Format danych (offsety liczone od zera):
 
-/* Gdy pomiar znika/kończy się jego dopuszczalny czas ważności: */
-HTTP_LpcSetTemperature(1, 0, 0);
-HTTP_LpcSetInput(4, 0, 0);
+- Wyjścia: od bajtu 25; kolejność jak `RelayStatesData.outputs`.
+  Kody 0/2 = OFF, 1/3 = ON.
+- Wejścia: od bajtu 39; porty 1–14 w kolejnych bajtach.
+  Kody 0/2 = ON, 1/3 = OFF (logika aktywna stanem niskim).
+  Panel wykorzystuje bajty 42–48 dla portów 4–10.
+- Temperatury: pięć znaków od offsetu `73 + (port-1)*12`.
+  Pierwsze trzy temperatury zaczynają się w bajtach 73, 85, 97.
+  Przykładowo ` 25.1`, `-78.3`, `-56.0`.
 
-/* Po wykonaniu/odczytaniu wyjścia przez sterownik sprzętowy: */
-RELAY_UpdateState(28, 1);
-/* Gdy sterownik nie zna stanu: */
-RELAY_InvalidateState(28);
-```
+Wartości temperatur z bufora są gotowe do wyświetlenia, tak jak na dotychczasowej
+stronie. Korekcja nie jest dodawana drugi raz. Progi skali termometrów i nazwy
+nadal pochodzą z ustawień. Niepełne lub nieprawidłowe pola dają „brak danych”;
+termometry pozostają widoczne, ale przygaszone. Nie są zastępowane zerem.
+Zadane stany przekaźników nadal są oznaczone osobno jako „zadano ON/OFF”.
+Przed poleceniem przycisku odczytywany jest bieżący stan wyjścia z bufora.
 
-Funkcje zwracają 1 dla poprawnego portu/argumentów, 0 dla błędu. Temperatura
-z ważnym pomiarem musi mieścić się w -55..150°C. Korekcja z ustawień jest
-stosowana raz, podczas generowania JSON. Do funkcji należy przekazać odczyt
-przed korekcją. Zmienne pomiarów są w `HTTP_LpcMeasurementsData`; początkowo
-wszystkie odczyty są nieważne. Nie są odtwarzane z SD. Wywołuj funkcje w jednym
-zadaniu właściciela albo zapewnij synchronizację z zadaniem HTTP.
+Bufor należy aktualizować w zadaniu właściciela lub synchronizować aktualizację
+z zadaniem HTTP. Panel nie tworzy pomiarów samodzielnie: pokazuje wartości
+umieszczone w `HttpRefr_sdram`, w tym dane testowe, jeśli takie zawiera bufor.
 
-Projekt nie zawiera obecnie sterowników czujników temperatury ani przypisania
-GPIO przekaźników. Te funkcje są punktem podłączenia Twojego kodu sprzętowego;
-nie uruchamiają pomiaru ani nie przełączają pinów samodzielnie. Do czasu podania
-pomiarów strona pokazuje „brak danych”, a bez zgłoszenia stanu przekaźnika —
-„brak potwierdzenia”. Zadana komenda jest oznaczona osobno jako „zadano ON/OFF”.
+Alternatywny interfejs `HTTP_LpcSetTemperature()`, `HTTP_LpcSetInput()` oraz
+`HTTP_LpcPanelJson()` pozostał dostępny dla kodu korzystającego z osobnej
+struktury `HTTP_LpcMeasurementsData`. Nie jest domyślnym źródłem `/nowa`.

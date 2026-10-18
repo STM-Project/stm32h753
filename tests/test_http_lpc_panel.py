@@ -37,11 +37,28 @@ int main(void) {
     main_mode_override[28]="00";generic_form("/set",1,0,0);target=generic_target;
     assert(HTTP_SettingsApplyTarget(target,strlen(target),&settings,&instance)==HTTP_SETTINGS_SAVED);
     HTTP_LpcPanelJson(data,sizeof data);assert(strstr(data,"Kuchnia & <ok> Łódź"));assert(strstr(data,"\"enabled\":true"));
+    /* Use the actual legacy SDRAM layout, not the separate publication API. */
+    memset(HttpRefr_sdram,' ',120);HttpRefr_sdram[120]=0;
+    memcpy(HttpRefr_sdram+25,"0123",4);
+    memcpy(HttpRefr_sdram+39,"111023101111111111",18);
+    memcpy(HttpRefr_sdram+73," 25.1",5);memcpy(HttpRefr_sdram+85,"-12.3",5);memcpy(HttpRefr_sdram+97," 40.5",5);
+    request(0,"/api/nowa");body(0,data,sizeof data);
+    assert(strstr(data,"\"tenths\":251") && strstr(data,"\"tenths\":-123") && strstr(data,"\"tenths\":405"));
+    /* Active-low: input port 4 has code 0 (ON), port 5 code 2 (ON). */
+    const char *input=strstr(data,"\"port\":4,");const char *state=strstr(input,"\"state\":true");
+    assert(state && state<strchr(input,'}'));
+    input=strstr(data,"\"port\":6,");state=strstr(input,"\"state\":false");assert(state && state<strchr(input,'}'));
+    for(size_t length=0;length<121;length++)assert(HTTP_LpcPanelJsonFromRefresh(data,sizeof data,HttpRefr_sdram,length));
+    memcpy(HttpRefr_sdram+85,"-78.3",5);memcpy(HttpRefr_sdram+97,"-56.0",5);
+    request(0,"/api/nowa");body(0,data,sizeof data);
+    assert(strstr(data,"\"tenths\":-783") && strstr(data,"\"tenths\":-560"));
+    memcpy(HttpRefr_sdram+73," --.-",5);request(0,"/api/nowa");body(0,data,sizeof data);assert(strstr(data,"\"tenths\":null"));
+    memcpy(HttpRefr_sdram+73," 25.1",5);
     clear_queue();HTTP_HandleTarget(2,"/api/nowa",9,NULL);body(0,snapshot,sizeof snapshot);
-    assert(HTTP_LpcSetTemperature(1,-55,1));HTTP_HandleTarget(1,"/api/nowa",9,NULL);
+    memcpy(HttpRefr_sdram+73,"-05.5",5);HTTP_HandleTarget(1,"/api/nowa",9,NULL);
     body(0,data,sizeof data);assert(!strcmp(data,snapshot));body(1,data,sizeof data);assert(strstr(data,"\"tenths\":-55"));
     request(0,"/mobile/pk001");check_response(0,200,"text/html; charset=UTF-8");
-    HTTP_LpcPanelJson(data,sizeof data);assert(strstr(data,"\"state\":true,\"requested\":false"));
+    HTTP_LpcPanelJson(data,sizeof data);assert(strstr(data,"\"state\":false,\"requested\":true"));
     assert(HTTP_LpcSetTemperature(1,0,0));assert(HTTP_LpcSetInput(4,0,0));
     HTTP_LpcPanelJson(data,sizeof data);assert(strstr(data,"\"tenths\":null"));
     puts("PASS: offline LPC resources, /nowa, JSON publication, unknown/actual/requested states, mode guards, escaped settings names, bounds and queued snapshot isolation.");

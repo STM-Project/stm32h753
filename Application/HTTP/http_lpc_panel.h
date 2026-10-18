@@ -27,6 +27,13 @@ int HTTP_LpcSetTemperature(unsigned port, int tenths, int valid);
 int HTTP_LpcSetInput(unsigned port, int on, int valid);
 void HTTP_LpcResetMeasurements(void);
 size_t HTTP_LpcPanelJson(char *out, size_t capacity);
+/* Live /nowa source: the same fixed-width snapshot as /TME.txt.
+ * Temperatures are already display values; do not apply correction twice.
+ * Inputs use the legacy active-low encoding (0/2=ON, 1/3=OFF).
+ * Missing/malformed fields become null, never the previous measurement. */
+int HTTP_LpcOutputStateFromRefresh(const char *refresh, size_t length, unsigned port);
+size_t HTTP_LpcPanelJsonFromRefresh(char *out, size_t capacity,
+                                  const char *refresh, size_t length);
 
 typedef struct { const char *path, *data, *content_type; size_t length; } HTTP_LpcAsset;
 const HTTP_LpcAsset *HTTP_LpcFindAsset(const char *path, size_t length);

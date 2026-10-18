@@ -708,7 +708,7 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
         break;
     case WWW_LPC_DATA:
         httpPar.web[channel][nrPartWWW]=httpBuff;
-        httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_LpcPanelJson(httpBuff,sizeof(httpPageBuff[channel]));
+        httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_LpcPanelJsonFromRefresh(httpBuff,sizeof(httpPageBuff[channel]),HttpRefr_sdram,strlen(HttpRefr_sdram));
         if (!httpPar.siz[channel][0]) httpResponseStatus[channel]=500;
         break;
 	case WWW_MAIN_READ:
@@ -1132,6 +1132,12 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 		status=400;
 		if(outputCommand>0){
 			unsigned mode=HTTP_SettingsPortMode(command.port);
+            /* Toggle against the same source displayed by /nowa and /TME.txt,
+             * instead of treating an unreported relay as initially OFF. */
+            if(command.kind!=HTTP_OUTPUT_PWM && (mode==HTTP_MODE_RELAY || mode==HTTP_MODE_IR)){
+                int state=HTTP_LpcOutputStateFromRefresh(HttpRefr_sdram,strlen(HttpRefr_sdram),command.port);
+                if(state>=0)RELAY_UpdateState(command.port,(unsigned)state);
+            }
 			int accepted=command.kind==HTTP_OUTPUT_PWM?
 				(mode==HTTP_MODE_PWM && RELAY_RequestPwm(command.port,command.value)):
 				((mode==HTTP_MODE_RELAY || mode==HTTP_MODE_IR) && RELAY_RequestToggle(command.port));

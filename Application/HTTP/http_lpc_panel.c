@@ -60,7 +60,38 @@ static const char *port_field(unsigned port,int mode)
     snprintf(name,sizeof name,mode?"n_GPIO_val_%03u":"n_s_Port_nazwa%u_001",port);
     return HTTP_SettingsGetByName(page,instance,name);
 }
-size_t HTTP_LpcPanelJson(char *out,size_t capacity)
+/* Fixed-width /TME.txt fields: outputs at 25, inputs at 39,
+ * and 12 bytes per sensor port starting at 73. */
+static int refresh_state(const char *data,size_t length,size_t offset,int input)
+{
+    if(!data || offset>=length || data[offset]<'0' || data[offset]>'3')return -1;
+    int on=(data[offset]-'0')&1;
+    return input?!on:on;
+}
+int HTTP_LpcOutputStateFromRefresh(const char *data,size_t length,unsigned port)
+{
+    const RelayStates *states=RELAY_GetStates();
+    for(unsigned i=0;i<RELAY_OUTPUT_COUNT;i++)
+        if(states->outputs[i].port==port)return refresh_state(data,length,25u+i,0);
+    return -1;
+}
+static int refresh_temperature(const char *data,size_t length,unsigned port,int *value)
+{
+    size_t offset=73u+(port-1u)*12u;
+    if(!data || offset>length || length-offset<5u)return 0;
+    const char *p=data+offset;
+    unsigned i=0,digits=0;int sign=1,number=0;
+    while(i<3u && p[i]==' ')i++;
+    if(i<3u && (p[i]=='-' || p[i]=='+')){if(p[i]=='-')sign=-1;i++;}
+    for(;i<3u;i++){
+        if(p[i]<'0' || p[i]>'9')return 0;
+        number=number*10+p[i]-'0';digits++;
+    }
+    if(!digits || p[3]!='.' || p[4]<'0' || p[4]>'9')return 0;
+    number=sign*(number*10+p[4]-'0');
+    *value=number;return 1;
+}
+static size_t panel_json(char *out,size_t capacity,const char *refresh,size_t length)
 {
     if(!out || !capacity)return 0;
     Writer w={out,capacity,0,0};out[0]=0;
@@ -70,15 +101,19 @@ size_t HTTP_LpcPanelJson(char *out,size_t capacity)
         const HttpSensorSettings *s=HTTP_SensorSettingsGet(port,0);
         append(&w,"%s{\"port\":%u,\"name\":",i?",":"",port);string(&w,s?s->name:"Temperatura");
         append(&w,",\"tenths\":");
-        if(HTTP_LpcMeasurementsData.temperature_valid[i])append(&w,"%d",HTTP_LpcMeasurementsData.temperature_tenths[i]+(s?s->correction:0));
-        else append(&w,"null");
+        int measured=0;
+        int valid=refresh?refresh_temperature(refresh,length,port,&measured):HTTP_LpcMeasurementsData.temperature_valid[i];
+        if(!refresh)measured=HTTP_LpcMeasurementsData.temperature_tenths[i]+(s?s->correction:0);
+        if(valid)append(&w,"%d",measured);else append(&w,"null");
         append(&w,",\"min\":%d,\"max\":%d}",s?s->min1:-100,s?s->max1:500);
     }
     append(&w,"],\"inputs\":[");
     for(unsigned i=0;i<HTTP_LPC_INPUT_COUNT;i++){
         unsigned port=HTTP_LpcInputPorts[i];
         append(&w,"%s{\"port\":%u,\"name\":",i?",":"",port);string(&w,port_field(port,0));
-        append(&w,",\"state\":%s}",!HTTP_LpcMeasurementsData.input_valid[i]?"null":HTTP_LpcMeasurementsData.input_on[i]?"true":"false");
+        int state=refresh?refresh_state(refresh,length,39u+port-1u,1):
+            !HTTP_LpcMeasurementsData.input_valid[i]?-1:HTTP_LpcMeasurementsData.input_on[i];
+        append(&w,",\"state\":%s}",state<0?"null":state?"true":"false");
     }
     append(&w,"],\"outputs\":[");
     for(unsigned i=0;i<HTTP_LPC_OUTPUT_COUNT;i++){
@@ -86,11 +121,23 @@ size_t HTTP_LpcPanelJson(char *out,size_t capacity)
         const char *mode=port_field(port,1);
         int enabled=mode && (strtoul(mode,NULL,10)==0 || strtoul(mode,NULL,10)==8);
         append(&w,"%s{\"port\":%u,\"command\":%u,\"name\":",i?",":"",port,i+1);string(&w,port_field(port,0));
+        int state=refresh?HTTP_LpcOutputStateFromRefresh(refresh,length,port):s && s->valid?s->on:-1;
         append(&w,",\"state\":%s,\"requested\":%s,\"enabled\":%s}",
-            !s || !s->valid?"null":s->on?"true":"false",
+            state<0?"null":state?"true":"false",
             !s || !s->request_valid?"null":s->requested_on?"true":"false",
             enabled?"true":"false");
     }
     append(&w,"]}");
     if(w.failed){out[0]=0;return 0;}return w.used;
+}
+
+size_t HTTP_LpcPanelJson(char *out,size_t capacity)
+{
+    return panel_json(out,capacity,NULL,0);
+}
+size_t HTTP_LpcPanelJsonFromRefresh(char *out,size_t capacity,const char *refresh,size_t length)
+{
+    /* A missing refresh snapshot must not silently select the separate
+     * direct-publication data source. */
+    return panel_json(out,capacity,refresh?refresh:"",refresh?length:0);
 }
