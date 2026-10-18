@@ -1,0 +1,218 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Odczyt wartosci</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+
+
+	<link rel="stylesheet" href="https://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="https://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="https://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+
+
+
+
+
+<script>
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00';    
+  }}
+}
+</script>
+
+
+
+
+
+
+	
+
+
+
+	
+<script type="text/javascript">
+
+	
+var auto_refresh = setInterval( function (){ $('#tu_zgr').load('TME.txt',function(data)
+{
+    j=0;   
+
+ 	 
+
+     var zgr=[]; for(i=0;i<8;i++) zgr[i]=data[j+i];   $( "#tu_zgr" ).html( zgr );  j+=9;       
+
+     var m_te1=[]; for(i=0;i<5;i++) m_te1[i]=data[j+i]; m_te1[i]=null; if(((m_te1[0]=='+')||(m_te1[0]=='-'))&&(m_te1[3]=='.')); else m_te1="---";    $( "#tu_temp001" ).html( m_te1 );  j+=6;
+	 var m_te2=[]; for(i=0;i<5;i++) m_te2[i]=data[j+i]; m_te2[i]=null; if(((m_te2[0]=='+')||(m_te2[0]=='-'))&&(m_te2[3]=='.')); else m_te2="---";    $( "#tu_temp002" ).html( m_te2 );  j+=6;
+	 var m_te3=[]; for(i=0;i<5;i++) m_te3[i]=data[j+i]; m_te3[i]=null; if(((m_te3[0]=='+')||(m_te3[0]=='-'))&&(m_te3[3]=='.')); else m_te3="---";    $( "#tu_temp003" ).html( m_te3 );  j+=6;
+	 var m_te4=[]; for(i=0;i<5;i++) m_te4[i]=data[j+i]; m_te4[i]=null; if(((m_te4[0]=='+')||(m_te4[0]=='-'))&&(m_te4[3]=='.')); else m_te4="---";    $( "#tu_temp004" ).html( m_te4 );  j+=6;
+	 var m_te5=[]; for(i=0;i<5;i++) m_te5[i]=data[j+i]; m_te5[i]=null; if(((m_te5[0]=='+')||(m_te5[0]=='-'))&&(m_te5[3]=='.')); else m_te5="---";    $( "#tu_temp005" ).html( m_te5 );  j+=6;
+	 var m_te6=[]; for(i=0;i<5;i++) m_te6[i]=data[j+i]; m_te6[i]=null; if(((m_te6[0]=='+')||(m_te6[0]=='-'))&&(m_te6[3]=='.')); else m_te6="---";    $( "#tu_temp006" ).html( m_te6 );  j+=6;
+	 
+	 	    
+	 
+   var m_pk1=[]; var pk001=[];  pk001="<%v_pksel001z%>"; if(pk001=="selected"){  if(data[j]=='1') m_pk1="<font size=\"4\" color=\"red\"><%v_pktxt001z%></font>";  else if(data[j]=='0')   m_pk1="<font size=\"4\" color=\"blue\"><%v_pktxt001w%></font>"; else m_pk1="----";   } else{  if(data[j]=='1') m_pk1="<font size=\"4\" color=\"blue\"><%v_pktxt001z%></font>";  else if(data[j]=='0')   m_pk1="<font size=\"4\" color=\"red\"><%v_pktxt001w%></font>"; else m_pk1="----";   }     $( "#tu_pk001" ).html( m_pk1 ); j++;   
+   var m_pk2=[]; var pk002=[];  pk002="<%v_pksel002z%>"; if(pk002=="selected"){  if(data[j]=='1') m_pk2="<font size=\"4\" color=\"red\"><%v_pktxt002z%></font>";  else if(data[j]=='0')   m_pk2="<font size=\"4\" color=\"blue\"><%v_pktxt002w%></font>"; else m_pk2="----";   } else{  if(data[j]=='1') m_pk2="<font size=\"4\" color=\"blue\"><%v_pktxt002z%></font>";  else if(data[j]=='0')   m_pk2="<font size=\"4\" color=\"red\"><%v_pktxt002w%></font>"; else m_pk2="----";   }     $( "#tu_pk002" ).html( m_pk2 ); j++;    
+   var m_pk3=[]; var pk003=[];  pk003="<%v_pksel003z%>"; if(pk003=="selected"){  if(data[j]=='1') m_pk3="<font size=\"4\" color=\"red\"><%v_pktxt003z%></font>";  else if(data[j]=='0')   m_pk3="<font size=\"4\" color=\"blue\"><%v_pktxt003w%></font>"; else m_pk3="----";   } else{  if(data[j]=='1') m_pk3="<font size=\"4\" color=\"blue\"><%v_pktxt003z%></font>";  else if(data[j]=='0')   m_pk3="<font size=\"4\" color=\"red\"><%v_pktxt003w%></font>"; else m_pk3="----";   }     $( "#tu_pk003" ).html( m_pk3 ); j++;     
+   var m_pk4=[]; var pk004=[];  pk004="<%v_pksel004z%>"; if(pk004=="selected"){  if(data[j]=='1') m_pk4="<font size=\"4\" color=\"red\"><%v_pktxt004z%></font>";  else if(data[j]=='0')   m_pk4="<font size=\"4\" color=\"blue\"><%v_pktxt004w%></font>"; else m_pk4="----";   } else{  if(data[j]=='1') m_pk4="<font size=\"4\" color=\"blue\"><%v_pktxt004z%></font>";  else if(data[j]=='0')   m_pk4="<font size=\"4\" color=\"red\"><%v_pktxt004w%></font>"; else m_pk4="----";   }     $( "#tu_pk004" ).html( m_pk4 ); j++;     
+ 
+ 
+   j++;
+   var m_we1=[]; var we001=[];  we001="<%v_wesel001z%>"; if(we001=="selected"){  if(data[j]=='1') m_we1="<font size=\"4\" color=\"blue\"><%v_txtwe001b%></font>";  else if(data[j]=='0')  m_we1="<font size=\"4\" color=\"red\"><%v_txtwe001a%></font>"; else m_we1="----";   } else{  if(data[j]=='1') m_we1="<font size=\"4\" color=\"red\"><%v_txtwe001a%></font>";  else if(data[j]=='0')   m_we1="<font size=\"4\" color=\"blue\"><%v_txtwe001b%></font>"; else m_we1="----";   }     $( "#tu_we001" ).html( m_we1 ); j++; 
+   var m_we2=[]; var we002=[];  we002="<%v_wesel002z%>"; if(we002=="selected"){  if(data[j]=='1') m_we2="<font size=\"4\" color=\"blue\"><%v_txtwe002b%></font>";  else if(data[j]=='0')  m_we2="<font size=\"4\" color=\"red\"><%v_txtwe002a%></font>"; else m_we2="----";   } else{  if(data[j]=='1') m_we2="<font size=\"4\" color=\"red\"><%v_txtwe002a%></font>";  else if(data[j]=='0')   m_we2="<font size=\"4\" color=\"blue\"><%v_txtwe002b%></font>"; else m_we2="----";   }     $( "#tu_we002" ).html( m_we2 ); j++; 
+   var m_we3=[]; var we003=[];  we003="<%v_wesel003z%>"; if(we003=="selected"){  if(data[j]=='1') m_we3="<font size=\"4\" color=\"blue\"><%v_txtwe003b%></font>";  else if(data[j]=='0')  m_we3="<font size=\"4\" color=\"red\"><%v_txtwe003a%></font>"; else m_we3="----";   } else{  if(data[j]=='1') m_we3="<font size=\"4\" color=\"red\"><%v_txtwe003a%></font>";  else if(data[j]=='0')   m_we3="<font size=\"4\" color=\"blue\"><%v_txtwe003b%></font>"; else m_we3="----";   }     $( "#tu_we003" ).html( m_we3 ); j++; 
+   var m_we4=[]; var we004=[];  we004="<%v_wesel004z%>"; if(we004=="selected"){  if(data[j]=='1') m_we4="<font size=\"4\" color=\"blue\"><%v_txtwe004b%></font>";  else if(data[j]=='0')  m_we4="<font size=\"4\" color=\"red\"><%v_txtwe004a%></font>"; else m_we4="----";   } else{  if(data[j]=='1') m_we4="<font size=\"4\" color=\"red\"><%v_txtwe004a%></font>";  else if(data[j]=='0')   m_we4="<font size=\"4\" color=\"blue\"><%v_txtwe004b%></font>"; else m_we4="----";   }     $( "#tu_we004" ).html( m_we4 ); j++; 
+   var m_we5=[]; var we005=[];  we005="<%v_wesel005z%>"; if(we005=="selected"){  if(data[j]=='1') m_we5="<font size=\"4\" color=\"blue\"><%v_txtwe005b%></font>";  else if(data[j]=='0')  m_we5="<font size=\"4\" color=\"red\"><%v_txtwe005a%></font>"; else m_we5="----";   } else{  if(data[j]=='1') m_we5="<font size=\"4\" color=\"red\"><%v_txtwe005a%></font>";  else if(data[j]=='0')   m_we5="<font size=\"4\" color=\"blue\"><%v_txtwe005b%></font>"; else m_we5="----";   }     $( "#tu_we005" ).html( m_we5 ); j++; 
+   var m_we6=[]; var we006=[];  we006="<%v_wesel006z%>"; if(we006=="selected"){  if(data[j]=='1') m_we6="<font size=\"4\" color=\"blue\"><%v_txtwe006b%></font>";  else if(data[j]=='0')  m_we6="<font size=\"4\" color=\"red\"><%v_txtwe006a%></font>"; else m_we6="----";   } else{  if(data[j]=='1') m_we6="<font size=\"4\" color=\"red\"><%v_txtwe006a%></font>";  else if(data[j]=='0')   m_we6="<font size=\"4\" color=\"blue\"><%v_txtwe006b%></font>"; else m_we6="----";   }     $( "#tu_we006" ).html( m_we6 ); j++; 
+   var m_we7=[]; var we007=[];  we007="<%v_wesel007z%>"; if(we007=="selected"){  if(data[j]=='1') m_we7="<font size=\"4\" color=\"blue\"><%v_txtwe007b%></font>";  else if(data[j]=='0')  m_we7="<font size=\"4\" color=\"red\"><%v_txtwe007a%></font>"; else m_we7="----";   } else{  if(data[j]=='1') m_we7="<font size=\"4\" color=\"red\"><%v_txtwe007a%></font>";  else if(data[j]=='0')   m_we7="<font size=\"4\" color=\"blue\"><%v_txtwe007b%></font>"; else m_we7="----";   }     $( "#tu_we007" ).html( m_we7 ); j++; 
+   var m_we8=[]; var we008=[];  we008="<%v_wesel008z%>"; if(we008=="selected"){  if(data[j]=='1') m_we8="<font size=\"4\" color=\"blue\"><%v_txtwe008b%></font>";  else if(data[j]=='0')  m_we8="<font size=\"4\" color=\"red\"><%v_txtwe008a%></font>"; else m_we8="----";   } else{  if(data[j]=='1') m_we8="<font size=\"4\" color=\"red\"><%v_txtwe008a%></font>";  else if(data[j]=='0')   m_we8="<font size=\"4\" color=\"blue\"><%v_txtwe008b%></font>"; else m_we8="----";   }     $( "#tu_we008" ).html( m_we8 ); j++; 
+   
+
+
+
+
+
+
+}).fadeIn("fast"); }, <%freq01m01%>); 
+
+
+</script>
+
+
+
+
+</head> 
+<body> 
+
+  
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+<div data-role="collapsible" data-collapsed="true" data-theme="b" data-content-theme="c">
+    <h4><table><tr><td>Menu rozwijane</td><td></td><td></td><td></td><td></td><td></td><td><div id="tu_zgr"> -- </div></td></tr></table></h4>
+    <ul data-role="listview">
+        <li><a href="lpc.cgi/500"  rel="external">Menu</a></li>
+    </ul>
+</div>
+
+
+
+
+
+<div data-role="content">
+	
+
+    <ul data-role="listview" data-inset="true">		
+	  <li class="ui-field-contain"><font size="5" color="blue">Czujniki temperatury</font></li>
+	  <li class="ui-body ui-body-b"><table><tr><td> <font size="5" color="purple"><div id="tu_temp001"> -- </div></font></td><td></td><td></td><td> <%v_txtval001%></td></tr></table></li>
+	  <li class="ui-body ui-body-b"><table><tr><td> <font size="5" color="purple"><div id="tu_temp002"> -- </div></font></td><td></td><td></td><td> <%v_txtval002%></td></tr></table></li>
+	  <li class="ui-body ui-body-b"><table><tr><td> <font size="5" color="purple"><div id="tu_temp003"> -- </div></font></td><td></td><td></td><td> <%v_txtval003%></td></tr></table></li>
+    </ul>
+	
+	<br>
+   
+   <ul data-role="listview" data-inset="true">		
+	  <li class="ui-field-contain"><font size="5" color="blue">Czujniki wilgotnosci</font></li>		
+      <li class="ui-body ui-body-b"><table><tr><td> <font size="5" color="purple"><div id="tu_temp004"> -- </div></font></td><td></td><td></td><td> <%v_txtval004%></td></tr></table></li>
+	  <li class="ui-body ui-body-b"><table><tr><td> <font size="5" color="purple"><div id="tu_temp005"> -- </div></font></td><td></td><td></td><td> <%v_txtval005%></td></tr></table></li>
+  </ul>
+  
+  <br>
+   
+   <ul data-role="listview" data-inset="true">		
+	  <li class="ui-field-contain"><font size="5" color="blue">Czujnik napiecia zasilajacego</font></li>		
+      <li class="ui-body ui-body-b"><table><tr><td> <font size="5" color="purple"><div id="tu_temp006"> -- </div></font></td><td></td><td></td><td> <%v_txtval006%></td></tr></table></li>
+   </ul>
+   
+   
+   <br>
+   
+ <ul data-role="listview"  data-inset="true">
+  <li class="ui-field-contain"><font size="5" color="blue">Wyjscia przekaznikowe</font></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div class="content-primary"><a href="#"  rel="external" onClick="$('#tu_impl1').load('mobile/pk001i')"><div id="tu_impl1"><font size="3" color="green">impl</font></div></a></td><td></td><td></td><td><a href="#"  rel="external" onClick="$('#tu_pk001').load('mobile/pk001')"><div id="tu_pk001"> <%v_pkstan001m%> </div></a></div></td><td></td><td></td><td>  <%v_pktxt001%>  </td></tr></table></li>  
+  <li class="ui-body ui-body-b"><table><tr><td><div class="content-primary"><a href="#"  rel="external" onClick="$('#tu_impl2').load('mobile/pk002i')"><div id="tu_impl2"><font size="3" color="green">impl</font></div></a></td><td></td><td></td><td><a href="#"  rel="external" onClick="$('#tu_pk002').load('mobile/pk002')"><div id="tu_pk002"> <%v_pkstan002m%> </div></a></div></td><td></td><td></td><td>  <%v_pktxt002%>  </td></tr></table></li>  
+  <li class="ui-body ui-body-b"><table><tr><td><div class="content-primary"><a href="#"  rel="external" onClick="$('#tu_impl3').load('mobile/pk003i')"><div id="tu_impl3"><font size="3" color="green">impl</font></div></a></td><td></td><td></td><td><a href="#"  rel="external" onClick="$('#tu_pk003').load('mobile/pk003')"><div id="tu_pk003"> <%v_pkstan003m%> </div></a></div></td><td></td><td></td><td>  <%v_pktxt003%>  </td></tr></table></li>  
+  <li class="ui-body ui-body-b"><table><tr><td><div class="content-primary"><a href="#"  rel="external" onClick="$('#tu_impl4').load('mobile/pk004i')"><div id="tu_impl4"><font size="3" color="green">impl</font></div></a></td><td></td><td></td><td><a href="#"  rel="external" onClick="$('#tu_pk004').load('mobile/pk004')"><div id="tu_pk004"> <%v_pkstan004m%> </div></a></div></td><td></td><td></td><td>  <%v_pktxt004%>  </td></tr></table></li>  
+</ul>
+    
+   <br>
+   
+ <ul data-role="listview"  data-inset="true">
+  <li class="ui-field-contain"><font size="5" color="blue">Wejscia sygnalowe</font></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div id="tu_we001"> <%v_stanwe001m%></div></td><td></td><td></td><td> <%v_txtwe001%></td></tr></table></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div id="tu_we002"> <%v_stanwe002m%></div></td><td></td><td></td><td> <%v_txtwe002%></td></tr></table></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div id="tu_we003"> <%v_stanwe003m%></div></td><td></td><td></td><td> <%v_txtwe003%></td></tr></table></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div id="tu_we004"> <%v_stanwe004m%></div></td><td></td><td></td><td> <%v_txtwe004%></td></tr></table></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div id="tu_we005"> <%v_stanwe005m%></div></td><td></td><td></td><td> <%v_txtwe005%></td></tr></table></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div id="tu_we006"> <%v_stanwe006m%></div></td><td></td><td></td><td> <%v_txtwe006%></td></tr></table></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div id="tu_we007"> <%v_stanwe007m%></div></td><td></td><td></td><td> <%v_txtwe007%></td></tr></table></li>
+  <li class="ui-body ui-body-b"><table><tr><td><div id="tu_we008"> <%v_stanwe008m%></div></td><td></td><td></td><td> <%v_txtwe008%></td></tr></table></li>
+  
+ </ul>  
+   
+   
+   
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      	  
+	  <br><br>
+	 
+	<form method="get" action="lpc.cgi/516" data-ajax="false">
+	<ul data-role="listview" data-inset="true">
+		
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Odswiezania strony:</font> 
+	  </li>
+	  
+	  <li class="ui-body ui-body-b">  
+	  <table><tr><td><legend>Czestosc:</legend></td><td></td>
+	  <td><input type="text" name="n_odczyt001min" style="width:40px;" size="2" maxlength="2" style="width:25px;"  value="<%v_odczyt001min%>"  onBlur="walidacja_2cyfr(this)"></td><td>:</td>
+      <td><input type="text" name="n_odczyt001sec" style="width:40px;" size="2" maxlength="2" style="width:25px;"  value="<%v_odczyt001sec%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table></td>
+	  <td>
+	       <li class="ui-body ui-body-b"> 
+			<fieldset class="ui-grid-a">  
+			  <div class="ui-block-a"><button type="submit" name="n_516_zapisz" class="ui-btn ui-corner-all ui-btn-a">Zapisz</button></div>   
+	        </fieldset>
+		    </li>	
+	  </td></tr></table>
+	  </li>
+   </ul>  
+   </form>      
+     
+     
+
+	</div>
+	
+	
+	
+	
+	
+	
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

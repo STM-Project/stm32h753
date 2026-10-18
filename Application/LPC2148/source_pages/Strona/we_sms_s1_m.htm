@@ -1,0 +1,601 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title> Wejscia</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+
+  <link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+
+
+<%koment_1o%>	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<%koment_1z%>
+
+<%koment_2o%> 
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min.css" /> 
+	<script src="jquery/jquery-1.8.2.min.js"></script>
+	<script src="jquery/jquery.mobile-1.2.0.min.js"></script> 
+<%koment_2z%>
+
+
+<%koment_tlo_1o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+<%koment_tlo_1z%>
+<%koment_tlo_2o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(Images/tlo364.jpg);} 
+  </style>
+<%koment_tlo_2z%>
+
+
+
+<script>
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00';    
+  }}
+}
+</script>
+
+
+
+
+
+	
+</head> 
+<body> 
+
+
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+
+<div data-role="collapsible" data-collapsed="true" data-theme="b" data-content-theme="c">
+    <h4><table><tr>
+	<td><%v_slvaktual%></td><td></td><td></td>
+	<td><%v_ttime2%></td><td></td><td></td>
+	<td><font size="4" color="yellow"><%v_mailwysl%></font></td>
+	</tr></table></h4>
+    <ul data-role="listview">
+        <li><a href="lpc.cgi/119"  rel="external">WRÓÆ</a></li>
+        <li><a href="lpc.cgi/altuklad"  rel="external">Uk³ad strony</a></li>
+        <li><a href="lpc.cgi/slave000"  rel="external">Wybierz: Master</a></li>
+        <li><a href="lpc.cgi/slave001"  rel="external">Wybierz: <%v_slvtxt001%></a></li>
+        <li><a href="lpc.cgi/slave002"  rel="external">Wybierz: <%v_slvtxt002%></a></li>
+    </ul>
+</div>
+
+
+
+
+	<div data-role="content">
+
+<form method="get" action="lpc.cgi/A113" data-ajax="false">
+
+
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wejscie nr 9</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <%v_stanwe009%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Stan wejscia</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa wejscia</legend>
+	  <input type="text" name="n_txtwe009" size="39" maxlength="39" value="<%v_txtwe009%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu ON</legend>
+	  <input type="text" name="n_txtwe009a" size="19" maxlength="19" value="<%v_txtwe009a%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu OFF</legend>
+	  <input type="text" name="n_txtwe009b" size="19" maxlength="19" value="<%v_txtwe009b%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakwe009m" size="2" maxlength="2"  value="<%v_reakwe009m%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakwe009s" size="2" maxlength="2"  value="<%v_reakwe009s%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>opózn. powiad.</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Krotnosæ</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_krotwe009" size="2" maxlength="2"   value="<%v_krotwe009%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>powiad. SMS</p>
+	  </li>	  
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Reaguje na stan:</legend></td>
+      <td width="165px"><select name="n_WEreag009"  id="select-custom-21" data-native-menu="false"><option value="01" <%v_WEreag009a%> > ON</option>
+	                                                                                               <option value="02" <%v_WEreag009b%> >OFF</option>
+	                                                                                               <option value="03" <%v_WEreag009c%> >ON-OFF</option>
+	                                                                                               <option value="04" <%v_WEreag009d%> >---</option></select></td>
+	  </tr></table>
+	  </li>  
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+	
+	
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wejscie nr 10</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <%v_stanwe010%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Stan wejscia</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa wejscia</legend>
+	  <input type="text" name="n_txtwe010" size="39" maxlength="39" value="<%v_txtwe010%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu ON</legend>
+	  <input type="text" name="n_txtwe010a" size="19" maxlength="19" value="<%v_txtwe010a%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu OFF</legend>
+	  <input type="text" name="n_txtwe010b" size="19" maxlength="19" value="<%v_txtwe010b%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakwe010m" size="2" maxlength="2"  value="<%v_reakwe010m%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakwe010s" size="2" maxlength="2"  value="<%v_reakwe010s%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>opózn. powiad.</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Krotnosæ</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_krotwe010" size="2" maxlength="2"   value="<%v_krotwe010%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>powiad. SMS</p>
+	  </li>	  
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Reaguje na stan:</legend></td>
+      <td width="165px"><select name="n_WEreag010"  id="select-custom-21" data-native-menu="false"><option value="01" <%v_WEreag010a%> > ON</option>
+	                                                                                               <option value="02" <%v_WEreag010b%> >OFF</option>
+	                                                                                               <option value="03" <%v_WEreag010c%> >ON-OFF</option>
+	                                                                                               <option value="04" <%v_WEreag010d%> >---</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+
+
+
+
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wejscie nr 11</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <%v_stanwe011%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Stan wejscia</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa wejscia</legend>
+	  <input type="text" name="n_txtwe011" size="39" maxlength="39" value="<%v_txtwe011%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu ON</legend>
+	  <input type="text" name="n_txtwe011a" size="19" maxlength="19" value="<%v_txtwe011a%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu OFF</legend>
+	  <input type="text" name="n_txtwe011b" size="19" maxlength="19" value="<%v_txtwe011b%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakwe011m" size="2" maxlength="2"  value="<%v_reakwe011m%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakwe011s" size="2" maxlength="2"  value="<%v_reakwe011s%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>opózn. powiad.</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Krotnosæ</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_krotwe011" size="2" maxlength="2"   value="<%v_krotwe011%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>powiad. SMS</p>
+	  </li>	  
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Reaguje na stan:</legend></td>
+      <td width="165px"><select name="n_WEreag011"  id="select-custom-21" data-native-menu="false"><option value="01" <%v_WEreag011a%> > ON</option>
+	                                                                                               <option value="02" <%v_WEreag011b%> >OFF</option>
+	                                                                                               <option value="03" <%v_WEreag011c%> >ON-OFF</option>
+	                                                                                               <option value="04" <%v_WEreag011d%> >---</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>	
+
+
+
+
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wejscie nr 12</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <%v_stanwe012%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Stan wejscia</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa wejscia</legend>
+	  <input type="text" name="n_txtwe012" size="39" maxlength="39" value="<%v_txtwe012%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu ON</legend>
+	  <input type="text" name="n_txtwe012a" size="19" maxlength="19" value="<%v_txtwe012a%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu OFF</legend>
+	  <input type="text" name="n_txtwe012b" size="19" maxlength="19" value="<%v_txtwe012b%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakwe012m" size="2" maxlength="2"  value="<%v_reakwe012m%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakwe012s" size="2" maxlength="2"  value="<%v_reakwe012s%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>opózn. powiad.</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Krotnosæ</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_krotwe012" size="2" maxlength="2"   value="<%v_krotwe012%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>powiad. SMS</p>
+	  </li>	  
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Reaguje na stan:</legend></td>
+      <td width="165px"><select name="n_WEreag012"  id="select-custom-21" data-native-menu="false"><option value="01" <%v_WEreag012a%> > ON</option>
+	                                                                                               <option value="02" <%v_WEreag012b%> >OFF</option>
+	                                                                                               <option value="03" <%v_WEreag012c%> >ON-OFF</option>
+	                                                                                               <option value="04" <%v_WEreag012d%> >---</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>	
+
+
+
+
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wejscie nr 13</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <%v_stanwe013%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Stan wejscia</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa wejscia</legend>
+	  <input type="text" name="n_txtwe013" size="39" maxlength="39" value="<%v_txtwe013%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu ON</legend>
+	  <input type="text" name="n_txtwe013a" size="19" maxlength="19" value="<%v_txtwe013a%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu OFF</legend>
+	  <input type="text" name="n_txtwe013b" size="19" maxlength="19" value="<%v_txtwe013b%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend></legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakwe013m" size="2" maxlength="2"  value="<%v_reakwe013m%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakwe013s" size="2" maxlength="2"  value="<%v_reakwe013s%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>opózn. powiad.</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Krotnosæ</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_krotwe013" size="2" maxlength="2"   value="<%v_krotwe013%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>powiad. SMS</p>
+	  </li>	  
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Reaguje na stan:</legend></td>
+      <td width="165px"><select name="n_WEreag013"  id="select-custom-21" data-native-menu="false"><option value="01" <%v_WEreag013a%> > ON</option>
+	                                                                                               <option value="02" <%v_WEreag013b%> >OFF</option>
+	                                                                                               <option value="03" <%v_WEreag013c%> >ON-OFF</option>
+	                                                                                               <option value="04" <%v_WEreag013d%> >---</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>	
+
+
+
+
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wejscie nr 14</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <%v_stanwe014%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Stan wejscia</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa wejscia</legend>
+	  <input type="text" name="n_txtwe014" size="39" maxlength="39" value="<%v_txtwe014%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu ON</legend>
+	  <input type="text" name="n_txtwe014a" size="19" maxlength="19" value="<%v_txtwe014a%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu OFF</legend>
+	  <input type="text" name="n_txtwe014b" size="19" maxlength="19" value="<%v_txtwe014b%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakwe014m" size="2" maxlength="2"  value="<%v_reakwe014m%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakwe014s" size="2" maxlength="2"  value="<%v_reakwe014s%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>opózn. powiad.</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Krotnosæ</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_krotwe014" size="2" maxlength="2"   value="<%v_krotwe014%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>powiad. SMS</p>
+	  </li>	  
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Reaguje na stan:</legend></td>
+      <td width="165px"><select name="n_WEreag014"  id="select-custom-21" data-native-menu="false"><option value="01" <%v_WEreag014a%> > ON</option>
+	                                                                                               <option value="02" <%v_WEreag014b%> >OFF</option>
+	                                                                                               <option value="03" <%v_WEreag014c%> >ON-OFF</option>
+	                                                                                               <option value="04" <%v_WEreag014d%> >---</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>	
+
+
+
+
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wejscie nr 15</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <%v_stanwe015%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Stan wejscia</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa wejscia</legend>
+	  <input type="text" name="n_txtwe015" size="39" maxlength="39" value="<%v_txtwe015%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu ON</legend>
+	  <input type="text" name="n_txtwe015a" size="19" maxlength="19" value="<%v_txtwe015a%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu OFF</legend>
+	  <input type="text" name="n_txtwe015b" size="19" maxlength="19" value="<%v_txtwe015b%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakwe015m" size="2" maxlength="2"  value="<%v_reakwe015m%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakwe015s" size="2" maxlength="2"  value="<%v_reakwe015s%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>opózn. powiad.</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Krotnosæ</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_krotwe015" size="2" maxlength="2"   value="<%v_krotwe015%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>powiad. SMS</p>
+	  </li>	  
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Reaguje na stan:</legend></td>
+      <td width="165px"><select name="n_WEreag015"  id="select-custom-21" data-native-menu="false"><option value="01" <%v_WEreag015a%> > ON</option>
+	                                                                                               <option value="02" <%v_WEreag015b%> >OFF</option>
+	                                                                                               <option value="03" <%v_WEreag015c%> >ON-OFF</option>
+	                                                                                               <option value="04" <%v_WEreag015d%> >---</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>	
+
+
+
+
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wejscie nr 16</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <%v_stanwe016%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Stan wejscia</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa wejscia</legend>
+	  <input type="text" name="n_txtwe016" size="39" maxlength="39" value="<%v_txtwe016%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu ON</legend>
+	  <input type="text" name="n_txtwe016a" size="19" maxlength="19" value="<%v_txtwe016a%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa stanu OFF</legend>
+	  <input type="text" name="n_txtwe016b" size="19" maxlength="19" value="<%v_txtwe016b%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakwe016m" size="2" maxlength="2"  value="<%v_reakwe016m%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakwe016s" size="2" maxlength="2"  value="<%v_reakwe016s%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>opózn. powiad.</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Krotnosæ</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_krotwe016" size="2" maxlength="2"   value="<%v_krotwe016%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table>
+	  <p>powiad. SMS</p>
+	  </li>	  
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Reaguje na stan:</legend></td>
+      <td width="165px"><select name="n_WEreag016"  id="select-custom-21" data-native-menu="false"><option value="01" <%v_WEreag016a%> > ON</option>
+	                                                                                               <option value="02" <%v_WEreag016b%> >OFF</option>
+	                                                                                               <option value="03" <%v_WEreag016c%> >ON-OFF</option>
+	                                                                                               <option value="04" <%v_WEreag016d%> >---</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>	
+
+	
+
+
+
+<br>
+
+
+	
+	
+<li class="ui-body ui-body-b">
+            <fieldset class="ui-grid-a">
+                    <div class="ui-block-a"><button type="submit" name="n_107_zapisz" class="ui-btn ui-corner-all ui-btn-a">Zapisz</button></div>
+            </fieldset>
+        </li>
+
+	
+</form>
+
+
+
+
+
+
+
+
+
+
+
+
+
+       	 
+
+
+ 
+     <br>
+
+	
+	
+
+	</div>
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

@@ -1,0 +1,228 @@
+<html>
+
+      
+    <head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">  
+	 <link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+	
+	   
+	   
+        <link rel="stylesheet" href="jQTouch/styl_czarny.css" title="jQTouch">
+
+       <script src="jQTouch/zepto.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="jQTouch/jqtouch.min.js" type="text/javascript" charset="utf-8"></script>   
+		
+
+
+
+
+        <script type="text/javascript" charset="utf-8">
+            var jQT = new $.jQTouch({
+
+            
+            }); 
+   
+           
+        </script>
+          
+                          
+   
+
+
+
+
+
+
+
+<script type="text/javascript" charset="utf-8">
+                                                                                                                     
+
+"use strict";
+
+
+// define functions
+var set_scroll,
+	my_scroll;
+
+
+// if query string in URL contains scroll=nnn, then scroll position will be restored 
+set_scroll = function () {
+	// get query string parameter with "?"
+	var search = window.location.search,
+		matches;
+	// if query string exists
+	if (search) {
+		// find scroll parameter in query string
+		matches = /scroll=(\d+)/.exec(search);
+		// jump to the scroll position if scroll parameter exists
+		if (matches) {
+			window.scrollTo(0, matches[1]);
+		}
+	}
+};
+
+
+// function appends scroll parameter to the URL or returns scroll value
+my_scroll = function (url) {
+	var scroll, q;
+	// Netscape compliant
+	if (typeof(window.pageYOffset) === 'number') {
+		scroll = window.pageYOffset;
+	}
+	// DOM compliant
+	else if (document.body && document.body.scrollTop) {
+		scroll = document.body.scrollTop;
+	}
+	// IE6 standards compliant mode
+	else if (document.documentElement && document.documentElement.scrollTop) {
+		scroll = document.documentElement.scrollTop;
+	}
+	// needed for IE6 (when vertical scroll bar is on the top)
+	else {
+		scroll = 0;
+	}
+	// if input parameter does not exist then return scroll value
+	if (url === undefined) {
+		return scroll;
+	}
+	// else append scroll parameter to the URL
+	else {
+		// set "?" or "&" before scroll parameter
+		q = url.indexOf('?') === -1 ? '?' : '&';
+		// refresh page with scroll position parameter
+		window.location.href = url + q + 'scroll=' + scroll;
+	}
+};
+
+
+// add onload event listener
+if (window.addEventListener) {
+	window.addEventListener('load', set_scroll, false);
+}
+else if (window.attachEvent) {
+	window.attachEvent('onload', set_scroll);
+}
+
+
+
+ function pageScroll() {
+    	window.scrollBy(0,<%scrol%>); // horizontal and vertical scroll increments
+
+          } 
+
+
+          </script>
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+
+
+
+        <title>Panel v3</title>
+
+</head>
+    <body onLoad="pageScroll()">
+
+
+
+
+<div id="home" class="current">
+                    
+                 <div class="scroll">
+                    <ul class="individual">
+                        <li><a href="lpc.cgi/000" rel="external"><b>Wróæ</b></a></li>
+                        <li><a href="lpc.cgi/113" rel="external"><b>Setup</b></a></li>
+                    </ul>
+					
+                </div>
+				
+				
+				<div class="scroll">
+                    <ul class="rounded">
+                        <li><table><tr> <td><font size="5" color="white"><b>Wybór:</b></font></td><td width="50px"></td>
+						                <td><a href="lpc.cgi/slave000" rel="external"><b>Master</b></a></td><td width="50px"></td> 
+						                <td><a href="lpc.cgi/slave001" rel="external"><b>Slave 1</b></a></td><td width="50px"></td>  
+										<td><a href="lpc.cgi/slave002" rel="external"><b>Slave 2</b></a></td><td width="50px"></td> 
+										<td><a href="lpc.cgi/slave003" rel="external"><b>33 wejsc</b></a></td><td width="50px"></td>  
+                           </tr></table> 
+						</li>
+                    </ul>  
+                </div>
+
+
+                <div class="toolbar">
+                    <center><font size="5" color="red"><%v_slvaktual%></font></center>
+                </div>
+
+
+
+ 
+               
+                <div class="scroll">
+                    <ul class="rounded">
+                        <li><font size="5" color=ccffcc><%v_txtwe027%></font><small class="counter"><%v_stanwe027m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe028%></font><small class="counter"><%v_stanwe028m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe029%></font><small class="counter"><%v_stanwe029m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe030%></font><small class="counter"><%v_stanwe030m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe031%></font><small class="counter"><%v_stanwe031m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe032%></font><small class="counter"><%v_stanwe032m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe033%></font><small class="counter"><%v_stanwe033m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe034%></font><small class="counter"><%v_stanwe034m3%></small> </li>
+                        <li><font size="5" color=ccffcc> </font><small class="counter"> </small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe035%></font><small class="counter"><%v_stanwe035m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe036%></font><small class="counter"><%v_stanwe036m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe037%></font><small class="counter"><%v_stanwe037m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe038%></font><small class="counter"><%v_stanwe038m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe039%></font><small class="counter"><%v_stanwe039m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe040%></font><small class="counter"><%v_stanwe040m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe041%></font><small class="counter"><%v_stanwe041m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe042%></font><small class="counter"><%v_stanwe042m3%></small> </li>
+                        <li><font size="5" color=ccffcc> </font><small class="counter"> </small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe043%></font><small class="counter"><%v_stanwe043m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe044%></font><small class="counter"><%v_stanwe044m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe045%></font><small class="counter"><%v_stanwe045m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe046%></font><small class="counter"><%v_stanwe046m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe047%></font><small class="counter"><%v_stanwe047m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe048%></font><small class="counter"><%v_stanwe048m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe049%></font><small class="counter"><%v_stanwe049m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe050%></font><small class="counter"><%v_stanwe050m3%></small> </li>
+                        <li><font size="5" color=ccffcc> </font><small class="counter"> </small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe051%></font><small class="counter"><%v_stanwe051m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe052%></font><small class="counter"><%v_stanwe052m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe053%></font><small class="counter"><%v_stanwe053m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe054%></font><small class="counter"><%v_stanwe054m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe055%></font><small class="counter"><%v_stanwe055m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe056%></font><small class="counter"><%v_stanwe056m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe057%></font><small class="counter"><%v_stanwe057m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe058%></font><small class="counter"><%v_stanwe058m3%></small> </li>
+                        <li><font size="5" color=ccffcc> </font><small class="counter"> </small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe059%></font><small class="counter"><%v_stanwe059m3%></small> </li>
+                    </ul>
+
+                    
+                </div>
+
+
+   <div class="scroll">
+                    <ul class="individual">
+                        <li><a href="lpc.cgi/000" rel="external"><b>Wróæ</b></a></li>
+                        <li><a href="lpc.cgi/xxxx" rel="external"><b>Setup</b></a></li>
+                    </ul>
+                </div>
+
+
+
+
+</div>
+
+
+
+    </body>
+</html>
+ 
+

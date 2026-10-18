@@ -1,0 +1,838 @@
+<html>
+<head>
+	<meta http-equiv='refresh' content=''>
+	<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+	 <link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+	<title> Czujniki temperatury</title>
+	<script language="javascript">
+	var okienko = null;
+	
+	
+	
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return true;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+	
+	if (kodKlawisza == 8) {
+        return true;  // backspace
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function walidacjaTemp(element,element2)
+{
+  var wzor1 = /^[\-+]{1}[0-9]{2}\.[0-9]{1}$/;
+  var wzor2 = /^[\-+]{1}[0-9]{2}$/;
+  var wzor3 = /^[\-+]{1}[0-9]{1}$/;
+  var wzor4 = /^[\-+]{1}[0-9]{1}\.[0-9]{1}$/;
+  var wzor5 = /^[0-9]{1}$/;
+  var wzor6 = /^[0-9]{2}$/;
+  var wzor7 = /^[0-9]{1}\.[0-9]{1}$/;
+  var wzor8 = /^[0-9]{2}\.[0-9]{1}$/;
+  var wzor9 = /^[0-9]{3}$/;
+  var wzor10= /^[\-+]{1}[0-9]{3}$/;
+  
+  if(wzor9.test(element.value) == true){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '+99.9';  
+  }
+  if(wzor10.test(element.value) == true){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '+99.9';  
+  }
+  
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+    if(wzor3.test(element.value) == false){
+     if(wzor4.test(element.value) == false){
+      if(wzor5.test(element.value) == false){
+       if(wzor6.test(element.value) == false){
+        if(wzor7.test(element.value) == false){
+         if(wzor8.test(element.value) == false){
+  
+     if(element2==1){ alert('Wpisz wartosc w poprawnym formacie tj. +20.5'); element.value = '+99.9'; }
+	 if(element2==2){ alert('Wpisz wartosc w poprawnym formacie tj. +15.0'); element.value = '-55.0'; }
+	 if(element2==3){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+02.0'; }
+	 if(element2==4){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+01.0'; }
+        
+  }}}}}}}}
+  if(element.value<-55.0){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '-55.0';  
+  }
+
+}
+
+function dop_zakr_min_sek(element){
+   if(element.value>59){ alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value='00'; }
+}
+
+
+
+</script>
+
+		  
+		  
+		  
+		  
+		  
+
+  <style type="text/css">
+  input {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+  }
+  input:hover {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+        background: white;
+  }
+  
+  option {
+          border: 1px solid black;
+          font: normal 14px Calibri, sans-serif;
+  }
+  
+  button {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         text-decoration: none;
+  }
+  button:hover {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         background: white;
+         text-decoration: none;
+  }
+  
+  body {
+       font: normal 12px Calibri, sans-serif;
+       color: black;
+  }
+  h1 {
+     font: bold 20px Calibri, sans-serif;
+     font-variant: small-caps;
+  }
+  
+  h2 {
+     font: normal 12px Calibri, sans-serif;
+  }
+  
+  h5 {
+     font: 12px Calibri, sans-serif;
+  }
+
+
+#tabela{background-color:#eeeeee;
+font: normal 14px Calibri, sans-serif;
+}
+
+
+  td.tytul{
+     background-color: #960226;
+     color: ffffff;
+     font: bold 20px Cambria, sans-serif;
+     font-variant: small-caps;
+  }
+  td.puste{
+     background-color: #C9C9DC;
+  }
+
+  </style>
+
+
+  <style> 
+.menu {
+    border: none;
+    border: 0px;
+    margin: 0px;
+    padding: 0px;
+    font-family: verdana,geneva,arial,helvetica,sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: 8e8e8e;
+}
+
+.menu ul {
+    background: url(data:image/gif;base64,R0lGODlhAQArAMQYAM/Pz7k1VODg4Onp6XsMJtDQ0Nra2szMzOHh4d7e3s7OzsvLy9jY2NXV1aioqNLS0t/f39vb2+Li4tbW1tPT083Nzd3d3agDKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABgALAAAAAABACsAAAUfICaOzrAclQIUD9VMjBFZVgIJiCRZ0URVl8BlSCSEAAA7) top left repeat-x;
+    height: 43px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu li {
+    float: left;
+    padding: 0px 8px 0px 8px;
+}
+
+.menu li a {
+    color: #666666;
+    display: block;
+    font-weight: bold;
+    line-height: 43px;
+    padding: 0px 15px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.menu li a:hover {
+    color: #000000;
+    text-decoration: none;
+}
+
+.menu li ul {
+    background: #e0e0e0;
+    border-left: 2px solid #a80329;
+    border-right: 2px solid #a80329;
+    border-bottom: 2px solid #a80329;
+    display: none;
+    height: auto;
+    filter: alpha(opacity=95);
+    opacity: 0.95;
+    position: absolute;
+    width: 255px;
+    z-index: 200;
+/*top:1em;
+/*left:0;*/
+}
+
+.menu li:hover ul {
+    display: block;
+}
+
+.menu li li {
+    display: block;
+    float: none;
+    padding: 0px;
+    width: 255px;
+}
+
+.menu li ul a {
+    display: block;
+    font-size: 16px;
+    font-style: normal;
+    padding: 0px 10px 0px 15px;
+    text-align: left;
+}
+
+.menu li ul a:hover {
+    background: #949494;
+    color: #000000;
+    opacity: 1.0;
+    filter: alpha(opacity=100);
+}
+
+.menu p {
+    clear: left;
+}
+
+.menu #current {
+    background: url(data:image/gif;base64,R0lGODlhAQArAJEAALk1VHsMJqgDKQAAACH5BAAAAAAALAAAAAABACsAAAIHFISpy+0aCgA7) top left repeat-x;
+    color: #ffffff;
+}
+
+.menu #current2 {
+    background: url(data:image/gif;base64,R0lGODlhAQArAMQYAM/Pz7k1VODg4Onp6XsMJtDQ0Nra2szMzOHh4d7e3s7OzsvLy9jY2NXV1aioqNLS0t/f39vb2+Li4tbW1tPT083Nzd3d3agDKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABgALAAAAAABACsAAAUfICaOzrAclQIUD9VMjBFZVgIJiCRZ0URVl8BlSCSEAAA7) top left repeat-x;
+    color: #656565;
+}
+
+</style> 
+
+
+
+
+
+
+
+
+
+</head>
+<body bgcolor="#C9C9DC">
+
+
+
+<div class='menu'>
+ <ul>
+  <li><a href='lpc.cgi/500/A999' id='current'>Home</a></li>
+
+  
+  <li><a href='#' id='current2'>Czujniki Temperatury &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R001'>1# Powiadamianie SMS</a></li>
+    <li><a href='lpc.cgi/R002'>2# Termostat</a></li>
+    <li><a href='lpc.cgi/R003'>3# Maski filtrujace</a></li>
+    <li><a href='lpc.cgi/R004'>4# Rejestrator</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Wyjscia przekaznikowe &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R005'>1# Sterowanie WWW</a></li>
+    <li><a href='lpc.cgi/R006'>2# Autotimer</a></li>
+    <li><a href='lpc.cgi/R010'>3# Zaleznosci funkcyjne</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Wejscia sygnalowe &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R007'>1# Powiadamianie SMS</a></li>
+    <li><a href='lpc.cgi/R008'>2# Autosterowanie</a></li>
+    <li><a href='lpc.cgi/R009'>3# Maski filtrujace</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Pozostale &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R011'>1# Sterowanie IRDA</a></li>
+    <li><a href='lpc.cgi/R012'>2# Skrzynki E-mail</a></li>
+    <li><a href='lpc.cgi/R120'>3# Pingi urzadzen</a></li>
+    <li><a href='lpc.cgi/R014'>4# Odczyt biezacy v1</a></li>
+    <li><a href='lpc.cgi/R015'>5# Odczyt biezacy v2</a></li>
+   </ul>
+  </li>
+  
+  
+ </ul>
+</div>
+
+
+<br> <font size="4" color="red">Nr Trybu Pracy Ukladu: </font><font size="6" color="red"><b><%v_tryb_pracy%></b></font>  <br><br><br>
+
+
+
+
+<table border="0" style=" border:dashed 0mm; text-align: left; width: 100%; border-spacing: 0mm" id="tabela">
+
+<tr><td colspan="1" class="tytul" height="10px" align="center">
+..............<br>
+</td>
+<td colspan="3" class="puste">
+
+
+ <table><tr>
+ <td width="400px"><a href='lpc.cgi/A998'><font size="4">Odswiez strone</font></a></td>
+ <td width="100px"><font size="4"><%v_ttime1%></font></td>
+ <td width="80px"><font size="4"><%v_ttime2%>  </font></td>
+ <td width="110px"><font size="4"><%v_ttime3%>        </font></td></tr></table>
+<br>
+
+
+</td>
+</tr>
+
+
+
+
+ <form method="get" action="lpc.cgi/A101">
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja parametrow dla&nbsp;&nbsp;&nbsp;&nbsp; czujników temperatury  1-3</td>
+</tr>
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table border="0" id="tabela">
+<tr height="25px"></tr><tr>
+ <td width="170px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik</b></td></tr>
+ <tr height="45px"><td>Odczyt</td></tr>
+ <tr height="25px"><td>Nazwa czujnika</td></tr>
+ <tr height="25px"><td>Górny prog</td></tr>
+ <tr height="25px"><td>Dolny prog</td></tr>
+ <tr height="25px"><td>Histereza</td></tr>
+ <tr height="25px"><td>Czas reakcji</td></tr>
+ <tr height="25px"><td>Korekcja wartosci</td></tr>
+ <tr height="25px"><td>Krotnosc informacji</td></tr>
+ <tr height="25px"><td>Alarm_przekaznikowy</td></tr>
+ <tr height="25px"><td>Odczyt jako roznica</td></tr>
+ </table>
+ </td>
+ 
+ <td width="250px">
+ <table>
+ <tr height="25px"><td><b>Czujnik temperatury 1</b></td></tr>
+ <tr height="45px"><td><font size="6" color="purple"><%v_value001%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval001" size="39" maxlength="39"  value="<%v_txtval001%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval001" size="5" maxlength="5" value="<%v_prgmaxval001%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');" ></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval001" size="5" maxlength="5" value="<%v_prgminval001%>" onBlur="walidacjaTemp(this,2)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval001" size="5" maxlength="5"   value="<%v_histval001%>"   onBlur="walidacjaTemp(this,3)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval001m" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval001m%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"> <b>:</b> 
+                       <input type="text" name="n_reakval001s" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval001s%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval001" size="5" maxlength="5"    value="<%v_korval001%>"    onBlur="walidacjaTemp(this,4)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf001" size="2" maxlength="2" style="width:25px;"   value="<%v_krotinf001%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><select name="n_selalt001"><option value="off" <%v_selalt001a%> >OFF</option><option value="on" <%v_selalt001b%>  >ON</option></select> dla PK1</td></tr>
+ <tr height="25px"><td><select name="n_selroz001"><option value="1" <%v_selroz001a%> >NIE</option><option value="2" <%v_selroz001b%>  >T2-T3</option><option value="3" <%v_selroz001c%>  >T3-T2</option></select></td></tr>
+ </table>
+ </td>
+  
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 2</b></td></tr>
+ <tr height="45px"><td><font size="6" color="purple"><%v_value002%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval002" size="39" maxlength="39"  value="<%v_txtval002%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval002" size="5" maxlength="5" value="<%v_prgmaxval002%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval002" size="5" maxlength="5" value="<%v_prgminval002%>" onBlur="walidacjaTemp(this,2)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval002" size="5" maxlength="5"   value="<%v_histval002%>" onBlur="walidacjaTemp(this,3)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval002m" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval002m%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"> <b>:</b> 
+                       <input type="text" name="n_reakval002s" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval002s%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval002" size="5" maxlength="5"    value="<%v_korval002%>" onBlur="walidacjaTemp(this,4)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf002" size="2" maxlength="2" style="width:25px;"   value="<%v_krotinf002%>"  onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><select name="n_selalt002"><option value="off" <%v_selalt002a%> >OFF</option><option value="on" <%v_selalt002b%>  >ON</option></select> dla PK2</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+ 
+  <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 3</b></td></tr>
+ <tr height="45px"><td><font size="6" color="purple"><%v_value003%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval003" size="39" maxlength="39"  value="<%v_txtval003%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval003" size="5" maxlength="5" value="<%v_prgmaxval003%>" onBlur="walidacjaTemp(this,1)" ></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval003" size="5" maxlength="5" value="<%v_prgminval003%>" onBlur="walidacjaTemp(this,2)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval003" size="5" maxlength="5"   value="<%v_histval003%>" onBlur="walidacjaTemp(this,3)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval003m" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval003m%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"> <b>:</b> 
+                       <input type="text" name="n_reakval003s" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval003s%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval003" size="5" maxlength="5"    value="<%v_korval003%>" onBlur="walidacjaTemp(this,4)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf003" size="2" maxlength="2" style="width:25px;"   value="<%v_krotinf003%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><select name="n_selalt003"><option value="off" <%v_selalt003a%> >OFF</option><option value="on" <%v_selalt003b%>  >ON</option></select> dla PK3</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+ 
+</tr> 
+<tr height="30px"></tr>
+</table>
+</td>
+</tr>
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja parametrow dla &nbsp;&nbsp;&nbsp;&nbsp;czujników wilgotnosci 1-2&nbsp;&nbsp;&nbsp;&nbsp; i &nbsp;&nbsp;&nbsp;&nbsp;czujnika napiecia zasilania</td>
+</tr>
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table border="0" id="tabela">
+<tr height="25px"></tr><tr>
+ <td width="170px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik</b></td></tr>
+ <tr height="45px"><td>Odczyt</td></tr>
+ <tr height="25px"><td>Nazwa czujnika</td></tr>
+ <tr height="25px"><td>Górny prog</td></tr>
+ <tr height="25px"><td>Dolny prog</td></tr>
+ <tr height="25px"><td>Histereza</td></tr>
+ <tr height="25px"><td>Czas reakcji</td></tr>
+ <tr height="25px"><td>Korekcja wartosci</td></tr>
+ <tr height="25px"><td>Krotnosc informacji</td></tr>
+ <tr height="25px"><td>Alarm_przekaznikowy</td></tr>
+ </table>
+ </td>
+ 
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik wilgotnosci 1</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value004%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval004" size="39" maxlength="39"  value="<%v_txtval004%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval004" size="5" maxlength="5" value="<%v_prgmaxval004%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval004" size="5" maxlength="5" value="<%v_prgminval004%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval004" size="5" maxlength="5"   value="<%v_histval004%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval004m" size="2" maxlength="2"  value="<%v_reakval004m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval004s" size="2" maxlength="2"  value="<%v_reakval004s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval004" size="5" maxlength="5"    value="<%v_korval004%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf004" size="2" maxlength="2"   value="<%v_krotinf004%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt004"><option value="off" <%v_selalt004a%> >OFF</option><option value="on" <%v_selalt004b%>  >ON</option></select> dla PK1</td></tr>
+ </table>
+ </td>
+  
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik wilgotnosci 2</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value005%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval005" size="39" maxlength="39"  value="<%v_txtval005%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval005" size="5" maxlength="5" value="<%v_prgmaxval005%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval005" size="5" maxlength="5" value="<%v_prgminval005%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval005" size="5" maxlength="5"   value="<%v_histval005%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval005m" size="2" maxlength="2"  value="<%v_reakval005m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval005s" size="2" maxlength="2"  value="<%v_reakval005s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval005" size="5" maxlength="5"    value="<%v_korval005%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf005" size="2" maxlength="2"   value="<%v_krotinf005%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt005"><option value="off" <%v_selalt005a%> >OFF</option><option value="on" <%v_selalt005b%>  >ON</option></select> dla PK2</td></tr>
+ </table>
+ </td>
+ 
+  <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik napiecia zasilania</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"> <%v_value006%> </font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval006" size="39" maxlength="39"  value="<%v_txtval006%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval006" size="5" maxlength="5" value="<%v_prgmaxval006%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval006" size="5" maxlength="5" value="<%v_prgminval006%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval006" size="5" maxlength="5"   value="<%v_histval006%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval006m" size="2" maxlength="2"  value="<%v_reakval006m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval006s" size="2" maxlength="2"  value="<%v_reakval006s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval006" size="5" maxlength="5"    value="<%v_korval006%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf006" size="2" maxlength="2"   value="<%v_krotinf006%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt006"><option value="off" <%v_selalt006a%> >OFF</option><option value="on" <%v_selalt006b%>  >ON</option></select> dla PK4</td></tr>
+ </table>
+ </td>
+ 
+</tr> 
+<tr height="30px"></tr>
+</table>
+</td>
+</tr>
+
+<tr height="50px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja parametrow dla czujników temperatury  7-9</td>
+</tr>
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table border="0" id="tabela">
+<tr>
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik</b></td></tr>
+ <tr height="40px"><td>Odczyt</td></tr>
+ <tr height="25px"><td>Nazwa czujnika</td></tr>
+ <tr height="25px"><td>Górny prog</td></tr>
+ <tr height="25px"><td>Dolny prog</td></tr>
+ <tr height="25px"><td>Histereza</td></tr>
+ <tr height="25px"><td>Czas reakcji</td></tr>
+ <tr height="25px"><td>Korekcja w st.C</td></tr>
+ <tr height="25px"><td>Krotnosc informacji</td></tr>
+ <tr height="25px"><td>Alarm przekaznikowy</td></tr>
+ <tr height="25px"><td>Odczyt jako roznica</td></tr>
+ </table>
+ </td>
+ 
+
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 7</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value007%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval007" size="39" maxlength="39"  value="<%v_txtval007%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval007" size="5" maxlength="5" value="<%v_prgmaxval007%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval007" size="5" maxlength="5" value="<%v_prgminval007%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval007" size="5" maxlength="5"   value="<%v_histval007%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval007m" size="2" maxlength="2"  value="<%v_reakval007m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval007s" size="2" maxlength="2"  value="<%v_reakval007s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval007" size="5" maxlength="5"    value="<%v_korval007%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf007" size="5" maxlength="5"   value="<%v_krotinf007%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt007"><option value="off" <%v_selalt007a%> >OFF</option><option value="on" <%v_selalt007b%>  >ON</option></select> dla PK7</td></tr>
+ <tr height="25px"><td><select name="n_selroz007"><option value="1" <%v_selroz007a%> >NIE</option><option value="2" <%v_selroz007b%>  >T8-T9</option><option value="3" <%v_selroz007c%>  >T9-T8</option></select></td></tr>
+ </table>
+ </td>
+  
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 8</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value008%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval008" size="39" maxlength="39"  value="<%v_txtval008%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval008" size="5" maxlength="5" value="<%v_prgmaxval008%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval008" size="5" maxlength="5" value="<%v_prgminval008%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval008" size="5" maxlength="5"   value="<%v_histval008%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval008m" size="2" maxlength="2"  value="<%v_reakval008m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval008s" size="2" maxlength="2"  value="<%v_reakval008s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval008" size="5" maxlength="5"    value="<%v_korval008%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf008" size="5" maxlength="5"   value="<%v_krotinf008%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt008"><option value="off" <%v_selalt008a%> >OFF</option><option value="on" <%v_selalt008b%>  >ON</option></select> dla PK8</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+ 
+  <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 9</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value009%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval009" size="39" maxlength="39"  value="<%v_txtval009%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval009" size="5" maxlength="5" value="<%v_prgmaxval009%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval009" size="5" maxlength="5" value="<%v_prgminval009%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval009" size="5" maxlength="5"   value="<%v_histval009%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval009m" size="2" maxlength="2"  value="<%v_reakval009m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval009s" size="2" maxlength="2"  value="<%v_reakval009s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval009" size="5" maxlength="5"    value="<%v_korval009%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf009" size="5" maxlength="5"   value="<%v_krotinf009%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt009"><option value="off" <%v_selalt009a%> >OFF</option><option value="on" <%v_selalt009b%>  >ON</option></select> dla PK9</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+
+</tr>
+</table>
+</td>
+</tr>
+
+<tr height="150px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja parametrow dla czujników temperatury  10-12</td>
+</tr>
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table border="0" id="tabela">
+<tr>
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik</b></td></tr>
+ <tr height="40px"><td>Odczyt</td></tr>
+ <tr height="25px"><td>Nazwa czujnika</td></tr>
+ <tr height="25px"><td>Górny prog</td></tr>
+ <tr height="25px"><td>Dolny prog</td></tr>
+ <tr height="25px"><td>Histereza</td></tr>
+ <tr height="25px"><td>Czas reakcji</td></tr>
+ <tr height="25px"><td>Korekcja w st.C</td></tr>
+ <tr height="25px"><td>Krotnosc informacji</td></tr>
+ <tr height="25px"><td>Alarm przekaznikowy</td></tr>
+ <tr height="25px"><td>Odczyt jako roznica</td></tr>
+ </table>
+ </td>
+ 
+
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 10</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value010%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval010" size="39" maxlength="39"  value="<%v_txtval010%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval010" size="5" maxlength="5" value="<%v_prgmaxval010%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval010" size="5" maxlength="5" value="<%v_prgminval010%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval010" size="5" maxlength="5"   value="<%v_histval010%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval010m" size="2" maxlength="2"  value="<%v_reakval010m%>" onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval010s" size="2" maxlength="2"  value="<%v_reakval010s%>" onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval010" size="5" maxlength="5"    value="<%v_korval010%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf010" size="5" maxlength="5"   value="<%v_krotinf010%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt010"><option value="off" <%v_selalt010a%> >OFF</option><option value="on" <%v_selalt010b%>  >ON</option></select> dla PK7</td></tr>
+ <tr height="25px"><td><select name="n_selroz010"><option value="1" <%v_selroz010a%> >NIE</option><option value="2" <%v_selroz010b%>  >T11-T12</option><option value="3" <%v_selroz010c%>  >T12-T11</option></select></td></tr>
+ </table>
+ </td>
+  
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 11</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value011%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval011" size="39" maxlength="39"  value="<%v_txtval011%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval011" size="5" maxlength="5" value="<%v_prgmaxval011%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval011" size="5" maxlength="5" value="<%v_prgminval011%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval011" size="5" maxlength="5"   value="<%v_histval011%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval011m" size="2" maxlength="2"  value="<%v_reakval011m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval011s" size="2" maxlength="2"  value="<%v_reakval011s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval011" size="5" maxlength="5"    value="<%v_korval011%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf011" size="5" maxlength="5"   value="<%v_krotinf011%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt011"><option value="off" <%v_selalt011a%> >OFF</option><option value="on" <%v_selalt011b%>  >ON</option></select> dla PK7</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+ 
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 12</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value012%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval012" size="39" maxlength="39"  value="<%v_txtval012%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval012" size="5" maxlength="5" value="<%v_prgmaxval012%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval012" size="5" maxlength="5" value="<%v_prgminval012%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval012" size="5" maxlength="5"   value="<%v_histval012%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval012m" size="2" maxlength="2"  value="<%v_reakval012m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval012s" size="2" maxlength="2"  value="<%v_reakval012s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval012" size="5" maxlength="5"    value="<%v_korval012%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf012" size="5" maxlength="5"   value="<%v_krotinf012%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt012"><option value="off" <%v_selalt012a%> >OFF</option><option value="on" <%v_selalt012b%>  >ON</option></select> dla PK7</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+
+</tr>
+</table>
+</td>
+</tr>
+
+<tr height="150px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja parametrow dla czujników temperatury  13-15</td>
+</tr>
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table border="0" id="tabela">
+<tr>
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik</b></td></tr>
+ <tr height="40px"><td>Odczyt</td></tr>
+ <tr height="25px"><td>Nazwa czujnika</td></tr>
+ <tr height="25px"><td>Górny prog</td></tr>
+ <tr height="25px"><td>Dolny prog</td></tr>
+ <tr height="25px"><td>Histereza</td></tr>
+ <tr height="25px"><td>Czas reakcji</td></tr>
+ <tr height="25px"><td>Korekcja w st.C</td></tr>
+ <tr height="25px"><td>Krotnosc informacji</td></tr>
+ <tr height="25px"><td>Alarm przekaznikowy</td></tr>
+ <tr height="25px"><td>Odczyt jako roznica</td></tr>
+ </table>
+ </td>
+ 
+
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 13</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value013%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval013" size="39" maxlength="39"  value="<%v_txtval013%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval013" size="5" maxlength="5" value="<%v_prgmaxval013%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval013" size="5" maxlength="5" value="<%v_prgminval013%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval013" size="5" maxlength="5"   value="<%v_histval013%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval013m" size="2" maxlength="2"  value="<%v_reakval013m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval013s" size="2" maxlength="2"  value="<%v_reakval013s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval013" size="5" maxlength="5"    value="<%v_korval013%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf013" size="5" maxlength="5"   value="<%v_krotinf013%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt013"><option value="off" <%v_selalt013a%> >OFF</option><option value="on" <%v_selalt013b%>  >ON</option></select> dla PK7</td></tr>
+ <tr height="25px"><td><select name="n_selroz013"><option value="1" <%v_selroz013a%> >NIE</option><option value="2" <%v_selroz013b%>  >T14-T15</option><option value="3" <%v_selroz013c%>  >T15-T14</option></select></td></tr>
+ </table>
+ </td>
+ 
+ 
+  <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 14</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value014%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval014" size="39" maxlength="39"  value="<%v_txtval014%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval014" size="5" maxlength="5" value="<%v_prgmaxval014%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval014" size="5" maxlength="5" value="<%v_prgminval014%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval014" size="5" maxlength="5"   value="<%v_histval014%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval014m" size="2" maxlength="2"  value="<%v_reakval014m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval014s" size="2" maxlength="2"  value="<%v_reakval014s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval014" size="5" maxlength="5"    value="<%v_korval014%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf014" size="5" maxlength="5"   value="<%v_krotinf014%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt014"><option value="off" <%v_selalt014a%> >OFF</option><option value="on" <%v_selalt014b%>  >ON</option></select> dla PK7</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+ 
+ 
+  <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 15</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value015%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval015" size="39" maxlength="39"  value="<%v_txtval015%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval015" size="5" maxlength="5" value="<%v_prgmaxval015%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval015" size="5" maxlength="5" value="<%v_prgminval015%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval015" size="5" maxlength="5"   value="<%v_histval015%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval015m" size="2" maxlength="2"  value="<%v_reakval015m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval015s" size="2" maxlength="2"  value="<%v_reakval015s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval015" size="5" maxlength="5"    value="<%v_korval015%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf015" size="5" maxlength="5"   value="<%v_krotinf015%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt015"><option value="off" <%v_selalt015a%> >OFF</option><option value="on" <%v_selalt015b%>  >ON</option></select> dla PK7</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+  
+
+
+</tr>
+</table>
+</td>
+</tr>
+
+<tr height="150px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table border="0" id="tabela">
+
+ 
+ 
+<tr height="50px"><td><button type="submit" style="border-color:#08F; color:#FFFFFF; background-color:#08F;" value="zapisz" name="n_101_zapisz"><p align="left"><font style="font-size: 20"><b> ZAPISZ</b></font></p></button></form>
+</td></tr>
+
+</table>
+</td>
+</tr>
+
+<tr height="0px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+
+
+
+
+</table>
+
+
+</body>
+</html>

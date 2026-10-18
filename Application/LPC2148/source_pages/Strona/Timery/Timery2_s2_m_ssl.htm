@@ -1,0 +1,712 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Odczyt wartosci</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+
+
+
+	<link rel="stylesheet" href="https://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="https://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="https://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+
+
+
+<style>
+
+    div.img1 .si, div.img2 .si {
+    background: url(data:image/png;base64,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) no-repeat;
+    display: inline-block;
+    height: 49px;
+    margin-right: 0px;
+    vertical-align: middle;
+    width: 37px;
+    }
+
+    div.img1 .si{
+        background-position: 0px 0px;
+    }
+    div.img2 .si{
+        background-position: 0px -49px;
+    } 
+
+
+   	 div.img_plus .sp {
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAApCAIAAAD4TO2+AAAABGdBTUEAALGPC/xhBQAAAuVJREFUWEft2EtTGlEQBWDzz/N7UlYp7nxgieBOS7EslSIpFeIzKkQTk+zyxVaIOAgMI8EKvZrF3HPOPX0f3ffd9fX11BgGWWMYU2Oo6U8C35iss7Ozra2t+fn5XC43PT39IYuAA21hYQEy/BccSXDr8vJyfX19dnZ2ZWXF+L29vUql8vE+PqWKGCvgQNvc3CwUCvCxXF1dJYrrlHVxcbG0tLS8vGw8DQcHB0dHR/V6/XMWAQcaTMjw8/k8LozPlT2RxSf/lUolMzs8PKTk5OSE2+fn5waLL2kjhsOBBhMy/Gq1WiwWiXvu2RNZXPWTqdRqNYMBEWoqjUaj2Wx+HS4gwIEGEzJ8LOaPEW+HYW1Zp6en8i39/vZtMJSbm5vb29tv9/F9uAgQaDAhw8eCa39/H2/HDmjLshJZKvfmYYzJgaDk7u7uR3YBDSZk+Fhwyebq6qq99bdhbVmLi4vb29uyzmGzMTIE/XyMX8NFCwcmZPhYcGHEa00ny3KiWIPkW4B8NqfQNJyYhNEwIcPHEobhxZ4sy1kng5HjsOo1NIVMyGEYLox4sSfLcow7V+xhWbc2B7Xq/X30aW0YhgUXRrzYu8qKheXXFBlMIQsLrlhevWU5nkJWn1OP3waS5f9YXrj6kuUYH7EsjL3dmsh6SOLErT42S2vJZ+BWbLcU8VznfyDrheSkPrcySOJE1uMN6VaKO3HEp3yPy0dp4SaPq3qUFQRGvF0Lm7m5Oc2FMkPRODJZuDDixZ5c2Chbd3Z2UpeBA+3EjjIQb9eiWZGvxYj+orW8XqNAbRXNWKJo1mKUy+Vkt/ikMdLyjrLFiAzOzMx0bciI1UYy8/j42BE3goYMCy4d18bGRtf2NfpdstbW1hhrjPXI58zbV5iQ4WPB1bvZpyyeRkRk8/WaffhB1PtpJJyMhyT5thK9q+jHM3wagba7uwsZ/gAPSa0ct57d7IMsntweMKClfHYbh2fLt/Z2+m89+w03XlZXXMVB0gAAAABJRU5ErkJggg==) no-repeat;
+    display: inline-block;
+	height: 40px;
+    margin-right: 0px;
+    vertical-align: middle;
+    width: 47px;
+	}
+     div.img_plus .sp{
+        background-position: 0px 0px;
+    } 
+
+
+   	 div.img_minus .sp {
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAApCAIAAAD4TO2+AAAABGdBTUEAALGPC/xhBQAAAtdJREFUWEft2F1PGkEUxnH7zft5GhKFOxUJAt5pVGJQQht5qfhSFYstbe/607EbwCVQWBBbz9Ve7PyfZ86ZnZ0z725vb1eWMNhawlhZQk8PBXx9ti4uLg4ODtbX19PpdCqV+pBE4KBtbGwg449KSny2rq+vd3d319bW8vm88cfHx9Vq9eNjfJoqwliBg7a/v7+9vY1P5ebm5rm5GFtXV1fZbDaXyxnPw+npaaPRaLVan5MIHDRMZPytrS1aFIecDduSJ++VSiUzq9frnLTbbdm+vLw0WHyZNsJwHDRMZPxarVYsFpkbytmwLVn1kqk0m02DgRg1lU6nc3d393W2QMBBw0TGp2L+FOn2J2zA1vn5uXorv7c9G4zS7Xbv7++/Pcb32SJA0DCR8anQOjk5odv/BQzYshKlVO3NwxiTg+Ck1+v9SC7QMJHxqdBSzUKh4NuKEjZga3Nzs1wuq7oMm42RwdDPP/Frtog4mMj4VGhRpGtNx9uyo1iD7FuA8mxOwdNsZmJGYyLjUwkJo0s93pa9TgVDjUOq5uEp2EQOCaNFkS71eFu2cfuKb1jVrc05pSqyhU+FFkW61EfaCgvLq/OrYL8tKrTC8hpvy/YUbCW+qvqBYXnRmsiWbXzBtiiOz9abracivmVrgo8lWvIJZOv9tPHc539ga4LiTPpKktmaVHOC9/4JW34FC97lx/x8HC38ycOvepEnCIp0Rx5sMpmM5sIxw6FxYbZoUaRLPf5g49h6dHT0IsdAuiMPzQ75WozQX0TLax4H1OjQTCUcmrUYh4eH8dmSJ42RlneRLUao4Orq6siGjFltpGSenZ35Ty2gIaNCS8e1t7c3sn0N/S5bOzs7EmuM9SjPibevmMj4VGiNb/Y5C1cjIlRzfs0+fhAafzUSMhkuktTbSnSvoh9P8GoErVKpIOP/xUVSVOPo2s13kMSV2xMDbcprtxe/uXyFd6cvmLPfF6aA4cR0YwoAAAAASUVORK5CYII=) no-repeat;
+    display: inline-block;
+	height: 40px;
+    margin-right: 0px;
+    vertical-align: middle;
+    width: 47px;
+	}
+     div.img_minus .sp{
+        background-position: 0px 0px;
+    }  
+
+
+   	 div.img_setup .sp {
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADYAAAAsCAIAAAChatx3AAAABGdBTUEAALGPC/xhBQAAAvNJREFUWEftmElPMkEQhvWf+3sMCcuNNaw3CEsIS9CwySqboHyfNx8tnRgYmK1nHKJ18mA/79vV1UxXXa9WqyufBxZ9Hlc+9/d+yBdvcTqdViqVaDQaDocDgcCtioADLRaLQYZvmKOTWVwsFsViMRQKpdNpWM1ms91u333Eva2QtQQcaOVyOZPJwEdluVyeMapvcT6fJxKJVCoFCz/dbrff7w+HwwcVAQcaTMjwk8kkWiiecqljkfyxJp/Ps+Ner4er8XjMicxmM0DEo92Q5XCgwYQMv9Pp5HI5jJ7KpY5FMs8CtjgYDAABxTRbXK/Xm83myVlAgAMNJmT4qJALFNHVTeShxclkQn1QLqzkb0AQt9vtbrd7/ogXZyEQaDAhw0cFrVarha7u7Tm0SBWTdmqF/bGeTYPD1X6//6cuoMGEDB8VtDjxbDbLvTxO5KHFeDxeq9WoEk6BXUIRc/+/4tVZaByYkOGjghaK6HIHjC3yi0X9si2Kl7Ngr+LPmTGd1TAhw0dFEoku6sYW+V3llKUmJIVu+BPLkCWRaKGILurGFvl88LvF7wJVQl27lELNInxU0EIRXdRNWZRCZJl7p/zdIipoSTlas8jPn1g8rqMbu3GMknJEy7JFPh8eW0TRWhbPW1R4u7Us/ll0kNVfnEW7F/rmzI1WXIsXYNFB7R0u/cW16Iss8jk683Vxw6KFDyDPIV4c8ow49dKxfV1Y+H178mSUlw6K6Jp6jEUiERornkY8hj2ziBaK6KJu/BjjaV6v13/kSYuuqcaABof2SnorrRzdeHhrjQEq0hjQXlWrVeMskj+aRUYFXrZXcsrBYNBUk8omaLlJ+Gg04qPkQZOKClp0nqVSyVSrL3MCLBYKBZLPemqZs1De6sOEDB8VtKwNTHApYydCTty9gQl8EbI2dpJsy/CO+qCKmV8x01A4doLWaDQgw7c5vNNqQhuBcodUjD8/GdAUjEANh6ee/cPlz7o9S5XlQbIfnGke/g5axXG8ATFelIizi2p7AAAAAElFTkSuQmCC) no-repeat;
+    display: inline-block;
+	height: 40px;
+    margin-right: 0px;
+    vertical-align: middle;
+    width: 48px;
+	}
+     div.img_setup .sp{
+        background-position: 0px 0px;
+    } 
+
+</style>
+
+
+
+
+
+
+<script>
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00';    
+  }}
+}
+</script>
+
+
+
+
+
+
+
+<script type="text/javascript">
+
+var i,k,pom=[],pom1=[];     var v_pom=[],dzien_noc;  
+
+var zgr1=[],zgr2=[],zgr3=[],zgr4=[],zgr5=[],zgr6=[];  
+
+pom[0]=0;  pom1[0]=0;
+pom[1]=0;
+pom[2]=0;
+pom[3]=0;
+pom[4]=0;
+pom[5]=0;
+pom[6]=0;
+pom[7]=0;
+pom[8]=0;
+pom[9]=0;
+pom[10]=0;
+pom[11]=0;
+pom[12]=0;
+pom[13]=0;
+pom[14]=0;
+pom[15]=0;
+pom[16]=0;
+
+
+	
+
+setInterval(function () {       
+
+ 
+var kk=[];   var on_off=[];
+
+   
+  
+
+
+   
+ 
+ 
+
+ 
+ 
+ 
+ if(pom[0]>0)
+ {  pom[0]++;    kk= $( "#tu_tim2018demo" ).text();     for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;    
+	if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='N'))								   
+    {
+        $( "#tu_term018" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">ON&nbsp;</font>" );    
+        $( "#tu_nazwa018" ).html( "<font size=\"3\" color=\"red\"><%v_pktxt018z%></font>" );      $( "#tu_obraz018" ).html("<div class=\"img1\"><span class=\"si\"></span></div>");  	
+		$( "#tu_ster018" ).html( "MANUAL" ); 
+    }
+ } 
+ if(pom[1]>0)
+ {  pom[1]++;  kk= $( "#tu_tim2018demo" ).text();      for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;                                            
+    if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='F')&&(on_off[3]=='F'))								   
+    {
+        $( "#tu_term018" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">OFF</font>" );    
+        $( "#tu_nazwa018" ).html( "<font size=\"3\" color=\"black\"><%v_pktxt018w%></font>" );      $( "#tu_obraz018" ).html("<div class=\"img2\"><span class=\"si\"></span></div>"); 
+        $( "#tu_ster018" ).html( "MANUAL" );   
+    }   
+  } 
+ 
+ 
+ 
+ if(pom[2]>0)
+ {  pom[2]++;    kk= $( "#tu_tim2019demo" ).text();     for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;    
+	if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='N'))								   
+    {
+        $( "#tu_term019" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">ON&nbsp;</font>" );    
+        $( "#tu_nazwa019" ).html( "<font size=\"3\" color=\"red\"><%v_pktxt019z%></font>" );      $( "#tu_obraz019" ).html("<div class=\"img1\"><span class=\"si\"></span></div>");  	
+		$( "#tu_ster019" ).html( "MANUAL" ); 
+    }
+ } 
+ if(pom[3]>0)
+ {  pom[3]++;  kk= $( "#tu_tim2019demo" ).text();      for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;                                            
+    if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='F')&&(on_off[3]=='F'))								   
+    {
+        $( "#tu_term019" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">OFF</font>" );    
+        $( "#tu_nazwa019" ).html( "<font size=\"3\" color=\"black\"><%v_pktxt019w%></font>" );      $( "#tu_obraz019" ).html("<div class=\"img2\"><span class=\"si\"></span></div>"); 
+        $( "#tu_ster019" ).html( "MANUAL" );   
+    }   
+  }
+   
+ 
+ 
+ if(pom[4]>0)
+ {  pom[4]++;    kk= $( "#tu_tim2020demo" ).text();     for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;    
+	if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='N'))								   
+    {
+        $( "#tu_term020" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">ON&nbsp;</font>" );    
+        $( "#tu_nazwa020" ).html( "<font size=\"3\" color=\"red\"><%v_pktxt020z%></font>" );      $( "#tu_obraz020" ).html("<div class=\"img1\"><span class=\"si\"></span></div>");  	
+		$( "#tu_ster020" ).html( "MANUAL" ); 
+    }
+ } 
+ if(pom[5]>0)
+ {  pom[5]++;  kk= $( "#tu_tim2020demo" ).text();      for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;                                            
+    if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='F')&&(on_off[3]=='F'))								   
+    {
+        $( "#tu_term020" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">OFF</font>" );    
+        $( "#tu_nazwa020" ).html( "<font size=\"3\" color=\"black\"><%v_pktxt020w%></font>" );      $( "#tu_obraz020" ).html("<div class=\"img2\"><span class=\"si\"></span></div>"); 
+        $( "#tu_ster020" ).html( "MANUAL" );   
+    }   
+  }
+  
+  
+  
+
+ if(pom[6]>0)
+ {  pom[6]++;    kk= $( "#tu_tim2021demo" ).text();     for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;    
+	if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='N'))								   
+    {
+        $( "#tu_term021" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">ON&nbsp;</font>" );    
+        $( "#tu_nazwa021" ).html( "<font size=\"3\" color=\"red\"><%v_pktxt021z%></font>" );      $( "#tu_obraz021" ).html("<div class=\"img1\"><span class=\"si\"></span></div>");  	
+		$( "#tu_ster021" ).html( "MANUAL" ); 
+    }
+ } 
+ if(pom[7]>0)
+ {  pom[7]++;  kk= $( "#tu_tim2021demo" ).text();      for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;                                            
+    if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='F')&&(on_off[3]=='F'))								   
+    {
+        $( "#tu_term021" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">OFF</font>" );    
+        $( "#tu_nazwa021" ).html( "<font size=\"3\" color=\"black\"><%v_pktxt021w%></font>" );      $( "#tu_obraz021" ).html("<div class=\"img2\"><span class=\"si\"></span></div>"); 
+        $( "#tu_ster021" ).html( "MANUAL" );   
+    }   
+  } 
+  
+  
+
+ if(pom[8]>0)
+ {  pom[8]++;    kk= $( "#tu_tim2022demo" ).text();     for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;    
+	if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='N'))								   
+    {
+        $( "#tu_term022" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">ON&nbsp;</font>" );    
+        $( "#tu_nazwa022" ).html( "<font size=\"3\" color=\"red\"><%v_pktxt022z%></font>" );      $( "#tu_obraz022" ).html("<div class=\"img1\"><span class=\"si\"></span></div>");  	
+		$( "#tu_ster022" ).html( "MANUAL" ); 
+    }
+ } 
+ if(pom[9]>0)
+ {  pom[9]++;  kk= $( "#tu_tim2022demo" ).text();      for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;                                            
+    if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='F')&&(on_off[3]=='F'))								   
+    {
+        $( "#tu_term022" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">OFF</font>" );    
+        $( "#tu_nazwa022" ).html( "<font size=\"3\" color=\"black\"><%v_pktxt022w%></font>" );      $( "#tu_obraz022" ).html("<div class=\"img2\"><span class=\"si\"></span></div>"); 
+        $( "#tu_ster022" ).html( "MANUAL" );   
+    }   
+  }
+  
+  
+  
+  
+
+ if(pom[10]>0)
+ {  pom[10]++;    kk= $( "#tu_tim2023demo" ).text();     for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;    
+	if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='N'))								   
+    {
+        $( "#tu_term023" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">ON&nbsp;</font>" );    
+        $( "#tu_nazwa023" ).html( "<font size=\"3\" color=\"red\"><%v_pktxt023z%></font>" );      $( "#tu_obraz023" ).html("<div class=\"img1\"><span class=\"si\"></span></div>");  	
+		$( "#tu_ster023" ).html( "MANUAL" ); 
+    }
+ } 
+ if(pom[11]>0)
+ {  pom[11]++;  kk= $( "#tu_tim2023demo" ).text();      for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;                                            
+    if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='F')&&(on_off[3]=='F'))								   
+    {
+        $( "#tu_term023" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">OFF</font>" );    
+        $( "#tu_nazwa023" ).html( "<font size=\"3\" color=\"black\"><%v_pktxt023w%></font>" );      $( "#tu_obraz023" ).html("<div class=\"img2\"><span class=\"si\"></span></div>"); 
+        $( "#tu_ster023" ).html( "MANUAL" );   
+    }   
+  }
+  
+  
+ if(pom[12]>0)
+ {  pom[12]++;    kk= $( "#tu_tim2024demo" ).text();     for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;    
+	if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='N'))								   
+    {
+        $( "#tu_term024" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">ON&nbsp;</font>" );    
+        $( "#tu_nazwa024" ).html( "<font size=\"3\" color=\"red\"><%v_pktxt024z%></font>" );      $( "#tu_obraz024" ).html("<div class=\"img1\"><span class=\"si\"></span></div>");  	
+		$( "#tu_ster024" ).html( "MANUAL" ); 
+    }
+ } 
+ if(pom[13]>0)
+ {  pom[13]++;  kk= $( "#tu_tim2024demo" ).text();      for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;                                            
+    if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='F')&&(on_off[3]=='F'))								   
+    {
+        $( "#tu_term024" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">OFF</font>" );    
+        $( "#tu_nazwa024" ).html( "<font size=\"3\" color=\"black\"><%v_pktxt024w%></font>" );      $( "#tu_obraz024" ).html("<div class=\"img2\"><span class=\"si\"></span></div>"); 
+        $( "#tu_ster024" ).html( "MANUAL" );   
+    }   
+  } 
+  
+ if(pom[14]>0)
+ {  pom[14]++;    kk= $( "#tu_tim2025demo" ).text();     for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;    
+	if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='N'))								   
+    {
+        $( "#tu_term025" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">ON&nbsp;</font>" );    
+        $( "#tu_nazwa025" ).html( "<font size=\"3\" color=\"red\"><%v_pktxt025z%></font>" );      $( "#tu_obraz025" ).html("<div class=\"img1\"><span class=\"si\"></span></div>");  	
+		$( "#tu_ster025" ).html( "MANUAL" ); 
+    }
+ } 
+ if(pom[15]>0)
+ {  pom[15]++;  kk= $( "#tu_tim2025demo" ).text();      for(i=0;i<4;i++) on_off[i]=kk[i]; on_off[i]=null;                                            
+    if((on_off[0]=='#')&&(on_off[1]=='O')&&(on_off[2]=='F')&&(on_off[3]=='F'))								   
+    {
+        $( "#tu_term025" ).html( "<font size=\"7\" style=\"font-family: Comic Sans MS\" color=\"blue\">OFF</font>" );    
+        $( "#tu_nazwa025" ).html( "<font size=\"3\" color=\"black\"><%v_pktxt025w%></font>" );      $( "#tu_obraz025" ).html("<div class=\"img2\"><span class=\"si\"></span></div>"); 
+        $( "#tu_ster025" ).html( "MANUAL" );   
+    }   
+  } 
+  
+  
+ 
+  if(pom[0]>10)  pom[0]=0;
+  if(pom[1]>10)  pom[1]=0;
+  
+  if(pom[2]>10)  pom[2]=0;
+  if(pom[3]>10)  pom[3]=0;
+  
+  if(pom[4]>10)  pom[4]=0;
+  if(pom[5]>10)  pom[5]=0;
+  
+  if(pom[6]>10)  pom[6]=0;
+  if(pom[7]>10)  pom[7]=0;
+  
+  if(pom[8]>10)  pom[8]=0;
+  if(pom[9]>10)  pom[9]=0;
+  
+  if(pom[10]>10)  pom[10]=0;
+  if(pom[11]>10)  pom[11]=0;
+  
+  if(pom[12]>10)  pom[12]=0;
+  if(pom[13]>10)  pom[13]=0;
+  
+  if(pom[14]>10)  pom[14]=0;
+  if(pom[15]>10)  pom[15]=0;
+  
+
+
+
+  
+
+}, 100);
+
+
+
+</script>
+	
+
+
+
+
+
+
+</head> 
+<body> 
+
+  
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+
+<div data-role="collapsible" data-collapsed="true" data-theme="b" data-content-theme="c">
+    <h4><table><tr>
+	<td><%v_slvaktual%></td><td></td><td></td>
+	<td><%v_ttime2%></td><td></td><td></td>
+	<td><font size="4" color="yellow"><%v_mailwysl%></font></td>
+	</tr></table></h4>
+    <ul data-role="listview">
+        <li><a href="lpc.cgi/000"  rel="external">WRÓÆ</a></li>
+        <li><a href="lpc.cgi/altuklad"  rel="external">Uk³ad strony</a></li>
+        <li><a href="lpc.cgi/slave000"  rel="external">Wybierz: Master</a></li>
+        <li><a href="lpc.cgi/slave001"  rel="external">Wybierz: <%v_slvtxt001%></a></li>
+        <li><a href="lpc.cgi/slave002"  rel="external">Wybierz: <%v_slvtxt002%></a></li>
+    </ul>
+</div>
+
+
+
+
+
+<div data-role="content">
+
+
+
+	
+
+
+	
+	
+	
+	
+	<%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+<%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+  <li class="ui-field-contain"><table><tr><td> 
+  <div id="tu_obraz018"><%v_Tim2018obr%></div> 
+   <td width="3px"></td> 
+  <td><font size="5" style="font-family: Comic Sans MS" color="blue"><%v_pktxt018%></font><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Ustawienia dla Timera 18&nbsp;&nbsp;&nbsp;<font size="4" color="black"><%v_slvnr%></font></p></td></tr></table>
+  </li>
+  <li class="ui-body ui-body-b"><table><tr>
+        <td><a href="lpc.cgi/618"  rel="external"><div class="img_setup"><span class="sp"></span></div></a></div></td>
+		<td width="40px"></td>     
+	   <td width="105px"><div id="tu_term018"> <font size="7" style="font-family: Comic Sans MS" color="blue"><%v_pkstan018m2%></font> </div></td>
+	   <td width="20px"></td>
+	   <td>
+       <table><td>
+	              <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2018demo').load('timer/ster018z'); pom[0]=1"><div class="img_plus"><span class="sp"></span></div></a></div></tr>	              
+				  <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2018demo').load('timer/ster018w'); pom[1]=1"><div class="img_minus"><span class="sp"></span></div></a></div></tr>				  
+			  </td>   
+	   </table>	   
+	  </td>	  
+	   </tr></table>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;Setup &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zmiana</p>	   
+  </li> 
+  <li class="ui-field-contain">
+  <table><tr>
+     <td width="90px"> <div id="tu_ster018"><%v_Tim2018ster%></div></td>
+     <td width="125px"><center><div id="tu_nazwa018"><%v_pkstan018t%></div></center></td>
+	 <td width="10px"> </td>
+	 <td><font size="4" style="font-family: Comic Sans MS" color="blue"><%v_Tim2018akt%></font></td>
+  </tr></table>
+  <p></p><p></p><p></p><p> &nbsp;&nbsp;Sterowanie&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Timer</p>
+  </li>
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>	
+	
+	
+	
+	
+	<%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+<%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+  <li class="ui-field-contain"><table><tr><td> 
+  <div id="tu_obraz019"><%v_Tim2019obr%></div> 
+   <td width="3px"></td> 
+  <td><font size="5" style="font-family: Comic Sans MS" color="blue"><%v_pktxt019%></font><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Ustawienia dla Timera 19&nbsp;&nbsp;&nbsp;<font size="4" color="black"><%v_slvnr%></font></p></td></tr></table>
+  </li>
+  <li class="ui-body ui-body-b"><table><tr>
+        <td><a href="lpc.cgi/619"  rel="external"><div class="img_setup"><span class="sp"></span></div></a></div></td>
+		<td width="40px"></td>     
+	   <td width="105px"><div id="tu_term019"> <font size="7" style="font-family: Comic Sans MS" color="blue"><%v_pkstan019m2%></font> </div></td>
+	   <td width="20px"></td>
+	   <td>
+       <table><td>
+	              <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2019demo').load('timer/ster019z'); pom[2]=1"><div class="img_plus"><span class="sp"></span></div></a></div></tr>	              
+				  <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2019demo').load('timer/ster019w'); pom[3]=1"><div class="img_minus"><span class="sp"></span></div></a></div></tr>				  
+			  </td>   
+	   </table>	   
+	  </td>	  
+	   </tr></table>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;Setup &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zmiana</p>	   
+  </li> 
+  <li class="ui-field-contain">
+  <table><tr>
+     <td width="90px"> <div id="tu_ster019"><%v_Tim2019ster%></div></td>
+     <td width="125px"><center><div id="tu_nazwa019"><%v_pkstan019t%></div></center></td>
+	 <td width="10px"> </td>
+	 <td><font size="4" style="font-family: Comic Sans MS" color="blue"><%v_Tim2019akt%></font></td>
+  </tr></table>
+  <p></p><p></p><p></p><p> &nbsp;&nbsp;Sterowanie&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Timer</p>
+  </li>
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+	
+	
+	
+	
+	<%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+<%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+  <li class="ui-field-contain"><table><tr><td> 
+  <div id="tu_obraz020"><%v_Tim2020obr%></div> 
+   <td width="3px"></td> 
+  <td><font size="5" style="font-family: Comic Sans MS" color="blue"><%v_pktxt020%></font><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Ustawienia dla Timera 20&nbsp;&nbsp;&nbsp;<font size="4" color="black"><%v_slvnr%></font></p></td></tr></table>
+  </li>
+  <li class="ui-body ui-body-b"><table><tr>
+        <td><a href="lpc.cgi/620"  rel="external"><div class="img_setup"><span class="sp"></span></div></a></div></td>
+		<td width="40px"></td>     
+	   <td width="105px"><div id="tu_term020"> <font size="7" style="font-family: Comic Sans MS" color="blue"><%v_pkstan020m2%></font> </div></td>
+	   <td width="20px"></td>
+	   <td>
+       <table><td>
+	              <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2020demo').load('timer/ster020z'); pom[4]=1"><div class="img_plus"><span class="sp"></span></div></a></div></tr>	              
+				  <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2020demo').load('timer/ster020w'); pom[5]=1"><div class="img_minus"><span class="sp"></span></div></a></div></tr>				  
+			  </td>   
+	   </table>	   
+	  </td>	  
+	   </tr></table>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;Setup &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zmiana</p>	   
+  </li> 
+  <li class="ui-field-contain">
+  <table><tr>
+     <td width="90px"> <div id="tu_ster020"><%v_Tim2020ster%></div></td>
+     <td width="125px"><center><div id="tu_nazwa020"><%v_pkstan020t%></div></center></td>
+	 <td width="10px"> </td>
+	 <td><font size="4" style="font-family: Comic Sans MS" color="blue"><%v_Tim2020akt%></font></td>
+  </tr></table>
+  <p></p><p></p><p></p><p> &nbsp;&nbsp;Sterowanie&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Timer</p>
+  </li>
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+
+
+
+<%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+<%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+  <li class="ui-field-contain"><table><tr><td> 
+  <div id="tu_obraz021"><%v_Tim2021obr%></div> 
+   <td width="3px"></td> 
+  <td><font size="5" style="font-family: Comic Sans MS" color="blue"><%v_pktxt021%></font><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Ustawienia dla Timera 21&nbsp;&nbsp;&nbsp;<font size="4" color="black"><%v_slvnr%></font></p></td></tr></table>
+  </li>
+  <li class="ui-body ui-body-b"><table><tr>
+        <td><a href="lpc.cgi/621"  rel="external"><div class="img_setup"><span class="sp"></span></div></a></div></td>
+		<td width="40px"></td>     
+	   <td width="105px"><div id="tu_term021"> <font size="7" style="font-family: Comic Sans MS" color="blue"><%v_pkstan021m2%></font> </div></td>
+	   <td width="20px"></td>
+	   <td>
+       <table><td>
+	              <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2021demo').load('timer/ster021z'); pom[6]=1"><div class="img_plus"><span class="sp"></span></div></a></div></tr>	              
+				  <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2021demo').load('timer/ster021w'); pom[7]=1"><div class="img_minus"><span class="sp"></span></div></a></div></tr>				  
+			  </td>   
+	   </table>	   
+	  </td>	  
+	   </tr></table>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;Setup &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zmiana</p>	   
+  </li> 
+  <li class="ui-field-contain">
+  <table><tr>
+     <td width="90px"> <div id="tu_ster021"><%v_Tim2021ster%></div></td>
+     <td width="125px"><center><div id="tu_nazwa021"><%v_pkstan021t%></div></center></td>
+	 <td width="10px"> </td>
+	 <td><font size="4" style="font-family: Comic Sans MS" color="blue"><%v_Tim2021akt%></font></td>
+  </tr></table>
+  <p></p><p></p><p></p><p> &nbsp;&nbsp;Sterowanie&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Timer</p>
+  </li>
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+
+
+
+<%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+<%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+  <li class="ui-field-contain"><table><tr><td> 
+  <div id="tu_obraz022"><%v_Tim2022obr%></div> 
+   <td width="3px"></td> 
+  <td><font size="5" style="font-family: Comic Sans MS" color="blue"><%v_pktxt022%></font><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Ustawienia dla Timera 22&nbsp;&nbsp;&nbsp;<font size="4" color="black"><%v_slvnr%></font></p></td></tr></table>
+  </li>
+  <li class="ui-body ui-body-b"><table><tr>
+        <td><a href="lpc.cgi/622"  rel="external"><div class="img_setup"><span class="sp"></span></div></a></div></td>
+		<td width="40px"></td>     
+	   <td width="105px"><div id="tu_term022"> <font size="7" style="font-family: Comic Sans MS" color="blue"><%v_pkstan022m2%></font> </div></td>
+	   <td width="20px"></td>
+	   <td>
+       <table><td>
+	              <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2022demo').load('timer/ster022z'); pom[8]=1"><div class="img_plus"><span class="sp"></span></div></a></div></tr>	              
+				  <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2022demo').load('timer/ster022w'); pom[9]=1"><div class="img_minus"><span class="sp"></span></div></a></div></tr>				  
+			  </td>   
+	   </table>	   
+	  </td>	  
+	   </tr></table>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;Setup &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zmiana</p>	   
+  </li> 
+  <li class="ui-field-contain">
+  <table><tr>
+     <td width="90px"> <div id="tu_ster022"><%v_Tim2022ster%></div></td>
+     <td width="125px"><center><div id="tu_nazwa022"><%v_pkstan022t%></div></center></td>
+	 <td width="10px"> </td>
+	 <td><font size="4" style="font-family: Comic Sans MS" color="blue"><%v_Tim2022akt%></font></td>
+  </tr></table>
+  <p></p><p></p><p></p><p> &nbsp;&nbsp;Sterowanie&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Timer</p>
+  </li>
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+
+
+
+<%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+<%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+  <li class="ui-field-contain"><table><tr><td> 
+  <div id="tu_obraz023"><%v_Tim2023obr%></div> 
+   <td width="3px"></td> 
+  <td><font size="5" style="font-family: Comic Sans MS" color="blue"><%v_pktxt023%></font><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Ustawienia dla Timera 23&nbsp;&nbsp;&nbsp;<font size="4" color="black"><%v_slvnr%></font></p></td></tr></table>
+  </li>
+  <li class="ui-body ui-body-b"><table><tr>
+        <td><a href="lpc.cgi/623"  rel="external"><div class="img_setup"><span class="sp"></span></div></a></div></td>
+		<td width="40px"></td>     
+	   <td width="105px"><div id="tu_term023"> <font size="7" style="font-family: Comic Sans MS" color="blue"><%v_pkstan023m2%></font> </div></td>
+	   <td width="20px"></td>
+	   <td>
+       <table><td>
+	              <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2023demo').load('timer/ster023z'); pom[10]=1"><div class="img_plus"><span class="sp"></span></div></a></div></tr>	              
+				  <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2023demo').load('timer/ster023w'); pom[11]=1"><div class="img_minus"><span class="sp"></span></div></a></div></tr>				  
+			  </td>   
+	   </table>	   
+	  </td>	  
+	   </tr></table>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;Setup &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zmiana</p>	   
+  </li> 
+  <li class="ui-field-contain">
+  <table><tr>
+     <td width="90px"> <div id="tu_ster023"><%v_Tim2023ster%></div></td>
+     <td width="125px"><center><div id="tu_nazwa023"><%v_pkstan023t%></div></center></td>
+	 <td width="10px"> </td>
+	 <td><font size="4" style="font-family: Comic Sans MS" color="blue"><%v_Tim2023akt%></font></td>
+  </tr></table>
+  <p></p><p></p><p></p><p> &nbsp;&nbsp;Sterowanie&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Timer</p>
+  </li>
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+		<%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+<%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+  <li class="ui-field-contain"><table><tr><td> 
+  <div id="tu_obraz024"><%v_Tim2024obr%></div> 
+   <td width="3px"></td> 
+  <td><font size="5" style="font-family: Comic Sans MS" color="blue"><%v_pktxt024%></font><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Ustawienia dla Timera 24&nbsp;&nbsp;&nbsp;<font size="4" color="black"><%v_slvnr%></font></p></td></tr></table>
+  </li>
+  <li class="ui-body ui-body-b"><table><tr>
+        <td><a href="lpc.cgi/624"  rel="external"><div class="img_setup"><span class="sp"></span></div></a></div></td>
+		<td width="40px"></td>     
+	   <td width="105px"><div id="tu_term024"> <font size="7" style="font-family: Comic Sans MS" color="blue"><%v_pkstan024m2%></font> </div></td>
+	   <td width="20px"></td>
+	   <td>
+       <table><td>
+	              <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2024demo').load('timer/ster024z'); pom[12]=1"><div class="img_plus"><span class="sp"></span></div></a></div></tr>	              
+				  <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2024demo').load('timer/ster024w'); pom[13]=1"><div class="img_minus"><span class="sp"></span></div></a></div></tr>				  
+			  </td>   
+	   </table>	   
+	  </td>	  
+	   </tr></table>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;Setup &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zmiana</p>	   
+  </li> 
+  <li class="ui-field-contain">
+  <table><tr>
+     <td width="90px"> <div id="tu_ster024"><%v_Tim2024ster%></div></td>
+     <td width="125px"><center><div id="tu_nazwa024"><%v_pkstan024t%></div></center></td>
+	 <td width="10px"> </td>
+	 <td><font size="4" style="font-family: Comic Sans MS" color="blue"><%v_Tim2024akt%></font></td>
+  </tr></table>
+  <p></p><p></p><p></p><p> &nbsp;&nbsp;Sterowanie&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Timer</p>
+  </li>
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+	
+		<%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+<%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+  <li class="ui-field-contain"><table><tr><td> 
+  <div id="tu_obraz025"><%v_Tim2025obr%></div> 
+   <td width="3px"></td> 
+  <td><font size="5" style="font-family: Comic Sans MS" color="blue"><%v_pktxt025%></font><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Ustawienia dla Timera 25&nbsp;&nbsp;&nbsp;<font size="4" color="black"><%v_slvnr%></font></p></td></tr></table>
+  </li>
+  <li class="ui-body ui-body-b"><table><tr>
+        <td><a href="lpc.cgi/625"  rel="external"><div class="img_setup"><span class="sp"></span></div></a></div></td>
+		<td width="40px"></td>     
+	   <td width="105px"><div id="tu_term025"> <font size="7" style="font-family: Comic Sans MS" color="blue"><%v_pkstan025m2%></font> </div></td>
+	   <td width="20px"></td>
+	   <td>
+       <table><td>
+	              <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2025demo').load('timer/ster025z'); pom[14]=1"><div class="img_plus"><span class="sp"></span></div></a></div></tr>	              
+				  <tr><div class="content-primary"><a href="#" rel="external" onClick="$('#tu_tim2025demo').load('timer/ster025w'); pom[15]=1"><div class="img_minus"><span class="sp"></span></div></a></div></tr>				  
+			  </td>   
+	   </table>	   
+	  </td>	  
+	   </tr></table>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;Setup &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zmiana</p>	   
+  </li> 
+  <li class="ui-field-contain">
+  <table><tr>
+     <td width="90px"> <div id="tu_ster025"><%v_Tim2025ster%></div></td>
+     <td width="125px"><center><div id="tu_nazwa025"><%v_pkstan025t%></div></center></td>
+	 <td width="10px"> </td>
+	 <td><font size="4" style="font-family: Comic Sans MS" color="blue"><%v_Tim2025akt%></font></td>
+  </tr></table>
+  <p></p><p></p><p></p><p> &nbsp;&nbsp;Sterowanie&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stan Wyjscia&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Timer</p>
+  </li>
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+	
+</div>	
+	
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>
+<div id="tu_tim2018demo"> </div>
+<div id="tu_tim2019demo"> </div>
+<div id="tu_tim2020demo"> </div>
+<div id="tu_tim2021demo"> </div>
+<div id="tu_tim2022demo"> </div>
+<div id="tu_tim2023demo"> </div>
+<div id="tu_tim2024demo"> </div>
+<div id="tu_tim2025demo"> </div>
+

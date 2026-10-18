@@ -1,0 +1,453 @@
+<html>
+<head>
+	<meta http-equiv='refresh' content=''>
+	<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+	<title> Autosterowanie </title>
+	<script language="javascript">
+	
+	
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return true;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+	
+	if (kodKlawisza == 8) {
+        return true;  // backspace
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function dop_zakr_min_sek(element){
+   if(element.value>59){ alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value='00'; }
+}
+
+function walidacja_numeru_WE(element)
+{
+  if(element.value > <%_Size__s_Wejscia_info%>){
+     alert('NIE MA TAKIEGO WEJSCIA !!!\r\nLiczba dostepnych wejsc to <%_Size__s_Wejscia_info%>'); element.value = '1';   
+  }
+  else if(element.value == 0){
+     alert('Numeracja wejsc WE zaczyna sie od 1'); element.value = '1';  
+  }
+}
+
+</script>
+
+
+
+		  
+		  
+
+  <style type="text/css">
+  input {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+  }
+  input:hover {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+        background: white;
+  }
+  
+  option {
+          border: 1px solid black;
+          font: normal 14px Calibri, sans-serif;
+  }
+  
+  button {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         text-decoration: none;
+  }
+  button:hover {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         background: white;
+         text-decoration: none;
+  }
+  
+  body {
+       font: normal 12px Calibri, sans-serif;
+       color: black;
+  }
+  h1 {
+     font: bold 20px Calibri, sans-serif;
+     font-variant: small-caps;
+  }
+  
+  h2 {
+     font: normal 12px Calibri, sans-serif;
+  }
+  
+  h5 {
+     font: 12px Calibri, sans-serif;
+  }
+
+
+#tabela{background-color:#eeeeee;
+font: normal 14px Calibri, sans-serif;
+}
+
+
+  td.tytul{
+     background-color: #960226;
+     color: ffffff;
+     font: bold 20px Cambria, sans-serif;
+     font-variant: small-caps;
+  }
+  td.puste{
+     background-color: #C9C9DC;
+  }
+
+  </style>
+
+
+
+ <style> 
+.menu {
+    border: none;
+    border: 0px;
+    margin: 0px;
+    padding: 0px;
+    font-family: verdana,geneva,arial,helvetica,sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: 8e8e8e;
+}
+
+.menu ul {
+    background: url(data:image/gif;base64,R0lGODlhAQArAMQYAM/Pz7k1VODg4Onp6XsMJtDQ0Nra2szMzOHh4d7e3s7OzsvLy9jY2NXV1aioqNLS0t/f39vb2+Li4tbW1tPT083Nzd3d3agDKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABgALAAAAAABACsAAAUfICaOzrAclQIUD9VMjBFZVgIJiCRZ0URVl8BlSCSEAAA7) top left repeat-x;
+    height: 43px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu li {
+    float: left;
+    padding: 0px 8px 0px 8px;
+}
+
+.menu li a {
+    color: #666666;
+    display: block;
+    font-weight: bold;
+    line-height: 43px;
+    padding: 0px 15px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.menu li a:hover {
+    color: #000000;
+    text-decoration: none;
+}
+
+.menu li ul {
+    background: #e0e0e0;
+    border-left: 2px solid #a80329;
+    border-right: 2px solid #a80329;
+    border-bottom: 2px solid #a80329;
+    display: none;
+    height: auto;
+    filter: alpha(opacity=95);
+    opacity: 0.95;
+    position: absolute;
+    width: 255px;
+    z-index: 200;
+/*top:1em;
+/*left:0;*/
+}
+
+.menu li:hover ul {
+    display: block;
+}
+
+.menu li li {
+    display: block;
+    float: none;
+    padding: 0px;
+    width: 255px;
+}
+
+.menu li ul a {
+    display: block;
+    font-size: 16px;
+    font-style: normal;
+    padding: 0px 10px 0px 15px;
+    text-align: left;
+}
+
+.menu li ul a:hover {
+    background: #949494;
+    color: #000000;
+    opacity: 1.0;
+    filter: alpha(opacity=100);
+}
+
+.menu p {
+    clear: left;
+}
+
+.menu #current {
+    background: url(data:image/gif;base64,R0lGODlhAQArAJEAALk1VHsMJqgDKQAAACH5BAAAAAAALAAAAAABACsAAAIHFISpy+0aCgA7) top left repeat-x;
+    color: #ffffff;
+}
+
+.menu #current2 {
+    background: url(data:image/gif;base64,R0lGODlhAQArAMQYAM/Pz7k1VODg4Onp6XsMJtDQ0Nra2szMzOHh4d7e3s7OzsvLy9jY2NXV1aioqNLS0t/f39vb2+Li4tbW1tPT083Nzd3d3agDKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABgALAAAAAABACsAAAUfICaOzrAclQIUD9VMjBFZVgIJiCRZ0URVl8BlSCSEAAA7) top left repeat-x;
+    color: #656565;
+}
+
+</style> 
+
+
+
+
+
+
+
+
+
+</head>
+<body bgcolor="#C9C9DC">
+
+
+
+<div class='menu'>
+ <ul>
+  <li><a href='lpc.cgi/500/A999' id='current'>Home</a></li>
+
+  
+  <li><a href='#' id='current2'>Czujniki Temperatury &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R001'>1# Powiadamianie SMS</a></li>
+    <li><a href='lpc.cgi/R002'>2# Termostat</a></li>
+    <li><a href='lpc.cgi/R003'>3# Maski filtrujace</a></li>
+    <li><a href='lpc.cgi/R004'>4# Rejestrator</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Wyjscia przekaznikowe &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R005'>1# Sterowanie WWW</a></li>
+    <li><a href='lpc.cgi/R006'>2# Autotimer</a></li>
+    <li><a href='lpc.cgi/R010'>3# Zaleznosci funkcyjne</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Wejscia sygnalowe &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R007'>1# Powiadamianie SMS</a></li>
+    <li><a href='lpc.cgi/R008'>2# Autosterowanie</a></li>
+    <li><a href='lpc.cgi/R009'>3# Maski filtrujace</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Pozostale &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R011'>1# Sterowanie IRDA</a></li>
+    <li><a href='lpc.cgi/R012'>2# Skrzynki E-mail</a></li>
+    <li><a href='lpc.cgi/R120'>3# Pingi urzadzen</a></li>
+    <li><a href='lpc.cgi/R014'>4# Odczyt biezacy v1</a></li>
+    <li><a href='lpc.cgi/R015'>5# Odczyt biezacy v2</a></li>
+   </ul>
+  </li>
+  
+  
+ </ul>
+</div>
+
+
+<br> <font size="4" color="red">Nr Trybu Pracy Ukladu: </font><font size="6" color="red"><b><%v_tryb_pracy%></b></font>  <br><br><br>
+
+
+
+
+<table border="0" style=" border:dashed 0mm; text-align: left; width: 100%; border-spacing: 0mm" id="tabela">
+
+<tr><td colspan="1" class="tytul" height="10px" align="center">
+..............<br>
+</td>
+<td colspan="3" class="puste">
+
+
+ <table><tr>
+ <td width="400px"><a href='lpc.cgi/A998'><font size="4">Odswiez strone</font></a></td>
+ <td width="100px"><font size="4"><%v_ttime1%></font></td>
+ <td width="80px"><font size="4"><%v_ttime2%>  </font></td>
+ <td width="110px"><font size="4"><%v_ttime3%>        </font></td></tr></table>
+<br>
+
+
+</td>
+</tr>
+
+
+
+
+
+<form method="get" action="lpc.cgi/A108">
+
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja autosterowania</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table style="text-align: center; border-spacing: 2px;" id="tabela" border="0">
+<tbody><tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="50px"><b>Sygnal</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="70px"><b>Dla wejscia<br>nr:</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>_Czas_reakcji_ <br> min : sec</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Czas opoznienia<br> min : sec</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Czas przytrzymania<br> min : sec</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Aktywacja sygnalu poprzez stan:</b></td> 
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Funkcja <br>aktywna</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Opis</b></td>
+</tr>
+
+<tr>
+ <td>1.As_PK</td>
+ <td><input type="text" name="n_autoster001we" size="3" maxlength="3"   value="<%v_autoster001we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster001zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster001zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster001om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster001os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster001pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster001ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster001selr"><option value="off" <%v_autoster001selr1%> >Zwarcia</option><option value="on" <%v_autoster001selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster001sel"><option value="off" <%v_autoster001sel1%> >NIE</option><option value="on" <%v_autoster001sel2%>  >TAK</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK1</td>
+</tr>
+
+<tr>
+ <td>2.As_PK</td>
+ <td><input type="text" name="n_autoster002we" size="3" maxlength="3"   value="<%v_autoster002we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster002zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster002zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster002om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster002os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster002pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster002ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster002selr"><option value="off" <%v_autoster002selr1%> >Zwarcia</option><option value="on" <%v_autoster002selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster002sel"><option value="off" <%v_autoster002sel1%> >NIE</option><option value="on" <%v_autoster002sel2%>  >TAK</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK2</td>
+</tr>
+
+<tr>
+ <td>3.As_PK</td>
+ <td><input type="text" name="n_autoster003we" size="3" maxlength="3"   value="<%v_autoster003we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster003zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster003zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster003om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster003os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster003pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster003ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster003selr"><option value="off" <%v_autoster003selr1%> >Zwarcia</option><option value="on" <%v_autoster003selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster003sel"><option value="off" <%v_autoster003sel1%> >NIE</option><option value="on" <%v_autoster003sel2%>  >TAK</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK3</td>
+</tr>
+
+<tr>
+ <td>4.As_PK</td>
+ <td><input type="text" name="n_autoster004we" size="3" maxlength="3"   value="<%v_autoster004we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster004zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster004zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster004om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster004os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster004pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster004ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster004selr"><option value="off" <%v_autoster004selr1%> >Zwarcia</option><option value="on" <%v_autoster004selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster004sel"><option value="off" <%v_autoster004sel1%> >NIE</option><option value="on" <%v_autoster004sel2%>  >TAK</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK4</td>
+</tr>
+
+
+
+<tr height="40px"></tr>
+
+
+
+
+<tr>
+ <td>1.As_IR</td>
+ <td><input type="text" name="n_autoster027we" size="3" maxlength="3"   value="<%v_autoster027we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster027zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster027zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster027zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster027zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster027om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster027om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster027os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster027os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster027pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster027pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster027ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster027ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster027selr"><option value="off" <%v_autoster027selr1%> >Zwarcia</option><option value="on" <%v_autoster027selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster027sel"><option value="off" <%v_autoster027sel1%> >NIE</option><option value="on" <%v_autoster027sel2%>  >TAK</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir1&nbsp;Ir2</td>
+</tr>
+
+<tr>
+ <td>2.As_IR</td>
+ <td><input type="text" name="n_autoster028we" size="3" maxlength="3"   value="<%v_autoster028we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster028zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster028zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster028zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster028zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster028om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster028om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster028os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster028os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster028pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster028pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster028ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster028ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster028selr"><option value="off" <%v_autoster028selr1%> >Zwarcia</option><option value="on" <%v_autoster028selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster028sel"><option value="off" <%v_autoster028sel1%> >NIE</option><option value="on" <%v_autoster028sel2%>  >TAK</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir3&nbsp;Ir4</td>
+</tr>
+
+<tr>
+ <td>3.As_IR</td>
+ <td><input type="text" name="n_autoster029we" size="3" maxlength="3"   value="<%v_autoster029we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster029zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster029zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster029zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster029zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster029om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster029om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster029os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster029os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster029pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster029pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster029ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster029ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster029selr"><option value="off" <%v_autoster029selr1%> >Zwarcia</option><option value="on" <%v_autoster029selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster029sel"><option value="off" <%v_autoster029sel1%> >NIE</option><option value="on" <%v_autoster029sel2%>  >TAK</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir5&nbsp;Ir6</td>
+</tr>
+
+<tr>
+ <td>4.As_IR</td>
+ <td><input type="text" name="n_autoster030we" size="3" maxlength="3"   value="<%v_autoster030we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster030zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster030zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster030zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster030zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster030om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster030om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster030os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster030os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster030pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster030pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster030ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster030ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster030selr"><option value="off" <%v_autoster030selr1%> >Zwarcia</option><option value="on" <%v_autoster030selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster030sel"><option value="off" <%v_autoster030sel1%> >NIE</option><option value="on" <%v_autoster030sel2%>  >TAK</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir7&nbsp;Ir8</td>
+</tr>
+
+
+
+
+</tbody>
+
+
+<tr height="110px"><td><button type="submit" style="border-color:#08F; color:#FFFFFF; background-color:#08F;" value="zapisz" name="n_108_zapisz"><p align="left"><font style="font-size: 20"><b> ZAPISZ</b></font></p></button></form>
+</table>
+ </td>
+</tr>
+
+<tr height="100px">
+ <td class="puste" colspan="4">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+</table>
+
+
+</body>
+</html>

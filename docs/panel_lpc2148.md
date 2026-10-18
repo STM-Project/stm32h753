@@ -11,13 +11,13 @@ Wykres przechowuje ostatnie 300 odczytów w przeglądarce; nie jest archiwum SD.
 
 ## Pliki i pamięć
 
-- `web/lpc2148/index.html`: przeniesiony układ, lokalne style i nawigacja.
-- `web/lpc2148/panel.js`: odczyt JSON, termometry, wykres i przyciski PK.
-- `web/lpc2148/jquery/` i `svg/`: biblioteki i grafika z dostarczonego LPC2148.
+- `Application/LPC2148/web/index.html`: przeniesiony układ, lokalne style i nawigacja.
+- `Application/LPC2148/web/panel.js`: odczyt JSON, termometry, wykres i przyciski PK.
+- `Application/LPC2148/web/jquery/` i `svg/`: biblioteki i grafika z dostarczonego LPC2148.
   W CSS odwołania do brakujących wariantów ikon wskazują dostarczoną ikonę.
-- `Application/HTTP/http_lpc_panel.c/.h`: pomiary, przypisanie portów i JSON.
-- `Application/HTTP/http_lpc_assets.c`: wygenerowane, stałe zasoby Flash.
-- `tools/generate_lpc_assets.py`: regeneracja po zmianie HTML/JS/CSS/obrazów.
+- `Application/LPC2148/http_lpc_panel.c/.h`: pomiary, przypisanie portów i JSON.
+- `Application/LPC2148/http_lpc_assets.c`: wygenerowane, stałe zasoby Flash.
+- `Application/LPC2148/generate_assets.py`: regeneracja po zmianie HTML/JS/CSS/obrazów.
 
 Generator łączy skrypty i style z HTML, kod SVG osadza jako tekst, a obrazy
 CSS jako data URI. Otwarcie `/nowa` pobiera tylko jeden dokument, bez żądań
@@ -98,3 +98,47 @@ który to zadanie wykonuje przed kolejną obsługą. Każdy pakiet ma sprawdzony
 indeks fragmentu, offset i długość; spóźnione/powtórzone prompty i potwierdzenia
 nie przesuwają kursora ponownie. Test `tests/test_http_tx.py` przesyła całą
 stronę i sprawdza przeplatanie kanałów oraz błędne zdarzenia pod ASan/UBSan.
+
+## Pozostałe strony LPC2148 na SD
+
+Moduł znajduje się w `Application/LPC2148` (źródła C, oryginalne szablony
+`source_pages`, zasoby `web`, importer i generator). Numerowane strony są
+na SD, ponieważ osadzenie wszystkich 195 dokumentów przekroczyłoby Flash.
+Dotychczasowe `/nowa` pozostaje we Flashu i działa bez tych plików.
+
+1. Wypakuj `Application/LPC2148/sdcard.zip` do głównego katalogu karty SD.
+   Powinny powstać pliki `LPC/P00001.HTM` … `LPC/P00195.HTM`.
+2. Wgraj zaktualizowany firmware i włóż kartę.
+3. Otwórz `/lpc`: spis pokazuje powiązanie pliku LPC z `/nowa1` … `/nowa195`.
+   Pełna tabela jest też w `routes.json` i w `LPC/STRONY.csv` paczki.
+
+Każdy HTML zawiera skrypty, style i obrazy. Kolejne żądania dotyczą danych
+(`/api/lpcdata`, `/api/lpcN`) oraz poleceń; nie pobierają bibliotek ani obrazów.
+Pomiary pochodzą z `HttpRefr_sdram`. Dostępnych jest do 20 temperatur,
+15 wejść i 13 wyjść; brak pomiaru oznaczany jest jako „brak danych”.
+
+Formularze używają POST, parametrów wspólnych dla wariantów klasycznych,
+mobilnych i SSL oraz pliku `LPCSET.BIN` z CRC i kopią `LPCSET.BAK`.
+To osobny zestaw parametrów LPC, dostępny przez `LPC_GetSetting()` i
+`LPC_GetSavedSetting()`. Nie zastępuje `HTTP_AllSettingsData`.
+Zapis nazwy LPC zmienia nazwę na panelach. Domyślne nazwy, progi i wybrane
+parametry LAN są odczytywane z konfiguracji H7, dopóki nie zapisano ich w LPC.
+Pozostałe parametry LPC są przechowywane, ale wymagają podłączenia logiki
+sprzętowej H7, aby sterowały timerami, siecią lub automatyką.
+Aktywne tryby portów H7 nadal ustawia się w `/set`. Polecenia resetowania,
+transmisji i odczytu sprzętu specyficznego dla LPC nie są emulowane: zwracają
+HTTP 501. Warianty SSL są wariantami wyglądu, nie dodają HTTPS do firmware.
+
+HTTP ma pięć niezależnych buforów stron po 2 MiB w SDRAM, a dwa bufory
+ustawień zajmują razem około 2,95 MiB SDRAM. Nie obciążają stosu zadania.
+Wysyłanie korzysta z dotychczasowej kolejki i kontroli granic pakietów.
+Brak pliku na SD daje HTTP 503 z instrukcją i odnośnikiem do `/lpc`.
+
+Regeneracja po zmianie oryginałów:
+
+```sh
+python3 Application/LPC2148/import_pages.py /sciezka/do/LPC2148/System
+python3 Application/LPC2148/build_pages.py
+python3 Application/LPC2148/build_pages.py --check
+python3 tests/test_lpc_pages.py
+```

@@ -1,0 +1,275 @@
+<html>
+
+      
+    <head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">  
+		
+	   
+	   
+        <link rel="stylesheet" href="jQTouch/styl_czarny.css" title="jQTouch">
+
+       <script src="jQTouch/zepto.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="jQTouch/jqtouch.min.js" type="text/javascript" charset="utf-8"></script>   
+		
+
+
+
+
+        <script type="text/javascript" charset="utf-8">
+            var jQT = new $.jQTouch({
+
+            
+            }); 
+   
+           
+        </script>
+          
+                          
+   
+
+
+
+
+
+
+
+<script type="text/javascript" charset="utf-8">
+                                                                                                                     
+
+"use strict";
+
+
+// define functions
+var set_scroll,
+	my_scroll;
+
+
+// if query string in URL contains scroll=nnn, then scroll position will be restored 
+set_scroll = function () {
+	// get query string parameter with "?"
+	var search = window.location.search,
+		matches;
+	// if query string exists
+	if (search) {
+		// find scroll parameter in query string
+		matches = /scroll=(\d+)/.exec(search);
+		// jump to the scroll position if scroll parameter exists
+		if (matches) {
+			window.scrollTo(0, matches[1]);
+		}
+	}
+};
+
+
+// function appends scroll parameter to the URL or returns scroll value
+my_scroll = function (url) {
+	var scroll, q;
+	// Netscape compliant
+	if (typeof(window.pageYOffset) === 'number') {
+		scroll = window.pageYOffset;
+	}
+	// DOM compliant
+	else if (document.body && document.body.scrollTop) {
+		scroll = document.body.scrollTop;
+	}
+	// IE6 standards compliant mode
+	else if (document.documentElement && document.documentElement.scrollTop) {
+		scroll = document.documentElement.scrollTop;
+	}
+	// needed for IE6 (when vertical scroll bar is on the top)
+	else {
+		scroll = 0;
+	}
+	// if input parameter does not exist then return scroll value
+	if (url === undefined) {
+		return scroll;
+	}
+	// else append scroll parameter to the URL
+	else {
+		// set "?" or "&" before scroll parameter
+		q = url.indexOf('?') === -1 ? '?' : '&';
+		// refresh page with scroll position parameter
+		window.location.href = url + q + 'scroll=' + scroll;
+	}
+};
+
+
+// add onload event listener
+if (window.addEventListener) {
+	window.addEventListener('load', set_scroll, false);
+}
+else if (window.attachEvent) {
+	window.attachEvent('onload', set_scroll);
+}
+
+
+
+ function pageScroll() {
+    	window.scrollBy(0,<%scrol%>); // horizontal and vertical scroll increments
+
+          } 
+
+
+          </script>
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+
+
+
+        <title>Panel v3</title>
+
+</head>
+    <body onLoad="pageScroll()">
+
+
+
+
+<div id="home" class="current">
+                    
+                 <div class="scroll">
+                    <ul class="individual">
+                        <li><a href="lpc.cgi/000" rel="external"><b>Wroc</b></a></li>
+                        <li><a href="lpc.cgi/518" rel="external"><b>Odswiez</b></a></li>
+                    </ul>
+					
+                </div>
+
+
+                <div class="toolbar">
+                    <h1>Temperatura</h1>
+ 
+                </div>
+                <div class="scroll">
+                    <ul class="rounded">
+                        <li><font size="5" color="red"><%v_txtval001%></font><small class="counter"><font size="5" color="yellow"><%v_value001%>[C]</font></small> </li>
+                        <li><font size="5" color="red"><%v_txtval002%></font><small class="counter"><font size="5" color="yellow"><%v_value002%>[C]</font></small> </li>
+                        <li><font size="5" color="red"><%v_txtval003%></font><small class="counter"><font size="5" color="yellow"><%v_value003%>[C]</font></small> </li>
+                    </ul>  
+                </div>
+				
+				<div class="scroll">
+                    <ul class="rounded">
+                        <li><font size="5" color="red"><%v_txtval004%></font><small class="counter"><font size="5" color="yellow"><%v_value004%>[C]</font></small> </li>
+                        <li><font size="5" color="red"><%v_txtval005%></font><small class="counter"><font size="5" color="yellow"><%v_value005%>[C]</font></small> </li>
+                    </ul>  
+                </div>
+				
+				
+				<div class="scroll">
+                    <ul class="rounded">
+                       <li><font size="5" color="red"><%v_txtval006%></font><small class="counter"><font size="5" color="yellow"><%v_value006%>[C]</font></small> </li>
+                    </ul>  
+                </div>
+
+
+                <div class="toolbar">
+                    <h1>Przekazniki</h1>
+                </div>
+                <div class="scroll">
+        
+<ul class="rounded"><li><font size="5" color=cccc00><%v_pktxt001%></font> 
+<small class="counter"><a href="lpc.cgi/518?<%v_pkinfa001%>=001" onclick="my_scroll('lpc.cgi/518?<%v_pkinfa001%>=001'); rel=external">
+<%v_pkstan001m3%></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=cccc00><%v_pktxt002%></font>
+<small class="counter"><a href="lpc.cgi/518?<%v_pkinfa002%>=002" onclick="my_scroll('lpc.cgi/518?<%v_pkinf518%>=002'); rel=external">
+<%v_pkstan002m3%></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=cccc00><%v_pktxt003%></font> 
+<small class="counter"><a href="lpc.cgi/518?<%v_pkinfa003%>=003" onclick="my_scroll('lpc.cgi/518?<%v_pkinfa003%>=003'); rel=external">
+<%v_pkstan003m3%></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=cccc00><%v_pktxt004%></font> 
+<small class="counter"><a href="lpc.cgi/518?<%v_pkinfa004%>=004" onclick="my_scroll('lpc.cgi/518?<%v_pkinfa004%>=004'); rel=external">
+<%v_pkstan004m3%></small></li></a></ul>
+
+ </div>
+ 
+ 
+ 
+                 <div class="toolbar">
+                    <h1>Sygnaly IR</h1>
+                </div>
+                <div class="scroll">
+        
+<ul class="rounded"><li><font size="5" color=ff9900><%v_irtxt001%></font> 
+<small class="counter"><a href="lpc.cgi/518?sendIR=001" onclick="my_scroll('lpc.cgi/518?sendIR=001'); rel=external">
+<font size="5" color="yellow">wyslij</font></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=ff9900><%v_irtxt002%></font> 
+<small class="counter"><a href="lpc.cgi/518?sendIR=002" onclick="my_scroll('lpc.cgi/518?sendIR=002'); rel=external">
+<font size="5" color="yellow">wyslij</font></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=ff9900><%v_irtxt003%></font> 
+<small class="counter"><a href="lpc.cgi/518?sendIR=003" onclick="my_scroll('lpc.cgi/518?sendIR=003'); rel=external">
+<font size="5" color="yellow">wyslij</font></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=ff9900><%v_irtxt004%></font> 
+<small class="counter"><a href="lpc.cgi/518?sendIR=004" onclick="my_scroll('lpc.cgi/518?sendIR=004'); rel=external">
+<font size="5" color="yellow">wyslij</font></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=ff9900><%v_irtxt005%></font> 
+<small class="counter"><a href="lpc.cgi/518?sendIR=005" onclick="my_scroll('lpc.cgi/518?sendIR=005'); rel=external">
+<font size="5" color="yellow">wyslij</font></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=ff9900><%v_irtxt006%></font> 
+<small class="counter"><a href="lpc.cgi/518?sendIR=006" onclick="my_scroll('lpc.cgi/518?sendIR=006'); rel=external">
+<font size="5" color="yellow">wyslij</font></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=ff9900><%v_irtxt007%></font> 
+<small class="counter"><a href="lpc.cgi/518?sendIR=007" onclick="my_scroll('lpc.cgi/518?sendIR=007'); rel=external">
+<font size="5" color="yellow">wyslij</font></small></li></a></ul>
+
+<ul class="rounded"><li><font size="5" color=ff9900><%v_irtxt008%></font> 
+<small class="counter"><a href="lpc.cgi/518?sendIR=008" onclick="my_scroll('lpc.cgi/518?sendIR=008'); rel=external">
+<font size="5" color="yellow">wyslij</font></small></li></a></ul>
+
+
+
+ </div>
+
+
+               <div class="toolbar">
+                    <h1>Wejscia</h1>
+ 
+                </div>
+                <div class="scroll">
+                    <ul class="rounded">
+                        <li><font size="5" color=ccffcc><%v_txtwe001%></font><small class="counter"><%v_stanwe001m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe002%></font><small class="counter"><%v_stanwe002m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe003%></font><small class="counter"><%v_stanwe003m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe004%></font><small class="counter"><%v_stanwe004m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe005%></font><small class="counter"><%v_stanwe005m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe006%></font><small class="counter"><%v_stanwe006m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe007%></font><small class="counter"><%v_stanwe007m3%></small> </li>
+                        <li><font size="5" color=ccffcc><%v_txtwe008%></font><small class="counter"><%v_stanwe008m3%></small> </li>
+                    </ul>
+
+                    
+                </div>
+
+
+   <div class="scroll">
+                    <ul class="individual">
+                        <li><a href="lpc.cgi/000" rel="external"><b>Wroc</b></a></li>
+                        <li><a href="lpc.cgi/518" rel="external"><b>Odswiez</b></a></li>
+                    </ul>
+                </div>
+
+
+
+
+</div>
+
+
+
+    </body>
+</html>
+ 
+

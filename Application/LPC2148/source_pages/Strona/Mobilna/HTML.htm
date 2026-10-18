@@ -1,0 +1,191 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Mobile</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	
+	
+<%koment_1o%>	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<%koment_1z%>
+
+<%koment_2o%> 
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min.css" /> 
+	<script src="jquery/jquery-1.8.2.min.js"></script>
+	<script src="jquery/jquery.mobile-1.2.0.min.js"></script> 
+<%koment_2z%>
+
+
+   <link rel="stylesheet" type="text/css" href="Images/style.css"/>
+   
+   
+<style>
+  <!-- .ui-page { background: #f3f3f3 url(data:image/png;base64,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);} -->
+.ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+</style>
+
+
+ <title>Strefy Grzewcze</title>
+
+</head>
+    <body>
+
+
+
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+	<div data-role="content">
+
+
+
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 5px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+    
+     <li class="ui-field-contain"><center><font size="5" color="purple" style="font-family: Comic Sans MS" >Czujniki</font></center></li>
+	
+	<li><table><tr><td><div class="img14"><a href="lpc.cgi/121" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Odczyt</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Setup</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img6"><a href="lpc.cgi/050" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Termostaty</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Setup</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img11"><a href="lpc.cgi/122" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Rejestrator</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Rejestr zdarzeñ</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img16"><a href="lpc.cgi/sss" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Instrukcje</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">on-line</font></p>
+	</td></tr></table></li>
+	
+	
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+
+	
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+    
+     <li class="ui-field-contain"><center><font size="5" color="purple" style="font-family: Comic Sans MS" >Wyjœcia</font></center></li>
+	
+	<li><table><tr><td><div class="img19"><a href="lpc.cgi/600" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Sterowanie</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Autotimer</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img17"><a href="lpc.cgi/021" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Irda</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Setup</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img5"><a href="lpc.cgi/900" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS"> Timer IR</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Irda</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img7"><a href="lpc.cgi/800" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Termostat IR</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Irda</font></p>
+	</td></tr></table></li>
+	
+
+	
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+
+	
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+    
+     <li class="ui-field-contain"><center><font size="5" color="purple" style="font-family: Comic Sans MS" >Wejscia</font></center></li>
+	
+	<li><table><tr><td><div class="img14"><a href="lpc.cgi/119" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Odczyt</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Setup</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img18"><a href="lpc.cgi/114" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Autosterowanie</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Przekaznik</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img1"><a href="lpc.cgi/115" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Autosterowanie</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Irda</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img9"><a href="lpc.cgi/125" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Slave IN</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Rozszerzenie</font></p>
+	</td></tr></table></li>
+	
+	
+</ul>
+
+	<%koment_7o%><br><%koment_7z%>
+
+	
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+    
+     <li class="ui-field-contain"><center><font size="5" color="purple" style="font-family: Comic Sans MS" >Ustawienia</font></center></li>
+
+	<li><table><tr><td><div class="img10"><a href="lpc.cgi/116" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">WLAN</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Setup</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img15"><a href="lpc.cgi/117" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Telefony</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Numery</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img12"><a href="lpc.cgi/118" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Adresy</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">Serwer poczty</font></p>
+	</td></tr></table></li>
+	
+	<li><table><tr><td><div class="img13"><a href="lpc.cgi/777" rel="external"><span class="si"></span></a></div></td>
+	<td><h2><font size="4" color="blue" style="font-family: Comic Sans MS">Panel</font></h2>
+	<p><font size="3" color="black" style="font-family: Comic Sans MS">on-line</font></p>
+	</td></tr></table></li>
+	
+	
+</ul>
+
+<br>
+
+
+
+
+
+
+
+	</div>
+</div>
+    	
+	
+</div>	
+
+
+</body>
+</html>
+
+        
+                         

@@ -1,0 +1,810 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Termostaty PK</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+<link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min_bez_chekbox.css" /> 
+
+<%koment_1o%>	
+	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<%koment_1z%> 
+
+<%koment_2o%> 
+	<script src="jquery/jquery-1.8.2.min.js"></script>
+	<script src="jquery/jquery.mobile-1.2.0.min.js"></script> 
+<%koment_2z%> 
+
+
+<%koment_tlo_1o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+<%koment_tlo_1z%>
+<%koment_tlo_2o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(Images/tlo364.jpg);} 
+  </style>
+<%koment_tlo_2z%>
+ 
+
+
+
+<style>
+
+     div.img1 .si, div.img2 .si {
+    background: url(data:image/png;base64,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) no-repeat;
+    display: inline-block;
+    height: 40px;
+    margin-right: 0px;
+    vertical-align: middle;
+    width: 37px;
+    }
+
+    div.img1 .si{
+        background-position: 0px 0px;
+    }
+    div.img2 .si{
+        background-position: 0px -40px;
+    }   
+
+</style>
+
+
+  <style type="text/css">
+	.custom-checkbox{
+		width: 16px;
+		height: 16px;
+		display: inline-block;
+		position: relative;
+		z-index: 1;
+		top: 3px;
+		background: url('data:image/png;base64,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') no-repeat 0 0 transparent;
+	}
+	.custom-checkbox:hover{
+		background-position: 0 -16px;
+	}
+	.custom-checkbox.selected{
+		background-position: 0 -32px;
+	}
+	.custom-checkbox input[type="checkbox"]{
+		margin: 0;
+		position: absolute;
+		z-index: 2;            
+		cursor: pointer;
+		outline: none;
+		opacity: 0;
+		/* CSS hacks for older browsers */
+		_noFocusLine: expression(this.hideFocus=true); 
+		-ms-filter: "prógid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+		filter: alpha(opacity=0);
+		-khtml-opacity: 0;
+		-moz-opacity: 0;
+	}
+	/* Let's Beautify Our Form */
+    form{
+        margin: 20px;
+    }
+    label{
+        display: block;
+        padding: 2px 0;
+    }
+    input[type="submit"]{
+        float: left;
+        background: #f2f2f2;
+        border: 1px solid #CCCCCC;
+        border-radius: 4px;
+        margin-top: 20px;
+        padding: 4px 10px;
+        cursor: pointer;
+        outline: none;
+    }
+	input[type="submit"]:hover{
+        color: #fff;
+        border-color: #1b7aa9;
+        background-color: #239fdb;
+    }
+</style>
+
+<script type="text/javascript">
+    function customCheckbox(checkboxName){
+        var checkBox = $('input[name="'+ checkboxName +'"]');
+        $(checkBox).each(function(){
+            $(this).wrap( "<span class='custom-checkbox'></span>" );
+            if($(this).is(':checked')){
+                $(this).parent().addClass("selected");
+            }
+        });
+        $(checkBox).click(function(){
+            $(this).parent().toggleClass("selected");
+        });
+    }
+    $(document).ready(function (){
+        customCheckbox("n_checkTim2_001_1_01");
+        customCheckbox("n_checkTim2_001_1_02");
+        customCheckbox("n_checkTim2_001_1_03");
+        customCheckbox("n_checkTim2_001_1_04");
+        customCheckbox("n_checkTim2_001_1_05");
+        customCheckbox("n_checkTim2_001_1_06");
+        customCheckbox("n_checkTim2_001_1_07");
+        customCheckbox("n_checkTim2_001_1_08");
+        customCheckbox("n_checkTim2_001_1_09");
+        customCheckbox("n_checkTim2_001_1_10");
+        customCheckbox("n_checkTim2_001_1_11");
+        customCheckbox("n_checkTim2_001_1_12");
+        customCheckbox("n_checkTim2_001_1_13");
+        customCheckbox("n_checkTim2_001_1_14");
+        customCheckbox("n_checkTim2_001_1_15");
+        customCheckbox("n_checkTim2_001_1_16");
+        customCheckbox("n_checkTim2_001_1_17");
+        customCheckbox("n_checkTim2_001_1_18");
+        customCheckbox("n_checkTim2_001_1_19");
+        customCheckbox("n_checkTim2_001_1_20");
+        customCheckbox("n_checkTim2_001_1_21");
+        customCheckbox("n_checkTim2_001_1_22");
+        customCheckbox("n_checkTim2_001_1_23");
+        customCheckbox("n_checkTim2_001_1_24");
+		
+        customCheckbox("n_checkTim2_001_2_01");
+        customCheckbox("n_checkTim2_001_2_02");
+        customCheckbox("n_checkTim2_001_2_03");
+        customCheckbox("n_checkTim2_001_2_04");
+        customCheckbox("n_checkTim2_001_2_05");
+        customCheckbox("n_checkTim2_001_2_06");
+        customCheckbox("n_checkTim2_001_2_07");
+        customCheckbox("n_checkTim2_001_2_08");
+        customCheckbox("n_checkTim2_001_2_09");
+        customCheckbox("n_checkTim2_001_2_10");
+        customCheckbox("n_checkTim2_001_2_11");
+        customCheckbox("n_checkTim2_001_2_12");
+        customCheckbox("n_checkTim2_001_2_13");
+        customCheckbox("n_checkTim2_001_2_14");
+        customCheckbox("n_checkTim2_001_2_15");
+        customCheckbox("n_checkTim2_001_2_16");
+        customCheckbox("n_checkTim2_001_2_17");
+        customCheckbox("n_checkTim2_001_2_18");
+        customCheckbox("n_checkTim2_001_2_19");
+        customCheckbox("n_checkTim2_001_2_20");
+        customCheckbox("n_checkTim2_001_2_21");
+        customCheckbox("n_checkTim2_001_2_22");
+        customCheckbox("n_checkTim2_001_2_23");
+        customCheckbox("n_checkTim2_001_2_24");
+		
+        customCheckbox("n_checkTim2_001_3_01");
+        customCheckbox("n_checkTim2_001_3_02");
+        customCheckbox("n_checkTim2_001_3_03");
+        customCheckbox("n_checkTim2_001_3_04");
+        customCheckbox("n_checkTim2_001_3_05");
+        customCheckbox("n_checkTim2_001_3_06");
+        customCheckbox("n_checkTim2_001_3_07");
+        customCheckbox("n_checkTim2_001_3_08");
+        customCheckbox("n_checkTim2_001_3_09");
+        customCheckbox("n_checkTim2_001_3_10");
+        customCheckbox("n_checkTim2_001_3_11");
+        customCheckbox("n_checkTim2_001_3_12");
+        customCheckbox("n_checkTim2_001_3_13");
+        customCheckbox("n_checkTim2_001_3_14");
+        customCheckbox("n_checkTim2_001_3_15");
+        customCheckbox("n_checkTim2_001_3_16");
+        customCheckbox("n_checkTim2_001_3_17");
+        customCheckbox("n_checkTim2_001_3_18");
+        customCheckbox("n_checkTim2_001_3_19");
+        customCheckbox("n_checkTim2_001_3_20");
+        customCheckbox("n_checkTim2_001_3_21");
+        customCheckbox("n_checkTim2_001_3_22");
+        customCheckbox("n_checkTim2_001_3_23");
+        customCheckbox("n_checkTim2_001_3_24");
+
+        customCheckbox("n_checkTim2_001_4_01");
+        customCheckbox("n_checkTim2_001_4_02");
+        customCheckbox("n_checkTim2_001_4_03");
+        customCheckbox("n_checkTim2_001_4_04");
+        customCheckbox("n_checkTim2_001_4_05");
+        customCheckbox("n_checkTim2_001_4_06");
+        customCheckbox("n_checkTim2_001_4_07");
+        customCheckbox("n_checkTim2_001_4_08");
+        customCheckbox("n_checkTim2_001_4_09");
+        customCheckbox("n_checkTim2_001_4_10");
+        customCheckbox("n_checkTim2_001_4_11");
+        customCheckbox("n_checkTim2_001_4_12");
+        customCheckbox("n_checkTim2_001_4_13");
+        customCheckbox("n_checkTim2_001_4_14");
+        customCheckbox("n_checkTim2_001_4_15");
+        customCheckbox("n_checkTim2_001_4_16");
+        customCheckbox("n_checkTim2_001_4_17");
+        customCheckbox("n_checkTim2_001_4_18");
+        customCheckbox("n_checkTim2_001_4_19");
+        customCheckbox("n_checkTim2_001_4_20");
+        customCheckbox("n_checkTim2_001_4_21");
+        customCheckbox("n_checkTim2_001_4_22");
+        customCheckbox("n_checkTim2_001_4_23");
+        customCheckbox("n_checkTim2_001_4_24");
+		
+        customCheckbox("n_checkTim2_001_5_01");
+        customCheckbox("n_checkTim2_001_5_02");
+        customCheckbox("n_checkTim2_001_5_03");
+        customCheckbox("n_checkTim2_001_5_04");
+        customCheckbox("n_checkTim2_001_5_05");
+        customCheckbox("n_checkTim2_001_5_06");
+        customCheckbox("n_checkTim2_001_5_07");
+        customCheckbox("n_checkTim2_001_5_08");
+        customCheckbox("n_checkTim2_001_5_09");
+        customCheckbox("n_checkTim2_001_5_10");
+        customCheckbox("n_checkTim2_001_5_11");
+        customCheckbox("n_checkTim2_001_5_12");
+        customCheckbox("n_checkTim2_001_5_13");
+        customCheckbox("n_checkTim2_001_5_14");
+        customCheckbox("n_checkTim2_001_5_15");
+        customCheckbox("n_checkTim2_001_5_16");
+        customCheckbox("n_checkTim2_001_5_17");
+        customCheckbox("n_checkTim2_001_5_18");
+        customCheckbox("n_checkTim2_001_5_19");
+        customCheckbox("n_checkTim2_001_5_20");
+        customCheckbox("n_checkTim2_001_5_21");
+        customCheckbox("n_checkTim2_001_5_22");
+        customCheckbox("n_checkTim2_001_5_23");
+        customCheckbox("n_checkTim2_001_5_24");
+		
+        customCheckbox("n_checkTim2_001_6_01");
+        customCheckbox("n_checkTim2_001_6_02");
+        customCheckbox("n_checkTim2_001_6_03");
+        customCheckbox("n_checkTim2_001_6_04");
+        customCheckbox("n_checkTim2_001_6_05");
+        customCheckbox("n_checkTim2_001_6_06");
+        customCheckbox("n_checkTim2_001_6_07");
+        customCheckbox("n_checkTim2_001_6_08");
+        customCheckbox("n_checkTim2_001_6_09");
+        customCheckbox("n_checkTim2_001_6_10");
+        customCheckbox("n_checkTim2_001_6_11");
+        customCheckbox("n_checkTim2_001_6_12");
+        customCheckbox("n_checkTim2_001_6_13");
+        customCheckbox("n_checkTim2_001_6_14");
+        customCheckbox("n_checkTim2_001_6_15");
+        customCheckbox("n_checkTim2_001_6_16");
+        customCheckbox("n_checkTim2_001_6_17");
+        customCheckbox("n_checkTim2_001_6_18");
+        customCheckbox("n_checkTim2_001_6_19");
+        customCheckbox("n_checkTim2_001_6_20");
+        customCheckbox("n_checkTim2_001_6_21");
+        customCheckbox("n_checkTim2_001_6_22");
+        customCheckbox("n_checkTim2_001_6_23");
+        customCheckbox("n_checkTim2_001_6_24");
+		
+        customCheckbox("n_checkTim2_001_7_01");
+        customCheckbox("n_checkTim2_001_7_02");
+        customCheckbox("n_checkTim2_001_7_03");
+        customCheckbox("n_checkTim2_001_7_04");
+        customCheckbox("n_checkTim2_001_7_05");
+        customCheckbox("n_checkTim2_001_7_06");
+        customCheckbox("n_checkTim2_001_7_07");
+        customCheckbox("n_checkTim2_001_7_08");
+        customCheckbox("n_checkTim2_001_7_09");
+        customCheckbox("n_checkTim2_001_7_10");
+        customCheckbox("n_checkTim2_001_7_11");
+        customCheckbox("n_checkTim2_001_7_12");
+        customCheckbox("n_checkTim2_001_7_13");
+        customCheckbox("n_checkTim2_001_7_14");
+        customCheckbox("n_checkTim2_001_7_15");
+        customCheckbox("n_checkTim2_001_7_16");
+        customCheckbox("n_checkTim2_001_7_17");
+        customCheckbox("n_checkTim2_001_7_18");
+        customCheckbox("n_checkTim2_001_7_19");
+        customCheckbox("n_checkTim2_001_7_20");
+        customCheckbox("n_checkTim2_001_7_21");
+        customCheckbox("n_checkTim2_001_7_22");
+        customCheckbox("n_checkTim2_001_7_23");
+        customCheckbox("n_checkTim2_001_7_24");
+
+    })
+</script>
+
+
+
+	<script language="javascript">
+	var okienko = null;
+	
+
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return true;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+	
+	if (kodKlawisza == 8) {
+        return true;  // backspace
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function walidacjaTemp(element,element2)
+{
+  var wzor1 = /^[\-+]{1}[0-9]{2}\.[0-9]{1}$/;
+  var wzor2 = /^[\-+]{1}[0-9]{2}$/;
+  var wzor3 = /^[\-+]{1}[0-9]{1}$/;
+  var wzor4 = /^[\-+]{1}[0-9]{1}\.[0-9]{1}$/;
+  var wzor5 = /^[0-9]{1}$/;
+  var wzor6 = /^[0-9]{2}$/;
+  var wzor7 = /^[0-9]{1}\.[0-9]{1}$/;
+  var wzor8 = /^[0-9]{2}\.[0-9]{1}$/;
+  var wzor9 = /^[0-9]{3}$/;
+  var wzor10= /^[\-+]{1}[0-9]{3}$/;
+  
+  if(wzor9.test(element.value) == true){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '+99.9';  
+  }
+  if(wzor10.test(element.value) == true){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '+99.9';  
+  }
+  
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+    if(wzor3.test(element.value) == false){
+     if(wzor4.test(element.value) == false){
+      if(wzor5.test(element.value) == false){
+       if(wzor6.test(element.value) == false){
+        if(wzor7.test(element.value) == false){
+         if(wzor8.test(element.value) == false){
+  
+     if(element2==1){ alert('Wpisz wartosc w poprawnym formacie tj. +20.5'); element.value = '+99.9'; }
+	 if(element2==2){ alert('Wpisz wartosc w poprawnym formacie tj. +15.0'); element.value = '-55.0'; }
+	 if(element2==3){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+02.0'; }
+	 if(element2==4){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+01.0'; }
+        
+  }}}}}}}}
+  if(element.value<-55.0){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '-55.0';  
+  }
+
+}
+
+function dop_zakr_min_sek(element){
+   if(element.value>59){ alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value='00'; }
+}
+
+
+</script>
+
+
+
+
+</head> 
+<body>
+
+
+  
+
+  
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+<div data-role="collapsible" data-collapsed="true" data-theme="b" data-content-theme="c">
+    <h4><table><tr>
+	<td><%v_slvaktual%></td><td></td><td></td>
+	<td><%v_ttime2%></td><td></td><td></td>
+	<td><font size="4" color="yellow"><%v_mailwysl%></font></td>
+	</tr></table></h4>
+    <ul data-role="listview">
+        <li><a href="lpc.cgi/050"  rel="external">WRÓÆ</a></li>
+        <li><a href="lpc.cgi/altuklad"  rel="external">Uk³ad strony</a></li>
+    </ul>
+</div>
+
+
+
+<div data-role="content">
+
+
+
+	
+<form method="get" action="lpc.cgi/052" data-ajax="false">
+	
+
+
+
+<ul data-role="listview" data-inset="true">
+		
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue"><%v_txtval001%></font> 
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <table><tr><td width="90px"><legend><b>Odczyt </b></legend></td><td><font size="5" color="purple"> <%v_value001%></font></td>
+	  <td width="20px"></td><td>  
+	     <%v_term001dzien_o%><div class="img2"><span class="si"></span></div><%v_term001dzien_z%>
+         <%v_term001noc_o%><div class="img1"><span class="si"></span></div><%v_term001noc_z%>	  
+	  </td>
+	  <td width="10px"></td><td><font size="5" color="red">Master</font></td><td> 
+	  </tr></table>
+	  <p>w stopniach C</p> 
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend><b>Temp dzienna</b></legend></td>
+      <td width="90px"><input type="text" name="n_term001prrd" size="5" maxlength="5" value="<%v_term001prrd%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');" ></td><td>  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAC1SURBVDhP7ZNBCsMgEEWrUQkuxQvk/ofyAIrLEDBq/yBN0y5EkkU3nZ3O+/7P4LAY4+Nq8atC0jE47/seQljXtdbaeYsxprW21gohGkbO3nso6aVuAQAG+DAgZ+fcPM/TNEHbcUaunPO2bcuyvJ2bEme0OwUAGODDgGI35WCd4VvT/osHJ/7CfjswpdR43jNMsY0xUsr+32xdYIA/FoNzjtv+VjQB9CmlUko70laNZ/4ib037CbzMfTo6H0BOAAAAAElFTkSuQmCC"/>  </td></tr></table>
+	  <p>próg temp</p> 
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend><b>Temp nocna</b></legend></td>
+      <td width="90px"><input type="text" name="n_term001prrn" size="5" maxlength="5" value="<%v_term001prrn%>" onBlur="walidacjaTemp(this,2)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td><td>  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHdSURBVDhPrZTNS8JgHMf7M9LMNRcVCF26dOnSIYgOXbtGQdClS+devBRYGb1B000jyF6HUUGRB7X3soWV5jbLjOgdM1PoBVq/tTCns4j68T3t+Xz4bs/zsKzwHybrD274n2Tf2VXdFF3U40T1jm8CQO0kDTC88ldzzZhbrXciXa5vov5YBQxgiYwaVlD8EDMHMItsjhFSeI6SHGAAS2SN0StoZk42uSa2dCzQ7LzUjrAAACyRkx2VSSASyTEyZVbWFYrwPG85uC00+2FJXlbiTPl0UIH7NR++wsiUT3Bb5w9gwtCnN1rck0Em2frF0O5VvGHpLHv4KBtnKqcD9EVUNJc8J9qO+bzBXYxkZZpLRnwPT6/AxZ5em+yhaorzXsdE0+Zmi9pnlF2rmMkn10wyxcNug90j0vHnF+7u07RueAvB7F7TEEfiXqQ1kwwySCvaZluoddEXh3B4CnSUsmc9YWb4ZsKv7ncrWm3N4y6efwNzYJnO11E5hg2MEDY5kQxHRQj9yva5xlFH58IOprOpejdTzNTmfEvS9SCZvKE9Vacd09tz+7bTTYAlzVVUUEMm+yxq9CG4N90EDGCJvH8RqZgJIgT7YwADWCKHw/eRaCzyGP850RjAKfKvfyrvdCRpV76C6E4AAAAASUVORK5CYII="/>  </td></tr></table>
+	  <p>próg temp</p> 
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend><b>Status:</b></legend></td><td></td>
+	  <td width="150px"><select name="n_term001sela"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_term001sela1%> >OFF</option><option value="on" <%v_term001sela2%>  >ON</option></select></td></tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda001%></b></font></td><td width="20px"></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb001%></b></font></td><td width="20px"></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc001%></b></font></td><td width="20px"></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd001%></b></font></td><td width="20px"></td>
+		</tr></table>
+	  </li>
+	  
+   
+   </ul>
+
+
+	
+	
+	
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="blue">Poniedzia³ek</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_checkTim2_001_1_01" type="checkbox" <%v_checkTim2_001_1_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_checkTim2_001_1_02" type="checkbox" <%v_checkTim2_001_1_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_03" type="checkbox" <%v_checkTim2_001_1_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_checkTim2_001_1_04" type="checkbox" <%v_checkTim2_001_1_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_05" type="checkbox" <%v_checkTim2_001_1_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_checkTim2_001_1_06" type="checkbox" <%v_checkTim2_001_1_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_07" type="checkbox" <%v_checkTim2_001_1_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_checkTim2_001_1_08" type="checkbox" <%v_checkTim2_001_1_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_09" type="checkbox" <%v_checkTim2_001_1_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_checkTim2_001_1_10" type="checkbox" <%v_checkTim2_001_1_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_11" type="checkbox" <%v_checkTim2_001_1_11%> ><label>10</label></td>
+		<td><input name="n_checkTim2_001_1_12" type="checkbox" <%v_checkTim2_001_1_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_13" type="checkbox" <%v_checkTim2_001_1_13%> ><label>12</label></td>
+		<td><input name="n_checkTim2_001_1_14" type="checkbox" <%v_checkTim2_001_1_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_15" type="checkbox" <%v_checkTim2_001_1_15%> ><label>14</label></td>
+		<td><input name="n_checkTim2_001_1_16" type="checkbox" <%v_checkTim2_001_1_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_17" type="checkbox" <%v_checkTim2_001_1_17%> ><label>16</label></td>
+		<td><input name="n_checkTim2_001_1_18" type="checkbox" <%v_checkTim2_001_1_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_19" type="checkbox" <%v_checkTim2_001_1_19%> ><label>18</label></td>
+		<td><input name="n_checkTim2_001_1_20" type="checkbox" <%v_checkTim2_001_1_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_21" type="checkbox" <%v_checkTim2_001_1_21%> ><label>20</label></td>
+		<td><input name="n_checkTim2_001_1_22" type="checkbox" <%v_checkTim2_001_1_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_1_23" type="checkbox" <%v_checkTim2_001_1_23%> ><label>22</label></td>
+		<td><input name="n_checkTim2_001_1_24" type="checkbox" <%v_checkTim2_001_1_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+ 
+ 
+ 
+
+
+	
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="blue">Wtorek</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_checkTim2_001_2_01" type="checkbox" <%v_checkTim2_001_2_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_checkTim2_001_2_02" type="checkbox" <%v_checkTim2_001_2_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_03" type="checkbox" <%v_checkTim2_001_2_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_checkTim2_001_2_04" type="checkbox" <%v_checkTim2_001_2_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_05" type="checkbox" <%v_checkTim2_001_2_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_checkTim2_001_2_06" type="checkbox" <%v_checkTim2_001_2_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_07" type="checkbox" <%v_checkTim2_001_2_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_checkTim2_001_2_08" type="checkbox" <%v_checkTim2_001_2_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_09" type="checkbox" <%v_checkTim2_001_2_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_checkTim2_001_2_10" type="checkbox" <%v_checkTim2_001_2_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_11" type="checkbox" <%v_checkTim2_001_2_11%> ><label>10</label></td>
+		<td><input name="n_checkTim2_001_2_12" type="checkbox" <%v_checkTim2_001_2_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_13" type="checkbox" <%v_checkTim2_001_2_13%> ><label>12</label></td>
+		<td><input name="n_checkTim2_001_2_14" type="checkbox" <%v_checkTim2_001_2_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_15" type="checkbox" <%v_checkTim2_001_2_15%> ><label>14</label></td>
+		<td><input name="n_checkTim2_001_2_16" type="checkbox" <%v_checkTim2_001_2_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_17" type="checkbox" <%v_checkTim2_001_2_17%> ><label>16</label></td>
+		<td><input name="n_checkTim2_001_2_18" type="checkbox" <%v_checkTim2_001_2_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_19" type="checkbox" <%v_checkTim2_001_2_19%> ><label>18</label></td>
+		<td><input name="n_checkTim2_001_2_20" type="checkbox" <%v_checkTim2_001_2_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_21" type="checkbox" <%v_checkTim2_001_2_21%> ><label>20</label></td>
+		<td><input name="n_checkTim2_001_2_22" type="checkbox" <%v_checkTim2_001_2_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_2_23" type="checkbox" <%v_checkTim2_001_2_23%> ><label>22</label></td>
+		<td><input name="n_checkTim2_001_2_24" type="checkbox" <%v_checkTim2_001_2_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="blue">Sroda</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_checkTim2_001_3_01" type="checkbox" <%v_checkTim2_001_3_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_checkTim2_001_3_02" type="checkbox" <%v_checkTim2_001_3_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_03" type="checkbox" <%v_checkTim2_001_3_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_checkTim2_001_3_04" type="checkbox" <%v_checkTim2_001_3_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_05" type="checkbox" <%v_checkTim2_001_3_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_checkTim2_001_3_06" type="checkbox" <%v_checkTim2_001_3_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_07" type="checkbox" <%v_checkTim2_001_3_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_checkTim2_001_3_08" type="checkbox" <%v_checkTim2_001_3_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_09" type="checkbox" <%v_checkTim2_001_3_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_checkTim2_001_3_10" type="checkbox" <%v_checkTim2_001_3_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_11" type="checkbox" <%v_checkTim2_001_3_11%> ><label>10</label></td>
+		<td><input name="n_checkTim2_001_3_12" type="checkbox" <%v_checkTim2_001_3_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_13" type="checkbox" <%v_checkTim2_001_3_13%> ><label>12</label></td>
+		<td><input name="n_checkTim2_001_3_14" type="checkbox" <%v_checkTim2_001_3_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_15" type="checkbox" <%v_checkTim2_001_3_15%> ><label>14</label></td>
+		<td><input name="n_checkTim2_001_3_16" type="checkbox" <%v_checkTim2_001_3_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_17" type="checkbox" <%v_checkTim2_001_3_17%> ><label>16</label></td>
+		<td><input name="n_checkTim2_001_3_18" type="checkbox" <%v_checkTim2_001_3_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_19" type="checkbox" <%v_checkTim2_001_3_19%> ><label>18</label></td>
+		<td><input name="n_checkTim2_001_3_20" type="checkbox" <%v_checkTim2_001_3_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_21" type="checkbox" <%v_checkTim2_001_3_21%> ><label>20</label></td>
+		<td><input name="n_checkTim2_001_3_22" type="checkbox" <%v_checkTim2_001_3_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_3_23" type="checkbox" <%v_checkTim2_001_3_23%> ><label>22</label></td>
+		<td><input name="n_checkTim2_001_3_24" type="checkbox" <%v_checkTim2_001_3_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="blue">Czwartek</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_checkTim2_001_4_01" type="checkbox" <%v_checkTim2_001_4_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_checkTim2_001_4_02" type="checkbox" <%v_checkTim2_001_4_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_03" type="checkbox" <%v_checkTim2_001_4_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_checkTim2_001_4_04" type="checkbox" <%v_checkTim2_001_4_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_05" type="checkbox" <%v_checkTim2_001_4_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_checkTim2_001_4_06" type="checkbox" <%v_checkTim2_001_4_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_07" type="checkbox" <%v_checkTim2_001_4_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_checkTim2_001_4_08" type="checkbox" <%v_checkTim2_001_4_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_09" type="checkbox" <%v_checkTim2_001_4_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_checkTim2_001_4_10" type="checkbox" <%v_checkTim2_001_4_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_11" type="checkbox" <%v_checkTim2_001_4_11%> ><label>10</label></td>
+		<td><input name="n_checkTim2_001_4_12" type="checkbox" <%v_checkTim2_001_4_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_13" type="checkbox" <%v_checkTim2_001_4_13%> ><label>12</label></td>
+		<td><input name="n_checkTim2_001_4_14" type="checkbox" <%v_checkTim2_001_4_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_15" type="checkbox" <%v_checkTim2_001_4_15%> ><label>14</label></td>
+		<td><input name="n_checkTim2_001_4_16" type="checkbox" <%v_checkTim2_001_4_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_17" type="checkbox" <%v_checkTim2_001_4_17%> ><label>16</label></td>
+		<td><input name="n_checkTim2_001_4_18" type="checkbox" <%v_checkTim2_001_4_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_19" type="checkbox" <%v_checkTim2_001_4_19%> ><label>18</label></td>
+		<td><input name="n_checkTim2_001_4_20" type="checkbox" <%v_checkTim2_001_4_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_21" type="checkbox" <%v_checkTim2_001_4_21%> ><label>20</label></td>
+		<td><input name="n_checkTim2_001_4_22" type="checkbox" <%v_checkTim2_001_4_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_4_23" type="checkbox" <%v_checkTim2_001_4_23%> ><label>22</label></td>
+		<td><input name="n_checkTim2_001_4_24" type="checkbox" <%v_checkTim2_001_4_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="blue">Piatek</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_checkTim2_001_5_01" type="checkbox" <%v_checkTim2_001_5_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_checkTim2_001_5_02" type="checkbox" <%v_checkTim2_001_5_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_03" type="checkbox" <%v_checkTim2_001_5_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_checkTim2_001_5_04" type="checkbox" <%v_checkTim2_001_5_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_05" type="checkbox" <%v_checkTim2_001_5_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_checkTim2_001_5_06" type="checkbox" <%v_checkTim2_001_5_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_07" type="checkbox" <%v_checkTim2_001_5_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_checkTim2_001_5_08" type="checkbox" <%v_checkTim2_001_5_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_09" type="checkbox" <%v_checkTim2_001_5_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_checkTim2_001_5_10" type="checkbox" <%v_checkTim2_001_5_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_11" type="checkbox" <%v_checkTim2_001_5_11%> ><label>10</label></td>
+		<td><input name="n_checkTim2_001_5_12" type="checkbox" <%v_checkTim2_001_5_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_13" type="checkbox" <%v_checkTim2_001_5_13%> ><label>12</label></td>
+		<td><input name="n_checkTim2_001_5_14" type="checkbox" <%v_checkTim2_001_5_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_15" type="checkbox" <%v_checkTim2_001_5_15%> ><label>14</label></td>
+		<td><input name="n_checkTim2_001_5_16" type="checkbox" <%v_checkTim2_001_5_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_17" type="checkbox" <%v_checkTim2_001_5_17%> ><label>16</label></td>
+		<td><input name="n_checkTim2_001_5_18" type="checkbox" <%v_checkTim2_001_5_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_19" type="checkbox" <%v_checkTim2_001_5_19%> ><label>18</label></td>
+		<td><input name="n_checkTim2_001_5_20" type="checkbox" <%v_checkTim2_001_5_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_21" type="checkbox" <%v_checkTim2_001_5_21%> ><label>20</label></td>
+		<td><input name="n_checkTim2_001_5_22" type="checkbox" <%v_checkTim2_001_5_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_5_23" type="checkbox" <%v_checkTim2_001_5_23%> ><label>22</label></td>
+		<td><input name="n_checkTim2_001_5_24" type="checkbox" <%v_checkTim2_001_5_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="blue">Sobota</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_checkTim2_001_6_01" type="checkbox" <%v_checkTim2_001_6_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_checkTim2_001_6_02" type="checkbox" <%v_checkTim2_001_6_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_03" type="checkbox" <%v_checkTim2_001_6_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_checkTim2_001_6_04" type="checkbox" <%v_checkTim2_001_6_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_05" type="checkbox" <%v_checkTim2_001_6_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_checkTim2_001_6_06" type="checkbox" <%v_checkTim2_001_6_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_07" type="checkbox" <%v_checkTim2_001_6_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_checkTim2_001_6_08" type="checkbox" <%v_checkTim2_001_6_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_09" type="checkbox" <%v_checkTim2_001_6_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_checkTim2_001_6_10" type="checkbox" <%v_checkTim2_001_6_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_11" type="checkbox" <%v_checkTim2_001_6_11%> ><label>10</label></td>
+		<td><input name="n_checkTim2_001_6_12" type="checkbox" <%v_checkTim2_001_6_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_13" type="checkbox" <%v_checkTim2_001_6_13%> ><label>12</label></td>
+		<td><input name="n_checkTim2_001_6_14" type="checkbox" <%v_checkTim2_001_6_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_15" type="checkbox" <%v_checkTim2_001_6_15%> ><label>14</label></td>
+		<td><input name="n_checkTim2_001_6_16" type="checkbox" <%v_checkTim2_001_6_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_17" type="checkbox" <%v_checkTim2_001_6_17%> ><label>16</label></td>
+		<td><input name="n_checkTim2_001_6_18" type="checkbox" <%v_checkTim2_001_6_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_19" type="checkbox" <%v_checkTim2_001_6_19%> ><label>18</label></td>
+		<td><input name="n_checkTim2_001_6_20" type="checkbox" <%v_checkTim2_001_6_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_21" type="checkbox" <%v_checkTim2_001_6_21%> ><label>20</label></td>
+		<td><input name="n_checkTim2_001_6_22" type="checkbox" <%v_checkTim2_001_6_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_6_23" type="checkbox" <%v_checkTim2_001_6_23%> ><label>22</label></td>
+		<td><input name="n_checkTim2_001_6_24" type="checkbox" <%v_checkTim2_001_6_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="blue">Niedziela</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_checkTim2_001_7_01" type="checkbox" <%v_checkTim2_001_7_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_checkTim2_001_7_02" type="checkbox" <%v_checkTim2_001_7_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_03" type="checkbox" <%v_checkTim2_001_7_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_checkTim2_001_7_04" type="checkbox" <%v_checkTim2_001_7_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_05" type="checkbox" <%v_checkTim2_001_7_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_checkTim2_001_7_06" type="checkbox" <%v_checkTim2_001_7_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_07" type="checkbox" <%v_checkTim2_001_7_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_checkTim2_001_7_08" type="checkbox" <%v_checkTim2_001_7_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_09" type="checkbox" <%v_checkTim2_001_7_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_checkTim2_001_7_10" type="checkbox" <%v_checkTim2_001_7_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_11" type="checkbox" <%v_checkTim2_001_7_11%> ><label>10</label></td>
+		<td><input name="n_checkTim2_001_7_12" type="checkbox" <%v_checkTim2_001_7_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_13" type="checkbox" <%v_checkTim2_001_7_13%> ><label>12</label></td>
+		<td><input name="n_checkTim2_001_7_14" type="checkbox" <%v_checkTim2_001_7_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_15" type="checkbox" <%v_checkTim2_001_7_15%> ><label>14</label></td>
+		<td><input name="n_checkTim2_001_7_16" type="checkbox" <%v_checkTim2_001_7_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_17" type="checkbox" <%v_checkTim2_001_7_17%> ><label>16</label></td>
+		<td><input name="n_checkTim2_001_7_18" type="checkbox" <%v_checkTim2_001_7_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_19" type="checkbox" <%v_checkTim2_001_7_19%> ><label>18</label></td>
+		<td><input name="n_checkTim2_001_7_20" type="checkbox" <%v_checkTim2_001_7_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_21" type="checkbox" <%v_checkTim2_001_7_21%> ><label>20</label></td>
+		<td><input name="n_checkTim2_001_7_22" type="checkbox" <%v_checkTim2_001_7_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_checkTim2_001_7_23" type="checkbox" <%v_checkTim2_001_7_23%> ><label>22</label></td>
+		<td><input name="n_checkTim2_001_7_24" type="checkbox" <%v_checkTim2_001_7_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+<table><tr><td width="650px">
+<ul data-role="listview" data-inset="true">	
+<li>
+  <table><tr>Zaznacz&nbsp;&nbsp;pozosta³e&nbsp;&nbsp;jak&nbsp;&nbsp;dla&nbsp;&nbsp;Poniedzia³ku</tr><tr>
+        <td width="100px"><button type="submit" name="n_053_zapisz_001">Wt-Ni</button></td>
+		<td width="100px"><button type="submit" name="n_054_zapisz_001">Wt-Pi</button></td>
+		<td width="100px"><button type="submit" name="n_055_zapisz_001">Odznacz</button></td></tr></table>
+</li>  
+</ul>
+ </td></tr></table> 
+
+	
+
+<table><tr><td width="650px">	
+<li class="ui-body ui-body-b">
+            <fieldset class="ui-grid-a">
+                    <div class="ui-block-a"><table><tr><td width="200px"><button type="submit" name="n_052_zapisz">Zapisz Ustawienia</button></td></tr></table></div>
+            </fieldset>
+        </li>
+ </td></tr></table>  
+ </form>    
+
+	</div>
+	
+	
+	
+	
+	
+	
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

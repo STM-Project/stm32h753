@@ -15,7 +15,8 @@
 #include "HTTP/http_settings_bindings.h"
 #include "HTTP/http_request_stream.h"
 #include "HTTP/http_output_control.h"
-#include "HTTP/http_lpc_panel.h"
+#include "LPC2148/http_lpc_panel.h"
+#include "LPC2148/lpc_pages.h"
 #include "relay_states.h"
 #include <string.h> /* memset */
 #include <stdlib.h> /* atoi */
@@ -146,6 +147,7 @@ typedef enum
 	WWW_DATA_REFRESH,
 	WWW_LPC_ASSET,
 	WWW_LPC_DATA,
+    WWW_LPC_SD, WWW_LPC_CONFIG, WWW_LPC_SAVE, WWW_LPC_CATALOG, WWW_LPC_LIVE,
 	WWW_OUTPUT_CONTROL,
 	WWW_FAVICON,
 	WWW_SENSOR_SETTING,
@@ -186,6 +188,7 @@ TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
 /* Queued pages must retain their contents until that slot finishes sending. */
 SDRAM static char httpPageBuff[ESP_MAX_HTTP_CONN][100000];
+SDRAM static char httpLpcSdBuff[ESP_MAX_HTTP_CONN][LPC_PAGE_BUFFER_SIZE] __attribute__((aligned(32)));
 SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][131072];
 SDRAM static HTTP_RequestStream httpRequestStream;
 static char httpResponseHeader[ESP_MAX_HTTP_CONN][192];
@@ -711,6 +714,33 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	LOOP_FOR(i,MAX_HTML_WEBs){  httpPar.web[channel][i] = NULL;		httpPar.siz[channel][i] = 0;  }
 	int nrPartWWW=0;	char* httpBuff=httpPageBuff[channel];	char* ptr=httpBuff;
 	switch(nrWWW){
+    case WWW_LPC_SD:
+        httpPar.web[channel][nrPartWWW]=httpLpcSdBuff[channel];
+        httpPar.siz[channel][nrPartWWW++]=(u32)LPC_StorageReadPage(httpSensorPort[channel],httpLpcSdBuff[channel],sizeof httpLpcSdBuff[channel]);
+        if(!httpPar.siz[channel][0]){
+            httpResponseStatus[channel]=503;
+            strcpy(httpBuff,"<!doctype html><meta charset='UTF-8'><p>Nie wczytano strony z karty SD. Rozpakuj sdcard.zip i skopiuj folder LPC do katalogu glownego karty.</p><a href='/lpc'>Lista stron</a> | <a href='/nowa'>Panel we Flash</a>");
+            httpPar.web[channel][0]=httpBuff;httpPar.siz[channel][0]=(u32)strlen(httpBuff);
+        }
+        break;
+    case WWW_LPC_CONFIG:
+        httpPar.web[channel][nrPartWWW]=httpLpcSdBuff[channel];
+        httpPar.siz[channel][nrPartWWW++]=(u32)LPC_SettingsJson(httpSensorPort[channel],httpLpcSdBuff[channel],sizeof httpLpcSdBuff[channel]);
+        if(!httpPar.siz[channel][0])httpResponseStatus[channel]=500;
+        break;
+    case WWW_LPC_SAVE:
+        snprintf(httpBuff,sizeof(httpPageBuff[channel]),"{\"ok\":%s,\"message\":\"%s\"}",httpResponseStatus[channel]==200?"true":"false",
+            httpResponseStatus[channel]==200?"Zapisano ustawienia LPC na karcie SD.":
+            httpResponseStatus[channel]==503?"Nie zapisano. Sprawdz karte SD i pakiet LPC.":
+            httpResponseStatus[channel]==501?"Ta akcja sprzetowa LPC2148 nie jest dostepna w sterowniku STM32H753.":"Nie zapisano. Sprawdz komplet i wartosci formularza.");
+        httpPar.web[channel][nrPartWWW]=httpBuff;httpPar.siz[channel][nrPartWWW++]=(u32)strlen(httpBuff);
+        break;
+    case WWW_LPC_CATALOG:
+        httpPar.web[channel][nrPartWWW]=httpBuff;httpPar.siz[channel][nrPartWWW++]=(u32)LPC_CatalogRender(httpBuff,sizeof(httpPageBuff[channel]));
+        break;
+    case WWW_LPC_LIVE:
+        httpPar.web[channel][nrPartWWW]=httpBuff;httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_LpcLegacyJson(httpBuff,sizeof(httpPageBuff[channel]),HttpRefr_sdram,strlen(HttpRefr_sdram));
+        break;
 	case WWW_LPC_ASSET:
         httpPar.web[channel][nrPartWWW]=(char*)httpLpcAsset[channel]->data;
         httpPar.siz[channel][nrPartWWW++]=(u32)httpLpcAsset[channel]->length;
@@ -1074,7 +1104,7 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 			httpResponseStatus[channel]==503?"Service Unavailable":
 			httpResponseStatus[channel]==501?"Not Implemented":"Internal Server Error";
 		const char* contentType=nrWWW==WWW_LPC_ASSET?httpLpcAsset[channel]->content_type:
-            nrWWW==WWW_LPC_DATA?"application/json; charset=UTF-8":(nrWWW==WWW_DATA_REFRESH ||
+            (nrWWW==WWW_LPC_DATA || nrWWW==WWW_LPC_CONFIG || nrWWW==WWW_LPC_SAVE || nrWWW==WWW_LPC_LIVE)?"application/json; charset=UTF-8":(nrWWW==WWW_DATA_REFRESH ||
 			(nrWWW==WWW_OUTPUT_CONTROL && httpSensorNotice[channel]))?"text/plain; charset=UTF-8":
 			nrWWW==WWW_FAVICON?"image/x-icon":"text/html; charset=UTF-8";
 		int headerSize=snprintf(httpResponseHeader[channel],sizeof(httpResponseHeader[channel]),
@@ -1127,6 +1157,7 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 	uint16_t settingsInstance=0;
 	const char* notice=NULL;
     const HTTP_LpcAsset* asset=HTTP_LpcFindAsset(target,length);
+    unsigned lpcPage=LPC_ResolvePage(target,length),lpcApi=LPC_ResolveSettingsApi(target,length);
 	(void)context;
 	if(channel>=ESP_MAX_HTTP_CONN) return;
 	/* Do not execute a write if its response cannot be queued. */
@@ -1169,6 +1200,10 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
         }
 	}else if(!target){ status=400; }
     else if(asset){page=WWW_LPC_ASSET;status=200;}
+    else if(lpcPage){page=WWW_LPC_SD;port=lpcPage;status=200;}
+    else if(lpcApi){page=WWW_LPC_CONFIG;port=lpcApi;status=200;}
+    else if(HTTP_TargetEquals(target,length,"/lpc")){page=WWW_LPC_CATALOG;status=200;}
+    else if(HTTP_TargetEquals(target,length,"/api/lpcdata")){page=WWW_LPC_LIVE;status=200;}
     else if(HTTP_TargetEquals(target,length,"/api/nowa")){page=WWW_LPC_DATA;status=200;}
 	else if(HTTP_TargetEquals(target,length,"/") || HTTP_TargetEquals(target,length,"/main")){
 		page=WWW_MAIN_READ; status=200;
@@ -1179,6 +1214,9 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 		port=(unsigned)(target[5]-'0')*100+(unsigned)(target[6]-'0')*10+(unsigned)(target[7]-'0');
 		if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT && port!=15 && port!=16){page=WWW_SENSOR_SETTING; status=200;}
 	}else if(length>=14 && memcmp(target,"/lpc.cgi/A117?",14)==0){
+        int lpcStatus=LPC_ApplyTarget(target,length,&lpcPage);
+        if(lpcStatus){page=WWW_LPC_SAVE;status=lpcStatus;port=lpcPage;}
+        else {
 		int result=HTTP_SettingsApplyTarget(target,length,&settingsPage,&settingsInstance);
 		/* A failed boot-time SD read previously left the save callback unset.
 		 * Load existing settings before retrying, so other saved fields survive. */
@@ -1213,6 +1251,7 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 					"Nie zapisano: sprawdz progi, histereze i czas zwloki.";
 			}else status=400;
 		}
+        }
 	}else if(HTTP_TargetEquals(target,length,"/TME.txt")){
 		page=WWW_DATA_REFRESH; status=200;
 	}else if(HTTP_TargetEquals(target,length,"/favicon.ico") || (length>=8 && memcmp(target,"/mobile/",8)==0)){
@@ -1401,6 +1440,7 @@ void vtaskWifi(void *argument)
 	HTTP_SensorStorageInit();
 	HTTP_SettingsStorageInit();
 	HTTP_SettingsBindingsApply();
+    LPC_StorageInit();
 	HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
 	InitStructRqstToSendChnl();
 	RcvTimeoutTimerInit();

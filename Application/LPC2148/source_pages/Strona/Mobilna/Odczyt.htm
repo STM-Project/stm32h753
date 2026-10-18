@@ -1,0 +1,132 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Odczyt wartosci</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+
+
+<%koment_1o%>	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<%koment_1z%>
+
+<%koment_2o%> 
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min.css" /> 
+	<script src="jquery/jquery-1.8.2.min.js"></script>
+	<script src="jquery/jquery.mobile-1.2.0.min.js"></script> 
+<%koment_2z%>
+
+
+
+<script>
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00';    
+  }}
+}
+</script>
+
+	
+	
+<script type="text/javascript">
+
+var auto_refresh = setInterval( function (){ $('#tu_wczytuj').load('mobile/odczyt').fadeIn("fast"); }, <%freq01m01%>); 
+
+
+</script>
+
+
+
+
+</head> 
+<body> 
+
+  
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+<div data-role="collapsible" data-collapsed="true" data-theme="b" data-content-theme="c">
+    <h4>Pozostale strony </h4>
+    <ul data-role="listview">
+        <li><a href="lpc.cgi/I001"  rel="external">Temperatura - Powiadamianie SMS</a></li>
+        <li><a href="lpc.cgi/I002"  rel="external">Termostat</a></li>
+        <li><a href="lpc.cgi/I003"  rel="external">Temperatura - Maski filtrujace</a></li>
+        <li><a href="lpc.cgi/I004"  rel="external">Rejestrator</a></li>
+    </ul>
+</div>
+
+
+	<div data-role="content">
+	
+
+
+
+
+ <ul data-role="listview" data-inset="true">
+		
+	  <li class="ui-field-contain">	  
+	  <div id="tu_wczytuj"> -- </div>
+	  </li>
+  
+   </ul>
+
+
+
+
+
+
+
+
+
+
+
+      
+      	  
+	  <br><br>
+	 
+	<form method="get" action="lpc.cgi/A205" data-ajax="false">
+	<ul data-role="listview" data-inset="true">
+		
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue"><b>Odswiezania strony:</b></font> 
+	  </li>
+	  
+	  <li class="ui-body ui-body-b">  
+	  <table><tr><td><legend><b>Czestosc:</b></legend></td><td></td>
+	  <td><input type="text" name="n_odczyt001min" style="width:40px;" size="2" maxlength="2" style="width:25px;"  value="<%v_odczyt001min%>"  onBlur="walidacja_2cyfr(this)"></td><td><b>:</b></td>
+      <td><input type="text" name="n_odczyt001sec" style="width:40px;" size="2" maxlength="2" style="width:25px;"  value="<%v_odczyt001sec%>"  onBlur="walidacja_2cyfr(this)"></td></tr></table></td>
+	  <td>
+	       <li class="ui-body ui-body-b"> 
+			<fieldset class="ui-grid-a">  
+			  <div class="ui-block-a"><button type="submit" name="n_205_zapisz" class="ui-btn ui-corner-all ui-btn-a">Zapisz</button></div>   
+	        </fieldset>
+		    </li>	
+	  </td></tr></table>
+	  </li>
+   </ul>  
+   </form>      
+     
+     
+   
+   
+
+
+ 
+	
+	
+
+	</div>
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

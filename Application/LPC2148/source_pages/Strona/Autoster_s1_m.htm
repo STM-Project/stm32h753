@@ -1,0 +1,729 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title> Autosterowanie PK</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+
+
+
+    <link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+
+	
+<%koment_1o%>	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<%koment_1z%>
+
+<%koment_2o%> 
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min.css" /> 
+	<script src="jquery/jquery-1.8.2.min.js"></script>
+	<script src="jquery/jquery.mobile-1.2.0.min.js"></script> 
+<%koment_2z%> 
+
+<%koment_tlo_1o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+<%koment_tlo_1z%>
+<%koment_tlo_2o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(Images/tlo364.jpg);} 
+  </style>
+<%koment_tlo_2z%>
+
+
+
+<script>
+
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return true;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+	
+	if (kodKlawisza == 8) {
+        return true;  // backspace
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function dop_zakr_min_sek(element){
+   if(element.value>59){ alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value='00'; }
+}
+
+function walidacja_numeru_WE(element)
+{
+  if(element.value > <%_Size__s_Wejscia_info%>){
+     alert('NIE MA TAKIEGO WEJSCIA !!!\r\nLiczba dostepnych wejsc to <%_Size__s_Wejscia_info%>'); element.value = '1';   
+  }
+  else if(element.value == 0){
+     alert('Numeracja wejsc WE zaczyna sie od 1'); element.value = '1';  
+  }
+}
+
+
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00';    
+  }}
+}
+</script>
+
+
+
+
+
+	
+</head> 
+<body> 
+
+
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+<div data-role="collapsible" data-collapsed="true" data-theme="b" data-content-theme="c">
+    <h4><table><tr>
+	<td><%v_slvaktual%></td><td></td><td></td>
+	<td><%v_ttime2%></td><td></td><td></td>
+	<td><font size="4" color="yellow"><%v_mailwysl%></font></td>
+	</tr></table></h4>
+    <ul data-role="listview">
+        <li><a href="lpc.cgi/000"  rel="external">WRÓÆ</a></li>
+        <li><a href="lpc.cgi/altuklad"  rel="external">Uk³ad strony</a></li>
+        <li><a href="lpc.cgi/slave000"  rel="external">Wybierz: Master</a></li>
+        <li><a href="lpc.cgi/slave001"  rel="external">Wybierz: <%v_slvtxt001%></a></li>
+        <li><a href="lpc.cgi/slave002"  rel="external">Wybierz: <%v_slvtxt002%></a></li>
+    </ul>
+</div>
+
+
+
+
+
+	<div data-role="content">
+	
+
+<form method="get" action="lpc.cgi/A114" data-ajax="false">
+
+
+
+	 <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">AutoSter PK9</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <font size="4" color="black"><%v_pktxt009%></font>
+      <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Nazwa przekaznika Pk9</p> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="150px"><legend>Dla wejscia nr:</legend></td>
+      <td><input type="text" name="n_autoster009we" size="6" maxlength="3" value="<%v_autoster009we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster009zm" size="4" maxlength="2"  value="<%v_autoster009zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster009zs" size="4" maxlength="2"  value="<%v_autoster009zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózñ. powiad.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas opóznienia</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster009om" size="4" maxlength="2"  value="<%v_autoster009om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster009os" size="4" maxlength="2"  value="<%v_autoster009os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózn. wystawienia sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas przytrzymania</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster009pm" size="4" maxlength="2"  value="<%v_autoster009pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster009ps" size="4" maxlength="2"  value="<%v_autoster009ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	   <p>czas trwania sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Dla stanu wejscia</legend></td>
+      <td width="150px"><select name="n_autoster009selr"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster009selr1%> >ON</option>
+	                                                                                                     <option value="on"  <%v_autoster009selr2%> >OFF</option></select></td>
+	  </tr></table>
+	  <p>nastepuje za³aczenie PK6</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Funkcja aktywna</legend></td>
+      <td width="150px"><select name="n_autoster009sel"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster009sel1%> >NIE</option>
+	                                                                                                     <option value="on"  <%v_autoster009sel2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda009%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb009%></b></font></td><td></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc009%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd009%></b></font></td><td></td>
+		</tr></table>
+	  </li>	  
+   </ul>
+
+   <%koment_7o%><br><%koment_7z%>
+
+
+
+	 <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">AutoSter PK10</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <font size="4" color="black"><%v_pktxt010%></font>
+      <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Nazwa przekaznika Pk10</p> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="150px"><legend>Dla wejscia nr:</legend></td>
+      <td><input type="text" name="n_autoster010we" size="6" maxlength="3" value="<%v_autoster010we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster010zm" size="4" maxlength="2"  value="<%v_autoster010zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster010zs" size="4" maxlength="2"  value="<%v_autoster010zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózñ. powiad.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas opóznienia</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster010om" size="4" maxlength="2"  value="<%v_autoster010om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster010os" size="4" maxlength="2"  value="<%v_autoster010os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózn. wystawienia sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas przytrzymania</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster010pm" size="4" maxlength="2"  value="<%v_autoster010pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster010ps" size="4" maxlength="2"  value="<%v_autoster010ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	   <p>czas trwania sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Dla stanu wejscia</legend></td>
+      <td width="150px"><select name="n_autoster010selr"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster010selr1%> >ON</option>
+	                                                                                                     <option value="on"  <%v_autoster010selr2%> >OFF</option></select></td>
+	  </tr></table>
+	  <p>nastepuje za³aczenie PK7</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Funkcja aktywna</legend></td>
+      <td width="150px"><select name="n_autoster010sel"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster010sel1%> >NIE</option>
+	                                                                                                     <option value="on"  <%v_autoster010sel2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda010%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb010%></b></font></td><td></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc010%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd010%></b></font></td><td></td>
+		</tr></table>
+	  </li>	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+
+
+
+
+
+	 <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">AutoSter PK11</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <font size="4" color="black"><%v_pktxt011%></font>
+      <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Nazwa przekaznika Pk11</p> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="150px"><legend>Dla wejscia nr:</legend></td>
+      <td><input type="text" name="n_autoster011we" size="6" maxlength="3" value="<%v_autoster011we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster011zm" size="4" maxlength="2"  value="<%v_autoster011zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster011zs" size="4" maxlength="2"  value="<%v_autoster011zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózñ. powiad.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas opóznienia</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster011om" size="4" maxlength="2"  value="<%v_autoster011om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster011os" size="4" maxlength="2"  value="<%v_autoster011os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózn. wystawienia sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas przytrzymania</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster011pm" size="4" maxlength="2"  value="<%v_autoster011pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster011ps" size="4" maxlength="2"  value="<%v_autoster011ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	   <p>czas trwania sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Dla stanu wejscia</legend></td>
+      <td width="150px"><select name="n_autoster011selr"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster011selr1%> >ON</option>
+	                                                                                                     <option value="on"  <%v_autoster011selr2%> >OFF</option></select></td>
+	  </tr></table>
+	  <p>nastepuje za³aczenie PK8</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Funkcja aktywna</legend></td>
+      <td width="150px"><select name="n_autoster011sel"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster011sel1%> >NIE</option>
+	                                                                                                     <option value="on"  <%v_autoster011sel2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda011%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb011%></b></font></td><td></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc011%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd011%></b></font></td><td></td>
+		</tr></table>
+	  </li>	  
+   </ul>
+
+
+
+
+
+	 <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">AutoSter PK12</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <font size="4" color="black"><%v_pktxt012%></font>
+      <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Nazwa przekaznika Pk12</p> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="150px"><legend>Dla wejscia nr:</legend></td>
+      <td><input type="text" name="n_autoster012we" size="6" maxlength="3" value="<%v_autoster012we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster012zm" size="4" maxlength="2"  value="<%v_autoster012zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster012zs" size="4" maxlength="2"  value="<%v_autoster012zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózñ. powiad.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas opóznienia</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster012om" size="4" maxlength="2"  value="<%v_autoster012om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster012os" size="4" maxlength="2"  value="<%v_autoster012os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózn. wystawienia sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas przytrzymania</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster012pm" size="4" maxlength="2"  value="<%v_autoster012pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster012ps" size="4" maxlength="2"  value="<%v_autoster012ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	   <p>czas trwania sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Dla stanu wejscia</legend></td>
+      <td width="150px"><select name="n_autoster012selr"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster012selr1%> >ON</option>
+	                                                                                                     <option value="on"  <%v_autoster012selr2%> >OFF</option></select></td>
+	  </tr></table>
+	  <p>nastepuje za³aczenie PK9</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Funkcja aktywna</legend></td>
+      <td width="150px"><select name="n_autoster012sel"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster012sel1%> >NIE</option>
+	                                                                                                     <option value="on"  <%v_autoster012sel2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda012%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb012%></b></font></td><td></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc012%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd012%></b></font></td><td></td>
+		</tr></table>
+	  </li>	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+
+
+
+
+
+	 <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">AutoSter PK13</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <font size="4" color="black"><%v_pktxt013%></font>
+      <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Nazwa przekaznika Pk13</p> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="150px"><legend>Dla wejscia nr:</legend></td>
+      <td><input type="text" name="n_autoster013we" size="6" maxlength="3" value="<%v_autoster013we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster013zm" size="4" maxlength="2"  value="<%v_autoster013zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster013zs" size="4" maxlength="2"  value="<%v_autoster013zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózñ. powiad.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas opóznienia</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster013om" size="4" maxlength="2"  value="<%v_autoster013om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster013os" size="4" maxlength="2"  value="<%v_autoster013os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózn. wystawienia sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas przytrzymania</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster013pm" size="4" maxlength="2"  value="<%v_autoster013pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster013ps" size="4" maxlength="2"  value="<%v_autoster013ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	   <p>czas trwania sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Dla stanu wejscia</legend></td>
+      <td width="150px"><select name="n_autoster013selr"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster013selr1%> >ON</option>
+	                                                                                                     <option value="on"  <%v_autoster013selr2%> >OFF</option></select></td>
+	  </tr></table>
+	  <p>nastepuje za³aczenie PK10</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Funkcja aktywna</legend></td>
+      <td width="150px"><select name="n_autoster013sel"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster013sel1%> >NIE</option>
+	                                                                                                     <option value="on"  <%v_autoster013sel2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda013%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb013%></b></font></td><td></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc013%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd013%></b></font></td><td></td>
+		</tr></table>
+	  </li>	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+
+
+
+
+
+	 <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">AutoSter PK14</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <font size="4" color="black"><%v_pktxt014%></font>
+      <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Nazwa przekaznika Pk14</p> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="150px"><legend>Dla wejscia nr:</legend></td>
+      <td><input type="text" name="n_autoster014we" size="6" maxlength="3" value="<%v_autoster014we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster014zm" size="4" maxlength="2"  value="<%v_autoster014zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster014zs" size="4" maxlength="2"  value="<%v_autoster014zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózñ. powiad.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas opóznienia</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster014om" size="4" maxlength="2"  value="<%v_autoster014om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster014os" size="4" maxlength="2"  value="<%v_autoster014os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózn. wystawienia sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas przytrzymania</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster014pm" size="4" maxlength="2"  value="<%v_autoster014pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster014ps" size="4" maxlength="2"  value="<%v_autoster014ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	   <p>czas trwania sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Dla stanu wejscia</legend></td>
+      <td width="150px"><select name="n_autoster014selr"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster014selr1%> >ON</option>
+	                                                                                                     <option value="on"  <%v_autoster014selr2%> >OFF</option></select></td>
+	  </tr></table>
+	  <p>nastepuje za³aczenie PK11</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Funkcja aktywna</legend></td>
+      <td width="150px"><select name="n_autoster014sel"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster014sel1%> >NIE</option>
+	                                                                                                     <option value="on"  <%v_autoster014sel2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda014%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb014%></b></font></td><td></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc014%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd014%></b></font></td><td></td>
+		</tr></table>
+	  </li>	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+
+
+
+
+
+	 <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">AutoSter PK15</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <font size="4" color="black"><%v_pktxt015%></font>
+      <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Nazwa przekaznika Pk15</p> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="150px"><legend>Dla wejscia nr:</legend></td>
+      <td><input type="text" name="n_autoster015we" size="6" maxlength="3" value="<%v_autoster015we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster015zm" size="4" maxlength="2"  value="<%v_autoster015zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster015zs" size="4" maxlength="2"  value="<%v_autoster015zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózñ. powiad.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas opóznienia</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster015om" size="4" maxlength="2"  value="<%v_autoster015om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster015os" size="4" maxlength="2"  value="<%v_autoster015os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózn. wystawienia sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas przytrzymania</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster015pm" size="4" maxlength="2"  value="<%v_autoster015pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster015ps" size="4" maxlength="2"  value="<%v_autoster015ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	   <p>czas trwania sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Dla stanu wejscia</legend></td>
+      <td width="150px"><select name="n_autoster015selr"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster015selr1%> >ON</option>
+	                                                                                                     <option value="on"  <%v_autoster015selr2%> >OFF</option></select></td>
+	  </tr></table>
+	  <p>nastepuje za³aczenie PK12</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Funkcja aktywna</legend></td>
+      <td width="150px"><select name="n_autoster015sel"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster015sel1%> >NIE</option>
+	                                                                                                     <option value="on"  <%v_autoster015sel2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda015%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb015%></b></font></td><td></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc015%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd015%></b></font></td><td></td>
+		</tr></table>
+	  </li>	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+	
+		 <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">AutoSter PK16</font>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="5" color="black"><%v_slvnr%></font>  
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <font size="4" color="black"><%v_pktxt016%></font>
+      <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Nazwa przekaznika Pk16</p> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="150px"><legend>Dla wejscia nr:</legend></td>
+      <td><input type="text" name="n_autoster016we" size="6" maxlength="3" value="<%v_autoster016we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas Reakcji</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster016zm" size="4" maxlength="2"  value="<%v_autoster016zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster016zs" size="4" maxlength="2"  value="<%v_autoster016zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózñ. powiad.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas opóznienia</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster016om" size="4" maxlength="2"  value="<%v_autoster016om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster016os" size="4" maxlength="2"  value="<%v_autoster016os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>opózn. wystawienia sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Czas przytrzymania</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_autoster016pm" size="4" maxlength="2"  value="<%v_autoster016pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_autoster016ps" size="4" maxlength="2"  value="<%v_autoster016ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	   <p>czas trwania sygna³u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Dla stanu wejscia</legend></td>
+      <td width="150px"><select name="n_autoster016selr"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster016selr1%> >ON</option>
+	                                                                                                     <option value="on"  <%v_autoster016selr2%> >OFF</option></select></td>
+	  </tr></table>
+	  <p>nastepuje za³aczenie PK5</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="155px"><legend>Funkcja aktywna</legend></td>
+      <td width="150px"><select name="n_autoster016sel"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_autoster016sel1%> >NIE</option>
+	                                                                                                     <option value="on"  <%v_autoster016sel2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Aktywne funkcje:</b></legend>
+	    <table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda016%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb016%></b></font></td><td></td>
+                   <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc016%></b></font></td><td></td>
+                   <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd016%></b></font></td><td></td>
+		</tr></table>
+	  </li>	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+<br>
+
+
+	
+	
+<li class="ui-body ui-body-b">
+            <fieldset class="ui-grid-a">
+                    <div class="ui-block-a"><button type="submit" name="n_108_zapisz" class="ui-btn ui-corner-all ui-btn-a">Zapisz</button></div>
+            </fieldset>
+        </li>
+
+	
+</form>
+
+
+
+
+
+
+
+
+
+
+
+
+
+       	 
+
+
+ 
+     <br>
+
+	
+	
+
+	</div>
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

@@ -1,0 +1,677 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Ustawienia Timer IR <%v_Tim2nr%></title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+<link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min_bez_chekbox.css" /> 
+
+	<script src="https://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="https://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+
+
+
+  <style type="text/css">
+	.custom-checkbox{
+		width: 16px;
+		height: 16px;
+		display: inline-block;
+		position: relative;
+		z-index: 1;
+		top: 3px;
+		background: url('data:image/png;base64,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') no-repeat 0 0 transparent;
+	}
+	.custom-checkbox:hover{
+		background-position: 0 -16px;
+	}
+	.custom-checkbox.selected{
+		background-position: 0 -32px;
+	}
+	.custom-checkbox input[type="checkbox"]{
+		margin: 0;
+		position: absolute;
+		z-index: 2;            
+		cursor: pointer;
+		outline: none;
+		opacity: 0;
+		/* CSS hacks for older browsers */
+		_noFocusLine: expression(this.hideFocus=true); 
+		-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+		filter: alpha(opacity=0);
+		-khtml-opacity: 0;
+		-moz-opacity: 0;
+	}
+	/* Let's Beautify Our Form */
+    form{
+        margin: 0px;
+    }
+    label{
+        display: block;
+        padding: 2px 0;
+    }
+    input[type="submit"]{
+        float: left;
+        background: #f2f2f2;
+        border: 1px solid #CCCCCC;
+        border-radius: 4px;
+        margin-top: 20px;
+        padding: 4px 10px;
+        cursor: pointer;
+        outline: none;
+    }
+	input[type="submit"]:hover{
+        color: #fff;
+        border-color: #1b7aa9;
+        background-color: #239fdb;
+    }
+</style>
+
+<script type="text/javascript">
+    function customCheckbox(checkboxName){
+        var checkBox = $('input[name="'+ checkboxName +'"]');
+        $(checkBox).each(function(){
+            $(this).wrap( "<span class='custom-checkbox'></span>" );
+            if($(this).is(':checked')){
+                $(this).parent().addClass("selected");
+            }
+        });
+        $(checkBox).click(function(){
+            $(this).parent().toggleClass("selected");
+        });
+    }
+    $(document).ready(function (){
+        customCheckbox("n_Tim2check_1_01");
+        customCheckbox("n_Tim2check_1_02");
+        customCheckbox("n_Tim2check_1_03");
+        customCheckbox("n_Tim2check_1_04");
+        customCheckbox("n_Tim2check_1_05");
+        customCheckbox("n_Tim2check_1_06");
+        customCheckbox("n_Tim2check_1_07");
+        customCheckbox("n_Tim2check_1_08");
+        customCheckbox("n_Tim2check_1_09");
+        customCheckbox("n_Tim2check_1_10");
+        customCheckbox("n_Tim2check_1_11");
+        customCheckbox("n_Tim2check_1_12");
+        customCheckbox("n_Tim2check_1_13");
+        customCheckbox("n_Tim2check_1_14");
+        customCheckbox("n_Tim2check_1_15");
+        customCheckbox("n_Tim2check_1_16");
+        customCheckbox("n_Tim2check_1_17");
+        customCheckbox("n_Tim2check_1_18");
+        customCheckbox("n_Tim2check_1_19");
+        customCheckbox("n_Tim2check_1_20");
+        customCheckbox("n_Tim2check_1_21");
+        customCheckbox("n_Tim2check_1_22");
+        customCheckbox("n_Tim2check_1_23");
+        customCheckbox("n_Tim2check_1_24");
+		
+        customCheckbox("n_Tim2check_2_01");
+        customCheckbox("n_Tim2check_2_02");
+        customCheckbox("n_Tim2check_2_03");
+        customCheckbox("n_Tim2check_2_04");
+        customCheckbox("n_Tim2check_2_05");
+        customCheckbox("n_Tim2check_2_06");
+        customCheckbox("n_Tim2check_2_07");
+        customCheckbox("n_Tim2check_2_08");
+        customCheckbox("n_Tim2check_2_09");
+        customCheckbox("n_Tim2check_2_10");
+        customCheckbox("n_Tim2check_2_11");
+        customCheckbox("n_Tim2check_2_12");
+        customCheckbox("n_Tim2check_2_13");
+        customCheckbox("n_Tim2check_2_14");
+        customCheckbox("n_Tim2check_2_15");
+        customCheckbox("n_Tim2check_2_16");
+        customCheckbox("n_Tim2check_2_17");
+        customCheckbox("n_Tim2check_2_18");
+        customCheckbox("n_Tim2check_2_19");
+        customCheckbox("n_Tim2check_2_20");
+        customCheckbox("n_Tim2check_2_21");
+        customCheckbox("n_Tim2check_2_22");
+        customCheckbox("n_Tim2check_2_23");
+        customCheckbox("n_Tim2check_2_24");
+		
+        customCheckbox("n_Tim2check_3_01");
+        customCheckbox("n_Tim2check_3_02");
+        customCheckbox("n_Tim2check_3_03");
+        customCheckbox("n_Tim2check_3_04");
+        customCheckbox("n_Tim2check_3_05");
+        customCheckbox("n_Tim2check_3_06");
+        customCheckbox("n_Tim2check_3_07");
+        customCheckbox("n_Tim2check_3_08");
+        customCheckbox("n_Tim2check_3_09");
+        customCheckbox("n_Tim2check_3_10");
+        customCheckbox("n_Tim2check_3_11");
+        customCheckbox("n_Tim2check_3_12");
+        customCheckbox("n_Tim2check_3_13");
+        customCheckbox("n_Tim2check_3_14");
+        customCheckbox("n_Tim2check_3_15");
+        customCheckbox("n_Tim2check_3_16");
+        customCheckbox("n_Tim2check_3_17");
+        customCheckbox("n_Tim2check_3_18");
+        customCheckbox("n_Tim2check_3_19");
+        customCheckbox("n_Tim2check_3_20");
+        customCheckbox("n_Tim2check_3_21");
+        customCheckbox("n_Tim2check_3_22");
+        customCheckbox("n_Tim2check_3_23");
+        customCheckbox("n_Tim2check_3_24");
+
+        customCheckbox("n_Tim2check_4_01");
+        customCheckbox("n_Tim2check_4_02");
+        customCheckbox("n_Tim2check_4_03");
+        customCheckbox("n_Tim2check_4_04");
+        customCheckbox("n_Tim2check_4_05");
+        customCheckbox("n_Tim2check_4_06");
+        customCheckbox("n_Tim2check_4_07");
+        customCheckbox("n_Tim2check_4_08");
+        customCheckbox("n_Tim2check_4_09");
+        customCheckbox("n_Tim2check_4_10");
+        customCheckbox("n_Tim2check_4_11");
+        customCheckbox("n_Tim2check_4_12");
+        customCheckbox("n_Tim2check_4_13");
+        customCheckbox("n_Tim2check_4_14");
+        customCheckbox("n_Tim2check_4_15");
+        customCheckbox("n_Tim2check_4_16");
+        customCheckbox("n_Tim2check_4_17");
+        customCheckbox("n_Tim2check_4_18");
+        customCheckbox("n_Tim2check_4_19");
+        customCheckbox("n_Tim2check_4_20");
+        customCheckbox("n_Tim2check_4_21");
+        customCheckbox("n_Tim2check_4_22");
+        customCheckbox("n_Tim2check_4_23");
+        customCheckbox("n_Tim2check_4_24");
+		
+        customCheckbox("n_Tim2check_5_01");
+        customCheckbox("n_Tim2check_5_02");
+        customCheckbox("n_Tim2check_5_03");
+        customCheckbox("n_Tim2check_5_04");
+        customCheckbox("n_Tim2check_5_05");
+        customCheckbox("n_Tim2check_5_06");
+        customCheckbox("n_Tim2check_5_07");
+        customCheckbox("n_Tim2check_5_08");
+        customCheckbox("n_Tim2check_5_09");
+        customCheckbox("n_Tim2check_5_10");
+        customCheckbox("n_Tim2check_5_11");
+        customCheckbox("n_Tim2check_5_12");
+        customCheckbox("n_Tim2check_5_13");
+        customCheckbox("n_Tim2check_5_14");
+        customCheckbox("n_Tim2check_5_15");
+        customCheckbox("n_Tim2check_5_16");
+        customCheckbox("n_Tim2check_5_17");
+        customCheckbox("n_Tim2check_5_18");
+        customCheckbox("n_Tim2check_5_19");
+        customCheckbox("n_Tim2check_5_20");
+        customCheckbox("n_Tim2check_5_21");
+        customCheckbox("n_Tim2check_5_22");
+        customCheckbox("n_Tim2check_5_23");
+        customCheckbox("n_Tim2check_5_24");
+		
+        customCheckbox("n_Tim2check_6_01");
+        customCheckbox("n_Tim2check_6_02");
+        customCheckbox("n_Tim2check_6_03");
+        customCheckbox("n_Tim2check_6_04");
+        customCheckbox("n_Tim2check_6_05");
+        customCheckbox("n_Tim2check_6_06");
+        customCheckbox("n_Tim2check_6_07");
+        customCheckbox("n_Tim2check_6_08");
+        customCheckbox("n_Tim2check_6_09");
+        customCheckbox("n_Tim2check_6_10");
+        customCheckbox("n_Tim2check_6_11");
+        customCheckbox("n_Tim2check_6_12");
+        customCheckbox("n_Tim2check_6_13");
+        customCheckbox("n_Tim2check_6_14");
+        customCheckbox("n_Tim2check_6_15");
+        customCheckbox("n_Tim2check_6_16");
+        customCheckbox("n_Tim2check_6_17");
+        customCheckbox("n_Tim2check_6_18");
+        customCheckbox("n_Tim2check_6_19");
+        customCheckbox("n_Tim2check_6_20");
+        customCheckbox("n_Tim2check_6_21");
+        customCheckbox("n_Tim2check_6_22");
+        customCheckbox("n_Tim2check_6_23");
+        customCheckbox("n_Tim2check_6_24");
+		
+        customCheckbox("n_Tim2check_7_01");
+        customCheckbox("n_Tim2check_7_02");
+        customCheckbox("n_Tim2check_7_03");
+        customCheckbox("n_Tim2check_7_04");
+        customCheckbox("n_Tim2check_7_05");
+        customCheckbox("n_Tim2check_7_06");
+        customCheckbox("n_Tim2check_7_07");
+        customCheckbox("n_Tim2check_7_08");
+        customCheckbox("n_Tim2check_7_09");
+        customCheckbox("n_Tim2check_7_10");
+        customCheckbox("n_Tim2check_7_11");
+        customCheckbox("n_Tim2check_7_12");
+        customCheckbox("n_Tim2check_7_13");
+        customCheckbox("n_Tim2check_7_14");
+        customCheckbox("n_Tim2check_7_15");
+        customCheckbox("n_Tim2check_7_16");
+        customCheckbox("n_Tim2check_7_17");
+        customCheckbox("n_Tim2check_7_18");
+        customCheckbox("n_Tim2check_7_19");
+        customCheckbox("n_Tim2check_7_20");
+        customCheckbox("n_Tim2check_7_21");
+        customCheckbox("n_Tim2check_7_22");
+        customCheckbox("n_Tim2check_7_23");
+        customCheckbox("n_Tim2check_7_24");
+
+    })
+</script>
+
+
+
+
+</head> 
+<body>
+
+
+  
+
+  
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+
+
+
+
+<div data-role="content">
+
+
+<ul data-role="listview" data-inset="true">	
+<li>
+ <table><tr>
+        <td width="30px"></td>
+        <td><a href="lpc.cgi/900"  rel="external">WRÓÆ</a></td>
+		<td width="40px"></td>
+		<td><a href="lpc.cgi/altuklad"  rel="external">UK£AD STRONY</a></td>
+		<td></td>
+		<td><font size="4" color="red"><%v_mailwysl%></font></td>
+		</tr></table>
+</li>  
+</ul>
+
+
+	
+<form method="get" action="lpc.cgi/<%v_Tim2form%>" data-ajax="false">
+	
+
+
+
+
+<ul data-role="listview" data-inset="true">
+		
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="green"><b>Sygna³ IR<%v_Tim2nrA%> - IR<%v_Tim2nrB%></b></font> 
+	  </li>
+
+      <li class="ui-field-contain">	  
+	  <table><tr><td width="90px"><legend><b>Odczyt </b></legend></td><td> <%v_Tim2stanir%></td></tr></table>
+	  <p>wyslany sygna³ IR</p> 
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Nazwa Sygna³u IR<%v_Tim2nrA%></b> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAMVSURBVDhPxZNNaB1VGIbPOfOTmfzcm6bpvdHk0qS3YG9MhXZhhZaCEDUrCy67KLhQoSiI2IUutW78A0WhuKsUulHUimCR0ILRBpsgrWmNmoitTQm3M3PnzsyZc+b8fd5sGmbbjd/+4Xvf93s/HEURetAhDwpucf8fjO97ZtZv8zfOJOgH7ESub7QitkEeNhJQYWFigxHEsBqWU0f2vdTc+RRP/G343JUTunqzMcn8fipQrmziYkSKnjGHY0Igs1RFsvEk5nfWyNzhl5veiW3PsbfY2J8jPywUM8RmoFIjmAUUQFqOYjsd3toz8sxQZUflofTH3z8rBVYdZ/f4ZgoiVTLsSsb7WEHSXOWFCDtGJ63p4Vf2VV7dPfScwn7A10twpnmGUCBQpHCCnK4yHQZC2Wnim3z3ow8fr1dmBdQw1HKpMqPKsOyj3Mko7tK+kNqRsFJthzFGtHm4cXKyOicMWduc/3bpDIVAEijBrEAi8nG7sdc7NqAOBhteNxwgtHV0z8lHBp4FNLLavnJh6XQE18GTuTYlmDNhYveJseNzE28+3Tg1oZ4cDA7MNl+bHj7moZH19vL5xQ9vF9dwtS83Xiq2Gmbfr2fvPsQgbFV9uz5TbQ7O7KJZNDN6wEL9f4W/fr7wzpr6abTupmCBxlTh0uZ7yNpw6Lmls/NrXwLK9u5oPTZ+xEWV1fjaRwtvLWeXcU0ltoyBxzzPddlzR5qOLW/D32cXP/l+/QuGM22Z1c6NDy6evhpesmooMRBq1VW9W4qezNJmwQ1jRjv4X3Tr04WPL/zz9c105d2Lb/8cXCJVXQBkAkccUYl54RR0C96u5+Nf1bxdBgkgjk0jM0amxr3J63eXYYxiR+FeHgQrhP3C9ajD2+ryixvb9Qz+1CIZKrQTCMWHzF10ayW+aoY5JZIRYBp1c6yE78jR4A85Vdlfkn1w+OidXzIWuHkKlEGqZQJpN+cyx0mAOh1UFKTb1hsr3X5af2H29ZLsTRK+cf7UdyvfQB3ARdggVyPAyEiMXKQI4N6Thfb0YOv95987NHFIxfAfeFnJde7qMNIAAAAASUVORK5CYII="/></legend>
+	  <input type="text" name="n_Tim2txtirA" size="39" maxlength="39" value="<%v_Tim2txtirA%>">
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <legend><b>Nazwa Sygna³u IR<%v_Tim2nrB%></b> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAC1SURBVDhP7ZNBCsMgEEWrUQkuxQvk/ofyAIrLEDBq/yBN0y5EkkU3nZ3O+/7P4LAY4+Nq8atC0jE47/seQljXtdbaeYsxprW21gohGkbO3nso6aVuAQAG+DAgZ+fcPM/TNEHbcUaunPO2bcuyvJ2bEme0OwUAGODDgGI35WCd4VvT/osHJ/7CfjswpdR43jNMsY0xUsr+32xdYIA/FoNzjtv+VjQB9CmlUko70laNZ/4ib037CbzMfTo6H0BOAAAAAElFTkSuQmCC"/></legend>
+	  <input type="text" name="n_Tim2txtirB" size="39" maxlength="39" value="<%v_Tim2txtirB%>">
+	  </li>
+	  	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend><b>Status Timera:</b></legend></td><td></td>
+	  <td width="150px"><select name="n_Tim2sela"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_Tim2sela1%> >OFF</option><option value="on" <%v_Tim2sela2%>  >ON</option></select></td></tr></table>
+	  </li>
+	  
+   
+   </ul>
+
+
+	
+	
+	
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="green">Poniedzia³ek</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_Tim2check_1_01" type="checkbox" <%v_Tim2check_1_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_Tim2check_1_02" type="checkbox" <%v_Tim2check_1_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_03" type="checkbox" <%v_Tim2check_1_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_Tim2check_1_04" type="checkbox" <%v_Tim2check_1_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_05" type="checkbox" <%v_Tim2check_1_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_Tim2check_1_06" type="checkbox" <%v_Tim2check_1_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_07" type="checkbox" <%v_Tim2check_1_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_Tim2check_1_08" type="checkbox" <%v_Tim2check_1_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_09" type="checkbox" <%v_Tim2check_1_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_Tim2check_1_10" type="checkbox" <%v_Tim2check_1_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_11" type="checkbox" <%v_Tim2check_1_11%> ><label>10</label></td>
+		<td><input name="n_Tim2check_1_12" type="checkbox" <%v_Tim2check_1_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_13" type="checkbox" <%v_Tim2check_1_13%> ><label>12</label></td>
+		<td><input name="n_Tim2check_1_14" type="checkbox" <%v_Tim2check_1_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_15" type="checkbox" <%v_Tim2check_1_15%> ><label>14</label></td>
+		<td><input name="n_Tim2check_1_16" type="checkbox" <%v_Tim2check_1_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_17" type="checkbox" <%v_Tim2check_1_17%> ><label>16</label></td>
+		<td><input name="n_Tim2check_1_18" type="checkbox" <%v_Tim2check_1_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_19" type="checkbox" <%v_Tim2check_1_19%> ><label>18</label></td>
+		<td><input name="n_Tim2check_1_20" type="checkbox" <%v_Tim2check_1_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_21" type="checkbox" <%v_Tim2check_1_21%> ><label>20</label></td>
+		<td><input name="n_Tim2check_1_22" type="checkbox" <%v_Tim2check_1_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_1_23" type="checkbox" <%v_Tim2check_1_23%> ><label>22</label></td>
+		<td><input name="n_Tim2check_1_24" type="checkbox" <%v_Tim2check_1_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+ 
+ 
+ 
+
+
+	
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="green">Wtorek</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_Tim2check_2_01" type="checkbox" <%v_Tim2check_2_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_Tim2check_2_02" type="checkbox" <%v_Tim2check_2_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_03" type="checkbox" <%v_Tim2check_2_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_Tim2check_2_04" type="checkbox" <%v_Tim2check_2_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_05" type="checkbox" <%v_Tim2check_2_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_Tim2check_2_06" type="checkbox" <%v_Tim2check_2_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_07" type="checkbox" <%v_Tim2check_2_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_Tim2check_2_08" type="checkbox" <%v_Tim2check_2_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_09" type="checkbox" <%v_Tim2check_2_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_Tim2check_2_10" type="checkbox" <%v_Tim2check_2_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_11" type="checkbox" <%v_Tim2check_2_11%> ><label>10</label></td>
+		<td><input name="n_Tim2check_2_12" type="checkbox" <%v_Tim2check_2_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_13" type="checkbox" <%v_Tim2check_2_13%> ><label>12</label></td>
+		<td><input name="n_Tim2check_2_14" type="checkbox" <%v_Tim2check_2_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_15" type="checkbox" <%v_Tim2check_2_15%> ><label>14</label></td>
+		<td><input name="n_Tim2check_2_16" type="checkbox" <%v_Tim2check_2_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_17" type="checkbox" <%v_Tim2check_2_17%> ><label>16</label></td>
+		<td><input name="n_Tim2check_2_18" type="checkbox" <%v_Tim2check_2_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_19" type="checkbox" <%v_Tim2check_2_19%> ><label>18</label></td>
+		<td><input name="n_Tim2check_2_20" type="checkbox" <%v_Tim2check_2_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_21" type="checkbox" <%v_Tim2check_2_21%> ><label>20</label></td>
+		<td><input name="n_Tim2check_2_22" type="checkbox" <%v_Tim2check_2_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_2_23" type="checkbox" <%v_Tim2check_2_23%> ><label>22</label></td>
+		<td><input name="n_Tim2check_2_24" type="checkbox" <%v_Tim2check_2_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="green">Sroda</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_Tim2check_3_01" type="checkbox" <%v_Tim2check_3_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_Tim2check_3_02" type="checkbox" <%v_Tim2check_3_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_03" type="checkbox" <%v_Tim2check_3_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_Tim2check_3_04" type="checkbox" <%v_Tim2check_3_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_05" type="checkbox" <%v_Tim2check_3_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_Tim2check_3_06" type="checkbox" <%v_Tim2check_3_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_07" type="checkbox" <%v_Tim2check_3_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_Tim2check_3_08" type="checkbox" <%v_Tim2check_3_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_09" type="checkbox" <%v_Tim2check_3_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_Tim2check_3_10" type="checkbox" <%v_Tim2check_3_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_11" type="checkbox" <%v_Tim2check_3_11%> ><label>10</label></td>
+		<td><input name="n_Tim2check_3_12" type="checkbox" <%v_Tim2check_3_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_13" type="checkbox" <%v_Tim2check_3_13%> ><label>12</label></td>
+		<td><input name="n_Tim2check_3_14" type="checkbox" <%v_Tim2check_3_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_15" type="checkbox" <%v_Tim2check_3_15%> ><label>14</label></td>
+		<td><input name="n_Tim2check_3_16" type="checkbox" <%v_Tim2check_3_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_17" type="checkbox" <%v_Tim2check_3_17%> ><label>16</label></td>
+		<td><input name="n_Tim2check_3_18" type="checkbox" <%v_Tim2check_3_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_19" type="checkbox" <%v_Tim2check_3_19%> ><label>18</label></td>
+		<td><input name="n_Tim2check_3_20" type="checkbox" <%v_Tim2check_3_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_21" type="checkbox" <%v_Tim2check_3_21%> ><label>20</label></td>
+		<td><input name="n_Tim2check_3_22" type="checkbox" <%v_Tim2check_3_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_3_23" type="checkbox" <%v_Tim2check_3_23%> ><label>22</label></td>
+		<td><input name="n_Tim2check_3_24" type="checkbox" <%v_Tim2check_3_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="green">Czwartek</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_Tim2check_4_01" type="checkbox" <%v_Tim2check_4_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_Tim2check_4_02" type="checkbox" <%v_Tim2check_4_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_03" type="checkbox" <%v_Tim2check_4_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_Tim2check_4_04" type="checkbox" <%v_Tim2check_4_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_05" type="checkbox" <%v_Tim2check_4_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_Tim2check_4_06" type="checkbox" <%v_Tim2check_4_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_07" type="checkbox" <%v_Tim2check_4_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_Tim2check_4_08" type="checkbox" <%v_Tim2check_4_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_09" type="checkbox" <%v_Tim2check_4_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_Tim2check_4_10" type="checkbox" <%v_Tim2check_4_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_11" type="checkbox" <%v_Tim2check_4_11%> ><label>10</label></td>
+		<td><input name="n_Tim2check_4_12" type="checkbox" <%v_Tim2check_4_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_13" type="checkbox" <%v_Tim2check_4_13%> ><label>12</label></td>
+		<td><input name="n_Tim2check_4_14" type="checkbox" <%v_Tim2check_4_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_15" type="checkbox" <%v_Tim2check_4_15%> ><label>14</label></td>
+		<td><input name="n_Tim2check_4_16" type="checkbox" <%v_Tim2check_4_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_17" type="checkbox" <%v_Tim2check_4_17%> ><label>16</label></td>
+		<td><input name="n_Tim2check_4_18" type="checkbox" <%v_Tim2check_4_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_19" type="checkbox" <%v_Tim2check_4_19%> ><label>18</label></td>
+		<td><input name="n_Tim2check_4_20" type="checkbox" <%v_Tim2check_4_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_21" type="checkbox" <%v_Tim2check_4_21%> ><label>20</label></td>
+		<td><input name="n_Tim2check_4_22" type="checkbox" <%v_Tim2check_4_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_4_23" type="checkbox" <%v_Tim2check_4_23%> ><label>22</label></td>
+		<td><input name="n_Tim2check_4_24" type="checkbox" <%v_Tim2check_4_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="green">Piatek</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_Tim2check_5_01" type="checkbox" <%v_Tim2check_5_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_Tim2check_5_02" type="checkbox" <%v_Tim2check_5_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_03" type="checkbox" <%v_Tim2check_5_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_Tim2check_5_04" type="checkbox" <%v_Tim2check_5_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_05" type="checkbox" <%v_Tim2check_5_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_Tim2check_5_06" type="checkbox" <%v_Tim2check_5_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_07" type="checkbox" <%v_Tim2check_5_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_Tim2check_5_08" type="checkbox" <%v_Tim2check_5_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_09" type="checkbox" <%v_Tim2check_5_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_Tim2check_5_10" type="checkbox" <%v_Tim2check_5_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_11" type="checkbox" <%v_Tim2check_5_11%> ><label>10</label></td>
+		<td><input name="n_Tim2check_5_12" type="checkbox" <%v_Tim2check_5_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_13" type="checkbox" <%v_Tim2check_5_13%> ><label>12</label></td>
+		<td><input name="n_Tim2check_5_14" type="checkbox" <%v_Tim2check_5_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_15" type="checkbox" <%v_Tim2check_5_15%> ><label>14</label></td>
+		<td><input name="n_Tim2check_5_16" type="checkbox" <%v_Tim2check_5_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_17" type="checkbox" <%v_Tim2check_5_17%> ><label>16</label></td>
+		<td><input name="n_Tim2check_5_18" type="checkbox" <%v_Tim2check_5_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_19" type="checkbox" <%v_Tim2check_5_19%> ><label>18</label></td>
+		<td><input name="n_Tim2check_5_20" type="checkbox" <%v_Tim2check_5_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_21" type="checkbox" <%v_Tim2check_5_21%> ><label>20</label></td>
+		<td><input name="n_Tim2check_5_22" type="checkbox" <%v_Tim2check_5_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_5_23" type="checkbox" <%v_Tim2check_5_23%> ><label>22</label></td>
+		<td><input name="n_Tim2check_5_24" type="checkbox" <%v_Tim2check_5_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="green">Sobota</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_Tim2check_6_01" type="checkbox" <%v_Tim2check_6_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_Tim2check_6_02" type="checkbox" <%v_Tim2check_6_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_03" type="checkbox" <%v_Tim2check_6_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_Tim2check_6_04" type="checkbox" <%v_Tim2check_6_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_05" type="checkbox" <%v_Tim2check_6_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_Tim2check_6_06" type="checkbox" <%v_Tim2check_6_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_07" type="checkbox" <%v_Tim2check_6_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_Tim2check_6_08" type="checkbox" <%v_Tim2check_6_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_09" type="checkbox" <%v_Tim2check_6_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_Tim2check_6_10" type="checkbox" <%v_Tim2check_6_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_11" type="checkbox" <%v_Tim2check_6_11%> ><label>10</label></td>
+		<td><input name="n_Tim2check_6_12" type="checkbox" <%v_Tim2check_6_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_13" type="checkbox" <%v_Tim2check_6_13%> ><label>12</label></td>
+		<td><input name="n_Tim2check_6_14" type="checkbox" <%v_Tim2check_6_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_15" type="checkbox" <%v_Tim2check_6_15%> ><label>14</label></td>
+		<td><input name="n_Tim2check_6_16" type="checkbox" <%v_Tim2check_6_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_17" type="checkbox" <%v_Tim2check_6_17%> ><label>16</label></td>
+		<td><input name="n_Tim2check_6_18" type="checkbox" <%v_Tim2check_6_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_19" type="checkbox" <%v_Tim2check_6_19%> ><label>18</label></td>
+		<td><input name="n_Tim2check_6_20" type="checkbox" <%v_Tim2check_6_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_21" type="checkbox" <%v_Tim2check_6_21%> ><label>20</label></td>
+		<td><input name="n_Tim2check_6_22" type="checkbox" <%v_Tim2check_6_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_6_23" type="checkbox" <%v_Tim2check_6_23%> ><label>22</label></td>
+		<td><input name="n_Tim2check_6_24" type="checkbox" <%v_Tim2check_6_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+
+
+
+
+<table><tr><td width="500px">
+<ul data-role="listview" data-inset="true">		  
+<li>
+    <fieldset data-role="controlgroup" data-type="vertical">
+	    <legend><font size="4" color="green">Niedziela</font>&nbsp;&nbsp;&nbsp;<font size="2" color="black">godzina</font></legend>
+	 <table>
+	   <tr></tr>	  
+	  <tr>
+        <td><input name="n_Tim2check_7_01" type="checkbox" <%v_Tim2check_7_01%> ><label>&nbsp;0</label></td>
+		<td><input name="n_Tim2check_7_02" type="checkbox" <%v_Tim2check_7_02%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_03" type="checkbox" <%v_Tim2check_7_03%> ><label>&nbsp;2</label></td>
+		<td><input name="n_Tim2check_7_04" type="checkbox" <%v_Tim2check_7_04%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_05" type="checkbox" <%v_Tim2check_7_05%> ><label>&nbsp;4</label></td>
+		<td><input name="n_Tim2check_7_06" type="checkbox" <%v_Tim2check_7_06%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_07" type="checkbox" <%v_Tim2check_7_07%> ><label>&nbsp;6</label></td>
+		<td><input name="n_Tim2check_7_08" type="checkbox" <%v_Tim2check_7_08%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_09" type="checkbox" <%v_Tim2check_7_09%> ><label>&nbsp;8</label></td>
+		<td><input name="n_Tim2check_7_10" type="checkbox" <%v_Tim2check_7_10%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_11" type="checkbox" <%v_Tim2check_7_11%> ><label>10</label></td>
+		<td><input name="n_Tim2check_7_12" type="checkbox" <%v_Tim2check_7_12%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_13" type="checkbox" <%v_Tim2check_7_13%> ><label>12</label></td>
+		<td><input name="n_Tim2check_7_14" type="checkbox" <%v_Tim2check_7_14%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_15" type="checkbox" <%v_Tim2check_7_15%> ><label>14</label></td>
+		<td><input name="n_Tim2check_7_16" type="checkbox" <%v_Tim2check_7_16%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_17" type="checkbox" <%v_Tim2check_7_17%> ><label>16</label></td>
+		<td><input name="n_Tim2check_7_18" type="checkbox" <%v_Tim2check_7_18%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_19" type="checkbox" <%v_Tim2check_7_19%> ><label>18</label></td>
+		<td><input name="n_Tim2check_7_20" type="checkbox" <%v_Tim2check_7_20%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_21" type="checkbox" <%v_Tim2check_7_21%> ><label>20</label></td>
+		<td><input name="n_Tim2check_7_22" type="checkbox" <%v_Tim2check_7_22%> ><label>&nbsp;&nbsp;</label></td>
+        <td><input name="n_Tim2check_7_23" type="checkbox" <%v_Tim2check_7_23%> ><label>22</label></td>
+		<td><input name="n_Tim2check_7_24" type="checkbox" <%v_Tim2check_7_24%> ><label>&nbsp;&nbsp;</label></td>
+	  </tr>
+	 </table>	
+    </fieldset>
+</li>	 
+</ul>   </td></tr></table>
+
+
+
+<table><tr><td width="650px">
+<ul data-role="listview" data-inset="true">	
+<li>
+  <table><tr>Zaznacz&nbsp;&nbsp;jak&nbsp;&nbsp;dla&nbsp;&nbsp;Poniedzia³ku&nbsp;&nbsp;dni:</tr><tr>
+        <td width="100px"><button type="submit" name="n_Tim2_zap_a">Wt-Ni</button></td>
+		<td width="100px"><button type="submit" name="n_Tim2_zap_b">Wt-Pi</button></td>
+		<td width="100px"><button type="submit" name="n_Tim2_zap_c">Odznacz</button></td></tr></table>
+</li>  
+</ul>
+ </td></tr></table> 
+
+	
+
+<table><tr><td width="650px">	
+<li class="ui-body ui-body-b">
+            <fieldset class="ui-grid-a">
+                    <div class="ui-block-a"><table><tr><td width="200px"><button type="submit" name="n_Tim2_zap_d">Zapisz Ustawienia</button></td></tr></table></div>
+            </fieldset>
+        </li>
+ </td></tr></table>  
+ </form>    
+
+	</div>
+	
+	
+	
+	
+	
+	
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

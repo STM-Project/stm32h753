@@ -1,0 +1,157 @@
+
+<html>
+<head>
+    <meta charset="utf-8">
+	
+	
+   
+    <script type="application/javascript">
+	
+	
+   
+
+
+
+    function draw() {
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+		
+	     
+
+
+var inputData = 
+[
+<%E_001%>,
+<%E_002%>,
+<%E_003%>,
+<%E_004%>,
+<%E_005%>,
+<%E_006%>,
+<%E_007%>,
+<%E_008%>,
+<%E_009%>,
+<%E_010%>,
+<%E_011%>,
+<%E_012%>,
+<%E_013%>,
+<%E_014%>,
+<%E_015%>,
+<%E_016%>,
+<%E_017%>,
+<%E_018%>,
+<%E_019%>,
+<%E_020%>,
+<%E_021%>,
+<%E_022%>,
+<%E_023%>,
+<%E_024%>,
+<%E_025%>,
+<%E_026%>,
+<%E_027%>,
+<%E_028%>,
+<%E_029%>,
+<%E_030%>
+
+
+];
+
+
+var inputday  = [23.03,24.03,25.03,26.03];
+ 
+var canvasWidth = 700;
+var canvasheight = 1300;
+var max_inputData = 299;
+var jk,kol;
+ 
+// miejsce, od którego zaczynamy rysowanie
+var x_from = 50;
+var y_from = -100;
+
+ 
+// co ile - odleg³oœæ miêdzy s³upkami
+var step = Math.round(canvasWidth / inputData.length) -5;     jk=1;  kol=0;
+ 
+for (var i = 0; i < inputData.length; i++) {
+
+    // pozycja x nastêpnego s³upka
+    var x_next = x_from + (i * step) - 20;
+ 
+    // rysowanie s³upka...
+    ctx.fillStyle = "rgba(250, 150, 250, 1)";
+    if(inputData[i]>max_inputData)  ctx.fillRect(x_next+5, 300-y_from, 9, -max_inputData);
+	else                            ctx.fillRect(x_next+5, 300-y_from, 9, -inputData[i]);
+	
+	// oraz jego cienia
+	ctx.fillStyle = "rgba(10, 9, 50, 0.4)";
+	if(inputData[i]>max_inputData)  ctx.fillRect(x_next+5, 300-y_from, 13, -max_inputData);
+	else                            ctx.fillRect(x_next+5, 300-y_from, 13, -inputData[i]);
+	
+	
+	//wartosci nad slupkami
+	if((i%2)==0){  ctx.fillStyle = "rgba(0, 0, 0, 1)";    }
+	else        {  ctx.fillStyle = "rgba(0, 0, 0, 0.4)";  }
+	ctx.font = "12px Arial";    
+	
+
+	if(inputData[i]>max_inputData)
+	{
+	   ctx.fillText(">>",      x_next-0, (300-y_from)-(max_inputData+10));
+	}
+	else  
+    {
+	       if((inputData[i]>99)&&(inputData[i]<1000))  ctx.fillText(inputData[i], x_next-5, (300-y_from)-(inputData[i]+10)); 
+	  else if((inputData[i]>-1)&&(inputData[i]<10))    ctx.fillText(inputData[i], x_next+3, (300-y_from)-(inputData[i]+10)); 
+	  else if((inputData[i]>9)&&(inputData[i]<100))    ctx.fillText(inputData[i], x_next-0, (300-y_from)-(inputData[i]+10)); 
+	
+	}
+	
+    ctx.fillStyle = "rgba(200, 200, 200, 1)";
+	ctx.fillRect(x_next+5, (300-y_from)+10, 2, 6);
+
+     ctx.fillStyle = "rgba(0, 0, 0, 1)";    ctx.fillText(jk, x_next, (300-y_from)+30); 
+
+
+	 if(jk==1){  ctx.fillStyle = "rgba(0, 0, 0, 1)";    ctx.fillText(inputday[kol++], x_next, (300-y_from)+60);  }
+	 
+	 ctx.fillStyle = "rgba(0, 0, 0, 1)";     ctx.fillText(jk,      x_next, (300-y_from)+30);   
+	 
+	 if(jk==24) jk=1;  else jk++;
+   
+}
+
+
+	
+	ctx.fillStyle = "rgba(200, 200, 200, 1)";
+	ctx.fillRect(x_from-30, (300-y_from)+10, inputData.length*step+10, 2);
+	
+
+	
+	
+	
+
+
+ctx.fillStyle = "red";
+ctx.font = "24pt Arial";
+ctx.shadowColor = "rgba( 0, 0, 0, 0.2 )";
+ctx.shadowBlur = 7;
+ctx.shadowOffsetX = 4;
+ctx.shadowOffsetY = 4;
+ctx.fillText("Pobor pradu w kWh", x_from, (300-y_from)-max_inputData-30 );
+
+
+
+  
+   }
+	
+	
+     
+    </script>
+ </head>
+  
+ <body onload="draw()">
+ 
+     <canvas id="canvas" width="2000" height="1300"></canvas>
+     
+ </body>
+   
+</html>

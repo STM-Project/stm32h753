@@ -1,0 +1,1084 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Telefony, maski</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	
+<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+<link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min_bez_chekbox.css" /> 
+
+	<link rel="stylesheet" href="https://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="https://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="https://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+
+ 
+<script>
+
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return true;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+	
+	if (kodKlawisza == 8) {
+        return true;  // backspace
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00';    
+  }}
+}
+</script>
+
+
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+
+
+
+
+  <style type="text/css">
+	.custom-checkbox{
+		width: 16px;
+		height: 16px;
+		display: inline-block;
+		position: relative;
+		z-index: 1;
+		top: 3px;
+		background: url('data:image/png;base64,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') no-repeat 0 0 transparent;
+	}
+	.custom-checkbox:hover{
+		background-position: 0 -16px;
+	}
+	.custom-checkbox.selected{
+		background-position: 0 -32px;
+	}
+	.custom-checkbox input[type="checkbox"]{
+		margin: 0;
+		position: absolute;
+		z-index: 2;            
+		cursor: pointer;
+		outline: none;
+		opacity: 0;
+		/* CSS hacks for older browsers */
+		_noFocusLine: expression(this.hideFocus=true); 
+		-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+		filter: alpha(opacity=0);
+		-khtml-opacity: 0;
+		-moz-opacity: 0;
+	}
+	/* Let's Beautify Our Form */
+    form{
+        margin: 0px;
+    }
+    label{
+        display: block;
+        padding: 2px 0;
+    }
+    input[type="submit"]{
+        float: left;
+        background: #f2f2f2;
+        border: 1px solid #CCCCCC;
+        border-radius: 4px;
+        margin-top: 20px;
+        padding: 4px 10px;
+        cursor: pointer;
+        outline: none;
+    }
+	input[type="submit"]:hover{
+        color: #fff;
+        border-color: #1b7aa9;
+        background-color: #239fdb;
+    }
+</style>
+
+<script type="text/javascript">
+    function customCheckbox(checkboxName){
+        var checkBox = $('input[name="'+ checkboxName +'"]');
+        $(checkBox).each(function(){
+            $(this).wrap( "<span class='custom-checkbox'></span>" );
+            if($(this).is(':checked')){
+                $(this).parent().addClass("selected");
+            }
+        });
+        $(checkBox).click(function(){
+            $(this).parent().toggleClass("selected");
+        });
+    }
+    $(document).ready(function (){
+        customCheckbox("n_tel001chWe009");
+        customCheckbox("n_tel001chWe010");
+        customCheckbox("n_tel001chWe011");
+        customCheckbox("n_tel001chWe012");
+        customCheckbox("n_tel001chWe013");
+        customCheckbox("n_tel001chWe014");
+        customCheckbox("n_tel001chWe015");
+        customCheckbox("n_tel001chWe016");
+        customCheckbox("n_tel002chWe009");
+        customCheckbox("n_tel002chWe010");
+        customCheckbox("n_tel002chWe011");
+        customCheckbox("n_tel002chWe012");
+        customCheckbox("n_tel002chWe013");
+        customCheckbox("n_tel002chWe014");
+        customCheckbox("n_tel002chWe015");
+        customCheckbox("n_tel002chWe016");
+        customCheckbox("n_tel003chWe009");
+        customCheckbox("n_tel003chWe010");
+        customCheckbox("n_tel003chWe011");
+        customCheckbox("n_tel003chWe012");
+        customCheckbox("n_tel003chWe013");
+        customCheckbox("n_tel003chWe014");
+        customCheckbox("n_tel003chWe015");
+        customCheckbox("n_tel003chWe016");
+        customCheckbox("n_tel004chWe009");
+        customCheckbox("n_tel004chWe010");
+        customCheckbox("n_tel004chWe011");
+        customCheckbox("n_tel004chWe012");
+        customCheckbox("n_tel004chWe013");
+        customCheckbox("n_tel004chWe014");
+        customCheckbox("n_tel004chWe015");
+        customCheckbox("n_tel004chWe016");
+        customCheckbox("n_tel005chWe009");
+        customCheckbox("n_tel005chWe010");
+        customCheckbox("n_tel005chWe011");
+        customCheckbox("n_tel005chWe012");
+        customCheckbox("n_tel005chWe013");
+        customCheckbox("n_tel005chWe014");
+        customCheckbox("n_tel005chWe015");
+        customCheckbox("n_tel005chWe016");
+        customCheckbox("n_tel006chWe009");
+        customCheckbox("n_tel006chWe010");
+        customCheckbox("n_tel006chWe011");
+        customCheckbox("n_tel006chWe012");
+        customCheckbox("n_tel006chWe013");
+        customCheckbox("n_tel006chWe014");
+        customCheckbox("n_tel006chWe015");
+        customCheckbox("n_tel006chWe016");
+        customCheckbox("n_tel007chWe009");
+        customCheckbox("n_tel007chWe010");
+        customCheckbox("n_tel007chWe011");
+        customCheckbox("n_tel007chWe012");
+        customCheckbox("n_tel007chWe013");
+        customCheckbox("n_tel007chWe014");
+        customCheckbox("n_tel007chWe015");
+        customCheckbox("n_tel007chWe016");
+        customCheckbox("n_tel008chWe009");
+        customCheckbox("n_tel008chWe010");
+        customCheckbox("n_tel008chWe011");
+        customCheckbox("n_tel008chWe012");
+        customCheckbox("n_tel008chWe013");
+        customCheckbox("n_tel008chWe014");
+        customCheckbox("n_tel008chWe015");
+        customCheckbox("n_tel008chWe016");
+        customCheckbox("n_tel009chWe009");
+        customCheckbox("n_tel009chWe010");
+        customCheckbox("n_tel009chWe011");
+        customCheckbox("n_tel009chWe012");
+        customCheckbox("n_tel009chWe013");
+        customCheckbox("n_tel009chWe014");
+        customCheckbox("n_tel009chWe015");
+        customCheckbox("n_tel009chWe016");
+        customCheckbox("n_tel010chWe009");
+        customCheckbox("n_tel010chWe010");
+        customCheckbox("n_tel010chWe011");
+        customCheckbox("n_tel010chWe012");
+        customCheckbox("n_tel010chWe013");
+        customCheckbox("n_tel010chWe014");
+        customCheckbox("n_tel010chWe015");
+        customCheckbox("n_tel010chWe016");	
+        customCheckbox("n_tel001chT008");
+		customCheckbox("n_tel001chT009");
+		customCheckbox("n_tel001chT010");
+		customCheckbox("n_tel001chT011");
+		customCheckbox("n_tel001chT012");
+		customCheckbox("n_tel001chT013");		
+		customCheckbox("n_tel001chT014");		
+		customCheckbox("n_tel001chT015");		
+		customCheckbox("n_tel001chT016");
+        customCheckbox("n_tel002chT008");
+		customCheckbox("n_tel002chT009");
+		customCheckbox("n_tel002chT010");
+		customCheckbox("n_tel002chT011");
+		customCheckbox("n_tel002chT012");
+		customCheckbox("n_tel002chT013");
+		customCheckbox("n_tel002chT014");		
+		customCheckbox("n_tel002chT015");		
+		customCheckbox("n_tel002chT016");
+        customCheckbox("n_tel003chT008");
+		customCheckbox("n_tel003chT009");
+		customCheckbox("n_tel003chT010");
+		customCheckbox("n_tel003chT011");
+		customCheckbox("n_tel003chT012");
+		customCheckbox("n_tel003chT013");
+		customCheckbox("n_tel003chT014");		
+		customCheckbox("n_tel003chT015");		
+		customCheckbox("n_tel003chT016");
+        customCheckbox("n_tel004chT008");
+		customCheckbox("n_tel004chT009");
+		customCheckbox("n_tel004chT010");
+		customCheckbox("n_tel004chT011");
+		customCheckbox("n_tel004chT012");
+		customCheckbox("n_tel004chT013");
+		customCheckbox("n_tel004chT014");		
+		customCheckbox("n_tel004chT015");		
+		customCheckbox("n_tel004chT016");
+        customCheckbox("n_tel005chT008");
+		customCheckbox("n_tel005chT009");
+		customCheckbox("n_tel005chT010");
+		customCheckbox("n_tel005chT011");
+		customCheckbox("n_tel005chT012");
+		customCheckbox("n_tel005chT013");
+		customCheckbox("n_tel005chT014");		
+		customCheckbox("n_tel005chT015");		
+		customCheckbox("n_tel005chT016");
+        customCheckbox("n_tel006chT008");
+		customCheckbox("n_tel006chT009");
+		customCheckbox("n_tel006chT010");
+		customCheckbox("n_tel006chT011");
+		customCheckbox("n_tel006chT012");
+		customCheckbox("n_tel006chT013");
+		customCheckbox("n_tel006chT014");		
+		customCheckbox("n_tel006chT015");		
+		customCheckbox("n_tel006chT016");
+        customCheckbox("n_tel007chT008");
+		customCheckbox("n_tel007chT009");
+		customCheckbox("n_tel007chT010");
+		customCheckbox("n_tel007chT011");
+		customCheckbox("n_tel007chT012");
+		customCheckbox("n_tel007chT013");
+		customCheckbox("n_tel007chT014");		
+		customCheckbox("n_tel007chT015");		
+		customCheckbox("n_tel007chT016");
+        customCheckbox("n_tel008chT008");
+		customCheckbox("n_tel008chT009");
+		customCheckbox("n_tel008chT010");
+		customCheckbox("n_tel008chT011");
+		customCheckbox("n_tel008chT012");
+		customCheckbox("n_tel008chT013");
+		customCheckbox("n_tel008chT014");		
+		customCheckbox("n_tel008chT015");		
+		customCheckbox("n_tel008chT016");
+        customCheckbox("n_tel009chT008");
+		customCheckbox("n_tel009chT009");
+		customCheckbox("n_tel009chT010");
+		customCheckbox("n_tel009chT011");
+		customCheckbox("n_tel009chT012");
+		customCheckbox("n_tel009chT013");
+		customCheckbox("n_tel009chT014");		
+		customCheckbox("n_tel009chT015");		
+		customCheckbox("n_tel009chT016");
+        customCheckbox("n_tel010chT008");
+		customCheckbox("n_tel010chT009");
+		customCheckbox("n_tel010chT010");
+		customCheckbox("n_tel010chT011");
+		customCheckbox("n_tel010chT012");
+		customCheckbox("n_tel010chT013");
+		customCheckbox("n_tel010chT014");		
+		customCheckbox("n_tel010chT015");		
+		customCheckbox("n_tel010chT016");
+		
+		
+    })
+</script>
+
+
+
+
+</head> 
+<body>
+
+
+  
+
+  
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+<div data-role="collapsible" data-collapsed="true" data-theme="b" data-content-theme="c">
+    <h4><table><tr>
+	<td><%v_slvaktual%></td><td></td><td></td>
+	<td><%v_ttime2%></td><td></td><td></td>
+	<td><font size="4" color="yellow"><%v_mailwysl%></font></td>
+	</tr></table></h4>
+    <ul data-role="listview">
+        <li><a href="lpc.cgi/000"  rel="external">WRÓÆ</a></li>
+        <li><a href="lpc.cgi/altuklad"  rel="external">Uk³ad strony</a></li>
+        <li><a href="lpc.cgi/slave000"  rel="external">Wybierz: Master</a></li>
+        <li><a href="lpc.cgi/slave001"  rel="external">Wybierz: <%v_slvtxt001%></a></li>
+        <li><a href="lpc.cgi/slave002"  rel="external">Wybierz: <%v_slvtxt002%></a></li>
+    </ul>
+</div>
+
+
+
+<div data-role="content">
+
+
+	
+<form method="get" action="lpc.cgi/A117" data-ajax="false">
+	
+
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">1.<%v_tel001txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel001nr" size="15" maxlength="15" value="<%v_tel001nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel001txt" size="39" maxlength="39" value="<%v_tel001txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel001chWe009" type="checkbox" <%v_tel001chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel001chWe010" type="checkbox" <%v_tel001chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel001chWe011" type="checkbox" <%v_tel001chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel001chWe012" type="checkbox" <%v_tel001chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel001chWe013" type="checkbox" <%v_tel001chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel001chWe014" type="checkbox" <%v_tel001chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel001chWe015" type="checkbox" <%v_tel001chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel001chWe016" type="checkbox" <%v_tel001chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel001chT008" type="checkbox" <%v_tel001chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel001chT009" type="checkbox" <%v_tel001chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel001chT010" type="checkbox" <%v_tel001chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel001chT011" type="checkbox" <%v_tel001chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel001chT012" type="checkbox" <%v_tel001chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel001chT013" type="checkbox" <%v_tel001chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel001chT014" type="checkbox" <%v_tel001chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel001chT015" type="checkbox" <%v_tel001chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel001chT016" type="checkbox" <%v_tel001chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel001akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel001akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel001akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+	
+	
+     <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">2.<%v_tel002txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel002nr" size="15" maxlength="15" value="<%v_tel002nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel002txt" size="39" maxlength="39" value="<%v_tel002txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel002chWe009" type="checkbox" <%v_tel002chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel002chWe010" type="checkbox" <%v_tel002chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel002chWe011" type="checkbox" <%v_tel002chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel002chWe012" type="checkbox" <%v_tel002chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel002chWe013" type="checkbox" <%v_tel002chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel002chWe014" type="checkbox" <%v_tel002chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel002chWe015" type="checkbox" <%v_tel002chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel002chWe016" type="checkbox" <%v_tel002chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel002chT008" type="checkbox" <%v_tel002chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel002chT009" type="checkbox" <%v_tel002chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel002chT010" type="checkbox" <%v_tel002chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel002chT011" type="checkbox" <%v_tel002chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel002chT012" type="checkbox" <%v_tel002chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel002chT013" type="checkbox" <%v_tel002chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel002chT014" type="checkbox" <%v_tel002chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel002chT015" type="checkbox" <%v_tel002chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel002chT016" type="checkbox" <%v_tel002chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel002akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel002akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel002akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+	
+	
+	  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">3.<%v_tel003txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel003nr" size="15" maxlength="15" value="<%v_tel003nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel003txt" size="39" maxlength="39" value="<%v_tel003txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel003chWe009" type="checkbox" <%v_tel003chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel003chWe010" type="checkbox" <%v_tel003chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel003chWe011" type="checkbox" <%v_tel003chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel003chWe012" type="checkbox" <%v_tel003chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel003chWe013" type="checkbox" <%v_tel003chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel003chWe014" type="checkbox" <%v_tel003chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel003chWe015" type="checkbox" <%v_tel003chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel003chWe016" type="checkbox" <%v_tel003chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel003chT008" type="checkbox" <%v_tel003chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel003chT009" type="checkbox" <%v_tel003chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel003chT010" type="checkbox" <%v_tel003chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel003chT011" type="checkbox" <%v_tel003chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel003chT012" type="checkbox" <%v_tel003chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel003chT013" type="checkbox" <%v_tel003chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel003chT014" type="checkbox" <%v_tel003chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel003chT015" type="checkbox" <%v_tel003chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel003chT016" type="checkbox" <%v_tel003chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel003akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel003akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel003akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+  
+  
+  
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">4.<%v_tel004txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel004nr" size="15" maxlength="15" value="<%v_tel004nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel004txt" size="39" maxlength="39" value="<%v_tel004txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel004chWe009" type="checkbox" <%v_tel004chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel004chWe010" type="checkbox" <%v_tel004chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel004chWe011" type="checkbox" <%v_tel004chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel004chWe012" type="checkbox" <%v_tel004chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel004chWe013" type="checkbox" <%v_tel004chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel004chWe014" type="checkbox" <%v_tel004chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel004chWe015" type="checkbox" <%v_tel004chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel004chWe016" type="checkbox" <%v_tel004chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel004chT008" type="checkbox" <%v_tel004chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel004chT009" type="checkbox" <%v_tel004chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel004chT010" type="checkbox" <%v_tel004chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel004chT011" type="checkbox" <%v_tel004chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel004chT012" type="checkbox" <%v_tel004chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel004chT013" type="checkbox" <%v_tel004chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel004chT014" type="checkbox" <%v_tel004chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel004chT015" type="checkbox" <%v_tel004chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel004chT016" type="checkbox" <%v_tel004chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel004akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel004akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel004akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+  
+  
+  
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">5.<%v_tel005txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel005nr" size="15" maxlength="15" value="<%v_tel005nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel005txt" size="39" maxlength="39" value="<%v_tel005txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel005chWe009" type="checkbox" <%v_tel005chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel005chWe010" type="checkbox" <%v_tel005chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel005chWe011" type="checkbox" <%v_tel005chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel005chWe012" type="checkbox" <%v_tel005chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel005chWe013" type="checkbox" <%v_tel005chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel005chWe014" type="checkbox" <%v_tel005chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel005chWe015" type="checkbox" <%v_tel005chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel005chWe016" type="checkbox" <%v_tel005chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel005chT008" type="checkbox" <%v_tel005chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel005chT009" type="checkbox" <%v_tel005chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel005chT010" type="checkbox" <%v_tel005chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel005chT011" type="checkbox" <%v_tel005chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel005chT012" type="checkbox" <%v_tel005chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel005chT013" type="checkbox" <%v_tel005chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel005chT014" type="checkbox" <%v_tel005chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel005chT015" type="checkbox" <%v_tel005chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel005chT016" type="checkbox" <%v_tel005chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel005akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel005akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel005akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+  
+  
+  
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">6.<%v_tel006txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel006nr" size="15" maxlength="15" value="<%v_tel006nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel006txt" size="39" maxlength="39" value="<%v_tel006txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel006chWe009" type="checkbox" <%v_tel006chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel006chWe010" type="checkbox" <%v_tel006chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel006chWe011" type="checkbox" <%v_tel006chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel006chWe012" type="checkbox" <%v_tel006chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel006chWe013" type="checkbox" <%v_tel006chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel006chWe014" type="checkbox" <%v_tel006chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel006chWe015" type="checkbox" <%v_tel006chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel006chWe016" type="checkbox" <%v_tel006chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel006chT008" type="checkbox" <%v_tel006chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel006chT009" type="checkbox" <%v_tel006chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel006chT010" type="checkbox" <%v_tel006chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel006chT011" type="checkbox" <%v_tel006chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel006chT012" type="checkbox" <%v_tel006chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel006chT013" type="checkbox" <%v_tel006chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel006chT014" type="checkbox" <%v_tel006chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel006chT015" type="checkbox" <%v_tel006chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel006chT016" type="checkbox" <%v_tel006chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel006akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel006akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel006akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+  
+  
+  
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">7.<%v_tel007txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel007nr" size="15" maxlength="15" value="<%v_tel007nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel007txt" size="39" maxlength="39" value="<%v_tel007txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel007chWe009" type="checkbox" <%v_tel007chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel007chWe010" type="checkbox" <%v_tel007chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel007chWe011" type="checkbox" <%v_tel007chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel007chWe012" type="checkbox" <%v_tel007chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel007chWe013" type="checkbox" <%v_tel007chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel007chWe014" type="checkbox" <%v_tel007chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel007chWe015" type="checkbox" <%v_tel007chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel007chWe016" type="checkbox" <%v_tel007chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel007chT008" type="checkbox" <%v_tel007chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel007chT009" type="checkbox" <%v_tel007chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel007chT010" type="checkbox" <%v_tel007chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel007chT011" type="checkbox" <%v_tel007chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel007chT012" type="checkbox" <%v_tel007chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel007chT013" type="checkbox" <%v_tel007chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel007chT014" type="checkbox" <%v_tel007chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel007chT015" type="checkbox" <%v_tel007chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel007chT016" type="checkbox" <%v_tel007chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel007akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel007akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel007akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+  
+  
+  
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">8.<%v_tel008txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel008nr" size="15" maxlength="15" value="<%v_tel008nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel008txt" size="39" maxlength="39" value="<%v_tel008txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel008chWe009" type="checkbox" <%v_tel008chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel008chWe010" type="checkbox" <%v_tel008chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel008chWe011" type="checkbox" <%v_tel008chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel008chWe012" type="checkbox" <%v_tel008chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel008chWe013" type="checkbox" <%v_tel008chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel008chWe014" type="checkbox" <%v_tel008chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel008chWe015" type="checkbox" <%v_tel008chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel008chWe016" type="checkbox" <%v_tel008chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel008chT008" type="checkbox" <%v_tel008chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel008chT009" type="checkbox" <%v_tel008chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel008chT010" type="checkbox" <%v_tel008chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel008chT011" type="checkbox" <%v_tel008chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel008chT012" type="checkbox" <%v_tel008chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel008chT013" type="checkbox" <%v_tel008chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel008chT014" type="checkbox" <%v_tel008chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel008chT015" type="checkbox" <%v_tel008chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel008chT016" type="checkbox" <%v_tel008chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel008akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel008akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel008akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+  
+  
+  
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">9.<%v_tel009txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel009nr" size="15" maxlength="15" value="<%v_tel009nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel009txt" size="39" maxlength="39" value="<%v_tel009txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel009chWe009" type="checkbox" <%v_tel009chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel009chWe010" type="checkbox" <%v_tel009chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel009chWe011" type="checkbox" <%v_tel009chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel009chWe012" type="checkbox" <%v_tel009chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel009chWe013" type="checkbox" <%v_tel009chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel009chWe014" type="checkbox" <%v_tel009chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel009chWe015" type="checkbox" <%v_tel009chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel009chWe016" type="checkbox" <%v_tel009chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel009chT008" type="checkbox" <%v_tel009chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel009chT009" type="checkbox" <%v_tel009chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel009chT010" type="checkbox" <%v_tel009chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel009chT011" type="checkbox" <%v_tel009chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel009chT012" type="checkbox" <%v_tel009chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel009chT013" type="checkbox" <%v_tel009chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel009chT014" type="checkbox" <%v_tel009chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel009chT015" type="checkbox" <%v_tel009chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel009chT016" type="checkbox" <%v_tel009chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel009akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel009akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel009akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+  
+  
+  
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">10.<%v_tel010txt%></font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer</legend>
+	  <input type="text" name="n_tel010nr" size="15" maxlength="15" value="<%v_tel010nr%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" >
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Nazwa</legend>
+	  <input type="text" name="n_tel010txt" size="39" maxlength="39" value="<%v_tel010txt%>" >
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych wejsæ &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel010chWe009" type="checkbox" <%v_tel010chWe009%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel010chWe010" type="checkbox" <%v_tel010chWe010%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel010chWe011" type="checkbox" <%v_tel010chWe011%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel010chWe012" type="checkbox" <%v_tel010chWe012%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel010chWe013" type="checkbox" <%v_tel010chWe013%> ><label>&nbsp;5</label></td>
+		     <td></td><td><input name="n_tel010chWe014" type="checkbox" <%v_tel010chWe014%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel010chWe015" type="checkbox" <%v_tel010chWe015%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel010chWe016" type="checkbox" <%v_tel010chWe016%> ><label>&nbsp;8</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	   <li class="ui-field-contain">	
+        <legend>Maska dla kolejnych czujników &nbsp;&nbsp;<font size="3" color="red">Slave 1</font></legend>  
+	     <fieldset data-role="controlgroup" data-type="vertical">                    
+	         <table>
+	         <tr></tr><tr></tr><tr></tr>	  
+	         <tr><td></td><td></td><td></td>
+             <td></td><td><input name="n_tel010chT008" type="checkbox" <%v_tel010chT008%> ><label>&nbsp;1</label></td>
+		     <td></td><td><input name="n_tel010chT009" type="checkbox" <%v_tel010chT009%> ><label>&nbsp;2</label></td>
+             <td></td><td><input name="n_tel010chT010" type="checkbox" <%v_tel010chT010%> ><label>&nbsp;3</label></td>
+		     <td></td><td><input name="n_tel010chT011" type="checkbox" <%v_tel010chT011%> ><label>&nbsp;4</label></td>
+             <td></td><td><input name="n_tel010chT012" type="checkbox" <%v_tel010chT012%> ><label>&nbsp;5</label></td>
+             <td></td><td><input name="n_tel010chT013" type="checkbox" <%v_tel010chT013%> ><label>&nbsp;6</label></td>
+             <td></td><td><input name="n_tel010chT014" type="checkbox" <%v_tel010chT014%> ><label>&nbsp;7</label></td>
+             <td></td><td><input name="n_tel010chT015" type="checkbox" <%v_tel010chT015%> ><label>&nbsp;8</label></td>
+             <td></td><td> <label> </label></td>
+             <td></td><td><input name="n_tel010chT016" type="checkbox" <%v_tel010chT016%> ><label>&nbsp;Slv</label></td>
+	       </tr>
+	      </table>	
+         </fieldset>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="135px"><legend>Nr aktywny</legend></td>
+      <td width="150px"><select name="n_tel010akt"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_tel010akt1%> >NIE</option>
+	                                                                                               <option value="on" <%v_tel010akt2%> >TAK</option></select></td>
+	  </tr></table>
+	  </li>
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+
+	
+	
+	
+
+
+ 
+ 
+
+
+<li class="ui-body ui-body-b">
+            <fieldset class="ui-grid-a">
+                    <div class="ui-block-a"><button type="submit" name="n_109_zapisz" class="ui-btn ui-corner-all ui-btn-a">Zapisz</button></div>
+            </fieldset>
+        </li>
+
+
+
+ </form>    
+
+	</div>
+	
+	
+	
+	
+	
+	
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

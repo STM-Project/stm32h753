@@ -1,0 +1,224 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Odczyt wartosci</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+
+
+    <link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+
+	
+<%koment_1o%>	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<%koment_1z%>
+
+<%koment_2o%> 
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min.css" /> 
+	<script src="jquery/jquery-1.8.2.min.js"></script>
+	<script src="jquery/jquery.mobile-1.2.0.min.js"></script> 
+<%koment_2z%> 
+
+
+ 
+<%koment_tlo_1o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+<%koment_tlo_1z%>
+<%koment_tlo_2o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(Images/tlo364.jpg);} 
+  </style>
+<%koment_tlo_2z%>
+
+
+
+
+
+
+
+</head> 
+<body> 
+
+  
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+<div data-role="content">
+
+
+<ul data-role="listview" data-inset="true">	
+<li>
+ <table><tr>
+        <td width="30px"></td>
+        <td><a href="lpc.cgi/000"  rel="external">WRÓÆ</a></td>
+		<td width="40px"></td>
+		<td><font size="4" color="red">Nr Trybu Pracy: </font><font size="5" color="red"><b><%v_tryb_pracy%></b></font></td>
+		</tr></table>
+</li>  
+</ul>
+
+<br>
+
+<form method="get" action="lpc.cgi/A125" data-ajax="false">
+
+
+
+ <ul data-role="listview" data-inset="true"> 
+
+  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Nazwy dla poszczególnych Slave`ów</font> 
+  </li>
+  
+  
+  <li class="ui-field-contain">	  
+	  <legend>Master</legend>
+	  <input type="text" name="n_slvtxt000" size="59" maxlength="59" value="<%v_slvtxt000%>">
+  </li>
+  
+  
+  <li class="ui-field-contain">	  
+	  <legend><b>Slave 1 &nbsp;&nbsp;&nbsp;&nbsp;<%v_slvkom001%> &nbsp;&nbsp;&nbsp;&nbsp;<%v_slvbra001%></b></legend>
+	  <input type="text" name="n_slvtxt001" size="59" maxlength="59" value="<%v_slvtxt001%>">
+  </li>
+  
+  <li class="ui-field-contain">	  
+	  <legend><b>Slave 2 &nbsp;&nbsp;&nbsp;&nbsp;<%v_slvkom002%> &nbsp;&nbsp;&nbsp;&nbsp;<%v_slvbra002%></b></legend>
+	  <input type="text" name="n_slvtxt002" size="59" maxlength="59" value="<%v_slvtxt002%>">
+  </li>
+  
+  <li class="ui-field-contain">	  
+	  <legend><b>33-wejsc &nbsp;&nbsp;&nbsp;&nbsp;<%v_slvkom003%> &nbsp;&nbsp;&nbsp;&nbsp;<%v_slvbra003%></b></legend>
+	  <input type="text" name="n_slvtxt003" size="59" maxlength="59" value="<%v_slvtxt003%>">
+  </li>
+  
+  	
+<li class="ui-body ui-body-b">
+            <fieldset class="ui-grid-a">
+                    <div class="ui-block-a"><button type="submit" name="n_125_zapisz" class="ui-btn ui-corner-all ui-btn-a">Zapisz</button></div>
+            </fieldset>
+        </li>
+
+
+</ul> 
+
+
+</form>
+
+
+
+<br>
+<form method="get" action="lpc.cgi/A125" data-ajax="false">
+
+ <ul data-role="listview" data-inset="true"> 
+
+  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Wybór Trybu Pracy Uk³adu</font> 
+  </li>
+  
+
+  
+  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=001" rel="external">1. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb001" size="79" maxlength="79" value="<%v_wybtryb001%>"></p>
+	</td></tr></table></li>
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=002" rel="external">2. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb002" size="79" maxlength="79" value="<%v_wybtryb002%>"></p>
+	</td></tr></table></li>
+	
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=003" rel="external">3. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb003" size="79" maxlength="79" value="<%v_wybtryb003%>"></p>
+	</td></tr></table></li>
+	
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=004" rel="external">4. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb004" size="79" maxlength="79" value="<%v_wybtryb004%>"></p>
+	</td></tr></table></li>
+	
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=005" rel="external">5. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb005" size="79" maxlength="79" value="<%v_wybtryb005%>"></p>
+	</td></tr></table></li>
+	
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=006" rel="external">6. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb006" size="79" maxlength="79" value="<%v_wybtryb006%>"></p>
+	</td></tr></table></li>
+	
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=007" rel="external">7. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb007" size="79" maxlength="79" value="<%v_wybtryb007%>"></p>
+	</td></tr></table></li>
+	
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=008" rel="external">8. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb008" size="79" maxlength="79" value="<%v_wybtryb008%>"></p>
+	</td></tr></table></li>
+	
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=009" rel="external">9. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb009" size="79" maxlength="79" value="<%v_wybtryb009%>"></p>
+	</td></tr></table></li>
+	
+	
+	  <li><table><tr><td></td>
+	<td><h2><font size="3" color="blue"><a href="lpc.cgi/A125?wybtrybm=010" rel="external">10. Aktywuj</a></font></h2></td><td></td><td></td><td>
+	<p><input type="text" name="n_wybtryb010" size="79" maxlength="79" value="<%v_wybtryb010%>"></p>
+	</td></tr></table></li>
+	
+	
+    <li class="ui-body ui-body-b">
+            <fieldset class="ui-grid-a">
+                    <div class="ui-block-a"><button type="submit" name="n_016_zapisz" class="ui-btn ui-corner-all ui-btn-a">Zapisz</button></div>
+            </fieldset>
+        </li>
+  
+  
+
+
+
+</ul> 
+
+
+
+</form>
+
+
+
+
+
+	
+<br>
+
+
+	
+
+
+	
+	
+	
+	
+</div>	
+	
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>
+

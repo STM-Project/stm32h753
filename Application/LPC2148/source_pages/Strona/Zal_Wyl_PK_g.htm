@@ -1,0 +1,500 @@
+
+<html>
+<head><title> Sterowanie przekaznikami </title>
+  
+
+<script language="javascript">
+	var okienko = null;
+	
+
+	
+	
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return false;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function walidacjaTemp(element,element2)
+{
+  var wzor1 = /^[\-+]{1}[0-9]{2}\.[0-9]{1}$/;
+  var wzor2 = /^[\-+]{1}[0-9]{2}$/;
+  var wzor3 = /^[\-+]{1}[0-9]{1}$/;
+  var wzor4 = /^[\-+]{1}[0-9]{1}\.[0-9]{1}$/;
+  var wzor5 = /^[0-9]{1}$/;
+  var wzor6 = /^[0-9]{2}$/;
+  var wzor7 = /^[0-9]{1}\.[0-9]{1}$/;
+  var wzor8 = /^[0-9]{2}\.[0-9]{1}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+    if(wzor3.test(element.value) == false){
+     if(wzor4.test(element.value) == false){
+      if(wzor5.test(element.value) == false){
+       if(wzor6.test(element.value) == false){
+        if(wzor7.test(element.value) == false){
+         if(wzor8.test(element.value) == false){
+  
+     if(element2==1){ alert('Wpisz wartosc w poprawnym formacie tj. +20.5'); element.value = '+99.9'; }
+	 if(element2==2){ alert('Wpisz wartosc w poprawnym formacie tj. +15.0'); element.value = '-55.0'; }
+	 if(element2==3){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+02.0'; }
+	 if(element2==4){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+01.0'; }
+        
+  }}}}}}}}
+  if(element.value<-55.0){
+  
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '-55.0'; 
+  
+  }
+}
+
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+   
+    
+  
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00'; 
+
+        
+  }}
+}
+
+
+function walidacja_2cyfr_sekundy(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+   
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00'; 
+      
+  }}
+  if(element.value>59){
+  
+     alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value = '59'; 
+  
+  }
+}
+
+
+
+
+
+</script>
+
+
+
+
+
+<style>
+
+.text-shadow{
+text-shadow:2px -1px 24px rgba(194, 194, 194, 0.34);
+font-size:20px;
+color: #000000;
+font-family:Artifika;
+}
+</style>
+
+
+<style> 
+  .textbox { 
+    border: 1px solid #c4c4c4; 
+    height: 45px; 
+    width: 75px; 
+    font-size: 17px; 
+    padding: 4px 4px 4px 4px; 
+	background-color: #EAEAEA; 
+background: -moz-linear-gradient(top, #FFF, #EAEAEA); 
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0.0, #FFF), color-stop(1.0, #EAEAEA)); 
+
+    border-radius: 4px; 
+    -moz-border-radius: 4px; 
+    -webkit-border-radius: 4px; 
+    box-shadow: 0px 0px 8px #d9d9d9; 
+    -moz-box-shadow: 0px 0px 8px #d9d9d9; 
+    -webkit-box-shadow: 0px 0px 8px #d9d9d9; 
+	font-family: Comic Sans MS;
+    font-size: 23px;
+} 
+ 
+.textbox:focus { 
+    outline: none; 
+    border: 1px solid #7bc1f7; 
+    box-shadow: 0px 0px 8px #7bc1f7; 
+    -moz-box-shadow: 0px 0px 8px #7bc1f7; 
+    -webkit-box-shadow: 0px 0px 8px #7bc1f7; 
+} 
+ </style> 
+
+<style>
+
+.Three-Dee{
+font-family: ABeeZee ;
+line-height: 1em;
+color: undefined;
+font-size: 50px;
+text-shadow:0px 0px 0 rgb(221,221,221),1px 1px 0 rgb(197,197,197),2px 2px 0 rgb(173,173,173),3px 3px 0 rgb(148,148,148),4px 4px 0 rgb(124,124,124),5px 5px 0 rgb(100,100,100), 6px 6px 0 rgb(76,76,76),7px 7px 6px rgba(0,0,0,0.6),7px 7px 1px rgba(0,0,0,0.5),0px 0px 6px rgba(0,0,0,.2);}
+
+</style>
+
+
+
+<style>
+
+ input[type='radio'], input[type='checkbox']{ 
+    opacity:0; 
+    position:absolute; 
+    filter:alpha(opacity=0); 
+    margin:5px 0 0 5px} 
+  input[type='radio']:focus+label, input[type="checkbox"]:focus+label{ 
+    color:#530} 
+  input[type="checkbox"]+label, input[type="radio"]+label{ 
+    background:url(data:image/png;base64,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) left top no-repeat; 
+    position:relative; 
+    margin:0; 
+    padding:0 0 0 50px; 
+    cursor:pointer; 
+    line-height:43px; 
+    min-height:43px; 
+    display:inline-block; 
+    z-index:0; 
+    font-size:20px; 
+    font-weight:bold} 
+  input[type="checkbox"]+label{ 
+    background-position:0 0} 
+  input[type="radio"]+label{ 
+    background-position:0 -200px} 
+  input[type='checkbox']:checked+label{ 
+    background-position:0 -100px} 
+  input[type='radio']:checked+label{ 
+    background-position:0 -300px} 
+  input[type='checkbox']:disabled+label{ 
+    background-position:0 -400px; 
+    color:#E99} 
+  input[type='radio']:disabled+label{ 
+    background-position:0 -600px; 
+    color:#999} 
+   
+  input[type='checkbox']:disabled:checked+label{ 
+    background-position:0 -500px; 
+    color:#099} 
+  input[type='radio']:disabled:checked+label{ 
+    background-position:0 -700px; 
+    color:#999} 
+
+</style>
+
+
+
+<style>  
+#contact input[type=text] { 
+-moz-border-radius: 0 5px 5px 0; 
+-webkit-border-radius: 0 5px 5px 0; 
+font-family: Comic Sans MS;
+   font-size: 23px;
+background: #FFF; 
+border: 1px solid #CCC; 
+border-radius: 0 5px 5px 0; 
+color: #333; 
+height: 48px; 
+line-height: 24px; 
+margin: 1px 1px 1px -5px; 
+outline: none; 
+padding: 0 3px; 
+width: 550px; 
+} 
+
+</style>
+
+
+<style>
+
+.shiny-button {
+  display: inline-block;
+  text-align: center;
+  border-width: 1px;
+  border-style: solid;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1.1;
+  font-weight: normal;
+  font-family: sans-serif;
+  color: #FFFFFF;
+  font-size: 12px;
+  background-color: #73B10E;
+  background-image: -webkit-linear-gradient(top, #76b60e 0%, #86c028 48%, #73B10E 49%, #73B10E 82%, #84cb10 100%);
+  background-image: -moz-linear-gradient(top, #76b60e 0%, #86c028 48%, #73B10E 49%, #73B10E 82%, #84cb10 100%);
+  background-image: -o-linear-gradient(top, #76b60e 0%, #86c028 48%, #73B10E 49%, #73B10E 82%, #84cb10 100%);
+  background-image: -ms-linear-gradient(top, #76b60e 0%, #86c028 48%, #73B10E 49%, #73B10E 82%, #84cb10 100%);
+  border-color: hsl(83, 29%, 37%);
+  -webkit-box-shadow: inset 0 0 1px 1px #95e512, 0 0 1px 3px rgba(0, 0, 0, 0.15);
+  -moz-box-shadow: inset 0 0 1px 1px #95e512, 0 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 0 1px 1px #95e512, 0 0 1px 3px rgba(0, 0, 0, 0.15);
+  -webkit-text-shadow: 1px 1px 1px #365207;
+  -moz-text-shadow: 1px 1px 1px #365207;
+  -o-text-shadow: 1px 1px 1px #365207;
+  text-shadow: 1px 1px 1px #365207;
+  -webkit-border-radius: 15px;
+  -moz-border-radius: 15px;
+  border-radius: 15px;
+  padding: 9.600000000000001px 17px 9.600000000000001px 17px;
+}
+
+.shiny-button strong {
+  letter-spacing: 1px;
+  font-size: 17px;
+}
+
+.shiny-button:hover {
+  color: #FFFFFF;
+  background-color: #7cbf0f;
+  background-image: -webkit-linear-gradient(top, #7fc40f 0%, #8fcc2b 48%, #7cbf0f 49%, #7cbf0f 82%, #8dd911 100%);
+  background-image: -moz-linear-gradient(top, #7fc40f 0%, #8fcc2b 48%, #7cbf0f 49%, #7cbf0f 82%, #8dd911 100%);
+  background-image: -o-linear-gradient(top, #7fc40f 0%, #8fcc2b 48%, #7cbf0f 49%, #7cbf0f 82%, #8dd911 100%);
+  background-image: -ms-linear-gradient(top, #7fc40f 0%, #8fcc2b 48%, #7cbf0f 49%, #7cbf0f 82%, #8dd911 100%);
+  border-color: hsl(83, 28%, 36%);
+  -webkit-box-shadow: inset 0 0 1px 1px #9eed1e, 0 0 1px 3px rgba(0, 0, 0, 0.15);
+  -moz-box-shadow: inset 0 0 1px 1px #9eed1e, 0 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 0 1px 1px #9eed1e, 0 0 1px 3px rgba(0, 0, 0, 0.15);
+  -webkit-text-shadow: 1px 1px 1px #3f6008;
+  -moz-text-shadow: 1px 1px 1px #3f6008;
+  -o-text-shadow: 1px 1px 1px #3f6008;
+  text-shadow: 1px 1px 1px #3f6008;
+}
+
+.shiny-button:active {
+  color: #FFFFFF;
+  background-color: #6aa30d;
+  background-image: -webkit-linear-gradient(top, #649a0c 0%, #73B10E 100%);
+  background-image: -moz-linear-gradient(top, #649a0c 0%, #73B10E 100%);
+  background-image: -o-linear-gradient(top, #649a0c 0%, #73B10E 100%);
+  background-image: -ms-linear-gradient(top, #649a0c 0%, #73B10E 100%);
+  padding: 10.600000000000001px 17px 8.600000000000001px 17px;
+}
+
+</style>
+
+
+<style>
+.box-shadow {
+	-webkit-box-shadow: 0px 0px 15px 2px rgba(194, 194, 194, 0.84);
+	   -moz-box-shadow: 0px 0px 15px 2px rgba(194, 194, 194, 0.84);
+	        box-shadow: 0px 0px 15px 2px rgba(194, 194, 194, 0.84);
+
+	background-color: #F0F0F0;
+	width: 1200px;
+	height: 660px;
+	position: absolute;
+	  left: 30px;
+	  top: 30px;
+
+}
+</style>
+
+
+<style>
+.css_button {
+    font-size: 23px;
+    font-family:Arial;
+    font-weight:normal;
+    -moz-border-radius: 26px;
+    -webkit-border-radius: 26px;
+    border-radius: 16px;
+    border: 1px solid #3866A3;
+    padding: 9px 25px;
+    text-shadow:1px 1px 0px #5E5E5E;
+    -moz-box-shadow:inset 1px 1px 0px 0px #BEE2F9;
+    -webkit-box-shadow:inset 1px 1px 0px 0px #BEE2F9;
+    box-shadow:inset 1px 1px 0px 0px #BEE2F9;
+    font-weight:normal;
+    text-decoration:none;
+    cursor: pointer;
+    background:-webkit-linear-gradient(90deg, #468ccf 5%, #63b8ee 100%);
+    background:-moz-linear-gradient(90deg, #468ccf 5%, #63b8ee 100%);
+    background:-ms-linear-gradient(90deg, #468ccf 5%, #63b8ee 100%);
+    background:linear-gradient(180deg, #63b8ee 5%, #468ccf 100%);
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#63b8ee', endColorstr='#468ccf');
+    /*background-color:#468ccf;*/
+    color:#FFFFFF;
+    display:inline-block;
+}
+.css_button:hover {
+    background:-webkit-linear-gradient(90deg, #63b8ee 5%, #468ccf 100%);
+    background:-moz-linear-gradient(90deg, #63b8ee 5%, #468ccf 100%);
+    background:-ms-linear-gradient(90deg, #63b8ee 5%, #468ccf 100%);
+    background:linear-gradient(180deg, #468ccf 5%, #63b8ee 100%);
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#468ccf', endColorstr='#63b8ee');
+    /*background-color:#63b8ee;*/
+}
+.css_button:active {
+    position:relative;
+    top:1px;
+}
+  /* This css button was generated by http://html-generator.weebly.com */
+</style>
+
+
+
+
+
+</head>
+  <body>
+  
+  
+<div class="box-shadow">
+  
+
+ 
+ <form method="get" action="lpc.cgi/A200"> 
+  
+<table border="0" style="text-align: center; border-spacing: 10px;" id="tabela">
+<tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="30px"><p class="text-shadow">Nr</p></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="645px"><p class="text-shadow">Nazwa wyjscia</p></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="60px"><p class="text-shadow">Stan</p></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="110px"><p class="text-shadow">Sterowanie monostabilne</p></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="70px"><p class="text-shadow">Sterowanie monostabilne</p></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><p class="text-shadow">Sterowanie bistabilne</p></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="50px"><p class="text-shadow">Czas impulsu</p></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="50px"><p class="text-shadow">Sterowanie bistabilne</p></td>
+</tr>
+
+
+<tr>
+<td><font size="5" color="gray">1</font></td>
+<td><div id="contact"><input name="n_pkgtxt001" type="text" id="name" class="textbox" size="39"  maxlength="39" value="<%v_pktxt001%>"></div></td>
+<td><%v_pkstg001%></td>
+<td><a href="lpc.cgi/A200?<%v_pkinfa001%>=001"  class="css_button"><%v_pkinfb001%></a></td>  
+<td><div class="containers"><input id="checkbox1" name="n_pkchk001" <%v_pkchk001%> type="checkbox"/><label for="checkbox1"></label></div></td>
+<td><a href="lpc.cgi/A200?pkimpl=001" class="shiny-button"><strong>Impuls</strong></a></td>
+<td><input type="text" class="textbox" name="n_pkiczas001" size="2" maxlength="2"  value="<%v_pkiczas001%>" style="width:45px;"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+<td><div class="containers"><input id="checkbox1i" name="n_pkichk001" <%v_pkichk001%> type="checkbox"/><label for="checkbox1i"></label></div></td>
+</tr>
+
+<tr>
+<td><font size="5" color="gray">2</font></td>
+<td><div id="contact"><input name="n_pkgtxt002" type="text" id="name" class="textbox" size="39"  maxlength="39" value="<%v_pktxt002%>"></div></td>
+<td><%v_pkstg002%></td>
+<td><a href="lpc.cgi/A200?<%v_pkinfa002%>=002"  class="css_button"><%v_pkinfb002%></a></td>  
+<td><div class="containers"><input id="checkbox2" name="n_pkchk002" <%v_pkchk002%> type="checkbox"/><label for="checkbox2"></label></div></td>
+<td><a href="lpc.cgi/A200?pkimpl=002" class="shiny-button"><strong>Impuls</strong></a></td>
+<td><input type="text" class="textbox" name="n_pkiczas002" size="2" maxlength="2"  value="<%v_pkiczas002%>" style="width:45px;"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+<td><div class="containers"><input id="checkbox2i" name="n_pkichk002" <%v_pkichk002%> type="checkbox"/><label for="checkbox2i"></label></div></td>
+</tr>
+
+<tr>
+<td><font size="5" color="gray">3</font></td>
+<td><div id="contact"><input name="n_pkgtxt003" type="text" id="name" class="textbox" size="39"  maxlength="39" value="<%v_pktxt003%>"></div></td>
+<td><%v_pkstg003%></td>
+<td><a href="lpc.cgi/A200?<%v_pkinfa003%>=003"  class="css_button"><%v_pkinfb003%></a></td>  
+<td><div class="containers"><input id="checkbox3" name="n_pkchk003" <%v_pkchk003%> type="checkbox"/><label for="checkbox3"></label></div></td>
+<td><a href="lpc.cgi/A200?pkimpl=003" class="shiny-button"><strong>Impuls</strong></a></td>
+<td><input type="text" class="textbox" name="n_pkiczas003" size="2" maxlength="2"  value="<%v_pkiczas003%>" style="width:45px;"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+<td><div class="containers"><input id="checkbox3i" name="n_pkichk003" <%v_pkichk003%> type="checkbox"/><label for="checkbox3i"></label></div></td>
+</tr>
+
+<tr>
+<td><font size="5" color="gray">4</font></td>
+<td><div id="contact"><input name="n_pkgtxt004" type="text" id="name" class="textbox" size="39"  maxlength="39" value="<%v_pktxt004%>"></div></td>
+<td><%v_pkstg004%></td>
+<td><a href="lpc.cgi/A200?<%v_pkinfa004%>=004"  class="css_button"><%v_pkinfb004%></a></td>  
+<td><div class="containers"><input id="checkbox4" name="n_pkchk004" <%v_pkchk004%> type="checkbox"/><label for="checkbox4"></label></div></td>
+<td><a href="lpc.cgi/A200?pkimpl=004" class="shiny-button"><strong>Impuls</strong></a></td>
+<td><input type="text" class="textbox" name="n_pkiczas004" size="2" maxlength="2"  value="<%v_pkiczas004%>" style="width:45px;"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+<td><div class="containers"><input id="checkbox4i" name="n_pkichk004" <%v_pkichk004%> type="checkbox"/><label for="checkbox4i"></label></div></td>
+</tr>
+
+<tr>
+<td><font size="5" color="gray">5</font></td>
+<td><div id="contact"><input name="n_pkgtxt005" type="text" id="name" class="textbox" size="39"  maxlength="39" value="<%v_pktxt005%>"></div></td>
+<td><%v_pkstg005%></td>
+<td><a href="lpc.cgi/A200?<%v_pkinfa005%>=005"  class="css_button"><%v_pkinfb005%></a></td>  
+<td><div class="containers"><input id="checkbox5" name="n_pkchk005" <%v_pkchk005%> type="checkbox"/><label for="checkbox5"></label></div></td>
+<td><a href="lpc.cgi/A200?pkimpl=005" class="shiny-button"><strong>Impuls</strong></a></td>
+<td><input type="text" class="textbox" name="n_pkiczas005" size="2" maxlength="2"  value="<%v_pkiczas005%>" style="width:45px;"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+<td><div class="containers"><input id="checkbox5i" name="n_pkichk005" <%v_pkichk005%> type="checkbox"/><label for="checkbox5i"></label></div></td>
+</tr>
+
+<tr>
+<td><font size="5" color="gray">6</font></td>
+<td><div id="contact"><input name="n_pkgtxt006" type="text" id="name" class="textbox" size="39"  maxlength="39" value="<%v_pktxt006%>"></div></td>
+<td><%v_pkstg006%></td>
+<td><a href="lpc.cgi/A200?<%v_pkinfa006%>=006"  class="css_button"><%v_pkinfb006%></a></td>  
+<td><div class="containers"><input id="checkbox6" name="n_pkchk006" <%v_pkchk006%> type="checkbox"/><label for="checkbox6"></label></div></td>
+<td><a href="lpc.cgi/A200?pkimpl=006" class="shiny-button"><strong>Impuls</strong></a></td>
+<td><input type="text" class="textbox" name="n_pkiczas006" size="2" maxlength="2"  value="<%v_pkiczas006%>" style="width:45px;"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+<td><div class="containers"><input id="checkbox6i" name="n_pkichk006" <%v_pkichk006%> type="checkbox"/><label for="checkbox6i"></label></div></td>
+</tr>
+
+<tr>
+<td><font size="5" color="gray">7</font></td>
+<td><div id="contact"><input name="n_pkgtxt007" type="text" id="name" class="textbox" size="39"  maxlength="39" value="<%v_pktxt007%>"></div></td>
+<td><%v_pkstg007%></td>
+<td><a href="lpc.cgi/A200?<%v_pkinfa007%>=007"  class="css_button"><%v_pkinfb007%></a></td>  
+<td><div class="containers"><input id="checkbox7" name="n_pkchk007" <%v_pkchk007%> type="checkbox"/><label for="checkbox7"></label></div></td>
+<td><a href="lpc.cgi/A200?pkimpl=007" class="shiny-button"><strong>Impuls</strong></a></td>
+<td><input type="text" class="textbox" name="n_pkiczas007" size="2" maxlength="2"  value="<%v_pkiczas007%>" style="width:45px;"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+<td><div class="containers"><input id="checkbox7i" name="n_pkichk007" <%v_pkichk007%> type="checkbox"/><label for="checkbox7i"></label></div></td>
+</tr>
+
+<tr>
+<td><font size="5" color="gray">8</font></td>
+<td><div id="contact"><input name="n_pkgtxt008" type="text" id="name" class="textbox" size="39"  maxlength="39" value="<%v_pktxt008%>"></div></td>
+<td><%v_pkstg008%></td>
+<td><a href="lpc.cgi/A200?<%v_pkinfa008%>=008"  class="css_button"><%v_pkinfb008%></a></td>  
+<td><div class="containers"><input id="checkbox8" name="n_pkchk008" <%v_pkchk008%> type="checkbox"/><label for="checkbox8"></label></div></td>
+<td><a href="lpc.cgi/A200?pkimpl=008" class="shiny-button"><strong>Impuls</strong></a></td>
+<td><input type="text" class="textbox" name="n_pkiczas008" size="2" maxlength="2"  value="<%v_pkiczas008%>" style="width:45px;"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+<td><div class="containers"><input id="checkbox8i" name="n_pkichk008" <%v_pkichk008%> type="checkbox"/><label for="checkbox8i"></label></div></td>
+</tr>
+
+<tr>
+<td></td>
+<td><table><tr><td width="90px"><a href="lpc.cgi/A999"><font size="6">Wroc</font></a></td><td width="120px"><a href="lpc.cgi/A998"><font size="6">Odswiez</font></a></td><td><input type="submit" class="css_button" value="ZAPISZ" name="n_200_zapisz" ></td></tr></table></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+
+
+ <tr height="25px"><td></td></tr>
+ 
+</table>
+</form> 
+
+
+
+</div>
+
+
+   
+   
+  </body>
+</html>

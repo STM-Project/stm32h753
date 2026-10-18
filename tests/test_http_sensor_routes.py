@@ -39,6 +39,7 @@ PREAMBLE = r'''
 #include "http_settings_page.h"
 #include "http_output_control.h"
 #include "http_lpc_panel.h"
+#include "lpc_pages.h"
 #include "relay_states.h"
 typedef uint8_t u8;
 typedef uint32_t u32;
@@ -72,6 +73,13 @@ unsigned HTTP_SettingsPortMode(unsigned port);
 const char *HTTP_SettingsPortName(unsigned port, const char *fallback);
 char *HTTP_TEMPLATE_Hidden2(char *out, u8 type, u8 port);
 static char HttpRefr_sdram[2048]="refresh";
+static const char *lpc_test_page;
+size_t LPC_StorageReadPage(unsigned page,char *out,size_t capacity){
+    (void)page;if(!lpc_test_page)return 0;size_t n=strlen(lpc_test_page);
+    if(n>=capacity)return 0;
+    memcpy(out,lpc_test_page,n+1);return n;
+}
+
 '''
 
 TESTS = r'''
@@ -306,10 +314,13 @@ def compile_and_run(harness):
         executable = tmp / "routes"
         subprocess.run([compiler, "-std=c11", "-Wall", "-Wextra", "-Werror", "-g",
                         "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
-                        "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
+                        "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"), "-I" + str(ROOT / "Application/LPC2148"),
                         "-I" + str(ROOT / "Application/General_Utilities"),
-                        str(test), str(ROOT / "Application/HTTP/http_lpc_panel.c"),
-                        str(ROOT / "Application/HTTP/http_lpc_assets.c"),
+                        str(test), str(ROOT / "Application/LPC2148/lpc_manifest.c"),
+                        str(ROOT / "Application/LPC2148/lpc_settings.c"),
+                        str(ROOT / "Application/LPC2148/lpc_bridge.c"),
+                        str(ROOT / "Application/LPC2148/http_lpc_panel.c"),
+                        str(ROOT / "Application/LPC2148/http_lpc_assets.c"),
                         str(ROOT / "Application/HTTP/http_request_stream.c"),
                         str(ROOT / "Application/HTTP/http_output_control.c"),
                         str(ROOT / "Application/relay_states.c"),

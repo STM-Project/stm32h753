@@ -1,0 +1,2620 @@
+<html>
+<head>
+	<meta http-equiv='refresh' content=''>
+	<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+	<title> Ustawienia zbiorcze</title>
+	<script language="javascript">
+	var okienko = null;
+	
+	function enableChart1() 
+	{
+		if( (document.getElementById('n_tim001akc').value == 4)||(document.getElementById('n_tim001akc').value == 3))document.getElementById('n_tim001impl').disabled=false;
+		else document.getElementById('n_tim001impl').disabled = true;
+	}
+	function enableChart2() 
+	{
+		if( (document.getElementById('n_tim002akc').value == 4)||(document.getElementById('n_tim002akc').value == 3))document.getElementById('n_tim002impl').disabled=false;
+		else document.getElementById('n_tim002impl').disabled = true;
+	}
+	function enableChart3() 
+	{
+		if( (document.getElementById('n_tim003akc').value == 4)||(document.getElementById('n_tim003akc').value == 3))document.getElementById('n_tim003impl').disabled=false;
+		else document.getElementById('n_tim003impl').disabled = true;
+	}
+	function enableChart4() 
+	{
+		if( (document.getElementById('n_tim004akc').value == 4)||(document.getElementById('n_tim004akc').value == 3))document.getElementById('n_tim004impl').disabled=false;
+		else document.getElementById('n_tim004impl').disabled = true;
+	}
+	function enableChart5() 
+	{
+		if( (document.getElementById('n_tim005akc').value == 4)||(document.getElementById('n_tim005akc').value == 3))document.getElementById('n_tim005impl').disabled=false;
+		else document.getElementById('n_tim005impl').disabled = true;
+	}
+	function enableChart6() 
+	{
+		if( (document.getElementById('n_tim006akc').value == 4)||(document.getElementById('n_tim006akc').value == 3))document.getElementById('n_tim006impl').disabled=false;
+		else document.getElementById('n_tim006impl').disabled = true;
+	}
+	function enableChart7() 
+	{
+		if( (document.getElementById('n_tim007akc').value == 4)||(document.getElementById('n_tim007akc').value == 3))document.getElementById('n_tim007impl').disabled=false;
+		else document.getElementById('n_tim007impl').disabled = true;
+	}
+	function enableChart8() 
+	{
+		if( (document.getElementById('n_tim008akc').value == 4)||(document.getElementById('n_tim008akc').value == 3))document.getElementById('n_tim008impl').disabled=false;
+		else document.getElementById('n_tim008impl').disabled = true;
+	}
+
+	
+	
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return true;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+	
+	if (kodKlawisza == 8) {
+        return true;  // backspace
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function walidacjaTemp(element,element2)
+{
+  var wzor1 = /^[\-+]{1}[0-9]{2}\.[0-9]{1}$/;
+  var wzor2 = /^[\-+]{1}[0-9]{2}$/;
+  var wzor3 = /^[\-+]{1}[0-9]{1}$/;
+  var wzor4 = /^[\-+]{1}[0-9]{1}\.[0-9]{1}$/;
+  var wzor5 = /^[0-9]{1}$/;
+  var wzor6 = /^[0-9]{2}$/;
+  var wzor7 = /^[0-9]{1}\.[0-9]{1}$/;
+  var wzor8 = /^[0-9]{2}\.[0-9]{1}$/;
+  var wzor9 = /^[0-9]{3}$/;
+  var wzor10= /^[\-+]{1}[0-9]{3}$/;
+  
+  if(wzor9.test(element.value) == true){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '+99.9';  
+  }
+  if(wzor10.test(element.value) == true){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '+99.9';  
+  }
+  
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+    if(wzor3.test(element.value) == false){
+     if(wzor4.test(element.value) == false){
+      if(wzor5.test(element.value) == false){
+       if(wzor6.test(element.value) == false){
+        if(wzor7.test(element.value) == false){
+         if(wzor8.test(element.value) == false){
+  
+     if(element2==1){ alert('Wpisz wartosc w poprawnym formacie tj. +20.5'); element.value = '+99.9'; }
+	 if(element2==2){ alert('Wpisz wartosc w poprawnym formacie tj. +15.0'); element.value = '-55.0'; }
+	 if(element2==3){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+02.0'; }
+	 if(element2==4){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+01.0'; }
+        
+  }}}}}}}}
+  if(element.value<-55.0){
+     alert('wartosc powinna miescic sie w przedziale od  -55.0  do  +99.9 '); element.value = '-55.0';  
+  }
+
+}
+
+function dop_zakr_min_sek(element){
+   if(element.value>59){ alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value='00'; }
+}
+function dop_zakr_godz(element){
+   if(element.value>23){ alert('Wartosc powinna miescic sie w przedziale 0 - 23'); element.value='00'; }
+}
+
+
+function walidacja_numeru_Temp(element)
+{
+  if(element.value > <%_Size__s_Czujki_info%>){
+     alert('NIE MA TAKIEGO CZUJNIKA !!!\r\nLiczba dostepnych czujnikow to <%_Size__s_Czujki_info%>'); element.value = '1';   
+  }
+  else if(element.value == 0){
+     alert('Numeracja czujnikow zaczyna sie od 1'); element.value = '1';  
+  }
+}
+
+function walidacja_numeru_WE(element)
+{
+  if(element.value > <%_Size__s_Wejscia_info%>){
+     alert('NIE MA TAKIEGO WEJSCIA !!!\r\nLiczba dostepnych wejsc to <%_Size__s_Wejscia_info%>'); element.value = '1';   
+  }
+  else if(element.value == 0){
+     alert('Numeracja wejsc WE zaczyna sie od 1'); element.value = '1';  
+  }
+}
+
+
+</script>
+
+
+<script>
+
+
+"use strict";
+
+var set_scroll,
+	my_scroll;
+
+
+set_scroll = function () {
+	var search = window.location.search,
+		matches;
+	if (search) {
+		matches = /scroll=(\d+)/.exec(search);
+		if (matches) {
+			window.scrollTo(0, matches[1]);
+		}
+	}
+};
+
+
+my_scroll = function (url) {
+	var scroll, q;
+	if (typeof(window.pageYOffset) === 'number') {
+		scroll = window.pageYOffset;
+	}
+	else if (document.body && document.body.scrollTop) {
+		scroll = document.body.scrollTop;
+	}
+	else if (document.documentElement && document.documentElement.scrollTop) {
+		scroll = document.documentElement.scrollTop;
+	}
+	else {
+		scroll = 0;
+	}
+	if (url === undefined) {
+		return scroll;
+	}
+	else {
+		q = url.indexOf('?') === -1 ? '?' : '&';
+		window.location.href = url + q + 'scroll=' + scroll;
+	}
+};
+
+
+if (window.addEventListener) {
+	window.addEventListener('load', set_scroll, false);
+}
+else if (window.attachEvent) {
+	window.attachEvent('onload', set_scroll);
+}
+
+
+ function pageScroll() {
+    	window.scrollBy(0,<%scrol%>); 
+          } 
+		  	  
+
+
+</script>
+
+
+
+		  
+		  
+		  
+		  
+		  
+
+  <style type="text/css">
+  input {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+  }
+  input:hover {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+        background: white;
+  }
+  
+  option {
+          border: 1px solid black;
+          font: normal 14px Calibri, sans-serif;
+  }
+  
+  button {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         text-decoration: none;
+  }
+  button:hover {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         background: white;
+         text-decoration: none;
+  }
+  
+  body {
+       font: normal 12px Calibri, sans-serif;
+       color: black;
+  }
+  h1 {
+     font: bold 20px Calibri, sans-serif;
+     font-variant: small-caps;
+  }
+  
+  h2 {
+     font: normal 12px Calibri, sans-serif;
+  }
+  
+  h5 {
+     font: 12px Calibri, sans-serif;
+  }
+
+
+#tabela{background-color:#eeeeee;
+font: normal 14px Calibri, sans-serif;
+}
+
+#tabela2{background-color:#dadada;
+font: normal 14px Calibri, sans-serif;
+}
+
+
+  td.tytul{
+     background-color: #960226;
+     color: ffffff;
+     font: bold 20px Cambria, sans-serif;
+     font-variant: small-caps;
+  }
+  td.puste{
+     background-color: #C9C9DC;
+  }
+
+  </style>
+
+
+  <style> 
+.menu {
+    border: none;
+    border: 0px;
+    margin: 0px;
+    padding: 0px;
+    font-family: verdana,geneva,arial,helvetica,sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: 8e8e8e;
+}
+
+.menu ul {
+    background: url(data:image/gif;base64,R0lGODlhAQArAMQYAM/Pz7k1VODg4Onp6XsMJtDQ0Nra2szMzOHh4d7e3s7OzsvLy9jY2NXV1aioqNLS0t/f39vb2+Li4tbW1tPT083Nzd3d3agDKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABgALAAAAAABACsAAAUfICaOzrAclQIUD9VMjBFZVgIJiCRZ0URVl8BlSCSEAAA7) top left repeat-x;
+    height: 43px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu li {
+    float: left;
+    padding: 0px 8px 0px 8px;
+}
+
+.menu li a {
+    color: #666666;
+    display: block;
+    font-weight: bold;
+    line-height: 43px;
+    padding: 0px 15px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.menu li a:hover {
+    color: #000000;
+    text-decoration: none;
+}
+
+.menu li ul {
+    background: #e0e0e0;
+    border-left: 2px solid #a80329;
+    border-right: 2px solid #a80329;
+    border-bottom: 2px solid #a80329;
+    display: none;
+    height: auto;
+    filter: alpha(opacity=95);
+    opacity: 0.95;
+    position: absolute;
+    width: 255px;
+    z-index: 200;
+/*top:1em;
+/*left:0;*/
+}
+
+.menu li:hover ul {
+    display: block;
+}
+
+.menu li li {
+    display: block;
+    float: none;
+    padding: 0px;
+    width: 255px;
+}
+
+.menu li ul a {
+    display: block;
+    font-size: 16px;
+    font-style: normal;
+    padding: 0px 10px 0px 15px;
+    text-align: left;
+}
+
+.menu li ul a:hover {
+    background: #949494;
+    color: #000000;
+    opacity: 1.0;
+    filter: alpha(opacity=100);
+}
+
+.menu p {
+    clear: left;
+}
+
+.menu #current {
+    background: url(data:image/gif;base64,R0lGODlhAQArAJEAALk1VHsMJqgDKQAAACH5BAAAAAAALAAAAAABACsAAAIHFISpy+0aCgA7) top left repeat-x;
+    color: #ffffff;
+}
+
+.menu #current2 {
+    background: url(data:image/gif;base64,R0lGODlhAQArAMQYAM/Pz7k1VODg4Onp6XsMJtDQ0Nra2szMzOHh4d7e3s7OzsvLy9jY2NXV1aioqNLS0t/f39vb2+Li4tbW1tPT083Nzd3d3agDKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABgALAAAAAABACsAAAUfICaOzrAclQIUD9VMjBFZVgIJiCRZ0URVl8BlSCSEAAA7) top left repeat-x;
+    color: #656565;
+}
+
+</style> 
+
+
+
+
+
+
+
+
+
+</head>
+<body onLoad="pageScroll()"  bgcolor="#C9C9DC">
+
+
+
+<div class='menu'>
+ <ul>
+  <li><a href='lpc.cgi/500/A999' id='current'>Home</a></li>
+
+  
+  <li><a href='#' id='current2'>Czujniki Temperatury &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R001'>1# Powiadamianie SMS</a></li>
+    <li><a href='lpc.cgi/R002'>2# Termostat</a></li>
+    <li><a href='lpc.cgi/R003'>3# Maski filtrujace</a></li>
+    <li><a href='lpc.cgi/R004'>4# Rejestrator</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Wyjscia przekaznikowe &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R005'>1# Sterowanie WWW</a></li>
+    <li><a href='lpc.cgi/R006'>2# Autotimer</a></li>
+    <li><a href='lpc.cgi/R010'>3# Zaleznosci funkcyjne</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Wejscia sygnalowe &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R007'>1# Powiadamianie SMS</a></li>
+    <li><a href='lpc.cgi/R008'>2# Autosterowanie</a></li>
+    <li><a href='lpc.cgi/R009'>3# Maski filtrujace</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Pozostale &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R011'>1# Sterowanie IRDA</a></li>
+    <li><a href='lpc.cgi/R012'>2# Skrzynki E-mail</a></li>
+    <li><a href='lpc.cgi/R120'>3# Pingi urzadzen</a></li>
+    <li><a href='lpc.cgi/R014'>4# Odczyt biezacy v1</a></li>
+    <li><a href='lpc.cgi/R015'>5# Odczyt biezacy v2</a></li>
+   </ul>
+  </li>
+  
+  
+ </ul>
+</div>
+
+
+<br> <font size="4" color="red">Nr Trybu Pracy Ukladu: </font><font size="6" color="red"><b><%v_tryb_pracy%></b></font>  <br><br><br>
+
+
+
+
+<table border="0" style=" border:dashed 0mm; text-align: left; width: 100%; border-spacing: 0mm" id="tabela">
+
+<tr><td colspan="1" class="tytul" height="10px" align="center">
+..............<br>
+</td>
+<td colspan="3" class="puste">
+
+
+ <table><tr>
+ <td width="400px"><a href='lpc.cgi/A998'><font size="4">Odswiez strone</font></a></td>
+ <td width="100px"><font size="4"><%v_ttime1%></font></td>
+ <td width="80px"><font size="4"><%v_ttime2%>  </font></td>
+ <td width="110px"><font size="4"><%v_ttime3%>        </font></td></tr></table>
+<br>
+
+
+</td>
+</tr>
+
+
+
+
+ <form method="get" action="lpc.cgi/A015">
+ 
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja parametrow dla&nbsp;&nbsp;&nbsp;&nbsp; czujników temperatury  1-3</td>
+</tr>
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table border="0" id="tabela">
+<tr height="25px"></tr><tr>
+ <td width="170px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik</b></td></tr>
+ <tr height="45px"><td>Odczyt</td></tr>
+ <tr height="25px"><td>Nazwa czujnika</td></tr>
+ <tr height="25px"><td>Górny prog</td></tr>
+ <tr height="25px"><td>Dolny prog</td></tr>
+ <tr height="25px"><td>Histereza</td></tr>
+ <tr height="25px"><td>Czas reakcji</td></tr>
+ <tr height="25px"><td>Korekcja wartosci</td></tr>
+ <tr height="25px"><td>Krotnosc informacji</td></tr>
+ <tr height="25px"><td>Alarm_przekaznikowy</td></tr>
+ <tr height="25px"><td>Odczyt jako roznica</td></tr>
+ </table>
+ </td>
+ 
+ <td width="250px">
+ <table>
+ <tr height="25px"><td><b>Czujnik temperatury 1</b></td></tr>
+ <tr height="45px"><td><font size="6" color="purple"><%v_value001%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval001" size="39" maxlength="39"  value="<%v_txtval001%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval001" size="5" maxlength="5" value="<%v_prgmaxval001%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');" ></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval001" size="5" maxlength="5" value="<%v_prgminval001%>" onBlur="walidacjaTemp(this,2)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval001" size="5" maxlength="5"   value="<%v_histval001%>"   onBlur="walidacjaTemp(this,3)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval001m" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval001m%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"> <b>:</b> 
+                       <input type="text" name="n_reakval001s" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval001s%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval001" size="5" maxlength="5"    value="<%v_korval001%>"    onBlur="walidacjaTemp(this,4)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf001" size="2" maxlength="2" style="width:25px;"   value="<%v_krotinf001%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><select name="n_selalt001"><option value="off" <%v_selalt001a%> >OFF</option><option value="on" <%v_selalt001b%>  >ON</option></select> dla PK1</td></tr>
+ <tr height="25px"><td><select name="n_selroz001"><option value="1" <%v_selroz001a%> >NIE</option><option value="2" <%v_selroz001b%>  >T2-T3</option><option value="3" <%v_selroz001c%>  >T3-T2</option></select></td></tr>
+ </table>
+ </td>
+  
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 2</b></td></tr>
+ <tr height="45px"><td><font size="6" color="purple"><%v_value002%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval002" size="39" maxlength="39"  value="<%v_txtval002%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval002" size="5" maxlength="5" value="<%v_prgmaxval002%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval002" size="5" maxlength="5" value="<%v_prgminval002%>" onBlur="walidacjaTemp(this,2)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval002" size="5" maxlength="5"   value="<%v_histval002%>" onBlur="walidacjaTemp(this,3)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval002m" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval002m%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"> <b>:</b> 
+                       <input type="text" name="n_reakval002s" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval002s%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval002" size="5" maxlength="5"    value="<%v_korval002%>" onBlur="walidacjaTemp(this,4)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf002" size="2" maxlength="2" style="width:25px;"   value="<%v_krotinf002%>"  onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><select name="n_selalt002"><option value="off" <%v_selalt002a%> >OFF</option><option value="on" <%v_selalt002b%>  >ON</option></select> dla PK2</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+ 
+  <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik temperatury 3</b></td></tr>
+ <tr height="45px"><td><font size="6" color="purple"><%v_value003%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval003" size="39" maxlength="39"  value="<%v_txtval003%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval003" size="5" maxlength="5" value="<%v_prgmaxval003%>" onBlur="walidacjaTemp(this,1)" ></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval003" size="5" maxlength="5" value="<%v_prgminval003%>" onBlur="walidacjaTemp(this,2)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval003" size="5" maxlength="5"   value="<%v_histval003%>" onBlur="walidacjaTemp(this,3)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval003m" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval003m%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"> <b>:</b> 
+                       <input type="text" name="n_reakval003s" size="2" maxlength="2" style="width:25px;"  value="<%v_reakval003s%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval003" size="5" maxlength="5"    value="<%v_korval003%>" onBlur="walidacjaTemp(this,4)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf003" size="2" maxlength="2" style="width:25px;"   value="<%v_krotinf003%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr height="25px"><td><select name="n_selalt003"><option value="off" <%v_selalt003a%> >OFF</option><option value="on" <%v_selalt003b%>  >ON</option></select> dla PK3</td></tr>
+ <tr height="25px"><td>---------</td></tr>
+ </table>
+ </td>
+ 
+</tr> 
+<tr height="30px"></tr>
+</table>
+</td>
+</tr>
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja parametrow dla &nbsp;&nbsp;&nbsp;&nbsp;czujników wilgotnosci 1-2&nbsp;&nbsp;&nbsp;&nbsp; i &nbsp;&nbsp;&nbsp;&nbsp;czujnika napiecia zasilania</td>
+</tr>
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table border="0" id="tabela">
+<tr height="25px"></tr><tr>
+ <td width="170px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik</b></td></tr>
+ <tr height="45px"><td>Odczyt</td></tr>
+ <tr height="25px"><td>Nazwa czujnika</td></tr>
+ <tr height="25px"><td>Górny prog</td></tr>
+ <tr height="25px"><td>Dolny prog</td></tr>
+ <tr height="25px"><td>Histereza</td></tr>
+ <tr height="25px"><td>Czas reakcji</td></tr>
+ <tr height="25px"><td>Korekcja wartosci</td></tr>
+ <tr height="25px"><td>Krotnosc informacji</td></tr>
+ <tr height="25px"><td>Alarm_przekaznikowy</td></tr>
+ </table>
+ </td>
+ 
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik wilgotnosci 1</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value004%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval004" size="39" maxlength="39"  value="<%v_txtval004%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval004" size="5" maxlength="5" value="<%v_prgmaxval004%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval004" size="5" maxlength="5" value="<%v_prgminval004%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval004" size="5" maxlength="5"   value="<%v_histval004%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval004m" size="2" maxlength="2"  value="<%v_reakval004m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval004s" size="2" maxlength="2"  value="<%v_reakval004s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval004" size="5" maxlength="5"    value="<%v_korval004%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf004" size="2" maxlength="2"   value="<%v_krotinf004%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt004"><option value="off" <%v_selalt004a%> >OFF</option><option value="on" <%v_selalt004b%>  >ON</option></select> dla PK1</td></tr>
+ </table>
+ </td>
+  
+ <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik wilgotnosci 2</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"><%v_value005%></font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval005" size="39" maxlength="39"  value="<%v_txtval005%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval005" size="5" maxlength="5" value="<%v_prgmaxval005%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval005" size="5" maxlength="5" value="<%v_prgminval005%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval005" size="5" maxlength="5"   value="<%v_histval005%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval005m" size="2" maxlength="2"  value="<%v_reakval005m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval005s" size="2" maxlength="2"  value="<%v_reakval005s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval005" size="5" maxlength="5"    value="<%v_korval005%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf005" size="2" maxlength="2"   value="<%v_krotinf005%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt005"><option value="off" <%v_selalt005a%> >OFF</option><option value="on" <%v_selalt005b%>  >ON</option></select> dla PK2</td></tr>
+ </table>
+ </td>
+ 
+  <td width="250px">
+ <table id="tabela">
+ <tr height="25px"><td><b>Czujnik napiecia zasilania</b></td></tr>
+ <tr height="25px"><td><font size="6" color="purple"> <%v_value006%> </font> </td></tr>
+ <tr height="25px"><td><input type="text" name="n_txtval006" size="39" maxlength="39"  value="<%v_txtval006%>"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgmaxval006" size="5" maxlength="5" value="<%v_prgmaxval006%>" onBlur="walidacjaTemp(this,1)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_prgminval006" size="5" maxlength="5" value="<%v_prgminval006%>" onBlur="walidacjaTemp(this,2)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_histval006" size="5" maxlength="5"   value="<%v_histval006%>" onBlur="walidacjaTemp(this,3)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_reakval006m" size="2" maxlength="2"  value="<%v_reakval006m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                       <input type="text" name="n_reakval006s" size="2" maxlength="2"  value="<%v_reakval006s%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_korval006" size="5" maxlength="5"    value="<%v_korval006%>" onBlur="walidacjaTemp(this,4)"></td></tr>
+ <tr height="25px"><td><input type="text" name="n_krotinf006" size="2" maxlength="2"   value="<%v_krotinf006%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+ <tr height="25px"><td><select name="n_selalt006"><option value="off" <%v_selalt006a%> >OFF</option><option value="on" <%v_selalt006b%>  >ON</option></select> dla PK4</td></tr>
+ </table>
+ </td>
+ 
+</tr> 
+<tr height="30px"></tr>
+</table>
+</td>
+</tr>
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja Termostatu - Higrostatu</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table style="text-align: center; border-spacing: 5px;" id="tabela" border="0">
+<tbody><tr height="15px"></tr><tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="160px"><b>Sygnal</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="70px"><b>Dla temp.<br>nr:</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="70px"><b>Aktywnosc</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="70px"><b>Prog zalaczajacy</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Histereza</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Czas_reakcji_ <br> min : sec</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Aktywacja sygnalu poprzez stan:</b></td> 
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Opis</b></td>
+</tr>
+
+
+<tr>
+ <td>1.Term_PK</td>
+ <td><input type="text" name="n_term001pk" size="3" maxlength="3"   value="<%v_term001pk%>" onBlur="walidacja_numeru_Temp(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><select name="n_term001sela"><option value="off" <%v_term001sela1%> >NIE</option><option value="on" <%v_term001sela2%>  >TAK</option></select></td>
+ <td><input type="text" name="n_term001pr" size="5" maxlength="5" value="<%v_term001pr%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text" name="n_term001hi" size="5" maxlength="5" value="<%v_term001hi%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text"  name="n_term001tim" size="2" maxlength="2" style="width:25px;" value="<%v_term001tim%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_term001tis" size="2" maxlength="2" style="width:25px;" value="<%v_term001tis%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term001selt"><option value="1" <%v_term001selt1%> >przekroczenia</option><option value="2" <%v_term001selt2%>  >obnizenia</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK1</td>
+</tr>
+
+<tr>
+ <td>2.Term_PK</td>
+ <td><input type="text" name="n_term002pk" size="3" maxlength="3"   value="<%v_term002pk%>"  onBlur="walidacja_numeru_Temp(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term002sela"><option value="off" <%v_term002sela1%> >NIE</option><option value="on" <%v_term002sela2%>  >TAK</option></select></td>
+ <td><input type="text" name="n_term002pr" size="5" maxlength="5" value="<%v_term002pr%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text" name="n_term002hi" size="5" maxlength="5"  value="<%v_term002hi%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text"  name="n_term002tim" size="2" maxlength="2" style="width:25px;" value="<%v_term002tim%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_term002tis" size="2" maxlength="2" style="width:25px;" value="<%v_term002tis%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term002selt"><option value="1" <%v_term002selt1%> >przekroczenia</option><option value="2" <%v_term002selt2%>  >obnizenia</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK2</td>
+</tr>
+
+<tr>
+ <td>3.Term_PK</td>
+ <td><input type="text" name="n_term003pk" size="3" maxlength="3"   value="<%v_term003pk%>"  onBlur="walidacja_numeru_Temp(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><select name="n_term003sela"><option value="off" <%v_term003sela1%> >NIE</option><option value="on" <%v_term003sela2%>  >TAK</option></select></td>
+ <td><input type="text" name="n_term003pr" size="5" maxlength="5" value="<%v_term003pr%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text" name="n_term003hi" size="5" maxlength="5" value="<%v_term003hi%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text"  name="n_term003tim" size="2" maxlength="2" style="width:25px;" value="<%v_term003tim%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_term003tis" size="2" maxlength="2" style="width:25px;" value="<%v_term003tis%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term003selt"><option value="1" <%v_term003selt1%> >przekroczenia</option><option value="2" <%v_term003selt2%>  >obnizenia</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK3</td>
+</tr>
+
+<tr>
+ <td>4.Term_PK</td>
+ <td><input type="text" name="n_term004pk" size="3" maxlength="3"   value="<%v_term004pk%>"  onBlur="walidacja_numeru_Temp(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><select name="n_term004sela"><option value="off" <%v_term004sela1%> >NIE</option><option value="on" <%v_term004sela2%>  >TAK</option></select></td>
+ <td><input type="text" name="n_term004pr" size="5" maxlength="5" value="<%v_term004pr%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text" name="n_term004hi" size="5" maxlength="5" value="<%v_term004hi%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text"  name="n_term004tim" size="2" maxlength="2" style="width:25px;" value="<%v_term004tim%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_term004tis" size="2" maxlength="2" style="width:25px;" value="<%v_term004tis%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term004selt"><option value="1" <%v_term004selt1%> >przekroczenia</option><option value="2" <%v_term004selt2%>  >obnizenia</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK4</td>
+</tr>
+
+
+
+
+
+<tr height="40px"></tr>
+
+
+
+
+
+<tr>
+ <td>1.Term_IR</td>
+ <td><input type="text" name="n_term005pk" size="3" maxlength="3"   value="<%v_term005pk%>"  onBlur="walidacja_numeru_Temp(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><select name="n_term005sela"><option value="off" <%v_term005sela1%> >NIE</option><option value="on" <%v_term005sela2%>  >TAK</option></select></td>
+ <td><input type="text" name="n_term005pr" size="5" maxlength="5" value="<%v_term005pr%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text" name="n_term005hi" size="5" maxlength="5" value="<%v_term005hi%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text"  name="n_term005tim" size="2" maxlength="2" style="width:25px;" value="<%v_term005tim%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_term005tis" size="2" maxlength="2" style="width:25px;" value="<%v_term005tis%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term005selt"><option value="1" <%v_term005selt1%> >przekroczenia</option><option value="2" <%v_term005selt2%>  >obnizenia</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir1&nbsp;Ir2</td>
+</tr>
+
+<tr>
+ <td>2.Term_IR</td>
+ <td><input type="text" name="n_term006pk" size="3" maxlength="3"   value="<%v_term006pk%>"  onBlur="walidacja_numeru_Temp(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><select name="n_term006sela"><option value="off" <%v_term006sela1%> >NIE</option><option value="on" <%v_term006sela2%>  >TAK</option></select></td>
+ <td><input type="text" name="n_term006pr" size="5" maxlength="5" value="<%v_term006pr%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text" name="n_term006hi" size="5" maxlength="5" value="<%v_term006hi%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text"  name="n_term006tim" size="2" maxlength="2" style="width:25px;" value="<%v_term006tim%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_term006tis" size="2" maxlength="2" style="width:25px;" value="<%v_term006tis%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term006selt"><option value="1" <%v_term006selt1%> >przekroczenia</option><option value="2" <%v_term006selt2%>  >obnizenia</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir3&nbsp;Ir4</td>
+</tr>
+
+<tr>
+ <td>3.Term_IR</td>
+ <td><input type="text" name="n_term007pk" size="3" maxlength="3"   value="<%v_term007pk%>"  onBlur="walidacja_numeru_Temp(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><select name="n_term007sela"><option value="off" <%v_term007sela1%> >NIE</option><option value="on" <%v_term007sela2%>  >TAK</option></select></td>
+ <td><input type="text" name="n_term007pr" size="5" maxlength="5" value="<%v_term007pr%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text" name="n_term007hi" size="5" maxlength="5" value="<%v_term007hi%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text"  name="n_term007tim" size="2" maxlength="2" style="width:25px;" value="<%v_term007tim%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_term007tis" size="2" maxlength="2" style="width:25px;" value="<%v_term007tis%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term007selt"><option value="1" <%v_term007selt1%> >przekroczenia</option><option value="2" <%v_term007selt2%>  >obnizenia</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir5&nbsp;Ir6</td>
+</tr>
+
+<tr>
+ <td>4.Term_IR</td>
+ <td><input type="text" name="n_term008pk" size="3" maxlength="3"   value="<%v_term008pk%>"  onBlur="walidacja_numeru_Temp(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><select name="n_term008sela"><option value="off" <%v_term008sela1%> >NIE</option><option value="on" <%v_term008sela2%>  >TAK</option></select></td>
+ <td><input type="text" name="n_term008pr" size="5" maxlength="5" value="<%v_term008pr%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text" name="n_term008hi" size="5" maxlength="5" value="<%v_term008hi%>" onBlur="walidacjaTemp(this,1)"  onkeypress="return maskujKlawisze(event, '+-.0123456789');"></td>
+ <td><input type="text"  name="n_term008tim" size="2" maxlength="2" style="width:25px;" value="<%v_term008tim%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_term008tis" size="2" maxlength="2" style="width:25px;" value="<%v_term008tis%>"  onBlur="dop_zakr_min_sek(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_term008selt"><option value="1" <%v_term008selt1%> >przekroczenia</option><option value="2" <%v_term008selt2%>  >obnizenia</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir7&nbsp;Ir8</td>
+</tr>
+
+<tr height="30px">
+</tr>
+
+
+</tbody>
+
+</table>
+ </td>
+</tr>
+
+<tr height="100px">
+ <td class="puste" colspan="4">&nbsp;</td>
+</tr>
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja autosterowania</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+<table style="text-align: center; border-spacing: 5px;" id="tabela" border="0">
+<tbody><tr height="15px"></tr><tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="160px"><b>Sygnal</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="70px"><b>Dla wejscia<br>nr:</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>_Czas_reakcji_ <br> min : sec</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Czas opoznienia<br> min : sec</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Czas przytrzymania<br> min : sec</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Aktywacja sygnalu poprzez stan:</b></td> 
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Funkcja <br>aktywna</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="100px"><b>Opis</b></td>
+</tr>
+
+<tr>
+ <td>1.As_PK</td>
+ <td><input type="text" name="n_autoster001we" size="3" maxlength="3"   value="<%v_autoster001we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster001zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster001zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster001om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster001os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster001pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster001ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster001ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster001selr"><option value="off" <%v_autoster001selr1%> >Zwarcia</option><option value="on" <%v_autoster001selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster001sel"><option value="off" <%v_autoster001sel1%> >NIE</option><option value="on" <%v_autoster001sel2%>  >TAK</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK1</td>
+</tr>
+
+<tr>
+ <td>2.As_PK</td>
+ <td><input type="text" name="n_autoster002we" size="3" maxlength="3"   value="<%v_autoster002we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster002zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster002zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster002om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster002os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster002pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster002ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster002ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster002selr"><option value="off" <%v_autoster002selr1%> >Zwarcia</option><option value="on" <%v_autoster002selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster002sel"><option value="off" <%v_autoster002sel1%> >NIE</option><option value="on" <%v_autoster002sel2%>  >TAK</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK2</td>
+</tr>
+
+<tr>
+ <td>3.As_PK</td>
+ <td><input type="text" name="n_autoster003we" size="3" maxlength="3"   value="<%v_autoster003we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster003zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster003zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster003om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster003os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster003pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster003ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster003ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster003selr"><option value="off" <%v_autoster003selr1%> >Zwarcia</option><option value="on" <%v_autoster003selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster003sel"><option value="off" <%v_autoster003sel1%> >NIE</option><option value="on" <%v_autoster003sel2%>  >TAK</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK3</td>
+</tr>
+
+<tr>
+ <td>4.As_PK</td>
+ <td><input type="text" name="n_autoster004we" size="3" maxlength="3"   value="<%v_autoster004we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster004zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster004zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster004om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster004os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster004pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster004ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster004ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster004selr"><option value="off" <%v_autoster004selr1%> >Zwarcia</option><option value="on" <%v_autoster004selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster004sel"><option value="off" <%v_autoster004sel1%> >NIE</option><option value="on" <%v_autoster004sel2%>  >TAK</option></select></td>
+ <td>&nbsp;dla&nbsp;Przekaznika&nbsp;PK4</td>
+</tr>
+
+
+
+<tr height="40px"></tr>
+
+
+
+
+<tr>
+ <td>1.As_IR</td>
+ <td><input type="text" name="n_autoster005we" size="3" maxlength="3"   value="<%v_autoster005we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster005zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster005zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster005zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster005zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster005om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster005om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster005os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster005os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster005pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster005pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster005ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster005ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster005selr"><option value="off" <%v_autoster005selr1%> >Zwarcia</option><option value="on" <%v_autoster005selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster005sel"><option value="off" <%v_autoster005sel1%> >NIE</option><option value="on" <%v_autoster005sel2%>  >TAK</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir1&nbsp;Ir2</td>
+</tr>
+
+<tr>
+ <td>2.As_IR</td>
+ <td><input type="text" name="n_autoster006we" size="3" maxlength="3"   value="<%v_autoster006we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster006zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster006zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster006zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster006zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster006om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster006om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster006os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster006os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster006pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster006pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster006ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster006ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster006selr"><option value="off" <%v_autoster006selr1%> >Zwarcia</option><option value="on" <%v_autoster006selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster006sel"><option value="off" <%v_autoster006sel1%> >NIE</option><option value="on" <%v_autoster006sel2%>  >TAK</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir3&nbsp;Ir4</td>
+</tr>
+
+<tr>
+ <td>3.As_IR</td>
+ <td><input type="text" name="n_autoster007we" size="3" maxlength="3"   value="<%v_autoster007we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster007zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster007zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster007zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster007zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster007om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster007om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster007os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster007os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster007pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster007pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster007ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster007ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster007selr"><option value="off" <%v_autoster007selr1%> >Zwarcia</option><option value="on" <%v_autoster007selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster007sel"><option value="off" <%v_autoster007sel1%> >NIE</option><option value="on" <%v_autoster007sel2%>  >TAK</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir5&nbsp;Ir6</td>
+</tr>
+
+<tr>
+ <td>4.As_IR</td>
+ <td><input type="text" name="n_autoster008we" size="3" maxlength="3"   value="<%v_autoster008we%>" onBlur="walidacja_numeru_WE(this)" onkeypress="return maskujKlawisze(event, '0123456789');" ></td>
+ <td><input type="text"  name="n_autoster008zm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster008zm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster008zs" size="2" maxlength="2" style="width:25px;" value="<%v_autoster008zs%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster008om" size="2" maxlength="2" style="width:25px;" value="<%v_autoster008om%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster008os" size="2" maxlength="2" style="width:25px;" value="<%v_autoster008os%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><input type="text"  name="n_autoster008pm" size="2" maxlength="2" style="width:25px;" value="<%v_autoster008pm%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"><b> : </b><input type="text"  name="n_autoster008ps" size="2" maxlength="2" style="width:25px;" value="<%v_autoster008ps%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td>
+ <td><select name="n_autoster008selr"><option value="off" <%v_autoster008selr1%> >Zwarcia</option><option value="on" <%v_autoster008selr2%>  >Rozwarcia</option></select></td>
+ <td><select name="n_autoster008sel"><option value="off" <%v_autoster008sel1%> >NIE</option><option value="on" <%v_autoster008sel2%>  >TAK</option></select></td>
+ <td>&nbsp;Dla&nbsp;Sygnalu&nbsp;Podczerw.&nbsp;Ir7&nbsp;Ir8</td>
+</tr>
+
+<tr height="30px">
+
+</tbody>
+
+
+</table>
+ </td>
+</tr>
+
+<tr height="100px">
+ <td class="puste" colspan="4">&nbsp;</td>
+</tr>
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja modulu AutoTimer dla przekaznikow</td>
+</tr>
+
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+<table id="tabela" border="0">  
+<tbody><tr height="15px"></tr><tr>
+ <td valign="top">
+ <table style="border-spacing: 0px;" id="tabela" height="300px">
+ <tbody>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Aktywnosc</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Przekaznik&nbsp;nr</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Godzina</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Po</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Wt</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Sr</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Cz</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Pi</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">So</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Ni</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Dzialanie</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Czas&nbsp;implsu</td></tr>
+ <tr><td></td></tr>
+ </tbody></table>
+ </td>
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim001akt"><option value="off" <%v_tim001akt1%> >OFF</option><option value="on" <%v_tim001akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim001pk" size="3" maxlength="3"   value="<%v_tim001pk%>" onkeypress="return maskujKlawisze(event, '0123456789');" ></td></tr>
+ <tr><td height="30px"><input name="n_tim001godz" maxlength="2" value="<%v_tim001godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim001min" maxlength="2" value="<%v_tim001min%>" style="width:25px;"  onBlur="dop_zakr_min_sek(this)"   onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim001check1%> name="n_tim001day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim001check2%> name="n_tim001day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim001check3%> name="n_tim001day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim001check4%> name="n_tim001day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim001check5%> name="n_tim001day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim001check6%> name="n_tim001day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim001check7%> name="n_tim001day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim001akc" id="n_tim001akc" onchange="enableChart1();">
+ <option value="1"  <%v_tim001akc1%> >Zalacz</option><option value="2"  <%v_tim001akc2%>  >Wylacz</option>
+ <option value="3"  <%v_tim001akc3%>  >impl +</option><option value="4" <%v_tim001akc4%>  >impl -</option>
+ </select>
+ </b></td></tr>
+ <tr><td height="30px">
+ <input type="text" name="n_tim001impl" id="n_tim001impl" <%v_tim001ukr%>  size="2" maxlength="2"  value="<%v_tim001impl%>" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');">&nbsp;&nbsp;&nbsp;&nbsp;<br></td></tr>
+ </tbody></table></td>
+
+ 
+ 
+ 
+ 
+ 
+ 
+  <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim002akt"><option value="off" <%v_tim002akt1%> >OFF</option><option value="on" <%v_tim002akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim002pk" size="3" maxlength="3"   value="<%v_tim002pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim002godz" maxlength="2" value="<%v_tim002godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim002min" maxlength="2" value="<%v_tim002min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim002check1%> name="n_tim002day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim002check2%> name="n_tim002day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim002check3%> name="n_tim002day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim002check4%> name="n_tim002day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim002check5%> name="n_tim002day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim002check6%> name="n_tim002day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim002check7%> name="n_tim002day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim002akc" id="n_tim002akc" onchange="enableChart2();">
+ <option value="1"  <%v_tim002akc1%> >Zalacz</option><option value="2"  <%v_tim002akc2%>  >Wylacz</option>
+ <option value="3"  <%v_tim002akc3%>  >impl +</option><option value="4" <%v_tim002akc4%>  >impl -</option>
+ </select>
+ </b></td></tr>
+ <tr><td height="30px">
+ <input type="text" name="n_tim002impl" id="n_tim002impl" <%v_tim002ukr%> size="2" maxlength="2"  value="<%v_tim002impl%>" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');">&nbsp;&nbsp;&nbsp;&nbsp;<br></td></tr>
+ </tbody></table></td>
+
+
+
+
+
+
+
+
+<td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim003akt"><option value="off" <%v_tim003akt1%> >OFF</option><option value="on" <%v_tim003akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim003pk" size="3" maxlength="3"   value="<%v_tim003pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim003godz" maxlength="2" value="<%v_tim003godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim003min" maxlength="2" value="<%v_tim003min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim003check1%> name="n_tim003day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim003check2%> name="n_tim003day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim003check3%> name="n_tim003day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim003check4%> name="n_tim003day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim003check5%> name="n_tim003day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim003check6%> name="n_tim003day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim003check7%> name="n_tim003day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim003akc" id="n_tim003akc" onchange="enableChart3();">
+ <option value="1"  <%v_tim003akc1%> >Zalacz</option><option value="2"  <%v_tim003akc2%>  >Wylacz</option>
+ <option value="3"  <%v_tim003akc3%>  >impl +</option><option value="4" <%v_tim003akc4%>  >impl -</option>
+ </select>
+ </b></td></tr>
+ <tr><td height="30px">
+ <input type="text" name="n_tim003impl" id="n_tim003impl" <%v_tim003ukr%> size="2" maxlength="2"  value="<%v_tim003impl%>" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');">&nbsp;&nbsp;&nbsp;&nbsp;<br></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+  <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim004akt"><option value="off" <%v_tim004akt1%> >OFF</option><option value="on" <%v_tim004akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim004pk" size="3" maxlength="3"   value="<%v_tim004pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim004godz" maxlength="2" value="<%v_tim004godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim004min" maxlength="2" value="<%v_tim004min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim004check1%> name="n_tim004day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim004check2%> name="n_tim004day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim004check3%> name="n_tim004day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim004check4%> name="n_tim004day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim004check5%> name="n_tim004day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim004check6%> name="n_tim004day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim004check7%> name="n_tim004day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim004akc" id="n_tim004akc" onchange="enableChart4();">
+ <option value="1"  <%v_tim004akc1%> >Zalacz</option><option value="2"  <%v_tim004akc2%>  >Wylacz</option>
+ <option value="3"  <%v_tim004akc3%>  >impl +</option><option value="4" <%v_tim004akc4%>  >impl -</option>
+ </select>
+ </b></td></tr>
+ <tr><td height="30px">
+ <input type="text" name="n_tim004impl" id="n_tim004impl" <%v_tim004ukr%> size="2" maxlength="2"  value="<%v_tim004impl%>" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');">&nbsp;&nbsp;&nbsp;&nbsp;<br></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim005akt"><option value="off" <%v_tim005akt1%> >OFF</option><option value="on" <%v_tim005akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim005pk" size="3" maxlength="3"   value="<%v_tim005pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim005godz" maxlength="2" value="<%v_tim005godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim005min" maxlength="2" value="<%v_tim005min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim005check1%> name="n_tim005day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim005check2%> name="n_tim005day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim005check3%> name="n_tim005day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim005check4%> name="n_tim005day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim005check5%> name="n_tim005day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim005check6%> name="n_tim005day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim005check7%> name="n_tim005day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim005akc" id="n_tim005akc" onchange="enableChart5();">
+ <option value="1"  <%v_tim005akc1%> >Zalacz</option><option value="2"  <%v_tim005akc2%>  >Wylacz</option>
+ <option value="3"  <%v_tim005akc3%>  >impl +</option><option value="4" <%v_tim005akc4%>  >impl -</option>
+ </select>
+ </b></td></tr>
+ <tr><td height="30px">
+ <input type="text" name="n_tim005impl" id="n_tim005impl" <%v_tim005ukr%> size="2" maxlength="2"  value="<%v_tim005impl%>" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');">&nbsp;&nbsp;&nbsp;&nbsp;<br></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim006akt"><option value="off" <%v_tim006akt1%> >OFF</option><option value="on" <%v_tim006akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim006pk" size="3" maxlength="3"   value="<%v_tim006pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim006godz" maxlength="2" value="<%v_tim006godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim006min" maxlength="2" value="<%v_tim006min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim006check1%> name="n_tim006day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim006check2%> name="n_tim006day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim006check3%> name="n_tim006day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim006check4%> name="n_tim006day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim006check5%> name="n_tim006day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim006check6%> name="n_tim006day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim006check7%> name="n_tim006day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim006akc" id="n_tim006akc" onchange="enableChart6();">
+ <option value="1"  <%v_tim006akc1%> >Zalacz</option><option value="2"  <%v_tim006akc2%>  >Wylacz</option>
+ <option value="3"  <%v_tim006akc3%>  >impl +</option><option value="4" <%v_tim006akc4%>  >impl -</option>
+ </select>
+ </b></td></tr>
+ <tr><td height="30px">
+ <input type="text" name="n_tim006impl" id="n_tim006impl" <%v_tim006ukr%> size="2" maxlength="2"  value="<%v_tim006impl%>" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');">&nbsp;&nbsp;&nbsp;&nbsp;<br></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim007akt"><option value="off" <%v_tim007akt1%> >OFF</option><option value="on" <%v_tim007akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim007pk" size="3" maxlength="3"   value="<%v_tim007pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim007godz" maxlength="2" value="<%v_tim007godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim007min" maxlength="2" value="<%v_tim007min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim007check1%> name="n_tim007day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim007check2%> name="n_tim007day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim007check3%> name="n_tim007day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim007check4%> name="n_tim007day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim007check5%> name="n_tim007day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim007check6%> name="n_tim007day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim007check7%> name="n_tim007day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim007akc" id="n_tim007akc" onchange="enableChart7();">
+ <option value="1"  <%v_tim007akc1%> >Zalacz</option><option value="2"  <%v_tim007akc2%>  >Wylacz</option>
+ <option value="3"  <%v_tim007akc3%>  >impl +</option><option value="4" <%v_tim007akc4%>  >impl -</option>
+ </select>
+ </b></td></tr>
+ <tr><td height="30px">
+ <input type="text" name="n_tim007impl" id="n_tim007impl" <%v_tim007ukr%> size="2" maxlength="2"  value="<%v_tim007impl%>" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');">&nbsp;&nbsp;&nbsp;&nbsp;<br></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim008akt"><option value="off" <%v_tim008akt1%> >OFF</option><option value="on" <%v_tim008akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim008pk" size="3" maxlength="3"   value="<%v_tim008pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim008godz" maxlength="2" value="<%v_tim008godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim008min" maxlength="2" value="<%v_tim008min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim008check1%> name="n_tim008day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim008check2%> name="n_tim008day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim008check3%> name="n_tim008day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim008check4%> name="n_tim008day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim008check5%> name="n_tim008day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim008check6%> name="n_tim008day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim008check7%> name="n_tim008day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim008akc" id="n_tim008akc" onchange="enableChart8();">
+ <option value="1"  <%v_tim008akc1%> >Zalacz</option><option value="2"  <%v_tim008akc2%>  >Wylacz</option>
+ <option value="3"  <%v_tim008akc3%>  >impl +</option><option value="4" <%v_tim008akc4%>  >impl -</option>
+ </select>
+ </b></td></tr>
+ <tr><td height="30px">
+ <input type="text" name="n_tim008impl" id="n_tim008impl" <%v_tim008ukr%> size="2" maxlength="2"  value="<%v_tim008impl%>" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');">&nbsp;&nbsp;&nbsp;&nbsp;<br></td></tr>
+ </tbody></table></td>
+
+  </tr></tbody>
+  
+  <tr height="30px"></tr>
+  
+ </table>
+
+ </td>
+</tr>
+
+
+<tr height="100px">
+ <td class="puste" colspan="4">&nbsp;</td>
+</tr>
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja modulu AutoTimer dla sygnalow podczewieni IR</td>
+</tr>
+
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+<table id="tabela" border="0">  
+<tbody><tr height="15px"></tr><tr>
+ <td valign="top">
+ <table style="border-spacing: 0px;" id="tabela" height="300px">
+ <tbody>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Aktywnosc</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Sygnal&nbsp;IR&nbsp;nr</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Godzina</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Po</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Wt</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Sr</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Cz</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Pi</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">So</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="25px">Ni</td></tr>
+ <tr><td style="border-right:solid 1px #cccccc;" height="30px">Dzialanie</td></tr>
+ <tr><td></td></tr>
+ </tbody></table>
+ </td>
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim009akt"><option value="off" <%v_tim009akt1%> >OFF</option><option value="on" <%v_tim009akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim009pk" size="3" maxlength="3"   value="<%v_tim009pk%>" onkeypress="return maskujKlawisze(event, '0123456789');" ></td></tr>
+ <tr><td height="30px"><input name="n_tim009godz" maxlength="2" value="<%v_tim009godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim009min" maxlength="2" value="<%v_tim009min%>" style="width:25px;"  onBlur="dop_zakr_min_sek(this)"   onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim009check1%> name="n_tim009day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim009check2%> name="n_tim009day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim009check3%> name="n_tim009day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim009check4%> name="n_tim009day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim009check5%> name="n_tim009day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim009check6%> name="n_tim009day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim009check7%> name="n_tim009day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim009akc" id="n_tim009akc" onchange="enableChart1();">
+ <option value="1"  <%v_tim009akc1%> >Irda</option>
+ </select>
+ </b></td></tr>
+ </tbody></table></td>
+
+ 
+ 
+ 
+ 
+ 
+ 
+  <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim010akt"><option value="off" <%v_tim010akt1%> >OFF</option><option value="on" <%v_tim010akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim010pk" size="3" maxlength="3"   value="<%v_tim010pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim010godz" maxlength="2" value="<%v_tim010godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim010min" maxlength="2" value="<%v_tim010min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input  <%v_tim010check1%> name="n_tim010day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input  <%v_tim010check2%> name="n_tim010day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input  <%v_tim010check3%> name="n_tim010day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input  <%v_tim010check4%> name="n_tim010day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input  <%v_tim010check5%> name="n_tim010day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input  <%v_tim010check6%> name="n_tim010day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input  <%v_tim010check7%> name="n_tim010day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim010akc" id="n_tim010akc" onchange="enableChart2();">
+ <option value="1"  <%v_tim010akc1%> >Irda</option>
+ </select>
+ </b></td></tr>
+ </tbody></table></td>
+
+
+
+
+
+
+
+
+<td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim011akt"><option value="off" <%v_tim011akt1%> >OFF</option><option value="on" <%v_tim011akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim011pk" size="3" maxlength="3"   value="<%v_tim011pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim011godz" maxlength="2" value="<%v_tim011godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim011min" maxlength="2" value="<%v_tim011min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim011check1%> name="n_tim011day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim011check2%> name="n_tim011day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim011check3%> name="n_tim011day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim011check4%> name="n_tim011day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim011check5%> name="n_tim011day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim011check6%> name="n_tim011day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim011check7%> name="n_tim011day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim011akc" id="n_tim011akc" onchange="enableChart3();">
+ <option value="1"  <%v_tim011akc1%> >Irda</option>
+ </select>
+ </b></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+  <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim012akt"><option value="off" <%v_tim012akt1%> >OFF</option><option value="on" <%v_tim012akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim012pk" size="3" maxlength="3"   value="<%v_tim012pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim012godz" maxlength="2" value="<%v_tim012godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim012min" maxlength="2" value="<%v_tim012min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim012check1%> name="n_tim012day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim012check2%> name="n_tim012day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim012check3%> name="n_tim012day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim012check4%> name="n_tim012day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim012check5%> name="n_tim012day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim012check6%> name="n_tim012day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim012check7%> name="n_tim012day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim012akc" id="n_tim012akc" onchange="enableChart4();">
+ <option value="1"  <%v_tim012akc1%> >Irda</option>
+ </select>
+ </b></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim013akt"><option value="off" <%v_tim013akt1%> >OFF</option><option value="on" <%v_tim013akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim013pk" size="3" maxlength="3"   value="<%v_tim013pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim013godz" maxlength="2" value="<%v_tim013godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim013min" maxlength="2" value="<%v_tim013min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim013check1%> name="n_tim013day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim013check2%> name="n_tim013day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim013check3%> name="n_tim013day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim013check4%> name="n_tim013day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim013check5%> name="n_tim013day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim013check6%> name="n_tim013day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim013check7%> name="n_tim013day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim013akc" id="n_tim013akc" onchange="enableChart5();">
+ <option value="1"  <%v_tim013akc1%> >Irda</option>
+ </select>
+ </b></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim014akt"><option value="off" <%v_tim014akt1%> >OFF</option><option value="on" <%v_tim014akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim014pk" size="3" maxlength="3"   value="<%v_tim014pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim014godz" maxlength="2" value="<%v_tim014godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim014min" maxlength="2" value="<%v_tim014min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim014check1%> name="n_tim014day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim014check2%> name="n_tim014day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim014check3%> name="n_tim014day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim014check4%> name="n_tim014day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim014check5%> name="n_tim014day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim014check6%> name="n_tim014day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim014check7%> name="n_tim014day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim014akc" id="n_tim014akc" onchange="enableChart6();">
+ <option value="1"  <%v_tim014akc1%> >Irda</option>
+ </select>
+ </b></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim015akt"><option value="off" <%v_tim015akt1%> >OFF</option><option value="on" <%v_tim015akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim015pk" size="3" maxlength="3"   value="<%v_tim015pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim015godz" maxlength="2" value="<%v_tim015godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim015min" maxlength="2" value="<%v_tim015min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim015check1%> name="n_tim015day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim015check2%> name="n_tim015day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim015check3%> name="n_tim015day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim015check4%> name="n_tim015day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim015check5%> name="n_tim015day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim015check6%> name="n_tim015day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim015check7%> name="n_tim015day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim015akc" id="n_tim015akc" onchange="enableChart7();">
+ <option value="1"  <%v_tim015akc1%> >Irda</option>
+ </select>
+ </b></td></tr>
+ </tbody></table></td>
+ 
+ 
+ 
+ 
+ 
+ <td rowspan="10" valign="top">
+ <table style="text-align: center; border-spacing: 0px;" id="tabela" border="0" height="300px" width="100px">
+ <tbody>
+ <tr><td height="30px"><select name="n_tim016akt"><option value="off" <%v_tim016akt1%> >OFF</option><option value="on" <%v_tim016akt2%> >ON</option></select></td></tr>
+ <tr><td height="30px"><input type="text" name="n_tim016pk" size="3" maxlength="3"   value="<%v_tim016pk%>" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr>
+ <tr><td height="30px"><input name="n_tim016godz" maxlength="2" value="<%v_tim016godz%>" style="width:25px;" onBlur="dop_zakr_godz(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"> <b>:</b> <input name="n_tim016min" maxlength="2" value="<%v_tim016min%>" style="width:25px;" onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');" type="text"></td></tr>
+ 
+ <tr><td height="25px"><input <%v_tim016check1%> name="n_tim016day1" type="checkbox"></td></tr> 
+ <tr><td height="25px"><input <%v_tim016check2%> name="n_tim016day2" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim016check3%> name="n_tim016day3" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim016check4%> name="n_tim016day4" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim016check5%> name="n_tim016day5" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim016check6%> name="n_tim016day6" type="checkbox"></td></tr>
+ <tr><td height="25px"><input <%v_tim016check7%> name="n_tim016day7" type="checkbox"></td></tr>
+ 
+ </b></td></tr>
+ <tr><td height="30px">
+ <select name="n_tim016akc" id="n_tim016akc" onchange="enableChart8();">
+ <option value="1"  <%v_tim016akc1%> >Irda</option>
+ </select>
+ </b></td></tr>
+ </tbody></table></td>
+
+  </tr></tbody>
+  
+  
+   <tr height="30px"></tr>
+   
+   
+</table>
+
+ </td>
+</tr>
+
+
+<tr height="50px">
+ <td class="puste" colspan="4">&nbsp;</td>
+</tr>
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja wyjsc</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+<table border="0" style="text-align: center; border-spacing: 7px;" id="tabela"><tr height="15px"></tr>
+<tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>nr przekaznika</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>stan</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>sterowanie monostabilne</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="330px"><b>nazwa przekaznika</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>sterowanie bistabilne</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>czas impulsu</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="300px"><b>Aktywne funkcje</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="165px"><b>Nazwa dla stanu zalaczania</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="165px"><b>Nazwa dla stanu wylaczenia</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>Koloryzacja dla stanu</b></td>
+</tr>
+
+<tr>
+ <td>WY1</td>
+ <td><%v_pkstan001%></td>
+ <td><a href="lpc.cgi/A015?<%v_pkinfa001%>=001" onclick="my_scroll('lpc.cgi/A015?<%v_pkinfa001%>=001'); return false"><button type="button"><%v_pkinfb001%></button></a></td>
+ <td><input type="checkbox" <%v_pkchk001%> name="n_pkchk001" ></td>
+ <td><input type="text" name="n_pktxt001" size="39" maxlength="39" value="<%v_pktxt001%>"></td>
+ <td><a href="lpc.cgi/A015?pkimpl=001" onclick="my_scroll('lpc.cgi/A015?pkimpl=001'); return false"><button type="button">impuls</button></a></td>
+ <td><input type="checkbox" <%v_pkichk001%> name="n_pkichk001" ></td>
+ <td><input type="text" name="n_pkiczas001" size="2" maxlength="2"  value="<%v_pkiczas001%>"  onBlur="walidacja_2cyfr_sekundy(this)"  onkeypress="return maskujKlawisze(event, '0123456789');"></td> 
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda001%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb001%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc001%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd001%></b></font></td></tr></table>
+ <td><input type="text" name="n_pktxt001z" size="19" maxlength="19" value="<%v_pktxt001z%>"></td>
+ <td><input type="text" name="n_pktxt001w" size="19" maxlength="19" value="<%v_pktxt001w%>"></td>
+ <td><select name="n_pksel001"><option value="z" <%v_pksel001z%> >ZALACZENIA</option><option value="w" <%v_pksel001w%>  >wylaczenia</option></select></td>
+  
+</tr>
+<tr>
+ <td>WY2</td>
+ <td><%v_pkstan002%></td>
+ <td><a href="lpc.cgi/A015?<%v_pkinfa002%>=002" onclick="my_scroll('lpc.cgi/A015?<%v_pkinfa002%>=002'); return false"><button type="button"><%v_pkinfb002%></button></a></td>
+ <td><input type="checkbox" <%v_pkchk002%> name="n_pkchk002" ></td>
+ <td><input type="text" name="n_pktxt002" size="39" maxlength="39" value="<%v_pktxt002%>"></td>
+ <td><a href="lpc.cgi/A015?pkimpl=002" onclick="my_scroll('lpc.cgi/A015?pkimpl=002'); return false"><button type="button">impuls</button></a></td>
+ <td><input type="checkbox" <%v_pkichk002%> name="n_pkichk002" ></td>
+ <td><input type="text" name="n_pkiczas002" size="2" maxlength="2"  value="<%v_pkiczas002%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda002%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb002%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc002%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd002%></b></font></td></tr></table>
+ <td><input type="text" name="n_pktxt002z" size="19" maxlength="19" value="<%v_pktxt002z%>"></td>
+ <td><input type="text" name="n_pktxt002w" size="19" maxlength="19" value="<%v_pktxt002w%>"></td>
+ <td><select name="n_pksel002"><option value="z" <%v_pksel002z%> >ZALACZENIA</option><option value="w" <%v_pksel002w%>  >wylaczenia</option></select></td>
+  
+</tr>
+<tr>
+ <td>WY3</td>
+ <td><%v_pkstan003%></td>
+ <td><a href="lpc.cgi/A015?<%v_pkinfa003%>=003" onclick="my_scroll('lpc.cgi/A015?<%v_pkinfa003%>=003'); return false"><button type="button"><%v_pkinfb003%></button></a></td>
+ <td><input type="checkbox" <%v_pkchk003%> name="n_pkchk003" ></td>
+ <td><input type="text" name="n_pktxt003" size="39" maxlength="39" value="<%v_pktxt003%>"></td>
+ <td><a href="lpc.cgi/A015?pkimpl=003" onclick="my_scroll('lpc.cgi/A015?pkimpl=003'); return false"><button type="button">impuls</button></a></td>
+ <td><input type="checkbox" <%v_pkichk003%> name="n_pkichk003" ></td>
+ <td><input type="text" name="n_pkiczas003" size="2" maxlength="2"  value="<%v_pkiczas003%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda003%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb003%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc003%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd003%></b></font></td></tr></table>
+ <td><input type="text" name="n_pktxt003z" size="19" maxlength="19" value="<%v_pktxt003z%>"></td>
+ <td><input type="text" name="n_pktxt003w" size="19" maxlength="19" value="<%v_pktxt003w%>"></td>
+ <td><select name="n_pksel003"><option value="z" <%v_pksel003z%> >ZALACZENIA</option><option value="w" <%v_pksel003w%>  >wylaczenia</option></select></td>
+  
+</tr>
+<tr>
+ <td>WY4</td>
+ <td><%v_pkstan004%></td>
+ <td><a href="lpc.cgi/A015?<%v_pkinfa004%>=004" onclick="my_scroll('lpc.cgi/A015?<%v_pkinfa004%>=004'); return false"><button type="button"><%v_pkinfb004%></button></a></td>
+ <td><input type="checkbox" <%v_pkchk004%> name="n_pkchk004" ></td>
+ <td><input type="text" name="n_pktxt004" size="39" maxlength="39" value="<%v_pktxt004%>"></td>
+ <td><a href="lpc.cgi/A015?pkimpl=004" onclick="my_scroll('lpc.cgi/A015?pkimpl=004'); return false"><button type="button">impuls</button></a></td>
+ <td><input type="checkbox" <%v_pkichk004%> name="n_pkichk004" ></td>
+ <td><input type="text" name="n_pkiczas004" size="2" maxlength="2"  value="<%v_pkiczas004%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_pkzda004%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdb004%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_pkzdc004%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_pkzdd004%></b></font></td></tr></table>
+ <td><input type="text" name="n_pktxt004z" size="19" maxlength="19" value="<%v_pktxt004z%>"></td>
+ <td><input type="text" name="n_pktxt004w" size="19" maxlength="19" value="<%v_pktxt004w%>"></td>
+ <td><select name="n_pksel004"><option value="z" <%v_pksel004z%> >ZALACZENIA</option><option value="w" <%v_pksel004w%>  >wylaczenia</option></select></td>
+  
+</tr>
+
+<tr height="30px">
+</table>
+
+ </td>
+</tr>
+
+
+<tr height="50px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja portu podczerwieni - Irda</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+<table border="0" style="text-align: center; border-spacing: 7px;" id="tabela"><tr height="15px"></tr>
+<tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="40px"><b>Nr sygnalu</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="130px"><b>Wysylanie</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="90px"><b>Wysylanie Zbiorcze</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="200px"><b>Nazwa sygnalu</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="180px"><b>Nr Portu </b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="300px"><b>Aktywne funkcje</b></td>
+</tr>
+
+<tr>
+ <td>IR1</td>
+ <td><a href="lpc.cgi/A015?sendIR=001" onclick="my_scroll('lpc.cgi/A015?sendIR=001'); return false"><button type="button">wyslij&nbsp;sygnal&nbsp;1</button></a></td>
+ <td><input type="checkbox" name="n_irchk001" ></td>
+ <td><input type="text" name="n_irtxt001" size="39" maxlength="39" value="<%v_irtxt001%>"></td>
+ <td><select name="n_irport001"><option value="01" <%v_irport001_01%> >Port 1</option>
+                                <option value="02" <%v_irport001_02%> >Port 2</option>
+	 </select></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_irzda001%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdb001%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_irzdc001%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdd001%></b></font></td></tr></table></td>	
+</tr>
+
+<tr>
+ <td>IR2</td>
+ <td><a href="lpc.cgi/A015?sendIR=002" onclick="my_scroll('lpc.cgi/A015?sendIR=002'); return false"><button type="button">wyslij sygnal 2</button></a></td>
+ <td><input type="checkbox" name="n_irchk002" ></td>
+ <td><input type="text" name="n_irtxt002" size="39" maxlength="39" value="<%v_irtxt002%>"></td>
+ <td><select name="n_irport002"><option value="01" <%v_irport002_01%> >Port 1</option>
+                                <option value="02" <%v_irport002_02%> >Port 2</option>
+	 </select></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_irzda002%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdb002%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_irzdc002%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdd002%></b></font></td></tr></table></td>	
+</tr>
+
+<tr>
+ <td>IR3</td>
+ <td><a href="lpc.cgi/A015?sendIR=003" onclick="my_scroll('lpc.cgi/A015?sendIR=003'); return false"><button type="button">wyslij sygnal 3</button></a></td>
+ <td><input type="checkbox" name="n_irchk003" ></td>
+ <td><input type="text" name="n_irtxt003" size="39" maxlength="39" value="<%v_irtxt003%>"></td>
+ <td><select name="n_irport003"><option value="01" <%v_irport003_01%> >Port 1</option>
+                                <option value="02" <%v_irport003_02%> >Port 2</option>
+	 </select></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_irzda003%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdb003%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_irzdc003%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdd003%></b></font></td></tr></table></td>	
+</tr>
+
+<tr>
+ <td>IR4</td>
+ <td><a href="lpc.cgi/A015?sendIR=004" onclick="my_scroll('lpc.cgi/A015?sendIR=004'); return false"><button type="button">wyslij sygnal 4</button></a></td>
+ <td><input type="checkbox" name="n_irchk004" ></td>
+ <td><input type="text" name="n_irtxt004" size="39" maxlength="39" value="<%v_irtxt004%>"></td>
+ <td><select name="n_irport004"><option value="01" <%v_irport004_01%> >Port 1</option>
+                                <option value="02" <%v_irport004_02%> >Port 2</option>
+	 </select></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_irzda004%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdb004%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_irzdc004%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdd004%></b></font></td></tr></table></td>	
+</tr>
+
+<tr>
+ <td>IR5</td>
+ <td><a href="lpc.cgi/A015?sendIR=005" onclick="my_scroll('lpc.cgi/A015?sendIR=005'); return false"><button type="button">wyslij sygnal 5</button></a></td>
+ <td><input type="checkbox" name="n_irchk005" ></td>
+ <td><input type="text" name="n_irtxt005" size="39" maxlength="39" value="<%v_irtxt005%>"></td>
+ <td><select name="n_irport005"><option value="01" <%v_irport005_01%> >Port 1</option>
+                                <option value="02" <%v_irport005_02%> >Port 2</option>
+	 </select></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_irzda005%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdb005%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_irzdc005%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdd005%></b></font></td></tr></table></td>	
+</tr>
+
+<tr>
+ <td>IR6</td>
+ <td><a href="lpc.cgi/A015?sendIR=006" onclick="my_scroll('lpc.cgi/A015?sendIR=006'); return false"><button type="button">wyslij sygnal 6</button></a></td>
+ <td><input type="checkbox" name="n_irchk006" ></td>
+ <td><input type="text" name="n_irtxt006" size="39" maxlength="39" value="<%v_irtxt006%>"></td>
+ <td><select name="n_irport006"><option value="01" <%v_irport006_01%> >Port 1</option>
+                                <option value="02" <%v_irport006_02%> >Port 2</option>
+	 </select></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_irzda006%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdb006%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_irzdc006%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdd006%></b></font></td></tr></table></td>	
+</tr>
+
+<tr>
+ <td>IR7</td>
+ <td><a href="lpc.cgi/A015?sendIR=007" onclick="my_scroll('lpc.cgi/A015?sendIR=007'); return false"><button type="button">wyslij sygnal 7</button></a></td>
+ <td><input type="checkbox" name="n_irchk007" ></td>
+ <td><input type="text" name="n_irtxt007" size="39" maxlength="39" value="<%v_irtxt007%>"></td>
+ <td><select name="n_irport007"><option value="01" <%v_irport007_01%> >Port 1</option>
+                                <option value="02" <%v_irport007_02%> >Port 2</option>
+	 </select></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_irzda007%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdb007%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_irzdc007%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdd007%></b></font></td></tr></table></td>	
+</tr>
+
+<tr>
+ <td>IR8</td>
+ <td><a href="lpc.cgi/A015?sendIR=008" onclick="my_scroll('lpc.cgi/A015?sendIR=008'); return false"><button type="button">wyslij sygnal 8</button></a></td>
+ <td><input type="checkbox" name="n_irchk008" ></td>
+ <td><input type="text" name="n_irtxt008" size="39" maxlength="39" value="<%v_irtxt008%>"></td>
+ <td><select name="n_irport008"><option value="01" <%v_irport008_01%> >Port 1</option>
+                                <option value="02" <%v_irport008_02%> >Port 2</option>
+	 </select></td>
+ <td><table><tr><td width="70px"><font style="font-size: 15" color=#01F><b><%v_irzda008%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdb008%></b></font></td>
+                <td width="50px"><font style="font-size: 15" color=#01F><b><%v_irzdc008%></b></font></td>
+                <td width="80px"><font style="font-size: 15" color=#01F><b><%v_irzdd008%></b></font></td></tr></table></td>	
+</tr>
+<tr height="30px">
+</table>
+
+ </td>
+</tr>
+
+
+<tr height="70px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja numerow telefonow</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+     <table id="tabela" border="0">
+     
+        <tbody><tr height="15px"></tr><tr>
+             <td><table style="text-align: center; border-spacing: 0px;" id="tabela" height="7px">
+	<tbody><tr>
+	
+		<td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+	<td colspan="5" style="border-bottom:solid 1px #cccccc;" height="30px"><b>Maska<br>Temperatur</b></td>
+	<td colspan="10" style="border-bottom:solid 1px #cccccc;" height="30px"><b>Maska Wejsc</b></td>
+	<td></td>
+	
+	</tr>
+ <tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="10px"><b>Nr</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"> </td>
+ <td style="border-bottom:solid 1px #cccccc;" width="110px"><b>Numer telefonu</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="10px"><b> </b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="50px"><b>Aktywny</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"> </td>
+ <td style="border-bottom:solid 1px #cccccc;" width="300px"><b>Nazwa telefonu</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"> </td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>1</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>2</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>3</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"> </td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>1</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>2</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>3</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>4</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>5</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>6</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>7</b></td>
+ <td style="border-bottom:solid 1px #cccccc;" width="20px"><b>8</b></td>
+ </tr>
+ 
+  <tr>
+ <td height="30px">1.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel001nr" size="15" maxlength="15" value="<%v_tel001nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel001akt" size="1"><option <%v_tel001akt1%> value="off">nie</option><option <%v_tel001akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel001txt" size="39" maxlength="39"  value="<%v_tel001txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel001chT001%>  name="n_tel001chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chT002%>  name="n_tel001chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chT003%>  name="n_tel001chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel001chWe001%>  name="n_tel001chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chWe002%>  name="n_tel001chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chWe003%>  name="n_tel001chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chWe004%>  name="n_tel001chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chWe005%>  name="n_tel001chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chWe006%>  name="n_tel001chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chWe007%>  name="n_tel001chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel001chWe008%>  name="n_tel001chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">2.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel002nr" size="15" maxlength="15" value="<%v_tel002nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel002akt" size="1"><option <%v_tel002akt1%> value="off">nie</option><option <%v_tel002akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel002txt" size="39" maxlength="39"  value="<%v_tel002txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel002chT001%>  name="n_tel002chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chT002%>  name="n_tel002chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chT003%>  name="n_tel002chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel002chWe001%>  name="n_tel002chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chWe002%>  name="n_tel002chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chWe003%>  name="n_tel002chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chWe004%>  name="n_tel002chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chWe005%>  name="n_tel002chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chWe006%>  name="n_tel002chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chWe007%>  name="n_tel002chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel002chWe008%>  name="n_tel002chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">3.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel003nr" size="15" maxlength="15" value="<%v_tel003nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel003akt" size="1"><option <%v_tel003akt1%> value="off">nie</option><option <%v_tel003akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel003txt" size="39" maxlength="39"  value="<%v_tel003txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel003chT001%>  name="n_tel003chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chT002%>  name="n_tel003chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chT003%>  name="n_tel003chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel003chWe001%>  name="n_tel003chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chWe002%>  name="n_tel003chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chWe003%>  name="n_tel003chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chWe004%>  name="n_tel003chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chWe005%>  name="n_tel003chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chWe006%>  name="n_tel003chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chWe007%>  name="n_tel003chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel003chWe008%>  name="n_tel003chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">4.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel004nr" size="15" maxlength="15" value="<%v_tel004nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel004akt" size="1"><option <%v_tel004akt1%> value="off">nie</option><option <%v_tel004akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel004txt" size="39" maxlength="39"  value="<%v_tel004txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel004chT001%>  name="n_tel004chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chT002%>  name="n_tel004chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chT003%>  name="n_tel004chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel004chWe001%>  name="n_tel004chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chWe002%>  name="n_tel004chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chWe003%>  name="n_tel004chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chWe004%>  name="n_tel004chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chWe005%>  name="n_tel004chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chWe006%>  name="n_tel004chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chWe007%>  name="n_tel004chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel004chWe008%>  name="n_tel004chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">5.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel005nr" size="15" maxlength="15" value="<%v_tel005nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel005akt" size="1"><option <%v_tel005akt1%> value="off">nie</option><option <%v_tel005akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel005txt" size="39" maxlength="39"  value="<%v_tel005txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel005chT001%>  name="n_tel005chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chT002%>  name="n_tel005chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chT003%>  name="n_tel005chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel005chWe001%>  name="n_tel005chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chWe002%>  name="n_tel005chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chWe003%>  name="n_tel005chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chWe004%>  name="n_tel005chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chWe005%>  name="n_tel005chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chWe006%>  name="n_tel005chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chWe007%>  name="n_tel005chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel005chWe008%>  name="n_tel005chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">6.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel006nr" size="15" maxlength="15" value="<%v_tel006nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel006akt" size="1"><option <%v_tel006akt1%> value="off">nie</option><option <%v_tel006akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel006txt" size="39" maxlength="39"  value="<%v_tel006txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel006chT001%>  name="n_tel006chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chT002%>  name="n_tel006chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chT003%>  name="n_tel006chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel006chWe001%>  name="n_tel006chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chWe002%>  name="n_tel006chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chWe003%>  name="n_tel006chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chWe004%>  name="n_tel006chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chWe005%>  name="n_tel006chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chWe006%>  name="n_tel006chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chWe007%>  name="n_tel006chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel006chWe008%>  name="n_tel006chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">7.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel007nr" size="15" maxlength="15" value="<%v_tel007nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel007akt" size="1"><option <%v_tel007akt1%> value="off">nie</option><option <%v_tel007akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel007txt" size="39" maxlength="39"  value="<%v_tel007txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel007chT001%>  name="n_tel007chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chT002%> name="n_tel007chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chT003%>  name="n_tel007chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel007chWe001%>  name="n_tel007chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chWe002%>  name="n_tel007chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chWe003%>  name="n_tel007chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chWe004%>  name="n_tel007chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chWe005%>  name="n_tel007chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chWe006%>  name="n_tel007chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chWe007%>  name="n_tel007chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel007chWe008%>  name="n_tel007chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">8.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel008nr" size="15" maxlength="15" value="<%v_tel008nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel008akt" size="1"><option <%v_tel008akt1%> value="off">nie</option><option <%v_tel008akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel008txt" size="39" maxlength="39"  value="<%v_tel008txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel008chT001%>  name="n_tel008chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chT002%>  name="n_tel008chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chT003%>  name="n_tel008chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel008chWe001%>  name="n_tel008chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chWe002%>  name="n_tel008chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chWe003%>  name="n_tel008chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chWe004%>  name="n_tel008chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chWe005%>  name="n_tel008chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chWe006%>  name="n_tel008chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chWe007%>  name="n_tel008chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel008chWe008%>  name="n_tel008chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">9.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel009nr" size="15" maxlength="15" value="<%v_tel009nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel009akt" size="1"><option <%v_tel009akt1%> value="off">nie</option><option <%v_tel009akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel009txt" size="39" maxlength="39"  value="<%v_tel009txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel009chT001%>  name="n_tel009chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chT002%>  name="n_tel009chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chT003%>  name="n_tel009chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel009chWe001%>  name="n_tel009chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chWe002%>  name="n_tel009chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chWe003%>  name="n_tel009chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chWe004%>  name="n_tel009chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chWe005%>  name="n_tel009chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chWe006%>  name="n_tel009chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chWe007%>  name="n_tel009chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel009chWe008%>  name="n_tel009chWe008" type="checkbox"></td>
+ </tr>
+ 
+ <tr>
+ <td height="30px">10.</td>
+ <td height="20px"> </td>
+ <td height="30px"><input name="n_tel010nr" size="15" maxlength="15" value="<%v_tel010nr%>" type="text" onkeypress="return maskujKlawisze(event, '+0123456789')"></td>
+ <td></td>
+ <td height="30px"><select name="n_tel010akt" size="1"><option <%v_tel010akt1%> value="off">nie</option><option <%v_tel010akt2%> value="on">tak</option></select></td>
+ <td height="20px"> </td>
+ <td height="30px"><input type="text" name="n_tel010txt" size="39" maxlength="39"  value="<%v_tel010txt%>"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel010chT001%>  name="n_tel010chT001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chT002%>  name="n_tel010chT002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chT003%>  name="n_tel010chT003" type="checkbox"></td>
+ <td height="20px"> </td>
+ <td height="20px"><input <%v_tel010chWe001%>  name="n_tel010chWe001" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chWe002%>  name="n_tel010chWe002" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chWe003%>  name="n_tel010chWe003" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chWe004%>  name="n_tel010chWe004" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chWe005%>  name="n_tel010chWe005" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chWe006%>  name="n_tel010chWe006" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chWe007%>  name="n_tel010chWe007" type="checkbox"></td>
+ <td height="20px"><input <%v_tel010chWe008%>  name="n_tel010chWe008" type="checkbox"></td>
+ </tr>
+
+
+  <tr><td colspan="3"></td>
+              </tr></tbody>
+	<tr height="30px">		  
+		</table>
+			  
+			  
+			  </td>
+
+
+      </tbody>
+	  
+	  </table>
+
+ </td>
+</tr>
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+<tr>
+ <td colspan="4" class="tytul">Rejestrator Temperatury/Wilgotnosci, sygnalow wejsciowych i wyjsciowych</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+<table border="0" style="text-align: center; border-spacing: 0px;" id="tabela">
+
+<tr height="95px">
+ <td width="12px" style="border-bottom:solid 1px #cccccc;">&nbsp;</td>
+ <td width="180px" style="border-bottom:solid 1px #cccccc;"><b>wartosci Temp.<br>w pliku Excel</b></td>
+ <td width="180px"  style="border-bottom:solid 1px #cccccc;"><b>wartosci Temp.<br>w  pliku txt</b></td>
+ <td width="180px"  style="border-bottom:solid 1px #cccccc;"><b>Wykresy</b></td>
+ <td width="180px"  style="border-bottom:solid 1px #cccccc;"><b>Zdarzenia<br>dla wejsc WE</b></td>
+ <td width="180px"  style="border-bottom:solid 1px #cccccc;"><b>Zdarzenia<br>dla Temp.</b></td>
+ <td width="180px"  style="border-bottom:solid 1px #cccccc;"><b>Plik zbiorczy</b></td>
+ <td width="180px"  style="border-bottom:solid 1px #cccccc;"><b>Raporty odebranych wiadomosci SMS:</b></td>
+</tr>
+
+
+<tr height="35px">
+ <td>Odczyt:</td>
+ 
+ 
+ 
+  <td width=120px><a href="Plik001.csv"><%v_plikexc001%></a>
+                  <a href="Plik002.csv"><%v_plikexc002%></a>
+                  <a href="Plik003.csv"><%v_plikexc003%></a>
+                  <a href="Plik004.csv"><%v_plikexc004%></a>
+                  <a href="Plik005.csv"><%v_plikexc005%></a>
+                  <a href="Plik006.csv"><%v_plikexc006%></a>
+                  <a href="Plik007.csv"><%v_plikexc007%></a>
+                  <a href="Plik008.csv"><%v_plikexc008%></a>
+                  <a href="Plik009.csv"><%v_plikexc009%></a>
+                  <a href="Plik010.csv"><%v_plikexc010%></a>
+                  <a href="Plik011.csv"><%v_plikexc011%></a>
+                  <a href="Plik012.csv"><%v_plikexc012%></a>
+                  <a href="Plik013.csv"><%v_plikexc013%></a>
+                  <a href="Plik014.csv"><%v_plikexc014%></a>
+                  <a href="Plik015.csv"><%v_plikexc015%></a>
+                  <a href="Plik016.csv"><%v_plikexc016%></a>
+                  <a href="Plik017.csv"><%v_plikexc017%></a>
+                  <a href="Plik018.csv"><%v_plikexc018%></a>
+                  <a href="Plik019.csv"><%v_plikexc019%></a>
+                  <a href="Plik020.csv"><%v_plikexc020%></a>
+ </td>
+
+ 
+ 
+ 
+ 
+ <td width=120px> <a href="Odczyt001.txt"><%v_plikodc001%></a>
+                  <a href="Odczyt002.txt"><%v_plikodc002%></a>
+                  <a href="Odczyt003.txt"><%v_plikodc003%></a>
+                  <a href="Odczyt004.txt"><%v_plikodc004%></a>
+                  <a href="Odczyt005.txt"><%v_plikodc005%></a>
+                  <a href="Odczyt006.txt"><%v_plikodc006%></a>
+                  <a href="Odczyt007.txt"><%v_plikodc007%></a>
+                  <a href="Odczyt008.txt"><%v_plikodc008%></a>
+                  <a href="Odczyt009.txt"><%v_plikodc009%></a>
+                  <a href="Odczyt010.txt"><%v_plikodc010%></a>
+                  <a href="Odczyt011.txt"><%v_plikodc011%></a>
+                  <a href="Odczyt012.txt"><%v_plikodc012%></a>
+                  <a href="Odczyt013.txt"><%v_plikodc013%></a>
+                  <a href="Odczyt014.txt"><%v_plikodc014%></a>
+                  <a href="Odczyt015.txt"><%v_plikodc015%></a>
+                  <a href="Odczyt016.txt"><%v_plikodc016%></a>
+                  <a href="Odczyt017.txt"><%v_plikodc017%></a>
+                  <a href="Odczyt018.txt"><%v_plikodc018%></a>
+                  <a href="Odczyt019.txt"><%v_plikodc019%></a>
+                  <a href="Odczyt020.txt"><%v_plikodc020%></a>
+ </td>
+ 
+ 
+ <td width=120px> <a href="Wykres001"><%v_pliktemp001%></a>
+                  <a href="Wykres002"><%v_pliktemp002%></a>
+                  <a href="Wykres003"><%v_pliktemp003%></a>
+                  <a href="Wykres004"><%v_pliktemp004%></a>
+                  <a href="Wykres005"><%v_pliktemp005%></a>
+                  <a href="Wykres006"><%v_pliktemp006%></a>
+                  <a href="Wykres007"><%v_pliktemp007%></a>
+                  <a href="Wykres008"><%v_pliktemp008%></a>
+                  <a href="Wykres009"><%v_pliktemp009%></a>
+                  <a href="Wykres010"><%v_pliktemp010%></a>
+                  <a href="Wykres011"><%v_pliktemp011%></a>
+                  <a href="Wykres012"><%v_pliktemp012%></a>
+                  <a href="Wykres013"><%v_pliktemp013%></a>
+                  <a href="Wykres014"><%v_pliktemp014%></a>
+                  <a href="Wykres015"><%v_pliktemp015%></a>
+                  <a href="Wykres016"><%v_pliktemp016%></a>
+                  <a href="Wykres017"><%v_pliktemp017%></a>
+                  <a href="Wykres018"><%v_pliktemp018%></a>
+                  <a href="Wykres019"><%v_pliktemp019%></a>
+                  <a href="Wykres020"><%v_pliktemp020%></a>
+ </td>
+ 
+ 
+ <td width=120px> <a href="WE_plik001.txt"><%v_plikwe001%></a>
+                  <a href="WE_plik002.txt"><%v_plikwe002%></a>
+                  <a href="WE_plik003.txt"><%v_plikwe003%></a>
+                  <a href="WE_plik004.txt"><%v_plikwe004%></a>
+                  <a href="WE_plik005.txt"><%v_plikwe005%></a>
+                  <a href="WE_plik006.txt"><%v_plikwe006%></a>
+                  <a href="WE_plik007.txt"><%v_plikwe007%></a>
+                  <a href="WE_plik008.txt"><%v_plikwe008%></a>
+                  <a href="WE_plik009.txt"><%v_plikwe009%></a>
+                  <a href="WE_plik010.txt"><%v_plikwe010%></a>
+                  <a href="WE_plik011.txt"><%v_plikwe011%></a>
+                  <a href="WE_plik012.txt"><%v_plikwe012%></a>
+                  <a href="WE_plik013.txt"><%v_plikwe013%></a>
+                  <a href="WE_plik014.txt"><%v_plikwe014%></a>
+                  <a href="WE_plik015.txt"><%v_plikwe015%></a>
+                  <a href="WE_plik016.txt"><%v_plikwe016%></a>
+                  <a href="WE_plik017.txt"><%v_plikwe017%></a>
+                  <a href="WE_plik018.txt"><%v_plikwe018%></a>
+                  <a href="WE_plik019.txt"><%v_plikwe019%></a>
+                  <a href="WE_plik020.txt"><%v_plikwe020%></a>
+ 
+ 
+ <td width=120px> <a href="Temp_plik001.txt"><%v_plikttemp001%></a>
+                  <a href="Temp_plik002.txt"><%v_plikttemp002%></a>
+                  <a href="Temp_plik003.txt"><%v_plikttemp003%></a>
+                  <a href="Temp_plik004.txt"><%v_plikttemp004%></a>
+                  <a href="Temp_plik005.txt"><%v_plikttemp005%></a>
+                  <a href="Temp_plik006.txt"><%v_plikttemp006%></a>
+                  <a href="Temp_plik007.txt"><%v_plikttemp007%></a>
+                  <a href="Temp_plik008.txt"><%v_plikttemp008%></a>
+                  <a href="Temp_plik009.txt"><%v_plikttemp009%></a>
+                  <a href="Temp_plik010.txt"><%v_plikttemp010%></a>
+                  <a href="Temp_plik011.txt"><%v_plikttemp011%></a>
+                  <a href="Temp_plik012.txt"><%v_plikttemp012%></a>
+                  <a href="Temp_plik013.txt"><%v_plikttemp013%></a>
+                  <a href="Temp_plik014.txt"><%v_plikttemp014%></a>
+                  <a href="Temp_plik015.txt"><%v_plikttemp015%></a>
+                  <a href="Temp_plik016.txt"><%v_plikttemp016%></a>
+                  <a href="Temp_plik017.txt"><%v_plikttemp017%></a>
+                  <a href="Temp_plik018.txt"><%v_plikttemp018%></a>
+                  <a href="Temp_plik019.txt"><%v_plikttemp019%></a>
+                  <a href="Temp_plik020.txt"><%v_plikttemp020%></a>
+ 
+ 
+  <td width=120px><a href="Zdarzen001.txt"><%v_plikzda001%></a>
+                  <a href="Zdarzen002.txt"><%v_plikzda002%></a>
+                  <a href="Zdarzen003.txt"><%v_plikzda003%></a>
+                  <a href="Zdarzen004.txt"><%v_plikzda004%></a>
+                  <a href="Zdarzen005.txt"><%v_plikzda005%></a>
+                  <a href="Zdarzen006.txt"><%v_plikzda006%></a>
+                  <a href="Zdarzen007.txt"><%v_plikzda007%></a>
+                  <a href="Zdarzen008.txt"><%v_plikzda008%></a>
+                  <a href="Zdarzen009.txt"><%v_plikzda009%></a>
+                  <a href="Zdarzen010.txt"><%v_plikzda010%></a>
+                  <a href="Zdarzen011.txt"><%v_plikzda011%></a>
+                  <a href="Zdarzen012.txt"><%v_plikzda012%></a>
+                  <a href="Zdarzen013.txt"><%v_plikzda013%></a>
+                  <a href="Zdarzen014.txt"><%v_plikzda014%></a>
+                  <a href="Zdarzen015.txt"><%v_plikzda015%></a>
+                  <a href="Zdarzen016.txt"><%v_plikzda016%></a>
+                  <a href="Zdarzen017.txt"><%v_plikzda017%></a>
+                  <a href="Zdarzen018.txt"><%v_plikzda018%></a>
+                  <a href="Zdarzen019.txt"><%v_plikzda019%></a>
+                  <a href="Zdarzen020.txt"><%v_plikzda020%></a>
+ 
+ 
+ <td width=120px> <a href="SMS_plik001.txt"><%v_pliksms001%></a>
+                  <a href="SMS_plik002.txt"><%v_pliksms002%></a>
+                  <a href="SMS_plik003.txt"><%v_pliksms003%></a>
+                  <a href="SMS_plik004.txt"><%v_pliksms004%></a>
+                  <a href="SMS_plik005.txt"><%v_pliksms005%></a>
+                  <a href="SMS_plik006.txt"><%v_pliksms006%></a>
+                  <a href="SMS_plik007.txt"><%v_pliksms007%></a>
+                  <a href="SMS_plik008.txt"><%v_pliksms008%></a>
+                  <a href="SMS_plik009.txt"><%v_pliksms009%></a>
+                  <a href="SMS_plik010.txt"><%v_pliksms010%></a>
+                  <a href="SMS_plik011.txt"><%v_pliksms011%></a>
+                  <a href="SMS_plik012.txt"><%v_pliksms012%></a>
+                  <a href="SMS_plik013.txt"><%v_pliksms013%></a>
+                  <a href="SMS_plik014.txt"><%v_pliksms014%></a>
+                  <a href="SMS_plik015.txt"><%v_pliksms015%></a>
+                  <a href="SMS_plik016.txt"><%v_pliksms016%></a>
+                  <a href="SMS_plik017.txt"><%v_pliksms017%></a>
+                  <a href="SMS_plik018.txt"><%v_pliksms018%></a>
+                  <a href="SMS_plik019.txt"><%v_pliksms019%></a>
+                  <a href="SMS_plik020.txt"><%v_pliksms020%></a>
+ </td>
+ </td>
+ 
+</tr>
+
+
+<tr height="75px">
+  <td>Rejestrator<br>dla Temp.:</td>
+  <td><select name="n_selrej001"><option value="off" <%v_selrej001a%> >OFF</option>
+                                 <option value="on" <%v_selrej001b%>  >ON</option></select></td>
+  </tr>
+
+<tr height="25px">
+  <td>Zapis co:</td>
+  <td><input type="text" name="n_reakrej001m" size="2" maxlength="2" style="width:25px;" value="<%v_reakrej001m%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+      <input type="text" name="n_reakrej001s" size="2" maxlength="2" style="width:25px;" value="<%v_reakrej001s%>"  onBlur="walidacja_2cyfr(this)"></td>
+  <td>Start zapisu: <%v_startrej001%></td><td>Stop zapisu: <%v_stoprej001%></td>	  
+</tr>
+<tr height="30px"></table>
+
+ </td>
+</tr>
+
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja pingu</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+ 
+ 
+ <table border="0" style="border-spacing: 3px;" id="tabela"><tr height="15px"></tr>
+  <tr><td><b>Odpytywane urzadzenie 1:</b></td></tr>
+  <tr><td>Nazwa:</td><td><input type="text" name="n_ping001nu" size="89" maxlength="59"  value="<%v_ping001nu%>"></td><td></td></td></tr>
+  <tr><td>Adres IP:</td><td><input type="text" name="n_ping001ip" size="29" maxlength="29" value="<%v_ping001ip%>"> <%v_ping001info%></td></tr>
+  <tr><td>Czestosc:</td><td><input type="text" name="n_ping001min" size="2" maxlength="2" style="width:25px;"  value="<%v_ping001min%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                            <input type="text" name="n_ping001sec" size="2" maxlength="2" style="width:25px;"  value="<%v_ping001sec%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+  <tr><td>Powiadamianie:</td><td><select name="n_ping001sel"><option value="1" <%v_ping001selA%> >SMS</option><option value="2" <%v_ping001selB%>  >Email</option><option value="3" <%v_ping001selC%>  >SMS i Email</option><option value="4" <%v_ping001selD%>  >Wylaczone</option></select></td></tr>
+  <tr height="20px"></table><br>
+  
+ <table border="0" style="border-spacing: 3px;" id="tabela2">
+  <tr><td><b>Odpytywane urzadzenie 2:</b></td></tr>
+  <tr><td>Nazwa:</td><td><input type="text" name="n_ping002nu" size="89" maxlength="59"  value="<%v_ping002nu%>"></td><td></td></td></tr>
+  <tr><td>Adres IP:</td><td><input type="text" name="n_ping002ip" size="29" maxlength="29" value="<%v_ping002ip%>"> <%v_ping002info%></td></tr>
+  <tr><td>Czestosc:</td><td><input type="text" name="n_ping002min" size="2" maxlength="2" style="width:25px;"  value="<%v_ping002min%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                            <input type="text" name="n_ping002sec" size="2" maxlength="2" style="width:25px;"  value="<%v_ping002sec%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+  <tr><td>Powiadamianie:</td><td><select name="n_ping002sel"><option value="1" <%v_ping002selA%> >SMS</option><option value="2" <%v_ping002selB%>  >Email</option><option value="3" <%v_ping002selC%>  >SMS i Email</option><option value="4" <%v_ping002selD%>  >Wylaczone</option></select></td></tr>
+  <tr height="20px"></table><br>
+
+   
+ <table border="0" style="border-spacing: 3px;" id="tabela">
+  <tr><td><b>Odpytywane urzadzenie 3:</b></td></tr>
+  <tr><td>Nazwa:</td><td><input type="text" name="n_ping003nu" size="89" maxlength="59"  value="<%v_ping003nu%>"></td><td></td></td></tr>
+  <tr><td>Adres IP:</td><td><input type="text" name="n_ping003ip" size="29" maxlength="29" value="<%v_ping003ip%>"> <%v_ping003info%></td></tr>
+  <tr><td>Czestosc:</td><td><input type="text" name="n_ping003min" size="2" maxlength="2" style="width:25px;"  value="<%v_ping003min%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                            <input type="text" name="n_ping003sec" size="2" maxlength="2" style="width:25px;"  value="<%v_ping003sec%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+  <tr><td>Powiadamianie:</td><td><select name="n_ping003sel"><option value="1" <%v_ping003selA%> >SMS</option><option value="2" <%v_ping003selB%>  >Email</option><option value="3" <%v_ping003selC%>  >SMS i Email</option><option value="4" <%v_ping003selD%>  >Wylaczone</option></select></td></tr>
+  <tr height="20px"></table><br>
+  
+ <table border="0" style="border-spacing: 3px;" id="tabela2">
+  <tr><td><b>Odpytywane urzadzenie 4:</b></td></tr>
+  <tr><td>Nazwa:</td><td><input type="text" name="n_ping004nu" size="89" maxlength="59"  value="<%v_ping004nu%>"></td><td></td></td></tr>
+  <tr><td>Adres IP:</td><td><input type="text" name="n_ping004ip" size="29" maxlength="29" value="<%v_ping004ip%>"> <%v_ping004info%></td></tr>
+  <tr><td>Czestosc:</td><td><input type="text" name="n_ping004min" size="2" maxlength="2" style="width:25px;"  value="<%v_ping004min%>"  onBlur="walidacja_2cyfr(this)"> <b>:</b> 
+                            <input type="text" name="n_ping004sec" size="2" maxlength="2" style="width:25px;"  value="<%v_ping004sec%>"  onBlur="walidacja_2cyfr(this)"></td></tr>
+  <tr><td>Powiadamianie:</td><td><select name="n_ping004sel"><option value="1" <%v_ping004selA%> >SMS</option><option value="2" <%v_ping004selB%>  >Email</option><option value="3" <%v_ping004selC%>  >SMS i Email</option><option value="4" <%v_ping004selD%>  >Wylaczone</option></select></td></tr>
+  <tr height="20px"></table> 
+  
+ 
+  
+
+  
+ </td>
+</tr>
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja skrzynki nadawczej e-mail</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+ 
+ 
+ <table border="0" style="border-spacing: 3px;" id="tabela"><tr height="15px"></tr>
+  <tr><td><b>Skrzynka nadawcza nr 1:</b></td></tr>
+  <tr><td>Nazwa serwera poczty wychodzacej:</td><td><input type="text" name="n_mail01ns" size="59" maxlength="59"  value="<%v_mail01ns%>"></td><td><%v_mail01ni%></td></td></tr>
+  <tr><td>Adres nadawczy:</td><td><input type="text" name="n_mail01nu" size="59" maxlength="59" value="<%v_mail01nu%>"></td></tr>
+  <tr><td> haslo:</td><td><input type="password" name="n_mail01nh" size="29" maxlength="29" value="<%v_mail01nh%>"></td></tr>
+  <tr><td>Numer portu (bez SSL):</td><td><input type="text" name="n_mail01np" size="3" maxlength="3" value="<%v_mail01np%>"></td></tr>
+  <tr height="30px"></tr>
+  </table>
+  
+<table border="0" style="border-spacing: 3px;" id="tabela2"> 
+  <tr><td><b>Skrzynka nadawcza nr 2:</b></td></tr>
+  <tr><td>Nazwa serwera poczty wychodzacej:</td><td><input type="text" name="n_mail02ns" size="59" maxlength="59" value="<%v_mail02ns%>"></td><td><%v_mail02ni%></td></tr>
+  <tr><td>Adres nadawczy:</td><td><input type="text" name="n_mail02nu" size="59" maxlength="59" value="<%v_mail02nu%>"></td></tr>
+  <tr><td> haslo:</td><td><input type="password" name="n_mail02nh" size="29" maxlength="29" value="<%v_mail02nh%>"></td></tr>
+  <tr><td>Numer portu (bez SSL):</td><td><input type="text" name="n_mail02np" size="3" maxlength="3" value="<%v_mail02np%>"></td></tr>
+  <tr height="30px"></tr>
+  </table>
+  
+ <table border="0" style="border-spacing: 3px;" id="tabela"> 
+  <tr><td><b>Skrzynka nadawcza nr 3:</b></td></tr>
+  <tr><td>Nazwa serwera poczty wychodzacej:</td><td><input type="text" name="n_mail03ns" size="59" maxlength="59" value="<%v_mail03ns%>"></td><td><%v_mail03ni%></td></tr>
+  <tr><td>Adres nadawczy:</td><td><input type="text" name="n_mail03nu" size="59" maxlength="59" value="<%v_mail03nu%>"></td></tr>
+  <tr><td> haslo:</td><td><input type="password" name="n_mail03nh" size="29" maxlength="29" value="<%v_mail03nh%>"></td></tr>
+  <tr><td>Numer portu (bez SSL):</td><td><input type="text" name="n_mail03np" size="3" maxlength="3" value="<%v_mail03np%>"></td></tr>
+  <tr height="30px"></tr>
+  </table>
+  
+<table border="0" style="border-spacing: 3px;" id="tabela2">  
+  <tr><td><b>Skrzynka nadawcza nr 4:</b></td></tr>
+  <tr><td>Nazwa serwera poczty wychodzacej:</td><td><input type="text" name="n_mail04ns" size="59" maxlength="59" value="<%v_mail04ns%>"></td><td><%v_mail04ni%></td></tr>
+  <tr><td>Adres nadawczy:</td><td><input type="text" name="n_mail04nu" size="59" maxlength="59" value="<%v_mail04nu%>"></td></tr>
+  <tr><td> haslo:</td><td><input type="password" name="n_mail04nh" size="29" maxlength="29" value="<%v_mail04nh%>"></td></tr>
+  <tr><td>Numer portu (bez SSL):</td><td><input type="text" name="n_mail04np" size="3" maxlength="3" value="<%v_mail04np%>"></td></tr>
+  <tr height="30px"></tr>
+  </table>
+  
+ </td>
+</tr>
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja skrzynki odbiorczej e-mail</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+ 
+ 
+ <table border="0" style="border-spacing: 3px;" id="tabela"><tr height="15px"></tr>
+ <tr><td><b>Skrzynki odbiorcze:</b></td></tr>
+ <tr><td>Adres odbiorczy 1:</td><td><input type="text" name="n_mail01ou" size="59" maxlength="59" value="<%v_mail01ou%>"></td></tr>
+ <tr><td>Adres odbiorczy 2:</td><td><input type="text" name="n_mail02ou" size="59" maxlength="59" value="<%v_mail02ou%>"></td></tr>
+ <tr><td>Adres odbiorczy 3:</td><td><input type="text" name="n_mail03ou" size="59" maxlength="59" value="<%v_mail03ou%>"></td></tr>
+ <tr><td>Adres odbiorczy 4:</td><td><input type="text" name="n_mail04ou" size="59" maxlength="59" value="<%v_mail04ou%>"></td></tr>
+ <tr><td></td></tr>
+ <tr><td>Wysylanie zdarzen:</td><td><select name="n_mailse"><option value="1" <%v_mailseA%> >od Wejsc WE</option><option value="2" <%v_mailseB%>  >od Temperatury</option><option value="3" <%v_mailseC%>  >od wejsc i Temperatury</option><option value="4" <%v_mailseD%>  >Wszystkich</option></select></td></tr>
+
+  <tr height="30px"></tr>
+  </table>
+  
+ </td>
+</tr>
+
+<tr height="50px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ --- Zapisz Ustawienia ---@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+ 
+<table border="0" id="tabela">
+<tr height="70px"><td><button type="submit" style="border-color:#08F; color:#FFFFFF; background-color:#08F;" value="zapisz" name="n_015_zapisz" ><p align="left"><font style="font-size: 20"><b> Zapisz Ustawienia</b></font></p></button></form>
+</td></tr>
+</table>
+
+</td>
+</tr>
+
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+<form method="get" action="lpc.cgi/A015">
+
+<tr>
+ <td colspan="4" class="tytul">Programowanie Portu Podczerwieni - Irda</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+<table border="0" style="text-align: center; border-spacing: 7px;" id="tabela">
+<tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="180px"><b>Nr sygnalu </b></td>
+</tr>
+
+<tr>
+ <td><select name="n_irprog">   <option value="000" <%v_irprog000%> >--</option>
+                                <option value="001" <%v_irprog001%> >IR1</option>
+                                <option value="002" <%v_irprog002%> >IR2</option>
+                                <option value="003" <%v_irprog003%> >IR3</option>
+                                <option value="004" <%v_irprog004%> >IR4</option>
+                                <option value="005" <%v_irprog005%> >IR5</option>
+                                <option value="006" <%v_irprog006%> >IR6</option>
+                                <option value="007" <%v_irprog007%> >IR7</option>
+                                <option value="008" <%v_irprog008%> >IR8</option>
+	 </select></td>
+</tr>
+ <tr height="25px"><td><input type="submit" value="Programuj" name="n_222_zapisz"></td></tr></form>
+</table>
+
+ </td>
+</tr>
+
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+<form method="get" action="lpc.cgi/A015">
+
+<tr>
+ <td colspan="4" class="tytul">Wybor trybu pracy ukladu</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+<table border="0" style="text-align: center; border-spacing: 7px;" id="tabela">
+<tr>
+ <td style="border-bottom:solid 1px #cccccc;" width="180px"><b>Nr Ustawienia Zbiorczego </b></td>
+</tr>
+
+<tr>
+ <td><select name="n_trybprac"> <option value="000" <%v_trybprac000%> >--</option>
+                                <option value="001" <%v_trybprac001%> >Tryb_1</option>
+                                <option value="002" <%v_trybprac002%> >Tryb_2</option>
+                                <option value="003" <%v_trybprac003%> >Tryb_3</option>
+                                <option value="004" <%v_trybprac004%> >Tryb_4</option>
+                                <option value="005" <%v_trybprac005%> >Tryb_5</option>
+                                <option value="006" <%v_trybprac006%> >Tryb_6</option>
+                                <option value="007" <%v_trybprac007%> >Tryb_7</option>
+                                <option value="008" <%v_trybprac008%> >Tryb_8</option>
+                                <option value="009" <%v_trybprac009%> >Tryb_9</option>
+                                <option value="010" <%v_trybprac010%> >Tryb_10</option>
+	 </select></td>
+</tr>
+ <tr height="25px"><td><input type="submit" value="Wprowadz Uklad w Zaznaczony Tryb Pracy" name="n_223_zapisz"></td></tr></form>
+</table>
+
+ </td>
+</tr>
+
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+<!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   -->
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Ustawianie Daty i Czasu</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+
+
+<table border="0" style="text-align: center; border-spacing: 0px;" id="tabela">
+ <form method="get" action="lpc.cgi/A015">
+<tr>
+ <td width="100px" style="border-bottom:solid 1px #cccccc;"><b></b></td>
+ <td width="100px" style="border-bottom:solid 1px #cccccc;"><b></b></td>
+ <td width="40px" style="border-bottom:solid 1px #cccccc;"><b>dzien</b></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="40px" style="border-bottom:solid 1px #cccccc;"><b>mies</b></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="40px" style="border-bottom:solid 1px #cccccc;"><b>rok</b></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="40px" style="border-bottom:solid 1px #cccccc;"><b>godz</b></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="40px" style="border-bottom:solid 1px #cccccc;"><b>min</b></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="40px" style="border-bottom:solid 1px #cccccc;"><b>sec</b></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="5px" style="border-bottom:solid 1px #cccccc;"></td>
+ <td width="40px" style="border-bottom:solid 1px #cccccc;"><b>dzien tyg</b></td>  
+</tr>
+
+<tr>
+ <td>Data, Czas</td>
+ <td></td>
+ <td><input type="text"  name="n_tdom" size="2" maxlength="2" value="<%v_tdom%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><b>.</b></td>
+ <td><input type="text"  name="n_tmonth" size="2" maxlength="2" value="<%v_tmonth%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><b>.</b></td>
+ <td><input type="text"  name="n_tyear" size="2" maxlength="2" value="<%v_tyear%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><b> </b></td>
+ <td><b> </b></td>
+ <td><b> </b></td>
+ <td><b> </b></td>
+ <td><input type="text"  name="n_thour" size="2" maxlength="2" value="<%v_thour%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><b>:</b></td>
+ <td><input type="text"  name="n_tmin" size="2" maxlength="2" value="<%v_tmin%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><b>:</b></td>
+ <td><input type="text"  name="n_tsec" size="2" maxlength="2" value="<%v_tsec%>"  onBlur="walidacja_2cyfr(this)"></td>
+ <td><b> </b></td>
+ <td><b> </b></td>
+ <td><b> </b></td>
+ <td><%v_tday%></td>
+</tr>
+
+ <tr height="25px"><td><input type="submit" value="Ustaw"></td></tr></form>
+
+</table>
+ </td>
+ 
+</tr>
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+<tr height="0px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+
+
+
+
+</table>
+
+
+</body>
+</html>

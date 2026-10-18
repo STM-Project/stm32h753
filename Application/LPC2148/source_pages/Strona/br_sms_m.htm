@@ -1,0 +1,336 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title> Rejestrator</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+
+<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+
+<%koment_1o%>	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<%koment_1z%>
+
+<%koment_2o%> 
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min.css" /> 
+	<script src="jquery/jquery-1.8.2.min.js"></script>
+	<script src="jquery/jquery.mobile-1.2.0.min.js"></script> 
+<%koment_2z%> 
+
+
+
+<%koment_tlo_1o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+<%koment_tlo_1z%>
+<%koment_tlo_2o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(Images/tlo364.jpg);} 
+  </style>
+<%koment_tlo_2z%>
+
+
+
+<script>
+
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return true;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+	
+	if (kodKlawisza == 8) {
+        return true;  // backspace
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function dop_zakr_min_sek(element){
+   if(element.value>59){ alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value='00'; }
+}
+
+
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00';    
+  }}
+}
+</script>
+
+
+<script type="text/javascript">
+
+	
+var auto_refresh = setInterval( function (){ $('#tu_zgr1').load('BrSMS.txt',function(data)
+{
+    var zgr1=[];
+    var zgr2=[];
+    var zgr3=[];
+    var zgr4=[];
+    var zgr5=[];
+    var zgr6=[];
+    var zgr7=[];
+    var zgr8=[];
+    var zgr9=[];
+    var zgr10=[];
+    var zgr11=[];
+    var zgr12=[];
+    var zgr13=[];
+    var zgr14=[];
+    var zgr15=[];
+    var zgr16=[];
+    var zgr17=[];
+    var zgr18=[];
+    var zgr19=[];
+    var zgr20=[];
+    var zgr21=[];
+    var info=[];   
+	
+	var i,j,k,m;     j=0;  k=0;    m=0;
+
+ 	for(i=0;i<(160+10+70);i++) 
+	{
+	   if(data[i]=='\r')
+	   {
+	      k=0; i++;  j++;  
+	   }
+	   else
+	   {
+	      if(j==0) info[k++]=data[i]; 
+		  if(j==1){ if(data[i]==' ') zgr1[k++]='&nbsp;'; else zgr1[k++]=data[i]; }
+		  if(j==2){ if(data[i]==' ') zgr2[k++]='&nbsp;'; else  zgr2[k++]=data[i];}
+		  if(j==3){ if(data[i]==' ') zgr3[k++]='&nbsp;'; else  zgr3[k++]=data[i];}
+		  if(j==4){ if(data[i]==' ') zgr4[k++]='&nbsp;'; else  zgr4[k++]=data[i];}
+		  if(j==5){ if(data[i]==' ') zgr5[k++]='&nbsp;'; else  zgr5[k++]=data[i];}
+		  if(j==6){ if(data[i]==' ') zgr6[k++]='&nbsp;'; else  zgr6[k++]=data[i];}
+		  if(j==7){ if(data[i]==' ') zgr7[k++]='&nbsp;'; else  zgr7[k++]=data[i];}
+		  if(j==8){ if(data[i]==' ') zgr8[k++]='&nbsp;'; else  zgr8[k++]=data[i];}
+		  if(j==9){ if(data[i]==' ') zgr9[k++]='&nbsp;'; else  zgr9[k++]=data[i];}
+		  if(j==10){ if(data[i]==' ') zgr10[k++]='&nbsp;'; else  zgr10[k++]=data[i];}
+		  if(j==11){ if(data[i]==' ') zgr11[k++]='&nbsp;'; else  zgr11[k++]=data[i];}
+		  if(j==12){ if(data[i]==' ') zgr12[k++]='&nbsp;'; else  zgr12[k++]=data[i];}
+		  if(j==13){ if(data[i]==' ') zgr13[k++]='&nbsp;'; else  zgr13[k++]=data[i];}
+		  if(j==14){ if(data[i]==' ') zgr14[k++]='&nbsp;'; else  zgr14[k++]=data[i];}
+		  if(j==15){ if(data[i]==' ') zgr15[k++]='&nbsp;'; else  zgr15[k++]=data[i];}
+		  if(j==16){ if(data[i]==' ') zgr16[k++]='&nbsp;'; else  zgr16[k++]=data[i];}
+		  if(j==17){ if(data[i]==' ') zgr17[k++]='&nbsp;'; else  zgr17[k++]=data[i];}
+		  if(j==18){ if(data[i]==' ') zgr18[k++]='&nbsp;'; else  zgr18[k++]=data[i];}
+		  if(j==19){ if(data[i]==' ') zgr19[k++]='&nbsp;'; else  zgr19[k++]=data[i];}
+		  if(j==20){ if(data[i]==' ') zgr20[k++]='&nbsp;'; else  zgr20[k++]=data[i];}
+		  if(j==21){ if(data[i]==' ') zgr21[k++]='&nbsp;'; else  zgr21[k++]=data[i];}
+	   
+	   }	
+	}
+	
+     /*zgr1[0]='A';
+	 zgr1[1]='&nbsp;';
+	 zgr1[2]='&nbsp;';
+	 zgr1[3]='&nbsp;';
+	 zgr1[4]='&nbsp;';
+	 zgr1[5]='1';*/
+
+    $( "#tu_infosms" ).html( info );
+	$( "#tu_zgr1" ).html( zgr1 ); 
+	$( "#tu_zgr2" ).html( zgr2 ); 
+	$( "#tu_zgr3" ).html( zgr3 ); 
+	$( "#tu_zgr4" ).html( zgr4 ); 
+	$( "#tu_zgr5" ).html( zgr5 ); 
+	$( "#tu_zgr6" ).html( zgr6 ); 
+	$( "#tu_zgr7" ).html( zgr7 ); 
+	$( "#tu_zgr8" ).html( zgr8 ); 
+	$( "#tu_zgr9" ).html( zgr9 ); 
+	$( "#tu_zgr10" ).html( zgr10 ); 
+	$( "#tu_zgr11" ).html( zgr11 ); 
+	$( "#tu_zgr12" ).html( zgr12 ); 
+	$( "#tu_zgr13" ).html( zgr13 ); 
+	$( "#tu_zgr14" ).html( zgr14 ); 
+	$( "#tu_zgr15" ).html( zgr15 ); 
+	$( "#tu_zgr16" ).html( zgr16 ); 
+	$( "#tu_zgr17" ).html( zgr17 ); 
+	$( "#tu_zgr18" ).html( zgr18 ); 
+	$( "#tu_zgr19" ).html( zgr19 ); 
+	$( "#tu_zgr20" ).html( zgr20 ); 
+	$( "#tu_zgr21" ).html( zgr21 );
+	
+	
+       
+
+
+
+
+
+
+}).fadeIn("fast"); }, 1000); 
+
+
+</script>
+
+
+	
+</head> 
+<body> 
+
+
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+	<div data-role="content">
+	
+
+
+ 
+
+<ul data-role="listview" data-inset="true">	
+<li>
+ <table><tr>
+        <td width="30px"></td>
+        <td><a href="lpc.cgi/9009"  rel="external">WROC</a></td>
+		<td width="40px"></td>
+		<td width="200px"><font size="4" color="red"><div id="tu_infosms"></div></font></td>
+		</tr></table>
+</li>  
+</ul>
+
+
+
+<form method="get" action="lpc.cgi/9010" data-ajax="false">
+	
+	
+	
+ <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px">
+
+     <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Bramka SMS</font> 
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Numer telefonu</legend>
+	  <table><tr><td width="200px"><input type="text" name="n_brsms001nrt" size="15" maxlength="15" value="<%v_brsms001nrt%>"  onkeypress="return maskujKlawisze(event, '+0123456789');" > 
+       </td><td width="180px">    <button type="submit" name="n_brsms_zadzwon" > &nbsp;Zadzwoñ&nbsp; </button>   </td></tr></table>
+	  </li>
+
+	  <li class="ui-field-contain">	  
+	  <legend>Tresæ</legend>
+	  <textarea name="n_brsms001txt" rows="80" cols="50" maxlength="160"><%v_brsms001txt%></textarea>
+	  </li>
+
+
+	  	<li class="ui-body ui-body-b">
+		   <table><tr><td width="300px"><fieldset class="ui-grid-a">
+           <div class="ui-block-a"><button type="submit" name="n_brsms_zapisz" class="ui-btn ui-corner-all ui-btn-a"> &nbsp;Wyslij&nbsp; </button></div>
+           
+		   </fieldset></td></tr></table>
+      </li>
+
+  
+   </ul>
+
+
+
+<ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px">
+
+     <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Odpowiedz SMS</font> 
+	  </li>
+
+
+	  <li class="ui-field-contain">	  
+	    <div id="tu_zgr1"></div><br>	  
+	    <div id="tu_zgr2"></div>	  
+	    <div id="tu_zgr3"></div>	  
+	    <div id="tu_zgr4"></div>	  
+	    <div id="tu_zgr5"></div>	  
+	    <div id="tu_zgr6"></div>	  
+	    <div id="tu_zgr7"></div>	  
+	    <div id="tu_zgr8"></div>	  
+	    <div id="tu_zgr9"></div>	  
+	    <div id="tu_zgr10"></div>	  
+	    <div id="tu_zgr11"></div>	  
+	    <div id="tu_zgr12"></div>	  
+	    <div id="tu_zgr13"></div>	  
+	    <div id="tu_zgr14"></div>	  
+	    <div id="tu_zgr15"></div>	  
+	    <div id="tu_zgr16"></div>	  
+	    <div id="tu_zgr17"></div>	  
+	    <div id="tu_zgr18"></div>	  
+	    <div id="tu_zgr19"></div>	  
+	    <div id="tu_zgr20"></div><br>
+	  </li>
+
+  
+   </ul>
+   
+   </form>
+   
+   
+   
+
+	
+
+
+
+
+<br>
+
+
+	
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+       	 
+
+
+ 
+     <br>
+
+	
+	
+
+	</div>
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

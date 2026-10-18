@@ -1,0 +1,507 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title> Rejestrator</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+
+<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+
+
+<%koment_1o%>	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+<%koment_1z%>
+
+<%koment_2o%> 
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.2.0.min.css" /> 
+	<script src="jquery/jquery-1.8.2.min.js"></script>
+	<script src="jquery/jquery.mobile-1.2.0.min.js"></script> 
+<%koment_2z%>
+
+
+<%koment_tlo_1o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAIAAAC0Ujn1AAAABGdBTUEAALGPC/xhBQAAACNJREFUSEvt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYOBxYAqqAAEA2FlcAAAAAElFTkSuQmCC);}
+  </style>
+<%koment_tlo_1z%>
+<%koment_tlo_2o%>	
+  <style>
+   .ui-page { background: #f3f3f3 url(Images/tlo364.jpg);} 
+  </style>
+<%koment_tlo_2z%>
+
+
+
+<script>
+
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return true;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+	
+	if (kodKlawisza == 8) {
+        return true;  // backspace
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function dop_zakr_min_sek(element){
+   if(element.value>59){ alert('wartosc powinna miescic sie w przedziale 0 - 59'); element.value='00'; }
+}
+
+
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00';    
+  }}
+}
+</script>
+
+
+
+
+
+	
+</head> 
+<body> 
+
+
+<div class="scroll">
+
+<div data-role="page" class="type-interior">
+
+
+
+	<div data-role="content">
+	
+
+
+ 
+
+<ul data-role="listview" data-inset="true">	
+<li>
+ <table><tr>
+        <td width="30px"></td>
+        <td><a href="lpc.cgi/000"  rel="external">WROC</a></td>
+		<td width="40px"></td>
+		<td><a href="lpc.cgi/altuklad"  rel="external">UKLAD STRONY</a></td>
+		<td width="40px"></td>	
+		<td width="40px"><font size="4" color="red"><%v_mailwysl%></font></td>
+		</tr></table>
+</li>  
+</ul>
+
+
+
+
+
+
+
+
+<form method="get" action="lpc.cgi/A122" data-ajax="false">
+
+
+	  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Ustawienia</font> 
+	  </li>
+	   
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="115px"><legend>Rejestrator</legend></td>
+      <td width="150px"><select name="n_selrej001"  id="select-custom-21" data-native-menu="false"><option value="off" <%v_selrej001a%> >OFF</option>
+	                                                                                               <option value="on" <%v_selrej001b%> >ON</option></select></td>
+	  </tr></table>
+	  </li>
+	  
+	  
+	   <li class="ui-field-contain">	  
+	  <table><tr><td width="125px"><legend>Zapis co:</legend></td><td></td>
+      <td width="50px"><input type="text" name="n_reakrej001m" size="2" maxlength="2"  value="<%v_reakrej001m%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td><td><b>:</b></td>
+	  <td width="50px"><input type="text" name="n_reakrej001s" size="2" maxlength="2"  value="<%v_reakrej001s%>"  onBlur="dop_zakr_min_sek(this)" onkeypress="return maskujKlawisze(event, '0123456789');"></td></tr></table>
+	  <p>czestosc zapisu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sec</p>
+	  </p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
+	  <p></p><p>Zalecana wartosc: &nbsp;&nbsp;od 30 sekund</p>
+	  </li>
+	  
+	  
+	   <li class="ui-field-contain">	  
+	  <%v_startrej001%>
+	  <p></p><p></p><p></p><p></p><p></p><p></p><p>Start zapisu</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <%v_stoprej001%>
+	  <p><p></p><p></p><p></p><p></p><p></p><p>Stop zapisu</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td><legend>Wysy³anie wiadomosci e-mail</legend></td></tr><tr></tr><tr></tr><tr></tr><tr></tr><tr>
+      <td width="300px"><select name="n_selwys001"  id="select-custom-21" data-native-menu="false"><option value="1" <%v_selwys001b%> >przez siec LAN</option>
+	                                                                                               <option value="2" <%v_selwys001c%> >przez siec GSM</option></select></td>
+	  </tr></table>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	  <table><tr><td width="115px"><legend>Raportowanie</legend></td>
+      <td width="150px"><select name="n_selrap001"  id="select-custom-21" data-native-menu="false"><option value="1" <%v_selrap001a%> >OFF</option>
+	                                                                                               <option value="2" <%v_selrap001b%> >ON</option></select></td>
+	  </tr></table>
+	  <p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p>Cykliczne wysy³anie danych pomiarowych</p>
+	  <p></p><p>tylko dla stanu: Rejestrator ON </p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	 <table><tr><td><a href="lpc.cgi/archiwalne"  rel="external">Rst</a></td></tr></table>
+	  <p><p></p><p></p><p></p><p></p><p></p><p>Reset archiwum</p>
+	  </li>
+	  
+	  <li class="ui-field-contain">	  
+	 <table><tr><td><a href="lpc.cgi/fabryczne"  rel="external"><font size="3" color="red">Rst</font></a></td></tr></table>
+	  <p><p></p><p></p><p></p><p></p><p></p><p>Przywróæ ustawienia fabryczne</p>
+	  </li>
+
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+
+
+  <%koment_6o%> <ul data-role="listview" data-inset="true" class="ui-block-a" style="margin-left: 25px"><%koment_6z%> 
+   <%koment_7o%>  <ul data-role="listview" data-inset="true"> <%koment_7z%> 
+	
+	  <li class="ui-field-contain">	  
+	  <font size="5" color="blue">Rejestracja</font> 
+	  </li>
+
+      <li class="ui-field-contain">	<legend>Wartosci w pliku Excel</legend>  
+	  <table><tr>
+  <td width=120px><a href="Plik001.csv" rel="external"><%v_plikexc001%></a>
+                  <a href="Plik002.csv" rel="external"><%v_plikexc002%></a>
+                  <a href="Plik003.csv" rel="external"><%v_plikexc003%></a>
+                  <a href="Plik004.csv" rel="external"><%v_plikexc004%></a>
+                  <a href="Plik005.csv" rel="external"><%v_plikexc005%></a>
+                  <a href="Plik006.csv" rel="external"><%v_plikexc006%></a>
+                  <a href="Plik007.csv" rel="external"><%v_plikexc007%></a>
+                  <a href="Plik008.csv" rel="external"><%v_plikexc008%></a>
+                  <a href="Plik009.csv" rel="external"><%v_plikexc009%></a>
+                  <a href="Plik010.csv" rel="external"><%v_plikexc010%></a>
+                  <a href="Plik011.csv" rel="external"><%v_plikexc011%></a>
+                  <a href="Plik012.csv" rel="external"><%v_plikexc012%></a>
+                  <a href="Plik013.csv" rel="external"><%v_plikexc013%></a>
+                  <a href="Plik014.csv" rel="external"><%v_plikexc014%></a>
+                  <a href="Plik015.csv" rel="external"><%v_plikexc015%></a>
+                  <a href="Plik016.csv" rel="external"><%v_plikexc016%></a>
+                  <a href="Plik017.csv" rel="external"><%v_plikexc017%></a>
+                  <a href="Plik018.csv" rel="external"><%v_plikexc018%></a>
+                  <a href="Plik019.csv" rel="external"><%v_plikexc019%></a>
+                  <a href="Plik020.csv" rel="external"><%v_plikexc020%></a>
+ </td></tr></table>
+	  </li>
+	  
+	  
+	  <li class="ui-field-contain">	<legend>Wartosci w pliku txt</legend>  
+	  <table><tr>
+  <td width=120px> <a href="Odczyt001.txt" rel="external"><%v_plikodc001%></a>
+                  <a href="Odczyt002.txt" rel="external"><%v_plikodc002%></a>
+                  <a href="Odczyt003.txt" rel="external"><%v_plikodc003%></a>
+                  <a href="Odczyt004.txt" rel="external"><%v_plikodc004%></a>
+                  <a href="Odczyt005.txt" rel="external"><%v_plikodc005%></a>
+                  <a href="Odczyt006.txt" rel="external"><%v_plikodc006%></a>
+                  <a href="Odczyt007.txt" rel="external"><%v_plikodc007%></a>
+                  <a href="Odczyt008.txt" rel="external"><%v_plikodc008%></a>
+                  <a href="Odczyt009.txt" rel="external"><%v_plikodc009%></a>
+                  <a href="Odczyt010.txt" rel="external"><%v_plikodc010%></a>
+                  <a href="Odczyt011.txt" rel="external"><%v_plikodc011%></a>
+                  <a href="Odczyt012.txt" rel="external"><%v_plikodc012%></a>
+                  <a href="Odczyt013.txt" rel="external"><%v_plikodc013%></a>
+                  <a href="Odczyt014.txt" rel="external"><%v_plikodc014%></a>
+                  <a href="Odczyt015.txt" rel="external"><%v_plikodc015%></a>
+                  <a href="Odczyt016.txt" rel="external"><%v_plikodc016%></a>
+                  <a href="Odczyt017.txt" rel="external"><%v_plikodc017%></a>
+                  <a href="Odczyt018.txt" rel="external"><%v_plikodc018%></a>
+                  <a href="Odczyt019.txt" rel="external"><%v_plikodc019%></a>
+                  <a href="Odczyt020.txt" rel="external"><%v_plikodc020%></a>
+ </td></tr></table>
+	  </li>
+	  
+	  
+	  <li class="ui-field-contain">	<legend>Wykresy</legend>  
+	  <table><tr>
+  <td width=120px> <a href="Wykres001" rel="external"><%v_pliktemp001%></a>
+                  <a href="Wykres002" rel="external"><%v_pliktemp002%></a>
+                  <a href="Wykres003" rel="external"><%v_pliktemp003%></a>
+                  <a href="Wykres004" rel="external"><%v_pliktemp004%></a>
+                  <a href="Wykres005" rel="external"><%v_pliktemp005%></a>
+                  <a href="Wykres006" rel="external"><%v_pliktemp006%></a>
+                  <a href="Wykres007" rel="external"><%v_pliktemp007%></a>
+                  <a href="Wykres008" rel="external"><%v_pliktemp008%></a>
+                  <a href="Wykres009" rel="external"><%v_pliktemp009%></a>
+                  <a href="Wykres010" rel="external"><%v_pliktemp010%></a>
+                  <a href="Wykres011" rel="external"><%v_pliktemp011%></a>
+                  <a href="Wykres012" rel="external"><%v_pliktemp012%></a>
+                  <a href="Wykres013" rel="external"><%v_pliktemp013%></a>
+                  <a href="Wykres014" rel="external"><%v_pliktemp014%></a>
+                  <a href="Wykres015" rel="external"><%v_pliktemp015%></a>
+                  <a href="Wykres016" rel="external"><%v_pliktemp016%></a>
+                  <a href="Wykres017" rel="external"><%v_pliktemp017%></a>
+                  <a href="Wykres018" rel="external"><%v_pliktemp018%></a>
+                  <a href="Wykres019" rel="external"><%v_pliktemp019%></a>
+                  <a href="Wykres020" rel="external"><%v_pliktemp020%></a>
+ </td></tr></table>
+	  </li>
+	  
+	  
+	  
+	  
+	  <li class="ui-field-contain">	<legend>Zdarzenia dla wejsc WE</legend>  
+	  <table><tr>
+    <td width=120px> <a href="WE_plik001.txt" rel="external"><%v_plikwe001%></a>
+                  <a href="WE_plik002.txt" rel="external"><%v_plikwe002%></a>
+                  <a href="WE_plik003.txt" rel="external"><%v_plikwe003%></a>
+                  <a href="WE_plik004.txt" rel="external"><%v_plikwe004%></a>
+                  <a href="WE_plik005.txt" rel="external"><%v_plikwe005%></a>
+                  <a href="WE_plik006.txt" rel="external"><%v_plikwe006%></a>
+                  <a href="WE_plik007.txt" rel="external"><%v_plikwe007%></a>
+                  <a href="WE_plik008.txt" rel="external"><%v_plikwe008%></a>
+                  <a href="WE_plik009.txt" rel="external"><%v_plikwe009%></a>
+                  <a href="WE_plik010.txt" rel="external"><%v_plikwe010%></a>
+                  <a href="WE_plik011.txt" rel="external"><%v_plikwe011%></a>
+                  <a href="WE_plik012.txt" rel="external"><%v_plikwe012%></a>
+                  <a href="WE_plik013.txt" rel="external"><%v_plikwe013%></a>
+                  <a href="WE_plik014.txt" rel="external"><%v_plikwe014%></a>
+                  <a href="WE_plik015.txt" rel="external"><%v_plikwe015%></a>
+                  <a href="WE_plik016.txt" rel="external"><%v_plikwe016%></a>
+                  <a href="WE_plik017.txt" rel="external"><%v_plikwe017%></a>
+                  <a href="WE_plik018.txt" rel="external"><%v_plikwe018%></a>
+                  <a href="WE_plik019.txt" rel="external"><%v_plikwe019%></a>
+                  <a href="WE_plik020.txt" rel="external"><%v_plikwe020%></a>
+    </td>
+  </tr></table>
+	  </li>
+	  
+	  
+	  
+	  
+	  <li class="ui-field-contain">	<legend>Zdarzenia dla wejsc Czujnikow</legend>  
+	  <table><tr>
+     <td width=120px> <a href="Temp_plik001.txt" rel="external"><%v_plikttemp001%></a>
+                  <a href="Temp_plik002.txt" rel="external"><%v_plikttemp002%></a>
+                  <a href="Temp_plik003.txt" rel="external"><%v_plikttemp003%></a>
+                  <a href="Temp_plik004.txt" rel="external"><%v_plikttemp004%></a>
+                  <a href="Temp_plik005.txt" rel="external"><%v_plikttemp005%></a>
+                  <a href="Temp_plik006.txt" rel="external"><%v_plikttemp006%></a>
+                  <a href="Temp_plik007.txt" rel="external"><%v_plikttemp007%></a>
+                  <a href="Temp_plik008.txt" rel="external"><%v_plikttemp008%></a>
+                  <a href="Temp_plik009.txt" rel="external"><%v_plikttemp009%></a>
+                  <a href="Temp_plik010.txt" rel="external"><%v_plikttemp010%></a>
+                  <a href="Temp_plik011.txt" rel="external"><%v_plikttemp011%></a>
+                  <a href="Temp_plik012.txt" rel="external"><%v_plikttemp012%></a>
+                  <a href="Temp_plik013.txt" rel="external"><%v_plikttemp013%></a>
+                  <a href="Temp_plik014.txt" rel="external"><%v_plikttemp014%></a>
+                  <a href="Temp_plik015.txt" rel="external"><%v_plikttemp015%></a>
+                  <a href="Temp_plik016.txt" rel="external"><%v_plikttemp016%></a>
+                  <a href="Temp_plik017.txt" rel="external"><%v_plikttemp017%></a>
+                  <a href="Temp_plik018.txt" rel="external"><%v_plikttemp018%></a>
+                  <a href="Temp_plik019.txt" rel="external"><%v_plikttemp019%></a>
+                  <a href="Temp_plik020.txt" rel="external"><%v_plikttemp020%></a>
+ </td>
+  </tr></table>
+	  </li>
+	  
+	  
+	  
+	  
+	  <li class="ui-field-contain">	<legend>Plik zbiorczy z zdarzeniami</legend>  
+	  <table><tr>
+      <td width=120px><a href="Zdarzen001.txt" rel="external"><%v_plikzda001%></a>
+                  <a href="Zdarzen002.txt" rel="external"><%v_plikzda002%></a>
+                  <a href="Zdarzen003.txt" rel="external"><%v_plikzda003%></a>
+                  <a href="Zdarzen004.txt" rel="external"><%v_plikzda004%></a>
+                  <a href="Zdarzen005.txt" rel="external"><%v_plikzda005%></a>
+                  <a href="Zdarzen006.txt" rel="external"><%v_plikzda006%></a>
+                  <a href="Zdarzen007.txt" rel="external"><%v_plikzda007%></a>
+                  <a href="Zdarzen008.txt" rel="external"><%v_plikzda008%></a>
+                  <a href="Zdarzen009.txt" rel="external"><%v_plikzda009%></a>
+                  <a href="Zdarzen010.txt" rel="external"><%v_plikzda010%></a>
+                  <a href="Zdarzen011.txt" rel="external"><%v_plikzda011%></a>
+                  <a href="Zdarzen012.txt" rel="external"><%v_plikzda012%></a>
+                  <a href="Zdarzen013.txt" rel="external"><%v_plikzda013%></a>
+                  <a href="Zdarzen014.txt" rel="external"><%v_plikzda014%></a>
+                  <a href="Zdarzen015.txt" rel="external"><%v_plikzda015%></a>
+                  <a href="Zdarzen016.txt" rel="external"><%v_plikzda016%></a>
+                  <a href="Zdarzen017.txt" rel="external"><%v_plikzda017%></a>
+                  <a href="Zdarzen018.txt" rel="external"><%v_plikzda018%></a>
+                  <a href="Zdarzen019.txt" rel="external"><%v_plikzda019%></a>
+                  <a href="Zdarzen020.txt" rel="external"><%v_plikzda020%></a>
+ </td>
+  </tr></table>
+	  </li>
+	  
+	  
+	  
+	  
+	  <li class="ui-field-contain">	<legend>Odebrane wiadomosci SMS</legend>  
+	  <table><tr>
+      <td width=120px> <a href="SMS_plik001.txt" rel="external"><%v_pliksms001%></a>
+                  <a href="SMS_plik002.txt" rel="external"><%v_pliksms002%></a>
+                  <a href="SMS_plik003.txt" rel="external"><%v_pliksms003%></a>
+                  <a href="SMS_plik004.txt" rel="external"><%v_pliksms004%></a>
+                  <a href="SMS_plik005.txt" rel="external"><%v_pliksms005%></a>
+                  <a href="SMS_plik006.txt" rel="external"><%v_pliksms006%></a>
+                  <a href="SMS_plik007.txt" rel="external"><%v_pliksms007%></a>
+                  <a href="SMS_plik008.txt" rel="external"><%v_pliksms008%></a>
+                  <a href="SMS_plik009.txt" rel="external"><%v_pliksms009%></a>
+                  <a href="SMS_plik010.txt" rel="external"><%v_pliksms010%></a>
+                  <a href="SMS_plik011.txt" rel="external"><%v_pliksms011%></a>
+                  <a href="SMS_plik012.txt" rel="external"><%v_pliksms012%></a>
+                  <a href="SMS_plik013.txt" rel="external"><%v_pliksms013%></a>
+                  <a href="SMS_plik014.txt" rel="external"><%v_pliksms014%></a>
+                  <a href="SMS_plik015.txt" rel="external"><%v_pliksms015%></a>
+                  <a href="SMS_plik016.txt" rel="external"><%v_pliksms016%></a>
+                  <a href="SMS_plik017.txt" rel="external"><%v_pliksms017%></a>
+                  <a href="SMS_plik018.txt" rel="external"><%v_pliksms018%></a>
+                  <a href="SMS_plik019.txt" rel="external"><%v_pliksms019%></a>
+                  <a href="SMS_plik020.txt" rel="external"><%v_pliksms020%></a>
+ </td>
+  </tr></table>
+	  </li>
+	  
+	  
+	  
+	  
+	  <li class="ui-field-contain">	<legend>Pobor energii elektr.</legend>  
+	  <table><tr>
+      <td width=120px> <a href="ENE_plik001.txt" rel="external"><%v_plikenerg001%></a>
+                  <a href="ENE_plik002.txt" rel="external"><%v_plikenerg002%></a>
+                  <a href="ENE_plik003.txt" rel="external"><%v_plikenerg003%></a>
+                  <a href="ENE_plik004.txt" rel="external"><%v_plikenerg004%></a>
+                  <a href="ENE_plik005.txt" rel="external"><%v_plikenerg005%></a>
+                  <a href="ENE_plik006.txt" rel="external"><%v_plikenerg006%></a>
+                  <a href="ENE_plik007.txt" rel="external"><%v_plikenerg007%></a>
+                  <a href="ENE_plik008.txt" rel="external"><%v_plikenerg008%></a>
+                  <a href="ENE_plik009.txt" rel="external"><%v_plikenerg009%></a>
+                  <a href="ENE_plik010.txt" rel="external"><%v_plikenerg010%></a>
+                  <a href="ENE_plik011.txt" rel="external"><%v_plikenerg011%></a>
+                  <a href="ENE_plik012.txt" rel="external"><%v_plikenerg012%></a>
+                  <a href="ENE_plik013.txt" rel="external"><%v_plikenerg013%></a>
+                  <a href="ENE_plik014.txt" rel="external"><%v_plikenerg014%></a>
+                  <a href="ENE_plik015.txt" rel="external"><%v_plikenerg015%></a>
+                  <a href="ENE_plik016.txt" rel="external"><%v_plikenerg016%></a>
+                  <a href="ENE_plik017.txt" rel="external"><%v_plikenerg017%></a>
+                  <a href="ENE_plik018.txt" rel="external"><%v_plikenerg018%></a>
+                  <a href="ENE_plik019.txt" rel="external"><%v_plikenerg019%></a>
+                  <a href="ENE_plik020.txt" rel="external"><%v_plikenerg020%></a>
+ </td>
+  </tr></table>
+	  </li>
+	  
+	  
+	  <li class="ui-field-contain">	<legend>Wykresy poboru energii</legend>  
+	  <table><tr>
+ <td width=120px> <a href="En_Wykres001" rel="external"><%v_plik_wykr_energ001%></a>
+                  <a href="En_Wykres002" rel="external"><%v_plik_wykr_energ002%></a>
+                  <a href="En_Wykres003" rel="external"><%v_plik_wykr_energ003%></a>
+                  <a href="En_Wykres004" rel="external"><%v_plik_wykr_energ004%></a>
+                  <a href="En_Wykres005" rel="external"><%v_plik_wykr_energ005%></a>
+                  <a href="En_Wykres006" rel="external"><%v_plik_wykr_energ006%></a>
+                  <a href="En_Wykres007" rel="external"><%v_plik_wykr_energ007%></a>
+                  <a href="En_Wykres008" rel="external"><%v_plik_wykr_energ008%></a>
+                  <a href="En_Wykres009" rel="external"><%v_plik_wykr_energ009%></a>
+                  <a href="En_Wykres010" rel="external"><%v_plik_wykr_energ010%></a>
+                  <a href="En_Wykres011" rel="external"><%v_plik_wykr_energ011%></a>
+                  <a href="En_Wykres012" rel="external"><%v_plik_wykr_energ012%></a>
+                  <a href="En_Wykres013" rel="external"><%v_plik_wykr_energ013%></a>
+                  <a href="En_Wykres014" rel="external"><%v_plik_wykr_energ014%></a>
+                  <a href="En_Wykres015" rel="external"><%v_plik_wykr_energ015%></a>
+                  <a href="En_Wykres016" rel="external"><%v_plik_wykr_energ016%></a>
+                  <a href="En_Wykres017" rel="external"><%v_plik_wykr_energ017%></a>
+                  <a href="En_Wykres018" rel="external"><%v_plik_wykr_energ018%></a>
+                  <a href="En_Wykres019" rel="external"><%v_plik_wykr_energ019%></a>
+                  <a href="En_Wykres020" rel="external"><%v_plik_wykr_energ020%></a>
+ </td></tr></table>
+	  </li>
+
+	  	  
+   </ul>
+	
+	<%koment_7o%><br><%koment_7z%>
+	
+	
+	
+
+	
+	
+	
+
+
+
+<br>
+
+
+	
+	
+<li class="ui-body ui-body-b">
+            <fieldset class="ui-grid-a">
+                    <div class="ui-block-a"><button type="submit" class="ui-btn ui-corner-all ui-btn-a"  value="zapisz" >Zapisz</button></div>
+            </fieldset>
+        </li>
+
+	
+</form>
+
+
+
+
+
+
+
+
+
+
+
+
+
+       	 
+
+
+ 
+     <br>
+
+	
+	
+
+	</div>
+</div>
+    	
+	
+</div>	
+
+</body>
+</html>

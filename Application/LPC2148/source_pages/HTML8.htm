@@ -1,0 +1,397 @@
+<html>
+<head>
+	<meta http-equiv='refresh' content=''>
+	<title> ** F.H.U. RALPH ** </title>
+	<script language="javascript">
+	var okienko = null;
+	
+	function enableThis(text_id)
+	{
+		if( document.getElementById(text_id).disabled == true)document.getElementById(text_id).disabled=false;
+		else document.getElementById(text_id).disabled = true;
+	}
+	function enableChart()
+	{
+		if( document.getElementById('nazwa_arch').value == 4)document.getElementById('text_wykresl').disabled=false;
+		else document.getElementById('text_wykresl').disabled = true;
+	}
+	
+	
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return false;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function walidacjaTemp(element,element2)
+{
+  var wzor1 = /^[\-+]{1}[0-9]{2}\.[0-9]{1}$/;
+  var wzor2 = /^[\-+]{1}[0-9]{2}$/;
+  var wzor3 = /^[\-+]{1}[0-9]{1}$/;
+  var wzor4 = /^[\-+]{1}[0-9]{1}\.[0-9]{1}$/;
+  var wzor5 = /^[0-9]{1}$/;
+  var wzor6 = /^[0-9]{2}$/;
+  var wzor7 = /^[0-9]{1}\.[0-9]{1}$/;
+  var wzor8 = /^[0-9]{2}\.[0-9]{1}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+    if(wzor3.test(element.value) == false){
+     if(wzor4.test(element.value) == false){
+      if(wzor5.test(element.value) == false){
+       if(wzor6.test(element.value) == false){
+        if(wzor7.test(element.value) == false){
+         if(wzor8.test(element.value) == false){
+  
+     if(element2==1){ alert('Wpisz wartosc w poprawnym formacie tj. +20.5'); element.value = '+99.9'; }
+	 if(element2==2){ alert('Wpisz wartosc w poprawnym formacie tj. +15.0'); element.value = '-55.0'; }
+	 if(element2==3){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+02.0'; }
+	 if(element2==4){ alert('Wpisz wartosc w poprawnym formacie tj. +01.0'); element.value = '+01.0'; }
+        
+  }}}}}}}}
+}
+
+function walidacja_2cyfr(element)
+{
+  var wzor1 = /^[0-9]{1}$/;
+  var wzor2 = /^[0-9]{2}$/;
+  if(wzor1.test(element.value) == false){
+   if(wzor2.test(element.value) == false){
+  
+     alert('Wpisz wartosc w poprawnym formacie tj. 14'); element.value = '00'; 
+
+        
+  }}
+}
+
+
+
+
+
+</script>
+
+
+
+<script>
+/*
+Copyright (c) 2008-2012, www.redips.net All rights reserved.
+Code licensed under the BSD License: http://www.redips.net/license/
+http://www.redips.net/javascript/maintain-scroll-position/
+Version 1.1.0
+Feb 8, 2012.
+*/
+
+/*jslint white: true, browser: true, undef: true, nomen: true, eqeqeq: true, plusplus: false, bitwise: true, regexp: true, strict: true, newcap: true, immed: true, maxerr: 14 */
+/*global window: false */
+
+/* enable strict mode */
+"use strict";
+
+
+// define functions
+var set_scroll,
+	my_scroll;
+
+
+// if query string in URL contains scroll=nnn, then scroll position will be restored 
+set_scroll = function () {
+	// get query string parameter with "?"
+	var search = window.location.search,
+		matches;
+	// if query string exists
+	if (search) {
+		// find scroll parameter in query string
+		matches = /scroll=(\d+)/.exec(search);
+		// jump to the scroll position if scroll parameter exists
+		if (matches) {
+			window.scrollTo(0, matches[1]);
+		}
+	}
+};
+
+
+// function appends scroll parameter to the URL or returns scroll value
+my_scroll = function (url) {
+	var scroll, q;
+	// Netscape compliant
+	if (typeof(window.pageYOffset) === 'number') {
+		scroll = window.pageYOffset;
+	}
+	// DOM compliant
+	else if (document.body && document.body.scrollTop) {
+		scroll = document.body.scrollTop;
+	}
+	// IE6 standards compliant mode
+	else if (document.documentElement && document.documentElement.scrollTop) {
+		scroll = document.documentElement.scrollTop;
+	}
+	// needed for IE6 (when vertical scroll bar is on the top)
+	else {
+		scroll = 0;
+	}
+	// if input parameter does not exist then return scroll value
+	if (url === undefined) {
+		return scroll;
+	}
+	// else append scroll parameter to the URL
+	else {
+		// set "?" or "&" before scroll parameter
+		q = url.indexOf('?') === -1 ? '?' : '&';
+		// refresh page with scroll position parameter
+		window.location.href = url + q + 'scroll=' + scroll;
+	}
+};
+
+
+// add onload event listener
+if (window.addEventListener) {
+	window.addEventListener('load', set_scroll, false);
+}
+else if (window.attachEvent) {
+	window.attachEvent('onload', set_scroll);
+}
+
+
+ function pageScroll() {
+    	window.scrollBy(0,<%scrol%>); // horizontal and vertical scroll increments
+
+          } 
+
+
+</script>
+		  
+		  
+		  
+		  
+		  
+
+  <style type="text/css">
+  input {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+  }
+  input:hover {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+        background: white;
+  }
+  
+  option {
+          border: 1px solid black;
+          font: normal 14px Calibri, sans-serif;
+  }
+  
+  button {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         text-decoration: none;
+  }
+  button:hover {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         background: white;
+         text-decoration: none;
+  }
+  
+  body {
+       font: normal 12px Calibri, sans-serif;
+       color: black;
+  }
+  h1 {
+     font: bold 20px Calibri, sans-serif;
+     font-variant: small-caps;
+  }
+  
+  h2 {
+     font: normal 12px Calibri, sans-serif;
+  }
+  
+  h5 {
+     font: 12px Calibri, sans-serif;
+  }
+
+
+#tabela{background-color:#eeeeee;
+font: normal 14px Calibri, sans-serif;
+}
+
+
+  td.tytul{
+     background-color: #960226;
+     color: ffffff;
+     font: bold 20px Cambria, sans-serif;
+     font-variant: small-caps;
+  }
+  td.puste{
+     background-color: #C9C9DC;
+  }
+
+  </style>
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body onLoad="pageScroll()" bgcolor="#C9C9DC">
+
+
+
+
+<table border="0" style=" border:dashed 0mm; text-align: left; width: 100%; border-spacing: 0mm" id="tabela">
+
+<tr><td colspan="1" class="tytul" height="100px" align="center">
+GSMTRONIK v.GLAN<br>
+Panel administracyjny
+</td>
+<td colspan="3" class="puste">
+
+
+<center>Zasilanie <%nap_zasV%> V<br>Zasieg GSM <%zasieg_GSM%> %  <br><font size="4"><b>Aktualny CZAS/DATA ** <%v_time%></b></font></center> 
+<br><b></b>
+
+
+
+
+<table>
+ <tr><td><form method="get" action="lpc.cgi/A999"><button type="submit" style="border-color:#08F; color:#FFFFFF; background-color:#08F;" value=""><p align="left"><font style="font-size: 15" color=#000><b>Bud01</b></font><font style="font-size: 15"><b> Wroc</b></font></p></button></form>
+</td></tr></table>
+
+
+
+
+
+<br>
+
+
+</td>
+</tr>
+
+
+
+
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Konfiguracja wyjsc</td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+
+<table border="0" style="text-align: center; border-spacing: 0px;" id="tabela">
+<tr>
+ <td width="125px" style="border-bottom:solid 1px #cccccc;"><b>numer wyjscia</b></td>
+ <td width="180px" style="border-bottom:solid 1px #cccccc;"><b>stan wyjscia</b></td>
+ <td style="border-bottom:solid 1px #cccccc;"><b>nazwa wyjscia</b></td>
+ <td style="border-bottom:solid 1px #cccccc;">&nbsp;</td>
+</tr>
+
+<tr>
+ <td>WY1</td>
+ <td><%v_pkstan001%><a href="lpc.cgi/A007?<%v_pkinfa001%>=001" onclick="my_scroll('lpc.cgi/A007?<%v_pkinfa001%>=001'); return false"><button type="button"><%v_pkinfb001%></button></a></td>
+ <td><input type="text" name="n_pktxt001" size="39" maxlength="39" value="<%v_pktxt001%>"></td>
+</tr>
+<tr>
+ <td>WY2</td>
+ <td><%v_pkstan002%><a href="lpc.cgi/A007?<%v_pkinfa002%>=002" onclick="my_scroll('lpc.cgi/A007?<%v_pkinfa002%>=002'); return false"><button type="button"><%v_pkinfb002%></button></a></td>
+ <td><input type="text" name="n_pktxt002" size="39" maxlength="39" value="<%v_pktxt002%>"></td>
+</tr>
+<tr>
+ <td>WY3</td>
+ <td><%v_pkstan003%><a href="lpc.cgi/A007?<%v_pkinfa003%>=003" onclick="my_scroll('lpc.cgi/A007?<%v_pkinfa003%>=003'); return false"><button type="button"><%v_pkinfb003%></button></a></td>
+ <td><input type="text" name="n_pktxt003" size="39" maxlength="39" value="<%v_pktxt003%>"></td>
+</tr>
+<tr>
+ <td>WY4</td>
+ <td><%v_pkstan004%><a href="lpc.cgi/A007?<%v_pkinfa004%>=004" onclick="my_scroll('lpc.cgi/A007?<%v_pkinfa004%>=004'); return false"><button type="button"><%v_pkinfb004%></button></a></td>
+ <td><input type="text" name="n_pktxt004" size="39" maxlength="39" value="<%v_pktxt004%>"></td>
+</tr>
+<tr>
+ <td>WY5</td>
+ <td><%v_pkstan005%><a href="lpc.cgi/A007?<%v_pkinfa005%>=005" onclick="my_scroll('lpc.cgi/A007?<%v_pkinfa005%>=005'); return false"><button type="button"><%v_pkinfb005%></button></a></td>
+ <td><input type="text" name="n_pktxt005" size="39" maxlength="39" value="<%v_pktxt005%>"></td>
+</tr>
+<tr>
+ <td>WY6</td>
+ <td><%v_pkstan006%><a href="lpc.cgi/A007?<%v_pkinfa006%>=006" onclick="my_scroll('lpc.cgi/A007?<%v_pkinfa006%>=006'); return false"><button type="button"><%v_pkinfb006%></button></a></td>
+ <td><input type="text" name="n_pktxt006" size="39" maxlength="39" value="<%v_pktxt006%>"></td>
+</tr>
+<tr>
+ <td>WY7</td>
+ <td><%v_pkstan007%><a href="lpc.cgi/A007?<%v_pkinfa007%>=007" onclick="my_scroll('lpc.cgi/A007?<%v_pkinfa007%>=007'); return false"><button type="button"><%v_pkinfb007%></button></a></td>
+ <td><input type="text" name="n_pktxt007" size="39" maxlength="39" value="<%v_pktxt007%>"></td>
+</tr>
+<tr>
+ <td>WY8</td>
+ <td><%v_pkstan008%><a href="lpc.cgi/A007?<%v_pkinfa008%>=008" onclick="my_scroll('lpc.cgi/A007?<%v_pkinfa008%>=008'); return false"><button type="button"><%v_pkinfb008%></button></a></td>
+ <td><input type="text" name="n_pktxt008" size="39" maxlength="39" value="<%v_pktxt008%>"></td>
+</tr
+
+
+ <tr height="25px"><td><input type="submit" value="zapisz"></td></tr></form>
+ 
+</table>
+
+ </td>
+</tr>
+
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<tr height="100px">
+ <td colspan="4" height="50px" class="tytul" align="right" valign="middle">
+ <h2>Wersja: Eth2<br>
+F.H.U. RALPH<br></h2>
+</td>
+</tr>
+
+</table>
+
+
+</body>
+</html>

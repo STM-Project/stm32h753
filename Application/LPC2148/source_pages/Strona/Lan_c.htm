@@ -1,0 +1,347 @@
+<html>
+<head>
+	<meta http-equiv='refresh' content=''>
+	 <link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAOCAIAAACpTQvdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH3wcKCyMGqb4FmwAAAfdJREFUKM9Vks1qU2EQhme+n/OXpEmOJ7aatgSLTaVQcRnQRYsIgrcgeBFuBbdeQBEX3oVbFVdmIdpCC4Kb1sbaptFUc3JOTr7vzLiI6c+zmhfeh4FhgC8z6OybNGGiSSQispamkZmRmWHK8Kjz4dlTyuzd5y9mFhf/Hhz0dnfjw8OwuVJvtaTjAICCC3S3Ph5/3jnd+zF/762JB582N9PeCRM1Nu7XVl/7UXRJsKMk7fdQgFMqfnn1Mh+Plx4+KNWvA8FM44YKgkntwgYGRARAJgqXb649eXyluayDQGjHLUeAciow/9n7drTdFkKaZAiIbG1jYz261bRxbJOh8gMTx7pUdssRAChm6n3din9+t3GcZykKwcx+WPOjev/XNiCSNTookjXA4FYigULO3WkhClUoStcFZkQ06VA6Tvq7awannOc2TZgp6/fIGgUAhdn5xvqjTvudUypKx0Up99+/ybNeoTaLiI4QQjsAKF0PiBQAAGLYXAtq17o7bZQKmL1KKLQSUgIA51RaWBJaC+0CgDg7knRcvxoJpZlB+0Hx6pzQWkgFAim3k/YlITnujLodppys8aq1sHlb+wXlBf+1KeeTW40qcrVUX0hO+tXm2kxjxY5GZnDqFKvSC85q57/ETMA86vfzbOyFofI8MpkZxtLz1QXhHyaC/Zr5RiqMAAAAAElFTkSuQmCC" />
+
+	<title> Parametry sieci LAN </title>
+	<script language="javascript">
+	
+	
+function maskujKlawisze(AEvent, AMaska)
+{
+    if (window.Event) {
+        kodKlawisza = AEvent.which;
+    } else {
+        kodKlawisza = AEvent.keyCode;
+    }
+
+    if (kodKlawisza == 13) {
+        return false;  // Enter
+    };
+
+    if (kodKlawisza == 0) {
+        return true;  // klawisze steruj±ce
+    };
+
+    klawisz = String.fromCharCode(kodKlawisza);
+
+    if (AMaska.indexOf(klawisz) == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+
+</script>
+
+
+		  
+		  
+		  
+		  
+		  
+
+  <style type="text/css">
+  input {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+  }
+  input:hover {
+        border: 1px solid black;
+        font: normal 14px Calibri, sans-serif;
+        background: white;
+  }
+  
+  option {
+          border: 1px solid black;
+          font: normal 14px Calibri, sans-serif;
+  }
+  
+  button {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         text-decoration: none;
+  }
+  button:hover {
+         border: 1px solid black;
+         font: normal 14px Calibri, sans-serif;
+         background: white;
+         text-decoration: none;
+  }
+  
+  body {
+       font: normal 12px Calibri, sans-serif;
+       color: black;
+  }
+  h1 {
+     font: bold 20px Calibri, sans-serif;
+     font-variant: small-caps;
+  }
+  
+  h2 {
+     font: normal 12px Calibri, sans-serif;
+  }
+  
+  h5 {
+     font: 12px Calibri, sans-serif;
+  }
+
+
+#tabela{background-color:#eeeeee;
+font: normal 14px Calibri, sans-serif;
+}
+
+#tabela2{background-color:#dadada;
+font: normal 14px Calibri, sans-serif;
+}
+
+
+  td.tytul{
+     background-color: #960226;
+     color: ffffff;
+     font: bold 20px Cambria, sans-serif;
+     font-variant: small-caps;
+  }
+  td.puste{
+     background-color: #C9C9DC;
+  }
+
+  </style>
+
+
+
+   <style> /*Start Css Menu By RealcomBiz.com*/
+.menu {
+    border: none;
+    border: 0px;
+    margin: 0px;
+    padding: 0px;
+    font-family: verdana,geneva,arial,helvetica,sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: 8e8e8e;
+}
+
+.menu ul {
+    background: url(data:image/gif;base64,R0lGODlhAQArAMQYAM/Pz7k1VODg4Onp6XsMJtDQ0Nra2szMzOHh4d7e3s7OzsvLy9jY2NXV1aioqNLS0t/f39vb2+Li4tbW1tPT083Nzd3d3agDKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABgALAAAAAABACsAAAUfICaOzrAclQIUD9VMjBFZVgIJiCRZ0URVl8BlSCSEAAA7) top left repeat-x;
+    height: 43px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu li {
+    float: left;
+    padding: 0px 8px 0px 8px;
+}
+
+.menu li a {
+    color: #666666;
+    display: block;
+    font-weight: bold;
+    line-height: 43px;
+    padding: 0px 15px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.menu li a:hover {
+    color: #000000;
+    text-decoration: none;
+}
+
+.menu li ul {
+    background: #e0e0e0;
+    border-left: 2px solid #a80329;
+    border-right: 2px solid #a80329;
+    border-bottom: 2px solid #a80329;
+    display: none;
+    height: auto;
+    filter: alpha(opacity=95);
+    opacity: 0.95;
+    position: absolute;
+    width: 255px;
+    z-index: 200;
+/*top:1em;
+/*left:0;*/
+}
+
+.menu li:hover ul {
+    display: block;
+}
+
+.menu li li {
+    display: block;
+    float: none;
+    padding: 0px;
+    width: 255px;
+}
+
+.menu li ul a {
+    display: block;
+    font-size: 16px;
+    font-style: normal;
+    padding: 0px 10px 0px 15px;
+    text-align: left;
+}
+
+.menu li ul a:hover {
+    background: #949494;
+    color: #000000;
+    opacity: 1.0;
+    filter: alpha(opacity=100);
+}
+
+.menu p {
+    clear: left;
+}
+
+.menu #current {
+    background: url(data:image/gif;base64,R0lGODlhAQArAJEAALk1VHsMJqgDKQAAACH5BAAAAAAALAAAAAABACsAAAIHFISpy+0aCgA7) top left repeat-x;
+    color: #ffffff;
+}
+
+.menu #current2 {
+    background: url(data:image/gif;base64,R0lGODlhAQArAMQYAM/Pz7k1VODg4Onp6XsMJtDQ0Nra2szMzOHh4d7e3s7OzsvLy9jY2NXV1aioqNLS0t/f39vb2+Li4tbW1tPT083Nzd3d3agDKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABgALAAAAAABACsAAAUfICaOzrAclQIUD9VMjBFZVgIJiCRZ0URVl8BlSCSEAAA7) top left repeat-x;
+    color: #656565;
+}
+
+/*End Css Menu By RealcomBiz.com*/
+</style> 
+
+
+
+
+
+
+
+
+</head>
+<body onLoad="pageScroll()" bgcolor="#C9C9DC">
+
+
+<div class='menu'>
+ <ul>
+  <li><a href='lpc.cgi/500/A999' id='current'>Home</a></li>
+
+  
+  <li><a href='#' id='current2'>Czujniki Temperatury &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R001'>1# Powiadamianie SMS</a></li>
+    <li><a href='lpc.cgi/R002'>2# Termostat</a></li>
+    <li><a href='lpc.cgi/R003'>3# Maski filtrujace</a></li>
+    <li><a href='lpc.cgi/R004'>4# Rejestrator</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Wyjscia przekaznikowe &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R005'>1# Sterowanie WWW</a></li>
+    <li><a href='lpc.cgi/R006'>2# Autotimer</a></li>
+    <li><a href='lpc.cgi/R010'>3# Zaleznosci funkcyjne</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Wejscia sygnalowe &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R007'>1# Powiadamianie SMS</a></li>
+    <li><a href='lpc.cgi/R008'>2# Autosterowanie</a></li>
+    <li><a href='lpc.cgi/R009'>3# Maski filtrujace</a></li>
+   </ul>
+  </li>
+  
+  <li><a href='#' id='current2'>Pozostale &#9660;</a>
+   <ul>
+    <li><a href='lpc.cgi/R011'>1# Sterowanie IRDA</a></li>
+    <li><a href='lpc.cgi/R012'>2# Skrzynki E-mail</a></li>
+    <li><a href='lpc.cgi/R120'>3# Pingi urzadzen</a></li>
+    <li><a href='lpc.cgi/R014'>4# Odczyt biezacy v1</a></li>
+    <li><a href='lpc.cgi/R015'>5# Odczyt biezacy v2</a></li>
+   </ul>
+  </li>
+  
+  
+ </ul>
+</div>
+
+ <br><br><br>
+
+
+
+
+<table border="0" style=" border:dashed 0mm; text-align: left; width: 100%; border-spacing: 0mm" id="tabela">
+
+<tr><td colspan="1" class="tytul" height="10px" align="center">
+..............<br>
+</td>
+<td colspan="3" class="puste">
+
+
+ <table><tr>
+ <td width="150px"><a href='lpc.cgi/A998'><font size="4">Odswiez strone</font></a></td>
+ <td width="100px"><font size="4"><%v_ttime1%></font></td>
+ <td width="80px"><font size="4"><%v_ttime2%>  </font></td>
+ <td width="110px"><font size="4"><%v_ttime3%>        </font></td></tr></table>
+<br>
+
+
+</td>
+</tr>
+
+
+
+<form method="get" action="lpc.cgi/A020">
+
+
+
+
+<tr>
+ <td colspan="4" class="tytul">Ustawienia parametrow sieci LAN<td>
+</tr>
+
+<tr>
+ <td class="puste"></td>
+ <td colspan="2">
+ 
+ 
+ <table border="0" style="border-spacing: 3px;" id="tabela"><br>
+ 
+ 
+ 
+  <tr><td></td></tr>
+  
+  <tr><td>Adres MAC Urzadzenia:   </td><td><input type="text" name="n_lan_01_mac" size="12" maxlength="12"  value="<%v_lan_01_mac%>" ></td></tr>
+  <tr><td>Adres IP Urzadzenia:    </td><td><input type="text" name="n_lan_01_ip"  size="19" maxlength="19"  value="<%v_lan_01_ip%>"  ></td> </tr>
+  <tr><td>Adres Maski Urzadzenia: </td><td><input type="text" name="n_lan_01_mask" size="19" maxlength="19" value="<%v_lan_01_mask%>" ></td> </tr>
+  <tr><td>Adres Bramy Urzadzenia: </td><td><input type="text" name="n_lan_01_br"  size="19" maxlength="19"  value="<%v_lan_01_br%>"  ></td> </tr>
+  <tr><td>Numer portu HTTP:       </td><td><input type="text" name="n_lan_01_port" size="4"  maxlength="4"  value="<%v_lan_01_port%>" ></td> </tr>
+  
+<tr height="20px"></table><br>
+ 
+  
+
+  <table border="0" style="border-spacing: 3px;" id="tabela">
+  <tr height="110px"><td><button type="submit" style="border-color:#08F; color:#FFFFFF; background-color:#08F;" value="zapisz" name="n_020_zapisz"><p align="left"><font style="font-size: 20"><b> ZAPISZ</b></font></p></button></form>
+  </table> 
+  
+
+  
+ </td>
+</tr>
+
+<tr height="100px">
+ <td colspan="4" class="puste">&nbsp;</td>
+</tr>
+
+
+
+
+
+
+
+</table>
+
+
+</body>
+</html>

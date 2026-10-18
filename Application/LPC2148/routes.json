@@ -1,0 +1,1172 @@
+[
+  {
+    "address": "/nowa1",
+    "source": "Strona/czolowka2.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa2",
+    "source": "Strona/panel_prosty.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa3",
+    "source": "Strona/panel_ster_kontr.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa4",
+    "source": "Strona/panel_ster_kontr2_p.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa5",
+    "source": "Strona/panel_ster_kontr3_p.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa6",
+    "source": "Strona/panel_ster_kontr4_p.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa7",
+    "source": "Strona/panel_ster_kontr_W.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa8",
+    "source": "HTML.htm",
+    "title": "Mobile",
+    "forms": 0
+  },
+  {
+    "address": "/nowa9",
+    "source": "HTML1.htm",
+    "title": "Drzwi Zewnetrzne",
+    "forms": 1
+  },
+  {
+    "address": "/nowa10",
+    "source": "HTML3.htm",
+    "title": "Video",
+    "forms": 0
+  },
+  {
+    "address": "/nowa11",
+    "source": "HTML4.htm",
+    "title": "Strefy Grzewcze",
+    "forms": 1
+  },
+  {
+    "address": "/nowa12",
+    "source": "HTML5.htm",
+    "title": "Drzwi Zewnetrzne",
+    "forms": 1
+  },
+  {
+    "address": "/nowa13",
+    "source": "HTML6.htm",
+    "title": "Drzwi Zewnetrzne",
+    "forms": 1
+  },
+  {
+    "address": "/nowa14",
+    "source": "HTML7.htm",
+    "title": "** F.H.U. RALPH **",
+    "forms": 5
+  },
+  {
+    "address": "/nowa15",
+    "source": "HTML8.htm",
+    "title": "** F.H.U. RALPH **",
+    "forms": 1
+  },
+  {
+    "address": "/nowa16",
+    "source": "HTML_mobil_gl.htm",
+    "title": "Pingowanie urzadzen",
+    "forms": 0
+  },
+  {
+    "address": "/nowa17",
+    "source": "HTML_ssl.htm",
+    "title": "Mobile",
+    "forms": 0
+  },
+  {
+    "address": "/nowa18",
+    "source": "HTML_wczyt.htm",
+    "title": "HTML wczyt",
+    "forms": 0
+  },
+  {
+    "address": "/nowa19",
+    "source": "HTMLsim.htm",
+    "title": "** F.H.U. RALPH **",
+    "forms": 4
+  },
+  {
+    "address": "/nowa20",
+    "source": "Strona mobilna/HTMLm.htm",
+    "title": "GSMtronik",
+    "forms": 0
+  },
+  {
+    "address": "/nowa21",
+    "source": "Strona mobilna/HTMLm1.htm",
+    "title": "GSMtronik",
+    "forms": 0
+  },
+  {
+    "address": "/nowa22",
+    "source": "Strona/arch_rst_m.htm",
+    "title": "Rejestrator",
+    "forms": 0
+  },
+  {
+    "address": "/nowa23",
+    "source": "Strona/arch_rst_m_ssl.htm",
+    "title": "Rejestrator",
+    "forms": 0
+  },
+  {
+    "address": "/nowa24",
+    "source": "Strona/Autoster_8_c.htm",
+    "title": "Autosterowanie",
+    "forms": 1
+  },
+  {
+    "address": "/nowa25",
+    "source": "Strona/Autoster_c.htm",
+    "title": "Autosterowanie",
+    "forms": 1
+  },
+  {
+    "address": "/nowa26",
+    "source": "Strona/Autoster_ir_m.htm",
+    "title": "Autosterowanie IR",
+    "forms": 1
+  },
+  {
+    "address": "/nowa27",
+    "source": "Strona/Autoster_ir_m_ssl.htm",
+    "title": "Autosterowanie IR",
+    "forms": 1
+  },
+  {
+    "address": "/nowa28",
+    "source": "Strona/Autoster_m.htm",
+    "title": "Autosterowanie PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa29",
+    "source": "Strona/Autoster_m_ssl.htm",
+    "title": "Autosterowanie PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa30",
+    "source": "Strona/Autoster_s1_m.htm",
+    "title": "Autosterowanie PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa31",
+    "source": "Strona/Autoster_s1_m_ssl.htm",
+    "title": "Autosterowanie PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa32",
+    "source": "Strona/Autoster_s2_m.htm",
+    "title": "Autosterowanie PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa33",
+    "source": "Strona/Autoster_s2_m_ssl.htm",
+    "title": "Autosterowanie PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa34",
+    "source": "Strona/Autotimer_c.htm",
+    "title": "Autotimer",
+    "forms": 1
+  },
+  {
+    "address": "/nowa35",
+    "source": "Strona/br_sms_m.htm",
+    "title": "Rejestrator",
+    "forms": 1
+  },
+  {
+    "address": "/nowa36",
+    "source": "Strona/Calosc_I.htm",
+    "title": "Ustawienia zbiorcze",
+    "forms": 4
+  },
+  {
+    "address": "/nowa37",
+    "source": "Strona/Calosc_II.htm",
+    "title": "** F.H.U. RALPH **",
+    "forms": 4
+  },
+  {
+    "address": "/nowa38",
+    "source": "Strona/email_c.htm",
+    "title": "Autotimer",
+    "forms": 1
+  },
+  {
+    "address": "/nowa39",
+    "source": "Strona/email_m.htm",
+    "title": "Skrzynki email",
+    "forms": 1
+  },
+  {
+    "address": "/nowa40",
+    "source": "Strona/email_m_ssl.htm",
+    "title": "Skrzynki email",
+    "forms": 1
+  },
+  {
+    "address": "/nowa41",
+    "source": "Strona/fabr_m.htm",
+    "title": "Rejestrator",
+    "forms": 0
+  },
+  {
+    "address": "/nowa42",
+    "source": "Strona/fabr_m_ssl.htm",
+    "title": "Rejestrator",
+    "forms": 0
+  },
+  {
+    "address": "/nowa43",
+    "source": "Strona/Https_m.htm",
+    "title": "Mobile",
+    "forms": 0
+  },
+  {
+    "address": "/nowa44",
+    "source": "Strona/irda_c.htm",
+    "title": "Irda",
+    "forms": 2
+  },
+  {
+    "address": "/nowa45",
+    "source": "Strona/Irda_setup.htm",
+    "title": "Irda setup",
+    "forms": 2
+  },
+  {
+    "address": "/nowa46",
+    "source": "Strona/Irda_setup_ssl.htm",
+    "title": "Irda setup",
+    "forms": 2
+  },
+  {
+    "address": "/nowa47",
+    "source": "Strona/kom_sms_m.htm",
+    "title": "Wykaz poleceń SMS",
+    "forms": 0
+  },
+  {
+    "address": "/nowa48",
+    "source": "Strona/kom_sms_m_ssl.htm",
+    "title": "Wykaz poleceń SMS",
+    "forms": 0
+  },
+  {
+    "address": "/nowa49",
+    "source": "Strona/Lan_c.htm",
+    "title": "Parametry sieci LAN",
+    "forms": 1
+  },
+  {
+    "address": "/nowa50",
+    "source": "Strona/Lan_m.htm",
+    "title": "Siec LAN",
+    "forms": 5
+  },
+  {
+    "address": "/nowa51",
+    "source": "Strona/Lan_m_ssl.htm",
+    "title": "Siec LAN",
+    "forms": 5
+  },
+  {
+    "address": "/nowa52",
+    "source": "Strona/Mobilna/Glowny.htm",
+    "title": "Glowny",
+    "forms": 0
+  },
+  {
+    "address": "/nowa53",
+    "source": "Strona/Mobilna/HTML.htm",
+    "title": "Mobile",
+    "forms": 0
+  },
+  {
+    "address": "/nowa54",
+    "source": "Strona/Mobilna/Odczyt.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa55",
+    "source": "Strona/Mobilna/Odczyt_a.htm",
+    "title": "Odczyt a",
+    "forms": 0
+  },
+  {
+    "address": "/nowa56",
+    "source": "Strona/Mobilna/Panel_kontrolny_v1.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa57",
+    "source": "Strona/Mobilna/Panel_kontrolny_v1_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa58",
+    "source": "Strona/Mobilna/Panel_kontrolny_v2.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa59",
+    "source": "Strona/Mobilna/Panel_kontrolny_v3.htm",
+    "title": "Panel v3",
+    "forms": 0
+  },
+  {
+    "address": "/nowa60",
+    "source": "Strona/Mobilna/Ping_m.htm",
+    "title": "Ping",
+    "forms": 1
+  },
+  {
+    "address": "/nowa61",
+    "source": "Strona/Mobilna/temp_sms_m.htm",
+    "title": "Ustawienia dla czujników",
+    "forms": 1
+  },
+  {
+    "address": "/nowa62",
+    "source": "Strona/Mobilna/temp_sms_m_ssl.htm",
+    "title": "Ustawienia dla czujników",
+    "forms": 1
+  },
+  {
+    "address": "/nowa63",
+    "source": "Strona/Mobilna/temp_sms_s1_m.htm",
+    "title": "Ustawienia dla czujników",
+    "forms": 1
+  },
+  {
+    "address": "/nowa64",
+    "source": "Strona/Mobilna/temp_sms_s1_m_ssl.htm",
+    "title": "Ustawienia dla czujników",
+    "forms": 1
+  },
+  {
+    "address": "/nowa65",
+    "source": "Strona/Mobilna/temp_sms_s2_m.htm",
+    "title": "Ustawienia dla czujników",
+    "forms": 1
+  },
+  {
+    "address": "/nowa66",
+    "source": "Strona/Mobilna/temp_sms_s2_m_ssl.htm",
+    "title": "Ustawienia dla czujników",
+    "forms": 1
+  },
+  {
+    "address": "/nowa67",
+    "source": "Strona/panel_ster_kontr_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa68",
+    "source": "Strona/panel_ster_kontr_targi.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa69",
+    "source": "Strona/Ping_c.htm",
+    "title": "Ping",
+    "forms": 1
+  },
+  {
+    "address": "/nowa70",
+    "source": "Strona/Rejestrator_c.htm",
+    "title": "Rejestrator",
+    "forms": 1
+  },
+  {
+    "address": "/nowa71",
+    "source": "Strona/Rejestrator_m.htm",
+    "title": "Rejestrator",
+    "forms": 1
+  },
+  {
+    "address": "/nowa72",
+    "source": "Strona/Rejestrator_m_ssl.htm",
+    "title": "Rejestrator",
+    "forms": 1
+  },
+  {
+    "address": "/nowa73",
+    "source": "Strona/Rotacja_m.htm",
+    "title": "Praca Cykliczna",
+    "forms": 2
+  },
+  {
+    "address": "/nowa74",
+    "source": "Strona/Rotacja_m_ssl.htm",
+    "title": "Praca Cykliczna",
+    "forms": 2
+  },
+  {
+    "address": "/nowa75",
+    "source": "Strona/telefony_maski_m.htm",
+    "title": "Telefony, maski",
+    "forms": 1
+  },
+  {
+    "address": "/nowa76",
+    "source": "Strona/telefony_maski_m_ssl.htm",
+    "title": "Telefony, maski",
+    "forms": 1
+  },
+  {
+    "address": "/nowa77",
+    "source": "Strona/telefony_maski_s1_m.htm",
+    "title": "Telefony, maski",
+    "forms": 1
+  },
+  {
+    "address": "/nowa78",
+    "source": "Strona/telefony_maski_s1_m_ssl.htm",
+    "title": "Telefony, maski",
+    "forms": 1
+  },
+  {
+    "address": "/nowa79",
+    "source": "Strona/telefony_maski_s2_m.htm",
+    "title": "Telefony, maski",
+    "forms": 1
+  },
+  {
+    "address": "/nowa80",
+    "source": "Strona/telefony_maski_s2_m_ssl.htm",
+    "title": "Telefony, maski",
+    "forms": 1
+  },
+  {
+    "address": "/nowa81",
+    "source": "Strona/temp_maski_c.htm",
+    "title": "Numery Telefonow",
+    "forms": 1
+  },
+  {
+    "address": "/nowa82",
+    "source": "Strona/temp_odczyt_m.htm",
+    "title": "Odczyt z czujnikow",
+    "forms": 0
+  },
+  {
+    "address": "/nowa83",
+    "source": "Strona/temp_odczyt_m_ssl.htm",
+    "title": "Odczyt z czujnikow",
+    "forms": 0
+  },
+  {
+    "address": "/nowa84",
+    "source": "Strona/temp_odczyt_s1_m.htm",
+    "title": "Odczyt z czujnikow",
+    "forms": 0
+  },
+  {
+    "address": "/nowa85",
+    "source": "Strona/temp_odczyt_s1_m_ssl.htm",
+    "title": "Odczyt z czujnikow",
+    "forms": 0
+  },
+  {
+    "address": "/nowa86",
+    "source": "Strona/temp_odczyt_s2_m.htm",
+    "title": "Odczyt z czujnikow",
+    "forms": 0
+  },
+  {
+    "address": "/nowa87",
+    "source": "Strona/temp_odczyt_s2_m_ssl.htm",
+    "title": "Odczyt z czujnikow",
+    "forms": 0
+  },
+  {
+    "address": "/nowa88",
+    "source": "Strona/temp_sms_c.htm",
+    "title": "Czujniki temperatury",
+    "forms": 1
+  },
+  {
+    "address": "/nowa89",
+    "source": "Strona/temp_sms_c_24T.htm",
+    "title": "Czujniki temperatury",
+    "forms": 1
+  },
+  {
+    "address": "/nowa90",
+    "source": "Strona/Termostat_8_c.htm",
+    "title": "Termostat",
+    "forms": 1
+  },
+  {
+    "address": "/nowa91",
+    "source": "Strona/Termostat_c.htm",
+    "title": "Termostat",
+    "forms": 1
+  },
+  {
+    "address": "/nowa92",
+    "source": "Strona/Termostaty/Termostaty_ir_m.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa93",
+    "source": "Strona/Termostaty/Termostaty_ir_m_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa94",
+    "source": "Strona/Termostaty/Termostaty_m.htm",
+    "title": "Termostaty PK",
+    "forms": 0
+  },
+  {
+    "address": "/nowa95",
+    "source": "Strona/Termostaty/Termostaty_m_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 0
+  },
+  {
+    "address": "/nowa96",
+    "source": "Strona/Termostaty/Termostaty_s1_m.htm",
+    "title": "Termostaty PK",
+    "forms": 0
+  },
+  {
+    "address": "/nowa97",
+    "source": "Strona/Termostaty/Termostaty_s1_m_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 0
+  },
+  {
+    "address": "/nowa98",
+    "source": "Strona/Termostaty/Termostaty_s2_m.htm",
+    "title": "Termostaty PK",
+    "forms": 0
+  },
+  {
+    "address": "/nowa99",
+    "source": "Strona/Termostaty/Termostaty_s2_m_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 0
+  },
+  {
+    "address": "/nowa100",
+    "source": "Strona/Termostaty/ustaw_termostaty_ir_m1.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa101",
+    "source": "Strona/Termostaty/ustaw_termostaty_ir_m1_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa102",
+    "source": "Strona/Termostaty/ustaw_termostaty_ir_m2.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa103",
+    "source": "Strona/Termostaty/ustaw_termostaty_ir_m2_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa104",
+    "source": "Strona/Termostaty/ustaw_termostaty_ir_m3.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa105",
+    "source": "Strona/Termostaty/ustaw_termostaty_ir_m3_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa106",
+    "source": "Strona/Termostaty/ustaw_termostaty_ir_m4.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa107",
+    "source": "Strona/Termostaty/ustaw_termostaty_ir_m4_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa108",
+    "source": "Strona/Termostaty/ustaw_termostaty_m1.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa109",
+    "source": "Strona/Termostaty/ustaw_termostaty_m10.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa110",
+    "source": "Strona/Termostaty/ustaw_termostaty_m10_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa111",
+    "source": "Strona/Termostaty/ustaw_termostaty_m11.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa112",
+    "source": "Strona/Termostaty/ustaw_termostaty_m11_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa113",
+    "source": "Strona/Termostaty/ustaw_termostaty_m12.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa114",
+    "source": "Strona/Termostaty/ustaw_termostaty_m12_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa115",
+    "source": "Strona/Termostaty/ustaw_termostaty_m13.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa116",
+    "source": "Strona/Termostaty/ustaw_termostaty_m13_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa117",
+    "source": "Strona/Termostaty/ustaw_termostaty_m14.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa118",
+    "source": "Strona/Termostaty/ustaw_termostaty_m14_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa119",
+    "source": "Strona/Termostaty/ustaw_termostaty_m15.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa120",
+    "source": "Strona/Termostaty/ustaw_termostaty_m15_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa121",
+    "source": "Strona/Termostaty/ustaw_termostaty_m16.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa122",
+    "source": "Strona/Termostaty/ustaw_termostaty_m16_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa123",
+    "source": "Strona/Termostaty/ustaw_termostaty_m18.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa124",
+    "source": "Strona/Termostaty/ustaw_termostaty_m18_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa125",
+    "source": "Strona/Termostaty/ustaw_termostaty_m19.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa126",
+    "source": "Strona/Termostaty/ustaw_termostaty_m19_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa127",
+    "source": "Strona/Termostaty/ustaw_termostaty_m1_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa128",
+    "source": "Strona/Termostaty/ustaw_termostaty_m2.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa129",
+    "source": "Strona/Termostaty/ustaw_termostaty_m20.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa130",
+    "source": "Strona/Termostaty/ustaw_termostaty_m20_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa131",
+    "source": "Strona/Termostaty/ustaw_termostaty_m21.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa132",
+    "source": "Strona/Termostaty/ustaw_termostaty_m21_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa133",
+    "source": "Strona/Termostaty/ustaw_termostaty_m22.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa134",
+    "source": "Strona/Termostaty/ustaw_termostaty_m22_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa135",
+    "source": "Strona/Termostaty/ustaw_termostaty_m23.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa136",
+    "source": "Strona/Termostaty/ustaw_termostaty_m23_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa137",
+    "source": "Strona/Termostaty/ustaw_termostaty_m24.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa138",
+    "source": "Strona/Termostaty/ustaw_termostaty_m24_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa139",
+    "source": "Strona/Termostaty/ustaw_termostaty_m25.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa140",
+    "source": "Strona/Termostaty/ustaw_termostaty_m25_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa141",
+    "source": "Strona/Termostaty/ustaw_termostaty_m2_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa142",
+    "source": "Strona/Termostaty/ustaw_termostaty_m3.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa143",
+    "source": "Strona/Termostaty/ustaw_termostaty_m3_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa144",
+    "source": "Strona/Termostaty/ustaw_termostaty_m4.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa145",
+    "source": "Strona/Termostaty/ustaw_termostaty_m4_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa146",
+    "source": "Strona/Termostaty/ustaw_termostaty_m9.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa147",
+    "source": "Strona/Termostaty/ustaw_termostaty_m9_ssl.htm",
+    "title": "Termostaty PK",
+    "forms": 1
+  },
+  {
+    "address": "/nowa148",
+    "source": "Strona/Timery/Timery2_ir_m.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa149",
+    "source": "Strona/Timery/Timery2_ir_m_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa150",
+    "source": "Strona/Timery/Timery2_m.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa151",
+    "source": "Strona/Timery/Timery2_m_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa152",
+    "source": "Strona/Timery/Timery2_s1_m.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa153",
+    "source": "Strona/Timery/Timery2_s1_m_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa154",
+    "source": "Strona/Timery/Timery2_s2_m.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa155",
+    "source": "Strona/Timery/Timery2_s2_m_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa156",
+    "source": "Strona/Timery/ustaw_timer2_ir_m.htm",
+    "title": "Ustawienia Timer IR LPCVAR_v_Tim2nr_END",
+    "forms": 1
+  },
+  {
+    "address": "/nowa157",
+    "source": "Strona/Timery/ustaw_timer2_ir_m_ssl.htm",
+    "title": "Ustawienia Timer IR LPCVAR_v_Tim2nr_END",
+    "forms": 1
+  },
+  {
+    "address": "/nowa158",
+    "source": "Strona/Timery/ustaw_timer2_m.htm",
+    "title": "Ustawienia Timer PK LPCVAR_v_Tim2nr_END",
+    "forms": 1
+  },
+  {
+    "address": "/nowa159",
+    "source": "Strona/Timery/ustaw_timer2_m_ssl.htm",
+    "title": "Ustawienia Timer PK LPCVAR_v_Tim2nr_END",
+    "forms": 1
+  },
+  {
+    "address": "/nowa160",
+    "source": "Strona/Timery/Wy_analog_m.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa161",
+    "source": "Strona/Timery/Wy_analog_m_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 0
+  },
+  {
+    "address": "/nowa162",
+    "source": "Strona/tryb_pracy_c.htm",
+    "title": "Wybor Trybu Pracy",
+    "forms": 1
+  },
+  {
+    "address": "/nowa163",
+    "source": "Strona/Ust_wyb_slave_m.htm",
+    "title": "Odczyt wartosci",
+    "forms": 2
+  },
+  {
+    "address": "/nowa164",
+    "source": "Strona/Ust_wyb_slave_m_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 2
+  },
+  {
+    "address": "/nowa165",
+    "source": "Strona/we_m.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa166",
+    "source": "Strona/we_m_ssl.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa167",
+    "source": "Strona/we_maski_c.htm",
+    "title": "Maski dla wejsc",
+    "forms": 1
+  },
+  {
+    "address": "/nowa168",
+    "source": "Strona/we_odczyt_m.htm",
+    "title": "Panel v3",
+    "forms": 0
+  },
+  {
+    "address": "/nowa169",
+    "source": "Strona/we_odczyt_m_ssl.htm",
+    "title": "Panel v3",
+    "forms": 0
+  },
+  {
+    "address": "/nowa170",
+    "source": "Strona/we_odczyt_s1_m.htm",
+    "title": "Panel v3",
+    "forms": 0
+  },
+  {
+    "address": "/nowa171",
+    "source": "Strona/we_odczyt_s1_m_ssl.htm",
+    "title": "Panel v3",
+    "forms": 0
+  },
+  {
+    "address": "/nowa172",
+    "source": "Strona/we_odczyt_s2_m.htm",
+    "title": "Panel v3",
+    "forms": 0
+  },
+  {
+    "address": "/nowa173",
+    "source": "Strona/we_odczyt_s2_m_ssl.htm",
+    "title": "Panel v3",
+    "forms": 0
+  },
+  {
+    "address": "/nowa174",
+    "source": "Strona/we_odczyt_s3_m.htm",
+    "title": "Panel v3",
+    "forms": 0
+  },
+  {
+    "address": "/nowa175",
+    "source": "Strona/we_sms_c.htm",
+    "title": "Wejscia sygnalowe",
+    "forms": 1
+  },
+  {
+    "address": "/nowa176",
+    "source": "Strona/we_sms_m.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa177",
+    "source": "Strona/we_sms_m_ssl.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa178",
+    "source": "Strona/we_sms_s1_m.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa179",
+    "source": "Strona/we_sms_s1_m_ssl.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa180",
+    "source": "Strona/we_sms_s2_m.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa181",
+    "source": "Strona/we_sms_s2_m_ssl.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa182",
+    "source": "Strona/we_sms_s3_m.htm",
+    "title": "Wejscia",
+    "forms": 1
+  },
+  {
+    "address": "/nowa183",
+    "source": "Strona/wyb_slave_m.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa184",
+    "source": "Strona/wyb_slave_m_ssl.htm",
+    "title": "Odczyt wartosci",
+    "forms": 1
+  },
+  {
+    "address": "/nowa185",
+    "source": "Strona/wykres2.htm",
+    "title": "wykres2",
+    "forms": 0
+  },
+  {
+    "address": "/nowa186",
+    "source": "Strona/wykres3.htm",
+    "title": "wykres3",
+    "forms": 13
+  },
+  {
+    "address": "/nowa187",
+    "source": "Strona/wykres3_bez_slv.htm",
+    "title": "wykres3 bez slv",
+    "forms": 13
+  },
+  {
+    "address": "/nowa188",
+    "source": "Strona/wykres_en.htm",
+    "title": "wykres en",
+    "forms": 1
+  },
+  {
+    "address": "/nowa189",
+    "source": "Strona/Zal_wyl_PK_8_c.htm",
+    "title": "Sterowanie przekaznikami",
+    "forms": 1
+  },
+  {
+    "address": "/nowa190",
+    "source": "Strona/Zal_wyl_PK_c.htm",
+    "title": "Sterowanie przekaznikami",
+    "forms": 1
+  },
+  {
+    "address": "/nowa191",
+    "source": "Strona/Zal_Wyl_PK_g.htm",
+    "title": "Sterowanie przekaznikami",
+    "forms": 1
+  },
+  {
+    "address": "/nowa192",
+    "source": "Strona/Zaleznosci_8_c.htm",
+    "title": "Zaleznosci dla przekaznikow",
+    "forms": 1
+  },
+  {
+    "address": "/nowa193",
+    "source": "Strona/Zaleznosci_c.htm",
+    "title": "Zaleznosci Funkcyjne",
+    "forms": 3
+  },
+  {
+    "address": "/nowa194",
+    "source": "Strona/zegar_m.htm",
+    "title": "Zegar systemowy",
+    "forms": 1
+  },
+  {
+    "address": "/nowa195",
+    "source": "Strona/zegar_m_ssl.htm",
+    "title": "Zegar systemowy",
+    "forms": 1
+  }
+]
