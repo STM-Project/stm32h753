@@ -16,7 +16,18 @@ static size_t sent;
 static const char *expected;
 static int SendToEsp32_http(int size,char *data,ARCHIVING_TYPE arch) {
     (void)data;(void)arch;assert(size>0 && (unsigned)size<sizeof sendBuff);
-    ++commands;if(strstr(sendBuff,"CIPCLOSE"))++closes;
+    ++commands;
+    unsigned channel=999,length=0;int consumed=0;
+    if(strstr(sendBuff,"CIPCLOSE")){
+        assert(sscanf(sendBuff,"AT+CIPCLOSE=%u\r\n%n",&channel,&consumed)==1);
+        ++closes;
+    }else{
+        assert(sscanf(sendBuff,"AT+CIPSEND=%u,%u\r\n%n",&channel,&length,&consumed)==2);
+        assert(length>0 && length<=ETH_PACKET_LEN);
+        int slot=-1;for(unsigned i=0;i<ESP_MAX_HTTP_CONN;i++)if(httpPar.que[i]==channel)slot=(int)i;
+        assert(slot>=0 && length==httpPar.len[slot]);
+    }
+    assert(channel<ESP_MAX_HTTP_CONN && consumed==size);
     return command_fail?HAL_BUSY:HAL_OK;
 }
 static int SendToEsp32(int size,char *data,ARCHIVING_TYPE arch) {
