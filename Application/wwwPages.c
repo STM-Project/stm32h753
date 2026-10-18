@@ -6,7 +6,7 @@
  */
 
 #include "wwwPages.h"
-#include "http_settings_model.h"
+#include "HTTP/http_settings_model.h"
 #include "relay_states.h"
 #include "stm32h7xx_hal.h"
 #include <string.h>
