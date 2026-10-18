@@ -302,9 +302,9 @@ def main():
         executable = tmp / "settings_test"
         subprocess.run([compiler, "-std=c11", "-Wall", "-Wextra", "-Werror", "-pedantic",
                         "-Wno-overlength-strings", "-O1", "-g", "-fsanitize=address,undefined",
-                        "-fno-omit-frame-pointer", "-I" + str(ROOT / "Application"), str(harness),
-                        str(ROOT / "Application/http_settings_model.c"),
-                        str(ROOT / "Application/http_settings_catalog.c"), "-o", str(executable)], check=True)
+                        "-fno-omit-frame-pointer", "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"), str(harness),
+                        str(ROOT / "Application/HTTP/http_settings_model.c"),
+                        str(ROOT / "Application/HTTP/http_settings_catalog.c"), "-o", str(executable)], check=True)
         subprocess.run([str(executable)], check=True)
 
 

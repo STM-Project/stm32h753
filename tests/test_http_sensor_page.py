@@ -166,9 +166,9 @@ def main():
         subprocess.run([
             "gcc", "-std=c11", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
-            "-I" + str(ROOT / "Application"), str(harness), str(fixtures),
-            str(ROOT / "Application/http_sensor_page.c"),
-            str(ROOT / "Application/http_sensor_settings.c"), "-o", str(binary),
+            "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"), str(harness), str(fixtures),
+            str(ROOT / "Application/HTTP/http_sensor_page.c"),
+            str(ROOT / "Application/HTTP/http_sensor_settings.c"), "-o", str(binary),
         ], check=True)
         subprocess.run([str(binary), target], cwd=tmp, check=True)
 
@@ -233,8 +233,8 @@ def main():
                 str(arm), "-std=c11", "-Wall", "-Wextra", "-Werror",
                 "-mcpu=cortex-m7", "-mthumb", "-mfpu=fpv5-d16", "-mfloat-abi=hard",
                 "-isystem", "/workspace/.stm32-tools/root/usr/include/newlib",
-                "-I" + str(ROOT / "Application"), "-c",
-                str(ROOT / "Application/http_sensor_page.c"), "-o", str(tmp / "page.o"),
+                "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"), "-c",
+                str(ROOT / "Application/HTTP/http_sensor_page.c"), "-o", str(tmp / "page.o"),
             ], check=True)
             print("PASS: ARM Cortex-M7 renderer compilation.")
         print("PASS: all 20 ports, one/two Sandwitch cards, 8 fields per sensor, stored values, escaping and JavaScript syntax; ASan/UBSan.")

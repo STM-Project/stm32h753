@@ -90,8 +90,8 @@ def main():
         subprocess.run([
             "gcc", "-std=c11", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-no-pie", "-I" + str(directory),
-            "-I" + str(ROOT / "Application"),
-            str(ROOT / "Application/http_settings_storage.c"),
+            "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
+            str(ROOT / "Application/HTTP/http_settings_storage.c"),
             str(ROOT / "tests/fixtures/http_settings_storage_harness.c"),
             "-o", str(executable),
         ], check=True)
@@ -109,10 +109,10 @@ def main():
         recovery = directory / "recovery"
         subprocess.run(["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror",
                         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-no-pie",
-                        "-I" + str(directory), "-I" + str(ROOT / "Application"),
-                        str(integration), str(ROOT / "Application/http_settings_storage.c"),
-                        str(ROOT / "Application/http_settings_model.c"),
-                        str(ROOT / "Application/http_settings_catalog.c"), "-o", str(recovery)], check=True)
+                        "-I" + str(directory), "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
+                        str(integration), str(ROOT / "Application/HTTP/http_settings_storage.c"),
+                        str(ROOT / "Application/HTTP/http_settings_model.c"),
+                        str(ROOT / "Application/HTTP/http_settings_catalog.c"), "-o", str(recovery)], check=True)
         subprocess.run([str(recovery)], check=True)
 
 

@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tools/sandwitch_settings_templates.json"
-OUTPUT = ROOT / "Application/http_settings_catalog.c"
+OUTPUT = ROOT / "Application/HTTP/http_settings_catalog.c"
 NAMES = ["HttpWeCyfr", "HttpWeEOL", "HttpWyCyfr", "HttpEtr", "HttpTermost",
          "HttpTimer", "HttpUstawIP", "HttpUstawWifiAP", "HttpStrWWW", "HttpCzas",
          "HttpEkr", "HttpRejestr", "HttpUstawGSM", "HttpLora", "HttpUstawEmailNad"]

@@ -46,16 +46,16 @@ def main():
         (directory / "variables.h").write_text(VARIABLES_STUB)
         # Quoted includes search the implementation directory first. Copy only
         # this translation unit to isolate MCU headers from a host build.
-        shutil.copyfile(ROOT / "Application/http_settings_bindings.c",
+        shutil.copyfile(ROOT / "Application/HTTP/http_settings_bindings.c",
                         directory / "http_settings_bindings.c")
         executable = directory / "bindings-test"
         subprocess.run([
             "gcc", "-std=c11", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-no-pie",
-            "-I" + str(directory), "-I" + str(ROOT / "Application"),
+            "-I" + str(directory), "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
             str(directory / "http_settings_bindings.c"),
-            str(ROOT / "Application/http_settings_model.c"),
-            str(ROOT / "Application/http_settings_catalog.c"),
+            str(ROOT / "Application/HTTP/http_settings_model.c"),
+            str(ROOT / "Application/HTTP/http_settings_catalog.c"),
             str(ROOT / "tests/fixtures/http_settings_bindings_harness.c"),
             "-o", str(executable),
         ], check=True)

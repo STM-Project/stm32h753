@@ -17,10 +17,10 @@ szerokości 50px, aby obsłużyć 100% wilgotności i cały przechowywany zakres
 
 ## Dane i zapis
 
-- Model: `Application/http_sensor_settings.c/.h`.
-- Formularz: `Application/http_sensor_page.c/.h`.
-- Zapis/odczyt FatFs: `Application/http_sensor_storage.c/.h`.
-- Odbiór pofragmentowanych ramek ESP-AT: `Application/http_request_stream.c/.h`.
+- Model: `Application/HTTP/http_sensor_settings.c/.h`.
+- Formularz: `Application/HTTP/http_sensor_page.c/.h`.
+- Zapis/odczyt FatFs: `Application/HTTP/http_sensor_storage.c/.h`.
+- Odbiór pofragmentowanych ramek ESP-AT: `Application/HTTP/http_request_stream.c/.h`.
 - Routing i kolejka odpowiedzi: `Application/esp32wroom.c`.
 
 Temperatura i wilgotność są przechowywane osobno, z dokładnością 0,1.

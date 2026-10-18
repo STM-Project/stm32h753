@@ -148,9 +148,9 @@ def verify_h753_modes(pages):
         test = Path(directory) / "modes.c"
         test.write_text(program)
         binary = Path(directory) / "modes"
-        subprocess.run(["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "Application"),
-                        str(test), str(ROOT / "Application/http_settings_catalog.c"),
-                        str(ROOT / "Application/http_settings_model.c"), "-o", str(binary)], check=True)
+        subprocess.run(["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
+                        str(test), str(ROOT / "Application/HTTP/http_settings_catalog.c"),
+                        str(ROOT / "Application/HTTP/http_settings_model.c"), "-o", str(binary)], check=True)
         subprocess.run([str(binary)], check=True)
     assert Counter(f["form_id"] for f in fields.values()) == {0: 33, 1: 33}
     for port, mode in enumerate(defaults, 1):
@@ -276,8 +276,8 @@ def main():
         directory = Path(directory)
         (directory / "harness.c").write_text(HARNESS)
         subprocess.run(["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-fsanitize=address,undefined",
-                        "-fno-omit-frame-pointer", "-no-pie", "-I" + str(ROOT / "Application"),
-                        str(ROOT / "Application/http_settings_catalog.c"), str(directory / "harness.c"),
+                        "-fno-omit-frame-pointer", "-no-pie", "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
+                        str(ROOT / "Application/HTTP/http_settings_catalog.c"), str(directory / "harness.c"),
                         "-o", str(directory / "harness")], check=True)
         subprocess.run([str(directory / "harness")], check=True)
     print(f"PASS: {source_controls} original static controls, procedural/graph field sets, H753 mode defaults/capabilities and 12 explicit unavailable actions")

@@ -145,7 +145,7 @@ def main():
     pages = catalog.build_pages(json.loads(catalog.FIXTURE.read_text())['templates'])
     header, bindings = generate(pages)
     for name, contents in [('http_all_settings.h', header), ('http_all_settings_bindings.inc', bindings)]:
-        path = ROOT / 'Application' / name
+        path = ROOT / 'Application/HTTP' / name
         if args.check:
             if not path.exists() or path.read_text() != contents:
                 raise SystemExit(f'Stale generated settings structure: {path}')

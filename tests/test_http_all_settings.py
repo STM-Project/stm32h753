@@ -100,8 +100,8 @@ def main():
         executable = directory / "all"
         subprocess.run(["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-O1", "-g",
                         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-no-pie",
-                        "-I" + str(ROOT / "Application"), str(test),
-                        *[str(ROOT / "Application" / name) for name in
+                        "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"), str(test),
+                        *[str(ROOT / "Application/HTTP" / name) for name in
                           ("http_settings_model.c", "http_settings_catalog.c", "http_sensor_settings.c")],
                         "-o", str(executable)], check=True)
         subprocess.run([str(executable)], check=True)

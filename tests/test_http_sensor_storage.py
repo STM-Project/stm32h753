@@ -50,8 +50,8 @@ def main():
         subprocess.run([
             "gcc", "-std=c11", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-I" + str(directory),
-            "-I" + str(ROOT / "Application"),
-            str(ROOT / "Application/http_sensor_storage.c"),
+            "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
+            str(ROOT / "Application/HTTP/http_sensor_storage.c"),
             str(ROOT / "tests/fixtures/http_sensor_storage_harness.c"),
             "-o", str(executable),
         ], check=True)

@@ -404,8 +404,8 @@ def main():
             subprocess.run([
                 compiler, "-std=c11", "-Wall", "-Wextra", "-Werror", "-g",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
-                *configuration, "-I" + str(ROOT / "Application"),
-                str(harness), str(ROOT / "Application/http_request_stream.c"),
+                *configuration, "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
+                str(harness), str(ROOT / "Application/HTTP/http_request_stream.c"),
                 "-o", str(executable),
             ], check=True)
             environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=0")

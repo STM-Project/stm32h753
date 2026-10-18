@@ -82,9 +82,9 @@ int main(void) {
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp); test = tmp/'settings.c'; test.write_text(harness)
         include = '-I'+str(ROOT/'Application/General_Utilities')
-        app_include = '-I'+str(ROOT/'Application')
-        modules = [str(ROOT/'Application/http_settings_catalog.c'),str(ROOT/'Application/http_settings_model.c'),str(ROOT/'Application/relay_states.c')]
-        subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',include,app_include,str(test),*modules,str(ROOT/'Application/General_Utilities/mini_printf.c'),'-o',str(tmp/'test')],check=True)
+        app_include = ['-I'+str(ROOT/'Application'), '-I'+str(ROOT/'Application/HTTP')]
+        modules = [str(ROOT/'Application/HTTP/http_settings_catalog.c'),str(ROOT/'Application/HTTP/http_settings_model.c'),str(ROOT/'Application/relay_states.c')]
+        subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',include,*app_include,str(test),*modules,str(ROOT/'Application/General_Utilities/mini_printf.c'),'-o',str(tmp/'test')],check=True)
         body = subprocess.check_output([str(tmp/'test')]).decode()
         menu = literal(source,'HttpMainMenu')
         footer = literal(source,'HttpStructMainReadPanel2')
@@ -141,7 +141,7 @@ console.log('PASS: settings JavaScript initializes 33 ports, switches modes and 
             subprocess.run(['node',str(js)],check=True)
         arm = Path('/workspace/.stm32-tools/root/usr/bin/arm-none-eabi-gcc')
         if arm.exists():
-            subprocess.run([str(arm),'-mcpu=cortex-m7','-mthumb','-mfpu=fpv5-d16','-mfloat-abi=hard','--specs=nano.specs','-Wall','-Wextra','-Werror',include,app_include,'-c',str(test),'-o',str(tmp/'test.o')],check=True)
+            subprocess.run([str(arm),'-mcpu=cortex-m7','-mthumb','-mfpu=fpv5-d16','-mfloat-abi=hard','--specs=nano.specs','-Wall','-Wextra','-Werror',include,*app_include,'-c',str(test),'-o',str(tmp/'test.o')],check=True)
             print('PASS: ARM Cortex-M7 compilation.')
         print(f'PASS: 33 forms, 429 mode sections, HTML attribute escaping, buffer checks, ASan/UBSan and JavaScript syntax; dynamic body {len(body.encode())} bytes.')
 

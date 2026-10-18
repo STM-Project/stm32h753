@@ -1,6 +1,6 @@
 # Jedna struktura wszystkich ustawień
 
-Deklaracje są w `Application/http_all_settings.h`. Globalny obiekt
+Deklaracje są w `Application/HTTP/http_all_settings.h`. Globalny obiekt
 `HTTP_AllSettingsData` zawiera podstruktury wszystkich pól formularzy i ustawień
 czujników. Funkcja `HTTP_SettingsGetAll()` zwraca stały adres tego obiektu:
 

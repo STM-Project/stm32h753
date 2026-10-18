@@ -198,9 +198,9 @@ def main():
         common.write_text("const char HttpStyle[]=" + json.dumps(style) + ";\n" +
                           "const char HttpMainMenu[]=" + json.dumps(menu) + ";\n" +
                           "unsigned HTTP_SettingsPortMode(unsigned port) { return port % 14; }\n")
-        sources = [str(ROOT / "Application" / file) for file in
+        sources = [str(ROOT / "Application/HTTP" / file) for file in
                    ("http_settings_catalog.c", "http_settings_model.c", "http_settings_page.c")]
-        flags = ["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "Application")]
+        flags = ["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP")]
         binary = tmp / "settings.so"
         subprocess.run(flags + ["-shared", "-fPIC", str(common)] + sources + ["-o", str(binary)], check=True)
         library = C.CDLL(str(binary))
@@ -339,7 +339,7 @@ def main():
         if arm.exists():
             subprocess.run([str(arm), "-std=c11", "-Wall", "-Wextra", "-Werror", "-mcpu=cortex-m7", "-mthumb",
                             "-mfpu=fpv5-d16", "-mfloat-abi=hard", "-isystem", "/workspace/.stm32-tools/root/usr/include/newlib",
-                            "-I" + str(ROOT / "Application"), "-c", str(ROOT / "Application/http_settings_page.c"),
+                            "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"), "-c", str(ROOT / "Application/HTTP/http_settings_page.c"),
                             "-o", str(tmp / "page.o")], check=True)
         print(f"PASS: {indexed} page instances; schema-complete browser forms, persisted defaults, escaped text, hidden secrets, logic banks and JavaScript.")
 
