@@ -5,7 +5,8 @@
 #include "lpc_manifest.h"
 #define LPC_VALUE_MAX 256u
 #define LPC_BLOB_SIZE (16u+LPC_FIELD_COUNT*(LPC_VALUE_MAX+2u))
-#define LPC_PAGE_BUFFER_SIZE (2u*1024u*1024u)
+/* Largest packaged page is below 640 KiB. Keep all five slots within 16 MiB SDRAM. */
+#define LPC_PAGE_BUFFER_SIZE (768u*1024u)
 #if defined(__arm__) || defined(__thumb__)
 #define LPC_SDRAM __attribute__((section(".sdram"),aligned(32)))
 #else

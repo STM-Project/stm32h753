@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Check imported SD pages and real LPC settings persistence without hardware."""
-import json, subprocess, tempfile, zipfile
+import json, subprocess, tempfile, zipfile, re
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 SRC=ROOT/'Application/LPC2148'
+PAGE_CAPACITY=int(re.search(r'LPC_PAGE_BUFFER_SIZE \((\d+)u\*1024u\)',(SRC/'lpc_pages.h').read_text()).group(1))*1024
 C=r'''
 #include "lpc_pages.h"
 #include <assert.h>
@@ -58,7 +59,7 @@ with zipfile.ZipFile(SRC/'sdcard.zip') as z:
  for page in spec['pages']:
   html=z.read('LPC/P%05d.HTM'%page['number']).decode()
   assert '<%' not in html
-  assert len(html.encode())<2*1024*1024
+  assert len(html.encode())<PAGE_CAPACITY
  print('PASS:',len(spec['pages']),'SD pages, inline resources and bounded page sizes.')
 # A truncated inline library can pass C/build checks; execute representative documents.
 from playwright.sync_api import sync_playwright

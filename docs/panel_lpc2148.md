@@ -129,7 +129,7 @@ Aktywne tryby portów H7 nadal ustawia się w `/set`. Polecenia resetowania,
 transmisji i odczytu sprzętu specyficznego dla LPC nie są emulowane: zwracają
 HTTP 501. Warianty SSL są wariantami wyglądu, nie dodają HTTPS do firmware.
 
-HTTP ma pięć niezależnych buforów stron po 2 MiB w SDRAM, a dwa bufory
+HTTP ma pięć niezależnych buforów stron po 768 KiB w SDRAM, a dwa bufory
 ustawień zajmują razem około 2,95 MiB SDRAM. Nie obciążają stosu zadania.
 Wysyłanie korzysta z dotychczasowej kolejki i kontroli granic pakietów.
 Brak pliku na SD daje HTTP 503 z instrukcją i odnośnikiem do `/lpc`.
@@ -142,3 +142,12 @@ python3 Application/LPC2148/build_pages.py
 python3 Application/LPC2148/build_pages.py --check
 python3 tests/test_lpc_pages.py
 ```
+
+## Poprawka granicy SDRAM
+
+Konfiguracja FMC (8 bitów kolumn, 12 bitów wierszy, cztery banki, szyna 32-bit)
+oraz `SDRAM_DEVICE_SIZE` wskazują 16 MiB. Linker i MPU mają teraz ten sam limit.
+Poprzednie bufory 5 × 2 MiB powodowały przekroczenie fizycznej pamięci przez
+`httpRequestStream`; całkowita sekcja SDRAM miała 16 894 976 bajtów.
+Bufory 5 × 768 KiB mieszczą wszystkie aktualne strony z zapasem, a test paczki
+sprawdza limit każdego HTML. Nadmiar pamięci zostanie teraz odrzucony przy linkowaniu.
