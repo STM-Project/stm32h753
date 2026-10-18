@@ -418,7 +418,7 @@ size_t HTTP_SettingsPageRender(char *out, size_t capacity,
     if (page->field_count != 0U) PageAppend(&writer, "</form>");
     PageAppend(&writer,
         "<script>document.getElementById('tu_menu').innerHTML="
-        "\"<li><a href='/'>Panel odczytowy</a></li>"
+        "\"<li><a href='/nowa'>Panel graficzny LPC</a></li><li><a href='/'>Panel odczytowy</a></li>"
         "<li><a href='/set'>Konfiguracja portow</a></li>"
         "<li><a href='/lan'>LAN / WWW</a></li>"
         "<li><a href='/wifi'>WiFi</a></li>"

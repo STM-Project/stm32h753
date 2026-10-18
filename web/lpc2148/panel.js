@@ -1,0 +1,90 @@
+/* LPC2148 czolowka.htm layout/thermometers, STM32H753 live-data adapter. */
+(function () {
+    'use strict';
+    var chart, thermometers = [], busy = false, commands = {}, sequence = 0, applied = 0;
+    function id(prefix, n) { return prefix + ('00' + n).slice(-3); }
+    function text(target, value) { document.getElementById(target).textContent = value; }
+    function failed() {
+        text('connection', 'Brak połączenia — wartości mogą być nieaktualne');
+        document.body.classList.add('stale');
+    }
+    function range(item) {
+        var lo = item.min / 10, hi = item.max / 10;
+        return hi > lo ? [lo, hi] : [-10, 50];
+    }
+    function apply(data, revision) {
+        if (revision < applied) return;
+        applied = revision;
+        if (!data || data.temperatures.length !== 3 || data.inputs.length !== 7 || data.outputs.length !== 4) throw new Error('Niepełne dane');
+        document.body.classList.remove('stale');
+        text('connection', 'Ostatni odczyt: ' + new Date().toLocaleTimeString('pl-PL') + ' · odświeżanie co 1 s');
+        var now = Date.now();
+        data.temperatures.forEach(function (item, i) {
+            var value = item.tenths === null ? null : item.tenths / 10;
+            var bounds = range(item), fixture = i ? '#fixture' + (i + 1) : '#fixture';
+            text('name-temp-' + (i + 1), item.name + ' (port ' + item.port + ')');
+            text(id('tu_temp', i + 1), value === null ? 'brak danych' : value.toFixed(1));
+            var key = bounds.join('/');
+            if (!thermometers[i]) {
+                $(fixture).thermometer({startValue:0, height:150, width:'100%', minValue:0,
+                    maxValue:bounds[1]-bounds[0], bottomText:String(bounds[0]), topText:String(bounds[1]),
+                    pathToSVG:'/lpc/svg/thermo-bottom.svg', animationSpeed:300,
+                    liquidColour:function(v){var p=Math.max(0,Math.min(1,v/(bounds[1]-bounds[0])));return 'rgb(255,'+Math.round(255*(1-p))+',0)';}});
+                thermometers[i] = {key:key, bounds:bounds, element:$(fixture)};
+            } else if (thermometers[i].key !== key) {
+                /* Reload only the widget when saved thresholds change. */
+                $(fixture).thermometer('destroy');$(fixture).empty();thermometers[i]=null;
+            }
+            var widget = thermometers[i];
+            /* The original widget loads its SVG asynchronously. */
+            if (widget && $(fixture).find('svg').length) {
+                $(fixture).thermometer('setValue', value === null ? 0 : value - bounds[0]);
+            }
+            $(fixture).css('visibility',value === null ? 'hidden' : 'visible');
+            chart.series[i].update({name:item.name+' (port '+item.port+')'},false);
+            chart.series[i].addPoint([now,value],false,chart.series[i].data.length >= 300);
+        });
+        chart.redraw();
+        data.inputs.forEach(function (item, i) {
+            var node = document.getElementById(id('tu_we',i+1));
+            node.textContent = item.state === null ? '—' : item.state ? 'ON' : 'OFF';
+            node.className = item.state === null ? 'unknown' : item.state ? 'on' : 'off';
+            text(id('tu_we_p',i+1), 'Port ' + item.port);
+            text('id_txt_we'+(i+1), item.name || 'Wejście ' + (i+1));
+        });
+        data.outputs.forEach(function (item,i) {
+            var label = item.state === null ? 'brak potwierdzenia' : item.state ? 'ON' : 'OFF';
+            if (item.requested !== null) label += ' · zadano ' + (item.requested ? 'ON' : 'OFF');
+            text(id('tu_pk',i+1),label);
+            text('name-output-'+(i+1),(item.name || 'PK'+(i+1))+' (port '+item.port+')');
+            document.querySelector('[data-output="'+(i+1)+'"]').disabled = !item.enabled || !!commands[i+1];
+        });
+    }
+    function poll() {
+        if (busy) return;
+        busy = true;
+        var revision = ++sequence;
+        $.ajax({url:'/api/nowa',dataType:'json',cache:true,timeout:5000})
+            .done(function (data) { try { apply(data, revision); } catch(e) { failed(); } })
+            .fail(failed).always(function(){busy=false;});
+    }
+    $(function () {
+        Highcharts.setOptions({global:{useUTC:false}});
+        chart = new Highcharts.Chart({chart:{renderTo:'container',type:'spline',animation:false},
+            title:{text:'Temperatury'},xAxis:{type:'datetime'},yAxis:{title:{text:'°C'}},
+            credits:{enabled:false},plotOptions:{series:{marker:{enabled:false},animation:false}},
+            series:[{name:'Temperatura 1',data:[]},{name:'Temperatura 2',data:[]},{name:'Temperatura 3',data:[]}]});
+        document.querySelectorAll('[data-output]').forEach(function(button){
+            button.addEventListener('click',function(event){
+                event.preventDefault();var channel=Number(button.getAttribute('data-output'));
+                if(commands[channel])return;
+                commands[channel]=true;button.disabled=true;
+                $.ajax({url:'/mobile/pk'+('00'+channel).slice(-3),timeout:5000})
+                    .done(function(){text('connection','Polecenie wysłane; oczekiwanie na potwierdzenie wyjścia');})
+                    .fail(function(){text('connection','Nie wysłano polecenia. Sprawdź tryb portu w /set.');})
+                    .always(function(){delete commands[channel];poll();});
+            });
+        });
+        poll();window.setInterval(poll,1000);
+    });
+}());

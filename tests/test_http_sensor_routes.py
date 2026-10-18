@@ -37,6 +37,7 @@ PREAMBLE = r'''
 #include "http_settings_model.h"
 #include "http_settings_page.h"
 #include "http_output_control.h"
+#include "http_lpc_panel.h"
 #include "relay_states.h"
 typedef uint8_t u8;
 typedef uint32_t u32;
@@ -293,7 +294,9 @@ def compile_and_run(harness):
                         "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                         "-I" + str(ROOT / "Application"), "-I" + str(ROOT / "Application/HTTP"),
                         "-I" + str(ROOT / "Application/General_Utilities"),
-                        str(test), str(ROOT / "Application/HTTP/http_request_stream.c"),
+                        str(test), str(ROOT / "Application/HTTP/http_lpc_panel.c"),
+                        str(ROOT / "Application/HTTP/http_lpc_assets.c"),
+                        str(ROOT / "Application/HTTP/http_request_stream.c"),
                         str(ROOT / "Application/HTTP/http_output_control.c"),
                         str(ROOT / "Application/relay_states.c"),
                         str(ROOT / "Application/HTTP/http_sensor_page.c"),

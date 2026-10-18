@@ -15,6 +15,7 @@
 #include "HTTP/http_settings_bindings.h"
 #include "HTTP/http_request_stream.h"
 #include "HTTP/http_output_control.h"
+#include "HTTP/http_lpc_panel.h"
 #include "relay_states.h"
 #include <string.h> /* memset */
 #include <stdlib.h> /* atoi */
@@ -143,6 +144,8 @@ typedef enum
 	WWW_MAIN_SETTING,
 	WWW_MAIN_READ,
 	WWW_DATA_REFRESH,
+	WWW_LPC_ASSET,
+	WWW_LPC_DATA,
 	WWW_OUTPUT_CONTROL,
 	WWW_FAVICON,
 	WWW_SENSOR_SETTING,
@@ -193,6 +196,7 @@ static const char* httpSensorNotice[ESP_MAX_HTTP_CONN];
 static int httpResponseStatus[ESP_MAX_HTTP_CONN];
 static const HTTP_SettingPage* httpSettingsPage[ESP_MAX_HTTP_CONN];
 static uint16_t httpSettingsInstance[ESP_MAX_HTTP_CONN];
+static const HTTP_LpcAsset* httpLpcAsset[ESP_MAX_HTTP_CONN];
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
@@ -698,6 +702,15 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	LOOP_FOR(i,MAX_HTML_WEBs){  httpPar.web[channel][i] = NULL;		httpPar.siz[channel][i] = 0;  }
 	int nrPartWWW=0;	char* httpBuff=httpPageBuff[channel];	char* ptr=httpBuff;
 	switch(nrWWW){
+	case WWW_LPC_ASSET:
+        httpPar.web[channel][nrPartWWW]=(char*)httpLpcAsset[channel]->data;
+        httpPar.siz[channel][nrPartWWW++]=(u32)httpLpcAsset[channel]->length;
+        break;
+    case WWW_LPC_DATA:
+        httpPar.web[channel][nrPartWWW]=httpBuff;
+        httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_LpcPanelJson(httpBuff,sizeof(httpPageBuff[channel]));
+        if (!httpPar.siz[channel][0]) httpResponseStatus[channel]=500;
+        break;
 	case WWW_MAIN_READ:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
 		httpPar.web[channel][nrPartWWW] = (char*)HttpMainMenu;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainMenu);
@@ -1051,7 +1064,8 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 			httpResponseStatus[channel]==404?"Not Found":
 			httpResponseStatus[channel]==503?"Service Unavailable":
 			httpResponseStatus[channel]==501?"Not Implemented":"Internal Server Error";
-		const char* contentType=(nrWWW==WWW_DATA_REFRESH ||
+		const char* contentType=nrWWW==WWW_LPC_ASSET?httpLpcAsset[channel]->content_type:
+            nrWWW==WWW_LPC_DATA?"application/json; charset=UTF-8":(nrWWW==WWW_DATA_REFRESH ||
 			(nrWWW==WWW_OUTPUT_CONTROL && httpSensorNotice[channel]))?"text/plain; charset=UTF-8":
 			nrWWW==WWW_FAVICON?"image/x-icon":"text/html; charset=UTF-8";
 		int headerSize=snprintf(httpResponseHeader[channel],sizeof(httpResponseHeader[channel]),
@@ -1072,7 +1086,8 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 
 static int HTTP_QueueResponse(unsigned channel, int page, unsigned port,
                               const char* notice, int status,
-                              const HTTP_SettingPage* settingsPage, uint16_t settingsInstance)
+                              const HTTP_SettingPage* settingsPage, uint16_t settingsInstance,
+                              const HTTP_LpcAsset* asset)
 {
 	for(int i=0;i<ESP_MAX_HTTP_CONN;i++) if(httpPar.que[i]==channel) return -1;
 	for(int i=0;i<ESP_MAX_HTTP_CONN;i++) if(httpPar.que[i]==0xFF){
@@ -1081,6 +1096,7 @@ static int HTTP_QueueResponse(unsigned channel, int page, unsigned port,
 		httpSensorNotice[i]=notice;
 		httpResponseStatus[i]=status;
 		httpSettingsPage[i]=settingsPage; httpSettingsInstance[i]=settingsInstance;
+        httpLpcAsset[i]=asset;
 		httpPar.ptr[i]=HTTP_SetWeb(i,page);
 		httpPar.nr[i]=0; httpPar.len[i]=0;
 		return i;
@@ -1100,6 +1116,7 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 	const HTTP_SettingPage* settingsPage=NULL;
 	uint16_t settingsInstance=0;
 	const char* notice=NULL;
+    const HTTP_LpcAsset* asset=HTTP_LpcFindAsset(target,length);
 	(void)context;
 	if(channel>=ESP_MAX_HTTP_CONN) return;
 	/* Do not execute a write if its response cannot be queued. */
@@ -1124,6 +1141,8 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 			}
 		}
 	}else if(!target){ status=400; }
+    else if(asset){page=WWW_LPC_ASSET;status=200;}
+    else if(HTTP_TargetEquals(target,length,"/api/nowa")){page=WWW_LPC_DATA;status=200;}
 	else if(HTTP_TargetEquals(target,length,"/") || HTTP_TargetEquals(target,length,"/main")){
 		page=WWW_MAIN_READ; status=200;
 	}else if(HTTP_TargetEquals(target,length,"/set") || HTTP_TargetEquals(target,length,"/Set") || HTTP_TargetEquals(target,length,"/3main")){
@@ -1177,7 +1196,7 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 		settingsPage=HTTP_SettingsCatalogFind(path,&settingsInstance);
 		if(settingsPage){ page=WWW_OTHER_SETTING; status=settingsPage->field_count?200:501; }
 	}
-	if(HTTP_QueueResponse(channel,page,port,notice,status,settingsPage,settingsInstance)>=0) InitReloadHttpTime();
+	if(HTTP_QueueResponse(channel,page,port,notice,status,settingsPage,settingsInstance,asset)>=0) InitReloadHttpTime();
 }
 
 static void HTTP_FeedReceiveRing(void)

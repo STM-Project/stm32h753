@@ -1160,7 +1160,7 @@ j=0;for(i=0;i<17;i++){ txt5[i]=txt[450+14+1+23*3+4*18*3+18*3+23+i]; if((txt5[i]=
  }}\r\n\
  </script> \r\n\
     <script>\r\n\
-  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n\
+  var tyt=[];   tyt[0]=\"<li><a href='/nowa'>Panel graficzny LPC</a></li><li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n\
   document.getElementById(\"tu_menu\").innerHTML=tyt;\r\n\
   </script>\r\n\
 </body>\r\n\
@@ -1695,7 +1695,7 @@ for(i=0;i<10;i++) txt4[i]=txt[25+13+1+18+1+14+1+216+1+90+1+20+i];if(txt4[9]=='1'
  }}\r\n\
  </script> \r\n\
     <script>\r\n\
-  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n\
+  var tyt=[];   tyt[0]=\"<li><a href='/nowa'>Panel graficzny LPC</a></li><li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n\
   document.getElementById(\"tu_menu\").innerHTML=tyt;\r\n\
   </script>\r\n\
 \r\n\
@@ -2657,7 +2657,7 @@ const char HttpStructMainReadPanel2[]=
 " }}\r\n"
 " </script> \r\n"
 "    <script>\r\n"
-"  var tyt=[];   tyt[0]=\"<li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n"
+"  var tyt=[];   tyt[0]=\"<li><a href='/nowa'>Panel graficzny LPC</a></li><li><a href='main'>Panel odczytowy</a></li><li><a href='3main'>Konfiguracja portow</a></li><li><a href='lan'>Ustawienia sieci LAN</a></li><li><a href='wifi'>Ustawienia sieci WiFi</a></li><li><a href='gsm'>Ustawienia sieci GSM</a></li><li><a href='czas'>Ustawienia czasu</a></li><li><a href='maskisms'>Numery telefonow</a></li><li><a href='maskimail'>Skrzynki e-mail</a></li><li><a href='/nrf'>Ustawienia LoRa</a></li><li><a href='logic'>Operacje logiczne</a></li><li><a href='rej'>Rejetrator</a></li><li><a href='Rot'>Rotacja</a></li><li><a href='/wykres1'>Wykres pomiarow</a></li><li><a href='/wykres2'>Wykres licznikow</a></li>\";\r\n"
 "  document.getElementById(\"tu_menu\").innerHTML=tyt;\r\n"
 "  </script>\r\n"
 "\r\n"
