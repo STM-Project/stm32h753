@@ -1287,6 +1287,8 @@ static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl)
     if(!length || length>=sizeof(sendBuff)){httpPar.chnl=0xFF;return;}
     httpPar.ptr[slot]=httpPar.web[slot][part]+httpTxOffset[slot];
     httpPar.len[slot]=length;httpTxPhase[slot]=1;
+    /* Console uses channels 1..5; ESP AT commands retain IDs 0..4. */
+    if(archType==noArch)DbgVarDma(1,5,"%u",(unsigned)httpPar.chnl+1u);
     int status=SendToEsp32_http(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%u\r\n",httpPar.chnl,(unsigned)length),NULL,archType);
     if(status!=HAL_OK){httpTxPhase[slot]=0;httpPar.len[slot]=0;httpPar.chnl=0xFF;}
 }
