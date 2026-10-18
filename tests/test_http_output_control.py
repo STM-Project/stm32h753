@@ -25,6 +25,7 @@ int main(void) {
     assert(HTTP_OutputControlParse(raw,sizeof raw-1u,&parsed)==1);
     assert(parsed.kind==HTTP_OUTPUT_PWM && parsed.port==21 && parsed.value==37);
     request(0,"/lpc.cgi/n_pwm1=37&n_115_zapisz=");
+    assert(strstr(last_debug,"HTTP GET PWM: TCP=1 port=21 PWM=37% -> OK"));
     check_response(0,200,"text/plain; charset=UTF-8");body(0,html,sizeof html);assert(!strcmp(html,"37"));
     assert(pwm->pwm_valid && pwm->pwm_percent==37 && pwm->requested_on && pwm->request_valid);
     assert(!pwm->valid && !pwm->on); /* A request is not physical GPIO feedback. */
@@ -32,6 +33,7 @@ int main(void) {
     assert(strstr(html,"value=\"37\""));
     request(0,"/set");body(0,html,sizeof html);assert(strstr(html,"value=\"37\""));
     request(0,"/mobile/pk001");check_response(0,200,"text/html; charset=UTF-8");
+    assert(strstr(last_debug,"HTTP GET PK: TCP=1 port=28 zadano=ON -> OK"));
     body(0,html,sizeof html);assert(strstr(html,"Stan ON"));assert(pk->request_valid && pk->requested_on && !pk->valid);
     unsigned revision=RELAY_GetStates()->revision;
     HTTP_HandleTarget(0,"/mobile/pk001",13,NULL);assert(RELAY_GetStates()->revision==revision);
@@ -77,6 +79,7 @@ int main(void) {
     HTTP_RequestStream stream;clear_queue();HTTP_RequestStreamInit(&stream,HTTP_HandleTarget,NULL);
     feed_request(&stream,2,"/lpc.cgi/n_pwm1=64&n_115_zapisz=",1);
     check_response(2,200,"text/plain; charset=UTF-8");assert(pwm->pwm_percent==64);
+    assert(strstr(last_debug,"TCP=3 port=21 PWM=64% -> OK"));
     /* Each queued acknowledgement retains its own state snapshot. */
     clear_queue();HTTP_HandleTarget(4,"/mobile/pk001",13,NULL);body(0,first,sizeof first);
     HTTP_HandleTarget(3,"/mobile/pk001",13,NULL);body(0,html,sizeof html);assert(!strcmp(first,html));

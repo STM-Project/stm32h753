@@ -1155,7 +1155,18 @@ static void HTTP_HandleTarget(unsigned channel, const char* target, size_t lengt
 				page=WWW_OUTPUT_CONTROL; status=200; port=command.port;
 				notice=command.kind==HTTP_OUTPUT_PWM?"pwm":NULL;
 			}
-		}
+            if(command.kind==HTTP_OUTPUT_PWM){
+                DbgVarDma(1,160,"\r\nHTTP GET PWM: TCP=%u port=%u PWM=%u%% -> %s\r\n",
+                    channel+1u,command.port,command.value,accepted?"OK":"ODRZUCONO (tryb portu)");
+            }else{
+                const RelayState* state=RELAY_GetState(command.port);
+                DbgVarDma(1,160,"\r\nHTTP GET PK: TCP=%u port=%u zadano=%s -> %s\r\n",
+                    channel+1u,command.port,accepted && state?(state->requested_on?"ON":"OFF"):"-",
+                    accepted?"OK":"ODRZUCONO (tryb portu)");
+            }
+		}else{
+            DbgVarDma(1,128,"\r\nHTTP GET PWM/PK: TCP=%u ODRZUCONO (bledne parametry)\r\n",channel+1u);
+        }
 	}else if(!target){ status=400; }
     else if(asset){page=WWW_LPC_ASSET;status=200;}
     else if(HTTP_TargetEquals(target,length,"/api/nowa")){page=WWW_LPC_DATA;status=200;}

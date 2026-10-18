@@ -25,6 +25,7 @@ def constant(source, name):
 PREAMBLE = r'''
 #include <assert.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +43,11 @@ PREAMBLE = r'''
 typedef uint8_t u8;
 typedef uint32_t u32;
 #define SDRAM
+static char last_debug[256];
+static void DbgVarDma(int on,unsigned size,const char *format,...) {
+    (void)size;if(!on)return;
+    va_list args;va_start(args,format);mini_vsnprintf(last_debug,sizeof last_debug,format,args);va_end(args);
+}
 #define LOOP_FOR(i,n) for (int i=0;i<(n);++i)
 static unsigned reload_count, bindings_count;
 static void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage *page, uint16_t instance) {
