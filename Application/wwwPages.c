@@ -261,6 +261,7 @@ size_t HTTP_MainReadPanelRender(char* out, size_t capacity)
 	u8 types[33];
 	if(!out || !capacity) return 0;
 	out[0]=0;
+	if(!HTTP_MainAppend(out,capacity,&used,"<div class=\"h7-read-grid\">")) goto too_small;
 	for(unsigned port=1;port<=33;port++) types[port-1]=HTTP_MainPortTemplate(port);
 	/* Preserve Sandwitch's order: sensors, counters, inputs, EOL, ADC/Pt1000,
 	 * PWM, relay/IR, then timers and thermostats. */
@@ -316,6 +317,7 @@ size_t HTTP_MainReadPanelRender(char* out, size_t capacity)
 		}
 		if(!HTTP_MainAppend(out,capacity,&used,tile)) goto too_small;
 	}
+	if(!HTTP_MainAppend(out,capacity,&used,"</div>")) goto too_small;
 	/* Polling addresses every supported mode, including inactive ones. Emit
 	 * each ID once, keeping disabled ports invisible and active IDs unique. */
 	for(unsigned port=1;port<=33;port++){
@@ -907,6 +909,24 @@ label {\r\n\
  margin-top: 11px;\r\n\
  border-radius: 6px; background:   url('data:image/png;base64,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') no-repeat; }\r\n\
  </style>\r\n\
+<style>\r\n\
+/* H7 cards grow with content instead of reserving fixed empty space. */\r\n\
+.corner-radius2,.corner-radius4{height:auto!important;min-height:0;display:flow-root;overflow:visible;padding-bottom:14px;max-width:100%;box-sizing:border-box;}\r\n\
+.corner-radius,.corner-radius3:not(.port-column){height:auto!important;min-height:0;overflow:visible;padding:10px 8px;box-sizing:border-box;max-width:calc(100% - 20px);font:16px/1.5 Arial,Helvetica,sans-serif;color:#eee;}\r\n\
+.corner-radius .css-font-style,.corner-radius3 .css-font-style{font-size:18px;line-height:1.4;}\r\n\
+.corner-radius .css-font-style2,.corner-radius3 .css-font-style2{font-size:16px;line-height:1.5;}\r\n\
+.corner-radius table,.corner-radius3 table{font:15px/1.4 Arial,Helvetica,sans-serif;color:#eee;max-width:100%;margin:6px auto;border-spacing:4px;}\r\n\
+.corner-radius td,.corner-radius th{padding:3px 2px;vertical-align:middle;}\r\n\
+.corner-radius input:not([type=checkbox]):not([type=radio]),.corner-radius select,.corner-radius3 input:not([type=checkbox]):not([type=radio]){max-width:100%;box-sizing:border-box;}\r\n\
+.corner-radius .textbox,.corner-radius3 .textbox{height:30px;font-size:15px;}\r\n\
+.corner-radius .css_button,.corner-radius3 .css_button{font-size:17px;}\r\n\
+.corner-radius .regular-checkbox+label,.corner-radius3 .regular-checkbox+label{vertical-align:middle;}\r\n\
+.h7-read-grid{display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px 0;}.h7-read-grid>.y{float:none;padding-bottom:0;}\r\n\
+.y{height:auto!important;min-height:0;display:flow-root;overflow:visible;padding-bottom:14px;max-width:100%;}\r\n\
+.x{height:auto!important;min-height:110px;font-size:16px;line-height:1.4;padding:10px 4px;box-sizing:border-box;max-width:calc(100% - 10px);overflow:visible;}\r\n\
+.x .a{font-size:42px;}.x .b{font-size:17px;}.x .z{font-size:26px;}\r\n\
+@media(max-width:600px){.corner-radius2,.corner-radius4,.y{float:none!important;width:100%!important;}.corner-radius,.corner-radius3:not(.port-column),.x{float:none!important;margin-left:auto!important;margin-right:auto!important;}.corner-radius table{font-size:14px;border-spacing:2px;}}\r\n\
+</style>\r\n\
 </head>";
 
 const char HttpStructMainReadPanel[]="\r\n\
