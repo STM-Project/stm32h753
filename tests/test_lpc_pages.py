@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Check imported SD pages and real LPC settings persistence without hardware."""
 import json, subprocess, tempfile, zipfile, re
+from collections import Counter
+from lxml import html as dom
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 SRC=ROOT/'Application/LPC2148'
@@ -60,13 +62,21 @@ with zipfile.ZipFile(SRC/'sdcard.zip') as z:
   html=z.read('LPC/P%05d.HTM'%page['number']).decode()
   assert '<%' not in html
   assert len(html.encode())<PAGE_CAPACITY
+  original=dom.fragment_fromstring(page['body'],create_parent='div')
+  updated=dom.document_fromstring(html)
+  def controls(tree):
+   return {f.get('data-lpc-form'):Counter((n.tag,n.get('name'),n.get('type'),n.get('value')) for n in f.xpath('.//input|.//select|.//textarea|.//button')) for f in tree.xpath('.//form')}
+  assert controls(original)==controls(updated),('Form changed',page['number'])
+  choices=updated.xpath('//input[@type="checkbox" or @type="radio"]')
+  assert len({c.get('id') for c in choices})==len(choices)
+  assert all(c.getparent().get('class')=='lpc-choice' for c in choices)
  print('PASS:',len(spec['pages']),'SD pages, inline resources and bounded page sizes.')
 # A truncated inline library can pass C/build checks; execute representative documents.
 from playwright.sync_api import sync_playwright
 with zipfile.ZipFile(SRC/'sdcard.zip') as archive, sync_playwright() as playwright:
  browser=playwright.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
  for number in range(1,196):
-  page=browser.new_page();errors=[];requests=[];violations=[]
+  page=browser.new_page(viewport={'width':1440,'height':950});errors=[];requests=[];violations=[]
   page.on('pageerror',lambda error:errors.append(str(error)))
   page.on('console',lambda message:violations.append(message.text) if message.type=='error' else None)
   def respond(route):
@@ -84,6 +94,33 @@ with zipfile.ZipFile(SRC/'sdcard.zip') as archive, sync_playwright() as playwrig
   allowed={'http://stm32.test/nowa'+str(number),'http://stm32.test/api/lpc'+str(number),'http://stm32.test/api/lpcdata'}
   assert set(requests)<=allowed,(number,requests)
   assert page.locator('#lpc-content').is_visible()
+  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),('Desktop overflow',number)
+  if number in (47,48):
+   cards=page.locator('.lpc-tile')
+   assert cards.count()==23
+   boxes=[cards.nth(i).bounding_box() for i in range(3)]
+   assert max(b['y'] for b in boxes)-min(b['y'] for b in boxes)<2
+   assert boxes[0]['x']<boxes[1]['x']<boxes[2]['x']
+  if number==88:
+   label=page.get_by_text('Nazwa czujnika',exact=True).first.bounding_box()
+   field=page.locator('[name="n_txtval001"]').bounding_box()
+   assert abs(label['y']+label['height']/2-field['y']-field['height']/2)<12,('Table row alignment',label,field)
+   menu=page.locator('.menu details').first
+   menu.locator('summary').click();assert menu.locator('ul').is_visible()
+   menu.locator('summary').click();assert not menu.locator('ul').is_visible()
+  if number==12:
+   checks=page.locator('input[type=checkbox]')
+   assert checks.count()==42
+   selected=checks.nth(0);other=checks.nth(7)
+   assert not selected.is_checked() and not other.is_checked()
+   page.locator('label[for="'+selected.get_attribute('id')+'"]').click()
+   assert selected.is_checked() and not other.is_checked()
+   selected.focus();page.keyboard.press('Space');assert not selected.is_checked()
+  page.set_viewport_size({'width':390,'height':844})
+  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),('Mobile overflow',number)
+  if number in (47,48):
+   boxes=[page.locator('.lpc-tile').nth(i).bounding_box() for i in range(2)]
+   assert abs(boxes[0]['x']-boxes[1]['x'])<2 and boxes[1]['y']>boxes[0]['y']
   # A partial HTTP body must show the navigation/status before any library arrives.
   if number==12:
    document=archive.read('LPC/P%05d.HTM'%number).decode()
@@ -92,4 +129,4 @@ with zipfile.ZipFile(SRC/'sdcard.zip') as archive, sync_playwright() as playwrig
    assert page.locator('#lpc-status').is_visible()
   page.close()
  browser.close()
-print('PASS: all 195 pages render in Chromium; no external resources or CSP/JS errors; /nowa12 visible before scripts arrive.')
+print('PASS: all 195 pages desktop/mobile, horizontal SMS cards, native checkbox label/keyboard controls, unchanged form fields, no external assets/JS errors, progressive rendering.')

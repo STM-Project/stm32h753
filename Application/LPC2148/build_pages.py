@@ -4,6 +4,7 @@ import argparse,base64,hashlib,json,re,zipfile,io
 from pathlib import Path
 from html.parser import HTMLParser
 from generate_assets import build_html,WEB
+from layout_pages import normalize_layout
 HERE=Path(__file__).resolve().parent
 
 class InlineResources(HTMLParser):
@@ -56,15 +57,15 @@ def build():
  head+='<link rel="icon" href="data:,">'
  head+="<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self' data:; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'self'; object-src 'none'\">"
  head+='</head><body>'
- common_css='''<style>.ui-page{display:block}.lpc-navigation{padding:12px;background:#e8eef5}.lpc-status{padding:10px;color:#17476e}body{margin:0}body img{max-width:100%}#lpc-content{padding:15px;overflow-x:auto}#lpc-content table{max-width:100%}#lpc-content>div{max-width:100%}.lpc-disabled{opacity:.5}.lpc-catalog{font-size:16px}#lpc-content input,#lpc-content select{max-width:100%}</style>'''
- adapter=(WEB/'legacy.js').read_text()
+ common_css='<style>'+ (WEB/'layout.css').read_text()+'</style>'
+ adapter=(WEB/'legacy.js').read_text()+'\n'+(WEB/'layout.js').read_text()
  nav='<nav class="lpc-navigation"><a href="/nowa">Panel /nowa</a> | <a href="/lpc">Wszystkie strony LPC2148</a> | <a href="/set">Konfiguracja portów H7</a></nav><div id="lpc-status" class="lpc-status" role="status">Wczytywanie ustawień i danych…</div>'
  # Map legacy navigation to numbered destinations, using source file names.
  mapping={p['source'].lower():p['path'] for p in spec['pages']}
  links={'101':'Strona/temp_sms_c.htm','102':'Strona/Termostat_c.htm','103':'Strona/temp_maski_c.htm','104':'Strona/Rejestrator_c.htm','105':'Strona/Zal_wyl_PK_c.htm','106':'Strona/Autotimer_c.htm','107':'Strona/we_sms_c.htm','108':'Strona/Autoster_c.htm','109':'Strona/we_maski_c.htm','110':'Strona/Zaleznosci_c.htm','111':'Strona/irda_c.htm','112':'Strona/email_c.htm','020':'Strona/Lan_c.htm','200':'Strona/Zal_Wyl_PK_g.htm','500':'Strona/Mobilna/Glowny.htm','516':'Strona/Mobilna/Panel_kontrolny_v1.htm','517':'Strona/Mobilna/Panel_kontrolny_v2.htm','518':'Strona/Mobilna/Panel_kontrolny_v3.htm'}
  rows=[];items=[]
  for p in spec['pages']:
-  body=p['body']
+  body=normalize_layout(p['body'],p['number'])
   def css_image(match):
    name=match[1].strip(' \"\'')
    if name.startswith('data:'):return match[0]

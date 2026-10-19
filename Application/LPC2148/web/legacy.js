@@ -20,7 +20,7 @@ function refreshControls(){
   else if(e.type==='radio')e.checked=e.value===value;
   else e.value=value;
   try{if(e.type==='checkbox'||e.type==='radio')$(e).checkboxradio('refresh');else if(e.tagName==='SELECT')$(e).selectmenu('refresh');}catch(ignore){}
- });variables();
+ });variables();window.dispatchEvent(new Event('lpc-layout'));
 }
 function loadSettings(){
  return $.ajax({url:'/api/lpc'+window.LPC_PAGE,dataType:'json',cache:true,timeout:10000}).done(function(data){fields=data.fields;refreshControls();status('Ustawienia LPC wczytane.');}).fail(function(x){status('Nie wczytano ustawień LPC: HTTP '+x.status);});

@@ -171,3 +171,21 @@ Na konsoli są komunikaty `HTTP LPC: ... odczyt SD`, `SD OK, ... bajtow`,
 błąd z kodem FatFs lub informacja o wysłaniu całej odpowiedzi. Brak pliku,
 niepełny odczyt, zajęta karta i przekroczenie bufora zwracają HTTP 503
 z konkretną przyczyną na stronie.
+
+## Wspólny wygląd stron na SD
+
+`web/layout.css` i `web/layout.js` są osadzane we wszystkich numerowanych dokumentach.
+Skrypt wyrównuje odpowiadające sobie wiersze klasycznych tabel po wczytaniu
+ustawień i zmianie szerokości okna.
+`layout_pages.py` porządkuje zagnieżdżone kafelki, składa je w responsywną
+siatkę, usuwa puste odstępy i przywraca rozwijane menu wersji klasycznych.
+Checkboxy/radia dostają unikalne identyfikatory i etykiety oraz wspólny wygląd;
+pozostają natywnymi kontrolkami obsługiwanymi myszką i klawiaturą. Nazwy,
+wartości i przynależność pól do formularzy są sprawdzane po regeneracji.
+Na desktopie kafelki stoją obok siebie, na telefonie w jednej kolumnie.
+Szerokie tabele przewijają się we własnym obszarze zamiast poszerzać stronę.
+
+Po zmianie CSS lub normalizacji uruchom `build_pages.py` i skopiuj nowy folder
+`LPC` z `sdcard.zip` na kartę. Ta aktualizacja wyglądu nie wymaga zmiany firmware.
+Oryginały w `source_pages` pozostają materiałem źródłowym; wygląd wynikowych
+HTML jest nakładany przy budowie pakietu. Generator korzysta z Pythona i lxml.
