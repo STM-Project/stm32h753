@@ -122,31 +122,3 @@ DMA-ready dla CA, wielopakietowy redirect, utratę odpowiedzi i powrót do WWW,
 parser HTTP oraz logikę Apps Script. Wymagają GCC, Pythona 3 i Node.js.
 Nie zastępują próby na fizycznym ESP32 z konkretnym firmware AT i własnym
 wdrożeniem Google. Do testów nie są potrzebne prywatne tokeny ani konto.
-
-## Graficzny panel temperatury i przekaźnika
-
-Kod STM32 i jego konfiguracja pozostają bez zmian. Arkusz służy jako prywatny
-magazyn danych; na adresie `/exec` zamiast tekstu otwiera się panel graficzny.
-
-1. W istniejącym projekcie Apps Script zastąp zawartość `Code.gs` aktualnym
-   plikiem `cloud/google-apps-script/Code.gs`.
-2. Kliknij **+ → HTML**, nadaj nazwę **Panel** i wklej zawartość
-   `cloud/google-apps-script/Panel.html`. Cały CSS i JavaScript są w tym pliku.
-3. Uruchom ponownie `setup`. Zachowa token urządzenia, jego identyfikator,
-   arkusze i dane. Doda osobny losowy `PANEL_KEY`.
-4. W **Ustawienia projektu → Właściwości skryptu** skopiuj `PANEL_KEY`.
-   To klucz panelu, inny niż `DEVICE_TOKEN`; traktuj go jak hasło.
-5. **Wdróż → Zarządzaj wdrożeniami → edytuj istniejące wdrożenie → Nowa wersja
-   → Wdróż**. Zachowaj wykonywanie jako właściciel i dostęp „Każdy”.
-   Aktualizuj istniejące wdrożenie, aby adres używany przez STM32 się nie zmienił.
-6. Otwórz dotychczasowy adres `/exec` w przeglądarce i wpisz `PANEL_KEY`.
-
-Panel pokazuje termometr (niebieski przy niskiej temperaturze, czerwony przy
-wysokiej), ostatni kontakt, ostatnie 120 pomiarów oraz stan przekaźnika DEMO.
-Przyciski ON/OFF zapisują to samo pole B2 co dotychczasowy checkbox arkusza.
-STM32 odbierze polecenie przy kolejnej wysyłce; potwierdzenie zobaczysz przy
-następnym przesłanym `relayAck`. Nie jest to sterowanie fizycznym GPIO.
-Panel odpytuje dane co 15 sekund; nowe pomiary nadal przychodzą w rytmie STM32.
-Po 3 minutach bez kontaktu panel sygnalizuje brak świeżych danych.
-Klucz jest przechowywany tylko w pamięci otwartej karty, bez adresu URL,
-localStorage i bez ujawniania tokenu STM32. Historia i sterowanie wymagają klucza.

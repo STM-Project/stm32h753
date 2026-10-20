@@ -62,32 +62,3 @@ assert.equal(post({nonce:'5'.repeat(32)}), 'STM32CLOUD1:'+'5'.repeat(32)+':0');
 assert.equal(rows.length, 9001);
 assert.equal(released, 6);
 console.log('Apps Script authentication, temperature, checkbox, ACK, deduplication, locking and history limit: PASS');
-
-// Dashboard uses a distinct browser key, keeps device POST contract intact.
-properties.set('PANEL_KEY', 'panel-secret');
-assert.throws(() => context.getPanelState('wrong'), /klucz/);
-assert.throws(() => context.setPanelRelay('a'.repeat(64), true), /klucz/);
-busy = false;
-let browserDesired = false;
-const date = vm.runInContext('new Date(1700000000000)', context);
-sheet.getRange = range => ({
-  getValues: () => [['stm32f769-demo', browserDesired, 0, date, 25.5, 'DEMO']],
-  setValue: value => { assert.equal(range, 'B2'); browserDesired = value; }
-});
-log.getLastRow = () => 2;
-log.getRange = () => ({getValues: () => [[date, 'stm32f769-demo', 25.5]]});
-context.SpreadsheetApp.flush = () => {};
-assert.throws(() => context.setPanelRelay('panel-secret', 'ON'), /stan/);
-let panel = context.getPanelState('panel-secret');
-assert.equal(panel.temperature, 25.5);
-assert.equal(panel.ack, 0);
-assert.equal(panel.history[0][1], 25.5);
-panel = context.setPanelRelay('panel-secret', true);
-assert.equal(panel.desired, true);
-assert.equal(panel.ack, 0); // desired state must never fabricate device confirmation
-busy = true;
-assert.throws(() => context.setPanelRelay('panel-secret', false), /zajęty/);
-assert.equal(browserDesired, true);
-assert.ok(!JSON.stringify(panel).includes('panel-secret'));
-assert.ok(!JSON.stringify(panel).includes('a'.repeat(64)));
-console.log('Dashboard access key, history, relay command, acknowledgement separation and locking: PASS');
