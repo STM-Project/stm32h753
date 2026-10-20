@@ -25,6 +25,7 @@
 #include "i2c.h"
 #include "ltdc.h"
 #include "mdma.h"
+#include "rng.h"
 #include "sdmmc.h"
 #include "tim.h"
 #include "usart.h"
@@ -119,9 +120,10 @@ int main(void)
   MX_I2C4_Init();
   MX_UART7_Init();
   MX_USART6_UART_Init();
-  //MX_ETH_Init();
+  MX_ETH_Init();
   MX_LTDC_Init();
   MX_TIM5_Init();
+  MX_RNG_Init();
   /* USER CODE BEGIN 2 */
   RELAY_ResetStates();
   /* USER CODE END 2 */
@@ -167,8 +169,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 5;
@@ -265,8 +268,8 @@ void MPU_Config(void)
   /** Initializes and configures the Region and the memory to be protected
   */
   MPU_InitStruct.Number = MPU_REGION_NUMBER4;
-  MPU_InitStruct.BaseAddress = SDRAM_MEMORY_ADDR;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_16MB;
+  MPU_InitStruct.BaseAddress = 0x60000000;
+  MPU_InitStruct.Size = MPU_REGION_SIZE_64MB;
 
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */
