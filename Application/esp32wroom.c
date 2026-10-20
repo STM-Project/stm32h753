@@ -2046,7 +2046,7 @@ void vtaskWifi(void *argument)
                                 }
                                 else{
                                     googleCloudStatus.demo_relay=relay;
-                                    DbgVarDma(DBG,160,"\r\nGoogle ACK OK: HTTP 200, poprawne potwierdzenie nonce, temperatura10=%d, DEMO=%d\r\n",googleCloudStatus.temperature10,relay);
+                                    DbgVarDma(DBG,200,CoB_"\r\nGoogle ACK OK: HTTP 200, poprawne nonce; przekaznik DEMO odebrany z Google=%s (%d)\r\n"_X_,relay?"ON":"OFF",relay);
                                     CLOUD_Close(0);
                                 }
                             }
@@ -2640,7 +2640,7 @@ void vtaskWifi(void *argument)
                     DbgVarDma(DBG,100,"\r\nGoogle BLAD: nie mozna zbudowac zadania (-1)\r\n");}
                 else{
                     CloudAt_Reset(&cloudAt);cloudStarted=xTaskGetTickCount();
-                    DbgVarDma(DBG,180,"\r\nGoogle START: temperatura10=%d (0.1 C), DEMO=%d; wstrzymuje HTTP\r\n",temp,googleCloudStatus.demo_relay);
+                    DbgVarDma(DBG,200,CoB_"\r\nGoogle START: wysylana temperatura=%s%d.%d C; DEMO ACK=%d; wstrzymuje HTTP\r\n"_X_,temp<0?"-":"",(temp<0?-temp:temp)/10,(temp<0?-temp:temp)%10,googleCloudStatus.demo_relay);
                     connectionType=GOOGLE_CLOUD_CONNECTION;_SET_NEW_CASE_(0);
                     SendToEsp32(0,"AT+CIPSERVER=0\r\n",noArch);
                 }
