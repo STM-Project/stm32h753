@@ -18,6 +18,11 @@
 #include "LPC2148/http_lpc_panel.h"
 #include "LPC2148/lpc_pages.h"
 #include "relay_states.h"
+#include "google_cloud.h"
+#include "google_cloud_config.h"
+#include "google_cloud_at.h"
+#include "google_cloud_protocol.h"
+#include "google_cloud_roots.h"
 #include <string.h> /* memset */
 #include <stdlib.h> /* atoi */
 #include "stm32h7xx_hal.h"
@@ -91,7 +96,7 @@ typedef enum
 
 typedef enum
 {
-	INIT_CONNECTION, HTTP_CONNECTION, HTTP_CONNECTION_2, SMTP_CONNECTION, TEST_CONNECTION
+	INIT_CONNECTION, HTTP_CONNECTION, HTTP_CONNECTION_2, SMTP_CONNECTION, TEST_CONNECTION, GOOGLE_CLOUD_CONNECTION
 } CONNECTION_TYPE;
 
 typedef enum
@@ -212,6 +217,16 @@ static volatile uint8_t httpResetRequested;
 
 RAM_D2_ALIGN32 static char RecvBuffer[ESP_RECV_BUFF_SIZE];			/* ESP_RECV_BUFF_SIZE musi byc wielokrotnoscia 32 jesli uzylem _ALIGN32 */
 RAM_D2_ALIGN32 static char sendBuff[PACKET_SEND_LEN];
+/* Google owns link 3 only while WWW is idle/paused; SMTP keeps link 4. */
+volatile GoogleCloudStatus googleCloudStatus;
+static CloudAt cloudAt;
+static CloudHttpResponse cloudResponse;
+static char cloudRequest[4096], cloudRedirect[2048], cloudNonce[33];
+static size_t cloudRequestLength, cloudOffset, cloudPacketLength;
+static uint32_t cloudStarted, cloudLastAttempt, cloudCleanupTick;
+static int cloudRedirected, cloudResult;
+static size_t cloudCertOffset;
+
 static int recvByteFromEsp=0, recvByteFromEsp_copy=0;
 static int read_pos=0;
 static TickType_t tickCnt=0;
@@ -508,12 +523,16 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	int flag=0;
 	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase;  }
 	if( nrCase == actualCase ){
-		int hasRecv1 = (recv1 != NULL) && (strstr_(NULL,recv1) != NULL);
-		int hasRecv2 = (recv2 != NULL) && (strstr_(NULL,recv2) != NULL);
+		int hasRecv1 = connectionType==GOOGLE_CLOUD_CONNECTION ? CloudAt_Has(&cloudAt,recv1) : (recv1 != NULL) && (strstr_(NULL,recv1) != NULL);
+		int hasRecv2 = connectionType==GOOGLE_CLOUD_CONNECTION ? CloudAt_Has(&cloudAt,recv2) : (recv2 != NULL) && (strstr_(NULL,recv2) != NULL);
 	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
-	    if(flag){ DispRecvBuff(nrCase,archType); ESP32_FreeAnswers(0); RcvTimeoutTimerStop(); }
+	    if(flag){
+            if(connectionType==GOOGLE_CLOUD_CONNECTION)cloudAt.events=0;
+            else{DispRecvBuff(nrCase,archType);ESP32_FreeAnswers(0);}
+            RcvTimeoutTimerStop();
+        }
 	}
 	return flag;
 }
@@ -1422,6 +1441,73 @@ static void HTTP_ShowInitChannel(int channel,int size, ARCHIVING_TYPE archType){
 	if(archType!=noArch)  DbgVarDma(DBG,100,_S_"\r\nRecv HTTP data: channel %d  size %d "_E_,channel,size);
 }
 
+/* Cloud transport shares INIT, UART DMA and CASE_Service with HTTP/SMTP. */
+static const char* CLOUD_Host(void){return cloudRedirected?"script.googleusercontent.com":"script.google.com";}
+
+__attribute__((weak)) int GoogleCloud_ReadTemperature10(void)
+{
+    const size_t offset=73u+(GOOGLE_CLOUD_TEMPERATURE_PORT-1u)*12u;
+    char field[6],*end;int sign=1,value=0;
+    if(GOOGLE_CLOUD_TEMPERATURE_PORT<1 || GOOGLE_CLOUD_TEMPERATURE_PORT>20 || strlen(HttpRefr_sdram)<offset+5)return -32768;
+    memcpy(field,HttpRefr_sdram+offset,5);field[5]=0;end=field;
+    while(*end==' ')end++;
+    if(*end=='-'){sign=-1;end++;}else if(*end=='+')end++;
+    if(*end<'0'||*end>'9')return -32768;
+    while(*end>='0'&&*end<='9'){value=value*10+(*end++-'0');}
+    if(*end++!='.'||*end<'0'||*end>'9')return -32768;
+    value=value*10+(*end++-'0');while(*end==' ')end++;
+    return *end?-32768:sign*value;
+}
+
+static int CLOUD_Nonce(void)
+{
+    static int initialized;
+    if(!initialized){
+        RCC_OscInitTypeDef osc={0};RCC_PeriphCLKInitTypeDef clock={0};
+        osc.OscillatorType=RCC_OSCILLATORTYPE_HSI48;osc.HSI48State=RCC_HSI48_ON;
+        if(HAL_RCC_OscConfig(&osc)!=HAL_OK)return 0;
+        clock.PeriphClockSelection=RCC_PERIPHCLK_RNG;clock.RngClockSelection=RCC_RNGCLKSOURCE_HSI48;
+        if(HAL_RCCEx_PeriphCLKConfig(&clock)!=HAL_OK)return 0;
+        __HAL_RCC_RNG_CLK_ENABLE();RNG->CR=RNG_CR_RNGEN;initialized=1;
+    }
+    for(unsigned i=0;i<4;i++){
+        uint32_t start=HAL_GetTick();
+        while(!(RNG->SR&RNG_SR_DRDY)){
+            if((RNG->SR&(RNG_SR_CECS|RNG_SR_SECS)) || HAL_GetTick()-start>10u){RNG->CR=0;initialized=0;return 0;}
+        }
+        if(RNG->SR&(RNG_SR_CECS|RNG_SR_SECS)){RNG->CR=0;initialized=0;return 0;}
+        snprintf(cloudNonce+i*8u,9,"%08x",(unsigned)RNG->DR);
+    }
+    return 1;
+}
+
+static void CLOUD_Close(int error)
+{
+    cloudResult=error;cloudAt.events=0;cloudCleanupTick=xTaskGetTickCount();
+    _SET_NEW_CASE_(900);
+    SendToEsp32(0,"AT+CIPCLOSE=3\r\n",noArch);
+}
+
+static void CLOUD_RestoreHttp(void)
+{
+    cloudAt.events=0;cloudCleanupTick=xTaskGetTickCount();
+    InitStructRqstToSendChnl();
+    HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
+    _SET_NEW_CASE_(901);
+    SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,noArch);
+}
+
+static void CLOUD_FeedReceiveRing(void)
+{
+    int position=read_pos;
+    while(position!=recvByteFromEsp_copy){
+        CloudAt_Feed(&cloudAt,(const uint8_t*)&RecvBuffer[position],1);
+        if(_GET_ACTUAL_CASE_==901)HTTP_RequestStreamFeed(&httpRequestStream,(const uint8_t*)&RecvBuffer[position],1);
+        IncPos(&position);
+    }
+    UpdateReadPos();
+}
+
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;
@@ -1450,6 +1536,11 @@ void vtaskWifi(void *argument)
 	HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
 	InitStructRqstToSendChnl();
 	RcvTimeoutTimerInit();
+    memset((void*)&googleCloudStatus,0,sizeof googleCloudStatus);
+    googleCloudStatus.configured=GOOGLE_CLOUD_ENABLED && CloudConfig_Valid(GOOGLE_CLOUD_TOKEN,GOOGLE_CLOUD_DEVICE,GOOGLE_CLOUD_PATH);
+    googleCloudStatus.last_error=GOOGLE_CLOUD_ENABLED && !googleCloudStatus.configured?-1:0;
+    cloudLastAttempt=xTaskGetTickCount();
+    CloudAt_Reset(&cloudAt);
 
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
@@ -1473,7 +1564,7 @@ void vtaskWifi(void *argument)
             InitStructRqstToSendChnl();
             UpdateReadPos();
         }
-	  if(xTaskNotifyWait(0x00, 0x00, &ulNotifiedValue, portMAX_DELAY) == pdPASS)			/* xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu.   Problem: Jeśli w tym samym momencie (ułamek sekundy po wybudzeniu zadania, ale przed zakończeniem tej funkcji) inne zadanie lub przerwanie (ISR) przyśle nowy bit, zostanie on bezpowrotnie skasowany i utracony. Dlatego najbezpieczniejsze jest uzycie pod koniec obslugi tego zdarzenia reczne czyszczenie aktualnego bitu funkcją ulTaskNotifyValueClear(NULL, ulNotifiedValue) */
+	  if(xTaskNotifyWait(0x00, 0x00, &ulNotifiedValue, googleCloudStatus.configured?pdMS_TO_TICKS(100):portMAX_DELAY) == pdPASS)			/* xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu.   Problem: Jeśli w tym samym momencie (ułamek sekundy po wybudzeniu zadania, ale przed zakończeniem tej funkcji) inne zadanie lub przerwanie (ISR) przyśle nowy bit, zostanie on bezpowrotnie skasowany i utracony. Dlatego najbezpieczniejsze jest uzycie pod koniec obslugi tego zdarzenia reczne czyszczenie aktualnego bitu funkcją ulTaskNotifyValueClear(NULL, ulNotifiedValue) */
 	  {
 	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
 		if (ulNotifiedValue & BIT_ESP_SRV)
@@ -1785,14 +1876,26 @@ void vtaskWifi(void *argument)
 										sntpTime->tm_min,
 										sntpTime->tm_sec);
 
-								connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
-								UpdateReadPos();				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
+                                if(googleCloudStatus.configured){
+                                    cloudCleanupTick=xTaskGetTickCount();
+                                    if(GOOGLE_CLOUD_INSTALL_CA){
+                                        _SET_NEW_CASE_(22);cloudCertOffset=0;cloudCleanupTick=xTaskGetTickCount();
+                                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+SYSMFG=2,\"client_ca\",\"client_ca.%u\",8,%u\r\n",
+                                            (unsigned)GOOGLE_CLOUD_CA_INDEX,(unsigned)sizeof google_cloud_roots),NULL,noArch);
+                                    }else{
+                                        _SET_NEW_CASE_(25);
+                                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCCONF=3,2,0,%u\r\n",(unsigned)GOOGLE_CLOUD_CA_INDEX),NULL,noArch);
+                                    }
+                                    COMMAND_Service(_SET,sendBuff);
+                                }else{connectionType=HTTP_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();}
+                                /* Time comes from the existing SNTP INIT, no second Wi-Fi setup. */				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
 							}
 							else
 							{
 								vTaskDelay(2000);    //jezeli nie ma odpowiedzi sntp to trzeba cyklicznie co godzine np pytac
 								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY)
 								{
+                                    if(googleCloudStatus.configured)googleCloudStatus.last_error=-2;
 									UpdateReadPos();
 									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 								}
@@ -1805,12 +1908,133 @@ void vtaskWifi(void *argument)
 						}
 
 					}
+                    else if (CASE_Service(22,">",txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){
+                            googleCloudStatus.last_error=-3;_SET_NEW_CASE_(26);
+                            SendToEsp32(0,"AT\r\n",noArch);
+                        }else{
+                            _SET_NEW_CASE_(23); /* Certificate chunks continue on DMA-ready ticks. */
+                        }
+                    }
+                    else if (CASE_Service(24,txt_OK,txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){
+                            googleCloudStatus.last_error=-3;_SET_NEW_CASE_(26);
+                            SendToEsp32(0,"AT\r\n",noArch);
+                        }else{
+                            SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCCONF=3,2,0,%u\r\n",(unsigned)GOOGLE_CLOUD_CA_INDEX),NULL,noArch);
+                        }
+                    }
+                    else if (CASE_Service(25,txt_OK,txt_ERR,noArch))
+                    {
+                        googleCloudStatus.ready=_GET_ANSW_CASE_==_OK;
+                        if(!googleCloudStatus.ready)googleCloudStatus.last_error=-3;
+                        SendToEsp32(0,"AT+CIPRECVMODE=0\r\n",noArch);
+                        COMMAND_Service(_SET,sendBuff);
+                    }
+                    else if (CASE_Service(26,txt_OK,txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){googleCloudStatus.ready=0;googleCloudStatus.last_error=-3;}
+                        SendToEsp32(0,"AT+CIPDINFO=0\r\n",noArch);
+                    }
+                    else if (CASE_Service(27,txt_OK,txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){googleCloudStatus.ready=0;googleCloudStatus.last_error=-3;}
+                        connectionType=HTTP_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();
+                        DbgVarDma(DBG,100,"\r\nGoogle INIT: %s\r\n",googleCloudStatus.ready?"TLS ready":"TLS configuration error");
+                    }
 					else
 					{
 						ESP32_FreeAnswers(1/*2*/);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() */
 					}
 					break;
 
+
+                case GOOGLE_CLOUD_CONNECTION:
+                    CLOUD_FeedReceiveRing();
+                    if (CASE_Service(0,txt_OK,txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
+                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCCN=3,\"%s\"\r\n",CLOUD_Host()),NULL,noArch);
+                    }
+                    else if (CASE_Service(1,txt_OK,txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
+                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCSNI=3,\"%s\"\r\n",CLOUD_Host()),NULL,noArch);
+                    }
+                    else if (CASE_Service(2,txt_OK,txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
+                        CloudAt_Reset(&cloudAt);
+                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSTART=3,\"SSL\",\"%s\",443\r\n",CLOUD_Host()),NULL,noArch);
+                    }
+                    else if (CASE_Service(3,txt_OK,txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
+                        cloudOffset=0;cloudPacketLength=cloudRequestLength;
+                        if(cloudPacketLength>sizeof sendBuff-1)cloudPacketLength=sizeof sendBuff-1;
+                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSEND=3,%u\r\n",(unsigned)cloudPacketLength),NULL,noArch);
+                    }
+                    else if (CASE_Service(4,">",txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
+                        SendToEsp32((int)cloudPacketLength,cloudRequest+cloudOffset,noArch);
+                    }
+                    else if (CASE_Service(5,"\r\nSEND OK",txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
+                        cloudOffset+=cloudPacketLength;
+                        if(cloudOffset<cloudRequestLength){
+                            cloudPacketLength=cloudRequestLength-cloudOffset;
+                            if(cloudPacketLength>sizeof sendBuff-1)cloudPacketLength=sizeof sendBuff-1;
+                            _SET_NEW_CASE_(4);
+                            SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSEND=3,%u\r\n",(unsigned)cloudPacketLength),NULL,noArch);
+                        }
+                    }
+                    else if (CASE_Service(10,txt_OK,txt_ERR,noArch))
+                    {
+                        CloudAt_Reset(&cloudAt);_SET_NEW_CASE_(1);
+                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCCN=3,\"%s\"\r\n",CLOUD_Host()),NULL,noArch);
+                    }
+                    else if (CASE_Service(900,txt_OK,txt_ERR,noArch))
+                    {
+                        CLOUD_RestoreHttp();
+                    }
+                    else if (CASE_Service(901,txt_OK,txt_ERR,noArch))
+                    {
+                        if(_GET_ANSW_CASE_!=_OK){cloudResult=-9;googleCloudStatus.ready=0;}
+                        googleCloudStatus.last_error=cloudResult;
+                        if(cloudResult)googleCloudStatus.failures++;else googleCloudStatus.successes++;
+                        cloudLastAttempt=xTaskGetTickCount();
+                        DbgVarDma(DBG,160,"\r\nGoogle: status=%d, pomiar=%d, DEMO=%d\r\n",cloudResult,googleCloudStatus.temperature10,googleCloudStatus.demo_relay);
+                        RcvTimeoutTimerStop();BackToHttpService(&nrHTTPpacket);
+                        xTaskNotify(vtaskWifiHandle,BIT_ESP_SRV,eSetBits);
+                        if(cloudResult==-9){
+                            connectionType=INIT_CONNECTION;_SET_NEW_CASE_(0);
+                            ESP_OFF;vTaskDelay(pdMS_TO_TICKS(20));ESP_ON;
+                        }
+                    }
+                    /* SEND OK and the complete HTTP response may arrive together. */
+                    if(connectionType==GOOGLE_CLOUD_CONNECTION && _GET_ACTUAL_CASE_==6){
+                        int parsed=cloudAt.overflow?-1:CloudHttp_Parse(cloudAt.wire,cloudAt.used,cloudAt.eof,&cloudResponse);
+                        if(parsed<0){CLOUD_Close(-6);}
+                        else if(!parsed){
+                            if((cloudResponse.status==302 || cloudResponse.status==303) && !cloudRedirected &&
+                               !CloudRedirect_Path(cloudResponse.location,cloudRedirect,sizeof cloudRedirect)){
+                                cloudRedirected=1;
+                                cloudRequestLength=CloudRequest_Build(cloudRequest,sizeof cloudRequest,CLOUD_Host(),cloudRedirect,NULL,NULL,0,0,NULL);
+                                if(!cloudRequestLength){CLOUD_Close(-6);break;}
+                                cloudAt.events=0;_SET_NEW_CASE_(10);
+                                SendToEsp32(0,"AT+CIPCLOSE=3\r\n",noArch);
+                            }else{
+                                int relay;
+                                if(cloudResponse.status!=200 || CloudReply_Parse(cloudResponse.body,cloudNonce,&relay))CLOUD_Close(-7);
+                                else{googleCloudStatus.demo_relay=relay;CLOUD_Close(0);}
+                            }
+                        }
+                    }
+                    break;
 
 				case HTTP_CONNECTION_2:		/* Only for:  AT+CIPSERVERMAXCONN=1 */
 					RcvTimeoutTimerStop();
@@ -2223,7 +2447,19 @@ void vtaskWifi(void *argument)
 		{
 			DEBUG_InvalidateDCache();
 
-			if(DEBUG_IsTxtReceive("a"))
+            if(DEBUG_IsTxtReceive("cloud"))
+            {
+                DbgVarDma(1,220,"\r\nGoogle: configured=%d ready=%d error=%d OK=%u FAIL=%u temp10=%d DEMO=%d\r\n",
+                    googleCloudStatus.configured,googleCloudStatus.ready,googleCloudStatus.last_error,
+                    (unsigned)googleCloudStatus.successes,(unsigned)googleCloudStatus.failures,
+                    googleCloudStatus.temperature10,googleCloudStatus.demo_relay);
+            }
+            else if(connectionType==GOOGLE_CLOUD_CONNECTION ||
+                    (connectionType==INIT_CONNECTION && _GET_ACTUAL_CASE_>=22 && _GET_ACTUAL_CASE_<=27))
+            {
+                DbgDma(DBG,"\r\nESP zajety przez Google; ponow polecenie po zakonczeniu.\r\n");
+            }
+            else if(DEBUG_IsTxtReceive("a"))
 			{
 				DbgVarDma2(1,50,"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
 				HTTP_ShowHttpStruct();
@@ -2330,6 +2566,63 @@ void vtaskWifi(void *argument)
 			}
 		}
 	  }
+        /* Recover an RX notification racing the existing manual bit clear.
+         * Wake only for genuinely new DMA bytes, never for an empty RX poll. */
+        if(googleCloudStatus.configured && recvByteFromEsp_copy!=recvByteFromEsp)
+            xTaskNotify(vtaskWifiHandle,BIT_ESP_SRV,eSetBits);
+        if(connectionType==INIT_CONNECTION && googleCloudStatus.configured &&
+           _GET_ACTUAL_CASE_>=22 && _GET_ACTUAL_CASE_<=27 &&
+           xTaskGetTickCount()-cloudCleanupTick>=pdMS_TO_TICKS(GOOGLE_CLOUD_TIMEOUT_MS)){
+            /* An ESP stuck in raw certificate upload must be reset, not fed AT text. */
+            googleCloudStatus.configured=0;googleCloudStatus.ready=0;googleCloudStatus.last_error=-3;
+            RcvTimeoutTimerStop();_SET_NEW_CASE_(0);UpdateReadPos();
+            ESP_OFF;vTaskDelay(pdMS_TO_TICKS(20));ESP_ON;
+        }else if(connectionType==INIT_CONNECTION && _GET_ACTUAL_CASE_==23){
+            /* SYSMFG takes raw bytes, not CIPSEND; never overwrite active UART DMA. */
+            if(ESP_UART_HANDLE.gState==HAL_UART_STATE_READY){
+                size_t bytes=sizeof google_cloud_roots-cloudCertOffset;
+                if(bytes>sizeof sendBuff-1)bytes=sizeof sendBuff-1;
+                if(cloudCertOffset+bytes==sizeof google_cloud_roots){_SET_NEW_CASE_(24);}
+                if(SendToEsp32((int)bytes,(char*)google_cloud_roots+cloudCertOffset,noArch)==HAL_OK)cloudCertOffset+=bytes;
+                else{
+                    googleCloudStatus.configured=0;googleCloudStatus.last_error=-3;
+                    RcvTimeoutTimerStop();_SET_NEW_CASE_(0);UpdateReadPos();
+                    ESP_OFF;vTaskDelay(pdMS_TO_TICKS(20));ESP_ON;
+                }
+            }
+        }
+        if(connectionType==GOOGLE_CLOUD_CONNECTION){
+            uint32_t now=xTaskGetTickCount();int step=_GET_ACTUAL_CASE_;
+            if(step<900 && now-cloudStarted>=pdMS_TO_TICKS(GOOGLE_CLOUD_TIMEOUT_MS))CLOUD_Close(-4);
+            else if(step==900 && now-cloudCleanupTick>=pdMS_TO_TICKS(5000))CLOUD_RestoreHttp();
+            else if(step==901 && now-cloudCleanupTick>=pdMS_TO_TICKS(5000)){
+                googleCloudStatus.last_error=-9;googleCloudStatus.failures++;googleCloudStatus.ready=0;
+                cloudLastAttempt=now;RcvTimeoutTimerStop();InitStructRqstToSendChnl();
+                connectionType=INIT_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();
+                ESP_OFF;vTaskDelay(pdMS_TO_TICKS(20));ESP_ON;
+            }
+        }else if(connectionType==HTTP_CONNECTION && googleCloudStatus.ready &&
+                 (Const.wifiGeneral.mode==WIFI_MODE_STA || Const.wifiGeneral.mode==WIFI_MODE_AP_STA) &&
+                 !IsActiveAnyRqstToSendChnl() && xTaskGetTickCount()-tickCnt>=pdMS_TO_TICKS(250) &&
+                 xTimerIsTimerActive(xWaitOnSendTimeoutTimer)==pdFALSE &&
+                 xTaskGetTickCount()-cloudLastAttempt>=pdMS_TO_TICKS(GOOGLE_CLOUD_PERIOD_MS)){
+            cloudLastAttempt=xTaskGetTickCount();
+            int temp=GoogleCloud_ReadTemperature10();
+            if(temp< -500 || temp>1500){googleCloudStatus.last_error=-18;googleCloudStatus.failures++;}
+            else if(!CLOUD_Nonce()){googleCloudStatus.last_error=-8;googleCloudStatus.failures++;}
+            else{
+                googleCloudStatus.temperature10=temp;cloudRedirected=0;cloudResult=0;
+                cloudRequestLength=CloudRequest_Build(cloudRequest,sizeof cloudRequest,CLOUD_Host(),GOOGLE_CLOUD_PATH,
+                    GOOGLE_CLOUD_TOKEN,GOOGLE_CLOUD_DEVICE,temp,googleCloudStatus.demo_relay,cloudNonce);
+                if(!cloudRequestLength){googleCloudStatus.last_error=-1;googleCloudStatus.failures++;}
+                else{
+                    CloudAt_Reset(&cloudAt);cloudStarted=xTaskGetTickCount();
+                    connectionType=GOOGLE_CLOUD_CONNECTION;_SET_NEW_CASE_(0);
+                    SendToEsp32(0,"AT+CIPSERVER=0\r\n",noArch);
+                }
+            }
+        }
+
 	}
 }
 

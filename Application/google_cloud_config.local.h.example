@@ -1,0 +1,10 @@
+/* Copy to google_cloud_config.local.h (ignored by Git).
+ * Use DEVICE_ID, DEVICE_TOKEN and /macros/s/.../exec from your Apps Script.
+ * Existing Project_marafal deployments may use DEVICE_ID stm32f769-demo. */
+#define GOOGLE_CLOUD_ENABLED 1
+#define GOOGLE_CLOUD_DEVICE "stm32h753"
+#define GOOGLE_CLOUD_TOKEN "REPLACE_WITH_64_HEXADECIMAL_CHARACTERS"
+#define GOOGLE_CLOUD_PATH "/macros/s/REPLACE_WITH_DEPLOYMENT_ID/exec"
+#define GOOGLE_CLOUD_PERIOD_MS 60000U
+#define GOOGLE_CLOUD_CA_INDEX 1U
+#define GOOGLE_CLOUD_TEMPERATURE_PORT 1U
