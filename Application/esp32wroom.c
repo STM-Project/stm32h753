@@ -1483,7 +1483,7 @@ static int CLOUD_Nonce(void)
 
 static void CLOUD_Close(int error)
 {
-    DbgVarDma(DBG,200,"\r\nGoogle CLOSE: wynik=%d, etap=%d (0=OK, -4=timeout, -5=AT, -6=HTTP, -7=potwierdzenie)\r\n",error,_GET_ACTUAL_CASE_);
+    DbgVarDma(DBG,200,"Google CLOSE: wynik=%d, etap=%d (0=OK, -4=timeout, -5=AT, -6=HTTP, -7=potwierdzenie)\r\n",error,_GET_ACTUAL_CASE_);
     cloudResult=error;cloudAt.events=0;cloudCleanupTick=xTaskGetTickCount();
     _SET_NEW_CASE_(900);
     SendToEsp32(0,"AT+CIPCLOSE=3\r\n",noArch);
@@ -1491,7 +1491,7 @@ static void CLOUD_Close(int error)
 
 static void CLOUD_RestoreHttp(void)
 {
-    DbgVarDma(DBG,100,"\r\nGoogle HTTP: przywracam serwer, port=%d\r\n",GetHttpPort());
+    DbgVarDma(DBG,100,"Google HTTP: przywracam serwer, port=%d\r\n",GetHttpPort());
     cloudAt.events=0;cloudCleanupTick=xTaskGetTickCount();
     InitStructRqstToSendChnl();
     HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
@@ -1541,7 +1541,7 @@ void vtaskWifi(void *argument)
     memset((void*)&googleCloudStatus,0,sizeof googleCloudStatus);
     googleCloudStatus.configured=GOOGLE_CLOUD_ENABLED && CloudConfig_Valid(GOOGLE_CLOUD_TOKEN,GOOGLE_CLOUD_DEVICE,GOOGLE_CLOUD_PATH);
     googleCloudStatus.last_error=GOOGLE_CLOUD_ENABLED && !googleCloudStatus.configured?-1:0;
-    DbgVarDma(DBG,160,"\r\nGoogle CONFIG: enabled=%d, poprawna=%d, okres=%u ms, port temperatury=%u\r\n",GOOGLE_CLOUD_ENABLED,googleCloudStatus.configured,(unsigned)GOOGLE_CLOUD_PERIOD_MS,(unsigned)GOOGLE_CLOUD_TEMPERATURE_PORT);
+    DbgVarDma(DBG,160,"Google CONFIG: enabled=%d, poprawna=%d, okres=%u ms, port temperatury=%u\r\n",GOOGLE_CLOUD_ENABLED,googleCloudStatus.configured,(unsigned)GOOGLE_CLOUD_PERIOD_MS,(unsigned)GOOGLE_CLOUD_TEMPERATURE_PORT);
     cloudLastAttempt=xTaskGetTickCount();
     CloudAt_Reset(&cloudAt);
 
@@ -1881,7 +1881,7 @@ void vtaskWifi(void *argument)
 
                                 if(googleCloudStatus.configured){
                                     cloudCleanupTick=xTaskGetTickCount();
-                                    DbgVarDma(DBG,120,"\r\nGoogle INIT: czas SNTP OK, certyfikat CA=%u, instalacja=%d\r\n",(unsigned)GOOGLE_CLOUD_CA_INDEX,GOOGLE_CLOUD_INSTALL_CA);
+                                    DbgVarDma(DBG,120,"Google INIT: czas SNTP OK, certyfikat CA=%u, instalacja=%d\r\n",(unsigned)GOOGLE_CLOUD_CA_INDEX,GOOGLE_CLOUD_INSTALL_CA);
                                     if(GOOGLE_CLOUD_INSTALL_CA){
                                         _SET_NEW_CASE_(22);cloudCertOffset=0;cloudCleanupTick=xTaskGetTickCount();
                                         SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+SYSMFG=2,\"client_ca\",\"client_ca.%u\",8,%u\r\n",
@@ -1900,7 +1900,7 @@ void vtaskWifi(void *argument)
 								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY)
 								{
                                     if(googleCloudStatus.configured){googleCloudStatus.last_error=-2;
-                                        DbgVarDma(DBG,100,"\r\nGoogle INIT BLAD: brak czasu SNTP (-2), wysylanie zablokowane\r\n");}
+                                        DbgVarDma(DBG,100,"Google INIT BLAD: brak czasu SNTP (-2), wysylanie zablokowane\r\n");}
 									UpdateReadPos();
 									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 								}
@@ -1933,7 +1933,7 @@ void vtaskWifi(void *argument)
                     }
                     else if (CASE_Service(25,txt_OK,txt_ERR,noArch))
                     {
-                        DbgVarDma(DBG,100,"\r\nGoogle INIT: konfiguracja weryfikacji TLS=%s\r\n",_GET_ANSW_CASE_==_OK?"OK":"BLAD");
+                        DbgVarDma(DBG,100,"Google INIT: konfiguracja weryfikacji TLS=%s\r\n",_GET_ANSW_CASE_==_OK?"OK":"BLAD");
                         googleCloudStatus.ready=_GET_ANSW_CASE_==_OK;
                         if(!googleCloudStatus.ready)googleCloudStatus.last_error=-3;
                         SendToEsp32(0,"AT+CIPRECVMODE=0\r\n",noArch);
@@ -1948,7 +1948,7 @@ void vtaskWifi(void *argument)
                     {
                         if(_GET_ANSW_CASE_!=_OK){googleCloudStatus.ready=0;googleCloudStatus.last_error=-3;}
                         connectionType=HTTP_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();
-                        DbgVarDma(DBG,100,"\r\nGoogle INIT: %s\r\n",googleCloudStatus.ready?"TLS ready":"TLS configuration error");
+                        DbgVarDma(DBG,100,"Google INIT: %s\r\n",googleCloudStatus.ready?"TLS ready":"TLS configuration error");
                     }
 					else
 					{
@@ -1972,14 +1972,14 @@ void vtaskWifi(void *argument)
                     else if (CASE_Service(2,txt_OK,txt_ERR,noArch))
                     {
                         if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
-                        DbgVarDma(DBG,120,"\r\nGoogle TLS: lacze z %s:443, TCP=3\r\n",CLOUD_Host());
+                        DbgVarDma(DBG,120,"Google TLS: lacze z %s:443, TCP=3\r\n",CLOUD_Host());
                         CloudAt_Reset(&cloudAt);
                         SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSTART=3,\"SSL\",\"%s\",443\r\n",CLOUD_Host()),NULL,noArch);
                     }
                     else if (CASE_Service(3,txt_OK,txt_ERR,noArch))
                     {
                         if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
-                        DbgVarDma(DBG,120,"\r\nGoogle TLS: OK; wysylam %s, %u bajtow\r\n",cloudRedirected?"GET potwierdzenia":"POST pomiaru",(unsigned)cloudRequestLength);
+                        DbgVarDma(DBG,120,"Google TLS: OK; wysylam %s, %u bajtow\r\n",cloudRedirected?"GET potwierdzenia":"POST pomiaru",(unsigned)cloudRequestLength);
                         cloudOffset=0;cloudPacketLength=cloudRequestLength;
                         if(cloudPacketLength>sizeof sendBuff-1)cloudPacketLength=sizeof sendBuff-1;
                         SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSEND=3,%u\r\n",(unsigned)cloudPacketLength),NULL,noArch);
@@ -1993,7 +1993,7 @@ void vtaskWifi(void *argument)
                     {
                         if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
                         cloudOffset+=cloudPacketLength;
-                        DbgVarDma(DBG,120,"\r\nGoogle SEND OK: TCP=3, %u/%u bajtow\r\n",(unsigned)cloudOffset,(unsigned)cloudRequestLength);
+                        DbgVarDma(DBG,120,"Google SEND OK: TCP=3, %u/%u bajtow\r\n",(unsigned)cloudOffset,(unsigned)cloudRequestLength);
                         if(cloudOffset<cloudRequestLength){
                             cloudPacketLength=cloudRequestLength-cloudOffset;
                             if(cloudPacketLength>sizeof sendBuff-1)cloudPacketLength=sizeof sendBuff-1;
@@ -2016,7 +2016,7 @@ void vtaskWifi(void *argument)
                         googleCloudStatus.last_error=cloudResult;
                         if(cloudResult)googleCloudStatus.failures++;else googleCloudStatus.successes++;
                         cloudLastAttempt=xTaskGetTickCount();
-                        DbgVarDma(DBG,200,"\r\nGoogle KONIEC: wynik=%d, HTTP=%s, OK=%u, bledy=%u\r\n",cloudResult,cloudResult==-9?"BLAD - restart ESP":"przywrocony",(unsigned)googleCloudStatus.successes,(unsigned)googleCloudStatus.failures);
+                        DbgVarDma(DBG,200,"Google KONIEC: wynik=%d, HTTP=%s, OK=%u, bledy=%u\r\n",cloudResult,cloudResult==-9?"BLAD - restart ESP":"przywrocony",(unsigned)googleCloudStatus.successes,(unsigned)googleCloudStatus.failures);
                         RcvTimeoutTimerStop();BackToHttpService(&nrHTTPpacket);
                         xTaskNotify(vtaskWifiHandle,BIT_ESP_SRV,eSetBits);
                         if(cloudResult==-9){
@@ -2029,10 +2029,10 @@ void vtaskWifi(void *argument)
                         int parsed=cloudAt.overflow?-1:CloudHttp_Parse(cloudAt.wire,cloudAt.used,cloudAt.eof,&cloudResponse);
                         if(parsed<0){CLOUD_Close(-6);}
                         else if(!parsed){
-                            DbgVarDma(DBG,120,"\r\nGoogle RESPONSE: HTTP=%d, przekierowanie=%d\r\n",cloudResponse.status,cloudRedirected);
+                            DbgVarDma(DBG,120,"Google RESPONSE: HTTP=%d, przekierowanie=%d\r\n",cloudResponse.status,cloudRedirected);
                             if((cloudResponse.status==302 || cloudResponse.status==303) && !cloudRedirected &&
                                !CloudRedirect_Path(cloudResponse.location,cloudRedirect,sizeof cloudRedirect)){
-                                DbgVarDma(DBG,120,"\r\nGoogle REDIRECT: HTTPS script.googleusercontent.com (bez tokenu)\r\n");
+                                DbgVarDma(DBG,120,"Google REDIRECT: HTTPS script.googleusercontent.com (bez tokenu)\r\n");
                                 cloudRedirected=1;
                                 cloudRequestLength=CloudRequest_Build(cloudRequest,sizeof cloudRequest,CLOUD_Host(),cloudRedirect,NULL,NULL,0,0,NULL);
                                 if(!cloudRequestLength){CLOUD_Close(-6);break;}
@@ -2041,12 +2041,12 @@ void vtaskWifi(void *argument)
                             }else{
                                 int relay;
                                 if(cloudResponse.status!=200 || CloudReply_Parse(cloudResponse.body,cloudNonce,&relay)){
-                                    DbgVarDma(DBG,120,"\r\nGoogle ACK BLAD: HTTP=%d lub niezgodne potwierdzenie/nonce\r\n",cloudResponse.status);
+                                    DbgVarDma(DBG,120,"Google ACK BLAD: HTTP=%d lub niezgodne potwierdzenie/nonce\r\n",cloudResponse.status);
                                     CLOUD_Close(-7);
                                 }
                                 else{
                                     googleCloudStatus.demo_relay=relay;
-                                    DbgVarDma(DBG,200,CoB_"\r\nGoogle ACK OK: HTTP 200, poprawne nonce; przekaznik DEMO odebrany z Google=%s (%d)\r\n"_X_,relay?"ON":"OFF",relay);
+                                    DbgVarDma(DBG,200,CoB_"Google ACK OK: HTTP 200, poprawne nonce; przekaznik DEMO odebrany z Google=%s (%d)\r\n"_X_,relay?"ON":"OFF",relay);
                                     CLOUD_Close(0);
                                 }
                             }
@@ -2467,7 +2467,7 @@ void vtaskWifi(void *argument)
 
             if(DEBUG_IsTxtReceive("cloud"))
             {
-                DbgVarDma(1,220,"\r\nGoogle: configured=%d ready=%d error=%d OK=%u FAIL=%u temp10=%d DEMO=%d\r\n",
+                DbgVarDma(1,220,"Google: configured=%d ready=%d error=%d OK=%u FAIL=%u temp10=%d DEMO=%d\r\n",
                     googleCloudStatus.configured,googleCloudStatus.ready,googleCloudStatus.last_error,
                     (unsigned)googleCloudStatus.successes,(unsigned)googleCloudStatus.failures,
                     googleCloudStatus.temperature10,googleCloudStatus.demo_relay);
@@ -2591,7 +2591,7 @@ void vtaskWifi(void *argument)
         if(connectionType==INIT_CONNECTION && googleCloudStatus.configured &&
            _GET_ACTUAL_CASE_>=22 && _GET_ACTUAL_CASE_<=27 &&
            xTaskGetTickCount()-cloudCleanupTick>=pdMS_TO_TICKS(GOOGLE_CLOUD_TIMEOUT_MS)){
-            DbgVarDma(DBG,120,"\r\nGoogle INIT BLAD: timeout certyfikatu/TLS, etap=%d; restart ESP\r\n",_GET_ACTUAL_CASE_);
+            DbgVarDma(DBG,120,"Google INIT BLAD: timeout certyfikatu/TLS, etap=%d; restart ESP\r\n",_GET_ACTUAL_CASE_);
             /* An ESP stuck in raw certificate upload must be reset, not fed AT text. */
             googleCloudStatus.configured=0;googleCloudStatus.ready=0;googleCloudStatus.last_error=-3;
             RcvTimeoutTimerStop();_SET_NEW_CASE_(0);UpdateReadPos();
@@ -2615,7 +2615,7 @@ void vtaskWifi(void *argument)
             if(step<900 && now-cloudStarted>=pdMS_TO_TICKS(GOOGLE_CLOUD_TIMEOUT_MS))CLOUD_Close(-4);
             else if(step==900 && now-cloudCleanupTick>=pdMS_TO_TICKS(5000))CLOUD_RestoreHttp();
             else if(step==901 && now-cloudCleanupTick>=pdMS_TO_TICKS(5000)){
-                DbgVarDma(DBG,120,"\r\nGoogle HTTP BLAD: timeout przywracania serwera (-9); restart ESP\r\n");
+                DbgVarDma(DBG,120,"Google HTTP BLAD: timeout przywracania serwera (-9); restart ESP\r\n");
                 googleCloudStatus.last_error=-9;googleCloudStatus.failures++;googleCloudStatus.ready=0;
                 cloudLastAttempt=now;RcvTimeoutTimerStop();InitStructRqstToSendChnl();
                 connectionType=INIT_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();
@@ -2629,15 +2629,15 @@ void vtaskWifi(void *argument)
             cloudLastAttempt=xTaskGetTickCount();
             int temp=GoogleCloud_ReadTemperature10();
             if(temp< -500 || temp>1500){googleCloudStatus.last_error=-18;googleCloudStatus.failures++;
-                DbgVarDma(DBG,120,"\r\nGoogle POMINIETO: brak temperatury lub poza zakresem (-18), odczyt=%d\r\n",temp);}
+                DbgVarDma(DBG,120,"Google POMINIETO: brak temperatury lub poza zakresem (-18), odczyt=%d\r\n",temp);}
             else if(!CLOUD_Nonce()){googleCloudStatus.last_error=-8;googleCloudStatus.failures++;
-                DbgVarDma(DBG,100,"\r\nGoogle BLAD: generator RNG/nonce (-8)\r\n");}
+                DbgVarDma(DBG,100,"Google BLAD: generator RNG/nonce (-8)\r\n");}
             else{
                 googleCloudStatus.temperature10=temp;cloudRedirected=0;cloudResult=0;
                 cloudRequestLength=CloudRequest_Build(cloudRequest,sizeof cloudRequest,CLOUD_Host(),GOOGLE_CLOUD_PATH,
                     GOOGLE_CLOUD_TOKEN,GOOGLE_CLOUD_DEVICE,temp,googleCloudStatus.demo_relay,cloudNonce);
                 if(!cloudRequestLength){googleCloudStatus.last_error=-1;googleCloudStatus.failures++;
-                    DbgVarDma(DBG,100,"\r\nGoogle BLAD: nie mozna zbudowac zadania (-1)\r\n");}
+                    DbgVarDma(DBG,100,"Google BLAD: nie mozna zbudowac zadania (-1)\r\n");}
                 else{
                     CloudAt_Reset(&cloudAt);cloudStarted=xTaskGetTickCount();
                     DbgVarDma(DBG,200,CoB_"\r\nGoogle START: wysylana temperatura=%s%d.%d C; DEMO ACK=%d; wstrzymuje HTTP\r\n"_X_,temp<0?"-":"",(temp<0?-temp:temp)/10,(temp<0?-temp:temp)%10,googleCloudStatus.demo_relay);
