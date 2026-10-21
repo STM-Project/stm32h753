@@ -591,10 +591,10 @@ void DefaultSettingsWIFI(void)
 		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
-		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-		// VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-		// VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
@@ -1497,7 +1497,8 @@ static void CLOUD_RestoreHttp(void)
     InitStructRqstToSendChnl();
     HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
     _SET_NEW_CASE_(901);
-    SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,noArch);
+    //SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,noArch);
+    SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,noArch );
 }
 
 static void CLOUD_FeedReceiveRing(void)
@@ -2078,7 +2079,7 @@ void vtaskWifi(void *argument)
                     }
                     break;
 
-				case HTTP_CONNECTION_2:		/* Only for:  MAXCONN=1 */
+				case HTTP_CONNECTION_2:		/* Only for:  AT+CIPSERVERMAXCONN=1 */
 					RcvTimeoutTimerStop();
 					DispRecvBuff(++nrHTTPpacket,typeSendArch);  ESP32_FreeAnswers(0);
 
@@ -2212,7 +2213,7 @@ void vtaskWifi(void *argument)
 					break;
 
 //ZROB tablice allokacji !!!!!!!!!!!!!! wyswieltlanie na zadanie
-//Gdy ida razem HTTP i SMTP to moze nie otrzymac odpowiedzi od  =0 i WISI   (daj jesli w SMTP dlugo czeka na odpowiedz to po np 30 sekund wracaj do HTTP) !!!!!!!!!!!!!!
+//Gdy ida razem HTTP i SMTP to moze nie otrzymac odpowiedzi od  AT+CIPSERVER=0 i WISI   (daj jesli w SMTP dlugo czeka na odpowiedz to po np 30 sekund wracaj do HTTP) !!!!!!!!!!!!!!
 
 
 				case TEST_CONNECTION:
@@ -2456,8 +2457,8 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(98,ESP_EMAIL_CHANNEL",CLOSED\r\n"TXT_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ ; }
-						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"=1,443,\"SSL\"\r\n"),NULL,typeRecvArch );
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeRecvArch );
+						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
 
 					}
