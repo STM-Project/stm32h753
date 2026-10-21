@@ -21,6 +21,9 @@ int main(void){
  assert(!CloudRequest_Build(request,sizeof request,"evil.test",path,token,"stm32h753",251,0,nonce));
  assert(CloudRequest_Build(request,sizeof request,"script.googleusercontent.com","/macros/echo?user_content_key=abcdef",NULL,NULL,0,0,NULL));
  assert(!strstr(request,token));assert(!strstr(request,"POST"));
+ assert(CloudRequest_Build(request,sizeof request,"script.google.com",path,token,"stm32h753",-800,0,nonce));
+ assert(strstr(request,"temperature10=-800&"));
+ assert(!CloudRequest_Build(request,sizeof request,"script.google.com",path,token,"stm32h753",-801,0,nonce));
  CloudAt_Reset(&at);
  const char *payload="HTTP/1.1 200 OK\r\nContent-Length: 23\r\n\r\nERROR\r\nOK\r\nSEND OK\r\n>";
  snprintf(message,sizeof message,"+IPD,3,%u:%s",(unsigned)strlen(payload),payload);

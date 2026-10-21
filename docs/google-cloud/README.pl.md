@@ -94,7 +94,7 @@ serwera powoduje ponowne uruchomienie ESP i przejście przez dotychczasowy INIT.
 - `GoogleCloud_ReadTemperature10()` domyślnie czyta temperaturę portu 1
   z `HttpRefr_sdram`, tak jak lokalny panel. Numer zmienia makro
   `GOOGLE_CLOUD_TEMPERATURE_PORT` (1–20). Funkcję można zastąpić własną.
-- Brak danych lub wartość poza zakresem -50…150°C pomija transmisję.
+- Brak danych lub wartość poza zakresem -80…150°C pomija transmisję.
   Jeśli program wpisuje do bufora dane testowe, to te dane trafią do arkusza.
 - `googleCloudStatus.demo_relay` to stan checkboxa z arkusza, tylko w RAM.
   Tak jak w Project_marafal, nie przełącza fizycznego GPIO ani `RelayStatesData`.

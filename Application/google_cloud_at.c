@@ -78,7 +78,7 @@ size_t CloudRequest_Build(char *out,size_t capacity,const char *host,const char 
     if(strcmp(host,"script.google.com")&&strcmp(host,"script.googleusercontent.com"))return 0;
     for(const char *p=path;*p;p++)if((unsigned char)*p<=32||(unsigned char)*p>=127||*p=='#'||*p=='\\')return 0;
     if(token){
-        if(strcmp(host,"script.google.com")||!CloudConfig_Valid(token,device,path)||!nonce||strlen(nonce)!=32||temperature10< -500||temperature10>1500||(relay!=0&&relay!=1))return 0;
+        if(strcmp(host,"script.google.com")||!CloudConfig_Valid(token,device,path)||!nonce||strlen(nonce)!=32||temperature10< -800||temperature10>1500||(relay!=0&&relay!=1))return 0;
         for(const char *p=nonce;*p;p++)if(!isxdigit((unsigned char)*p))return 0;
         count=snprintf(body,sizeof body,"token=%s&device=%s&temperature10=%d&relayAck=%d&nonce=%s",token,device,temperature10,relay,nonce);
         if(count<0||(size_t)count>=sizeof body)return 0;

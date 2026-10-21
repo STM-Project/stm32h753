@@ -2634,7 +2634,7 @@ void vtaskWifi(void *argument)
                  xTaskGetTickCount()-cloudLastAttempt>=pdMS_TO_TICKS(GOOGLE_CLOUD_PERIOD_MS)){
             cloudLastAttempt=xTaskGetTickCount();
             int temp=GoogleCloud_ReadTemperature10();
-            if(temp< -500 || temp>1500){googleCloudStatus.last_error=-18;googleCloudStatus.failures++;
+            if(temp< -800 || temp>1500){googleCloudStatus.last_error=-18;googleCloudStatus.failures++;
                 DbgVarDma(DBG,120,"Google POMINIETO: brak temperatury lub poza zakresem (-18), odczyt=%d\r\n",temp);}
             else if(!CLOUD_Nonce()){googleCloudStatus.last_error=-8;googleCloudStatus.failures++;
                 DbgVarDma(DBG,100,"Google BLAD: generator RNG/nonce (-8)\r\n");}

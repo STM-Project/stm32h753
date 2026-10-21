@@ -101,7 +101,7 @@ function doPost(e) {
       !/^-?\d{1,4}$/.test(p.temperature10 || '') ||
       !/^[01]$/.test(p.relayAck || '')) return text_('ERROR:request');
   const temp = Number(p.temperature10);
-  if (!Number.isInteger(temp) || temp < -500 || temp > 1500) return text_('ERROR:temperature');
+  if (!Number.isInteger(temp) || temp < -800 || temp > 1500) return text_('ERROR:temperature');
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return text_('ERROR:busy');
   try {

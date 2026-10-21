@@ -38,6 +38,7 @@ assert.equal(post({token:'wrong'}), 'ERROR:request');
 assert.equal(post({device:'other'}), 'ERROR:request');
 assert.equal(post({temperature10:'=BAD()'}), 'ERROR:request');
 assert.equal(post({temperature10:'1501'}), 'ERROR:temperature');
+assert.equal(post({temperature10:'-801'}), 'ERROR:temperature');
 assert.equal(post({relayAck:'true'}), 'ERROR:request');
 assert.equal(sheetReads, 0);
 assert.equal(post({}), 'STM32CLOUD1:'+'0'.repeat(32)+':0');
@@ -62,6 +63,9 @@ assert.equal(post({nonce:'5'.repeat(32)}), 'STM32CLOUD1:'+'5'.repeat(32)+':0');
 assert.equal(rows.length, 9001);
 assert.equal(released, 6);
 console.log('Apps Script authentication, temperature, checkbox, ACK, deduplication, locking and history limit: PASS');
+
+assert.equal(post({temperature10:'-800', nonce:'8'.repeat(32)}), 'STM32CLOUD1:'+'8'.repeat(32)+':0');
+assert.equal(rows[rows.length-1][2], -80);
 
 // Dashboard uses a distinct browser key, keeps device POST contract intact.
 properties.set('PANEL_KEY', 'panel-secret');
