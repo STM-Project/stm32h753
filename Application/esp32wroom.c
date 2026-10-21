@@ -227,7 +227,8 @@ static uint32_t cloudStarted, cloudLastAttempt, cloudCleanupTick;
 static int cloudRedirected, cloudResult;
 static size_t cloudCertOffset;
 
-static int recvByteFromEsp=0, recvByteFromEsp_copy=0;
+static volatile int recvByteFromEsp=0; /* Updated by UART ISR. */
+static int recvByteFromEsp_copy=0;
 static int read_pos=0;
 static TickType_t tickCnt=0;
 
@@ -1510,6 +1511,28 @@ static void CLOUD_FeedReceiveRing(void)
     UpdateReadPos();
 }
 
+/* UART/debug notifications always wake us immediately. Only active cloud
+ * transfers need short polls; idle HTTP sleeps until the next upload is due. */
+static TickType_t CLOUD_WaitTicks(void)
+{
+    if(connectionType==GOOGLE_CLOUD_CONNECTION)
+        return pdMS_TO_TICKS(100);
+    if(!googleCloudStatus.configured)
+        return portMAX_DELAY;
+    if(connectionType==INIT_CONNECTION){
+        int step=_GET_ACTUAL_CASE_;
+        return step>=22 && step<=27 ? pdMS_TO_TICKS(100) : portMAX_DELAY;
+    }
+    if(connectionType==HTTP_CONNECTION && googleCloudStatus.ready &&
+       (Const.wifiGeneral.mode==WIFI_MODE_STA || Const.wifiGeneral.mode==WIFI_MODE_AP_STA)){
+        TickType_t elapsed=xTaskGetTickCount()-(TickType_t)cloudLastAttempt;
+        TickType_t period=pdMS_TO_TICKS(GOOGLE_CLOUD_PERIOD_MS);
+        /* When HTTP is busy, defer the attempt without spinning at zero ticks. */
+        return elapsed<period ? period-elapsed : pdMS_TO_TICKS(250);
+    }
+    return portMAX_DELAY;
+}
+
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;
@@ -1560,14 +1583,15 @@ void vtaskWifi(void *argument)
 
 	while(1)
 	{
-        /* Check before waiting, so a timeout cannot be lost if its notify bit
-         * was already set and cleared at the end of the previous iteration. */
+        /* Apply a timeout reset in the WiFi task before copying more data. */
         if(httpResetRequested){
             taskENTER_CRITICAL();httpResetRequested=0;taskEXIT_CRITICAL();
             InitStructRqstToSendChnl();
             UpdateReadPos();
         }
-	  if(xTaskNotifyWait(0x00, 0x00, &ulNotifiedValue, googleCloudStatus.configured?pdMS_TO_TICKS(100):portMAX_DELAY) == pdPASS)			/* xTaskNotifyWait(bitmask_na_wejsciu, bitmask_na_wyjsciu, &zmienna, czas)		bitmask: 0x00: Nie czyść nic , 0xFFFFFFFF (Wszystkie bity): Czyści całą wartość powiadomienia po wyjściu.   Problem: Jeśli w tym samym momencie (ułamek sekundy po wybudzeniu zadania, ale przed zakończeniem tej funkcji) inne zadanie lub przerwanie (ISR) przyśle nowy bit, zostanie on bezpowrotnie skasowany i utracony. Dlatego najbezpieczniejsze jest uzycie pod koniec obslugi tego zdarzenia reczne czyszczenie aktualnego bitu funkcją ulTaskNotifyValueClear(NULL, ulNotifiedValue) */
+      /* FreeRTOS copies and clears pending bits atomically before returning.
+       * Notifications arriving during processing remain pending for next time. */
+      if(xTaskNotifyWait(0, UINT32_MAX, &ulNotifiedValue, CLOUD_WaitTicks()) == pdPASS)
 	  {
 	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
 		if (ulNotifiedValue & BIT_ESP_SRV)
@@ -2452,12 +2476,6 @@ void vtaskWifi(void *argument)
 			}
 
 
-			uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue);
-			if ((ulPoprzedniaWartosc & BIT_ESP_SRV) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
-
-				asm("nop");
-			}
-
 		}
 
 
@@ -2584,16 +2602,8 @@ void vtaskWifi(void *argument)
 			}
 		*/
 
-			uint32_t ulPoprzedniaWartosc = ulTaskNotifyValueClear(NULL, ulNotifiedValue);
-			if ((ulPoprzedniaWartosc & BIT_DBG_SRV) != 0) {												/* Sprawdzenie, czy zgłoszenie w ogóle występowało przed wyczyszczeniem: */
-				;
-			}
 		}
 	  }
-        /* Recover an RX notification racing the existing manual bit clear.
-         * Wake only for genuinely new DMA bytes, never for an empty RX poll. */
-        if(googleCloudStatus.configured && recvByteFromEsp_copy!=recvByteFromEsp)
-            xTaskNotify(vtaskWifiHandle,BIT_ESP_SRV,eSetBits);
         if(connectionType==INIT_CONNECTION && googleCloudStatus.configured &&
            _GET_ACTUAL_CASE_>=22 && _GET_ACTUAL_CASE_<=27 &&
            xTaskGetTickCount()-cloudCleanupTick>=pdMS_TO_TICKS(GOOGLE_CLOUD_TIMEOUT_MS)){

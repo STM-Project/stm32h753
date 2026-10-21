@@ -9,7 +9,7 @@ def function(start):
  if start=='static const char* CLOUD_Host':return s[a:s.index('\n',a)]
  return s[a:s.index('\n}',a)+2]
 case=s[s.index('                case GOOGLE_CLOUD_CONNECTION:'):s.index('\n\t\t\t\tcase HTTP_CONNECTION_2:')]
-helpers='\n'.join(function(t) for t in ['static const char* CLOUD_Host','__attribute__((weak)) int GoogleCloud_ReadTemperature10','static void CLOUD_Close','static void CLOUD_RestoreHttp','static void CLOUD_FeedReceiveRing'])
+helpers='\n'.join(function(t) for t in ['static const char* CLOUD_Host','__attribute__((weak)) int GoogleCloud_ReadTemperature10','static void CLOUD_Close','static void CLOUD_RestoreHttp','static void CLOUD_FeedReceiveRing','static TickType_t CLOUD_WaitTicks'])
 C=r'''
 #include "google_cloud.h"
 #include "google_cloud_at.h"
@@ -25,7 +25,12 @@ C=r'''
 #define HAL_OK 0
 #define DBG 0
 #define BIT_ESP_SRV 1
+typedef uint32_t TickType_t;
 #define pdMS_TO_TICKS(x) (x)
+#define portMAX_DELAY UINT32_MAX
+#define WIFI_MODE_STA 1
+#define WIFI_MODE_AP_STA 3
+static struct {struct {int mode;} wifiGeneral;} Const;
 #define ESP_OFF ((void)0)
 #define ESP_ON ((void)0)
 #define _GET_ACTUAL_CASE_ CASE_Service(-1,NULL,NULL,0)
@@ -108,6 +113,22 @@ static void receive(const char*http){
  for(size_t i=0;i<strlen(frame);i++){char one[]={frame[i],0};step(one);}
 }
 int main(void){
+ /* Idle cloud must not poll every 100ms; retain deadlines and active timeouts. */
+ connectionType=HTTP_CONNECTION;googleCloudStatus.configured=1;googleCloudStatus.ready=1;
+ Const.wifiGeneral.mode=WIFI_MODE_STA;cloudLastAttempt=1000;ticks=1000;
+ assert(CLOUD_WaitTicks()==GOOGLE_CLOUD_PERIOD_MS);
+ ticks=1100;assert(CLOUD_WaitTicks()==GOOGLE_CLOUD_PERIOD_MS-100);
+ ticks=1000+GOOGLE_CLOUD_PERIOD_MS;assert(CLOUD_WaitTicks()==250);
+ cloudLastAttempt=UINT32_MAX-49;ticks=50;
+ assert(CLOUD_WaitTicks()==GOOGLE_CLOUD_PERIOD_MS-100);
+ googleCloudStatus.ready=0;assert(CLOUD_WaitTicks()==portMAX_DELAY);
+ googleCloudStatus.ready=1;Const.wifiGeneral.mode=2;assert(CLOUD_WaitTicks()==portMAX_DELAY);
+ connectionType=INIT_CONNECTION;_SET_NEW_CASE_(21);assert(CLOUD_WaitTicks()==portMAX_DELAY);
+ _SET_NEW_CASE_(22);assert(CLOUD_WaitTicks()==100);
+ _SET_NEW_CASE_(23);assert(CLOUD_WaitTicks()==100);
+ _SET_NEW_CASE_(27);assert(CLOUD_WaitTicks()==100);
+ googleCloudStatus.configured=0;assert(CLOUD_WaitTicks()==portMAX_DELAY);
+ connectionType=GOOGLE_CLOUD_CONNECTION;assert(CLOUD_WaitTicks()==100);
  memset(HttpRefr_sdram,' ',sizeof HttpRefr_sdram-1);memcpy(HttpRefr_sdram+73," 25.1",5);assert(GoogleCloud_ReadTemperature10()==251);
  memcpy(HttpRefr_sdram+73,"-12.3",5);assert(GoogleCloud_ReadTemperature10()==-123);memcpy(HttpRefr_sdram+73," --.-",5);assert(GoogleCloud_ReadTemperature10()==-32768);
  char http[4096],body[128];snprintf(body,sizeof body,"STM32CLOUD1:%s:1","0123456789abcdef0123456789abcdef");
