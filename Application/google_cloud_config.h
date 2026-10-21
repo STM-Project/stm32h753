@@ -15,7 +15,7 @@
 #define GOOGLE_CLOUD_TOKEN "91d483513b0a48849c922f5c67e35b4aefa7d5b743c143e2a89cfc3d8cd11c03"
 #endif
 #ifndef GOOGLE_CLOUD_PATH
-#define GOOGLE_CLOUD_PATH "/macros/s/AKfycbwUpJU2Md_8Vqw2h_UDqqmo0VnpHt47-PdBddD9ZGdeS83A6bBtGGVBOCPGIvJ68DulDQ/exec"
+#define GOOGLE_CLOUD_PATH "/macros/s/AKfycbyKSxYAA0duEFupbLrdFRuMzJ3sLJXfVXGOikyb8FiWzHu1R5fuYkEvoqEEvv-x9YiyZw/exec"
 #endif
 #ifndef GOOGLE_CLOUD_PERIOD_MS
 #define GOOGLE_CLOUD_PERIOD_MS 60000U
