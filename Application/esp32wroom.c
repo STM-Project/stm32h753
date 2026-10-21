@@ -2508,7 +2508,7 @@ void vtaskWifi(void *argument)
 			}
 			else if(DEBUG_IsTxtReceive("s"))
 			{
-				if (connectionType==HTTP_CONNECTION  &&  xTimerIsTimerActive(xWaitOnSendTimeoutTimer)==pdFALSE  &&  IsTimeoutForReloadHttp()  &&  IsActiveAnyRqstToSendChnl())
+				if (connectionType==HTTP_CONNECTION  &&  xTimerIsTimerActive(xWaitOnSendTimeoutTimer)==pdFALSE  &&  IsTimeoutForReloadHttp()  &&  !IsActiveAnyRqstToSendChnl())
 				{
 					SendEmail(2, 1<<1, EMAIL_MEASURE);			/* z  'interia.pl'  i  'wp.pl'  musi byc ustawione: Główne_Ustawienia -> Parametry -> Korzystam z programu pocztowego aby mogl wysylac */
 
