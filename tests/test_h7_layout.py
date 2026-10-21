@@ -25,6 +25,16 @@ with tempfile.TemporaryDirectory() as name:
    for m in metrics:
     assert m['scroll']<=m['client']+2,(route,'vertical overflow',m)
     assert int(float(m['font'][:-2]))<=20,(route,'oversized text',m)
+   for card in cards.all():
+    rows=card.locator(':scope > .h7-field-row')
+    if rows.count():
+     starts=rows.locator('.h7-field-controls').evaluate_all('es=>es.map(e=>e.getBoundingClientRect().left)')
+     assert max(starts)-min(starts)<2,(route,'unaligned fields',starts)
+     positions=rows.evaluate_all('es=>es.map(e=>{let r=e.getBoundingClientRect();return [r.top,r.bottom]})')
+     for before,after in zip(positions,positions[1:]):
+      assert after[0]-before[1]>=9,(route,'field rows too close')
+    assert card.evaluate('e=>parseFloat(getComputedStyle(e).paddingBottom)')>=22,(route,'bottom padding')
+   if route=='/lan':page.screenshot(path='/tmp/h7-lan-fields.png',full_page=True)
    save=page.locator('.corner-radius').filter(has_text='Zapis ustawien')
    if save.count():assert save.last.bounding_box()['height']<220,(route,'oversized save card')
    if route=='/Rot':

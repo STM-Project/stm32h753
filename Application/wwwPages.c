@@ -911,8 +911,8 @@ label {\r\n\
  </style>\r\n\
 <style>\r\n\
 /* H7 cards grow with content instead of reserving fixed empty space. */\r\n\
-.corner-radius2,.corner-radius4{height:auto!important;min-height:0;display:flow-root;overflow:visible;padding-bottom:14px;max-width:100%;box-sizing:border-box;}\r\n\
-.corner-radius,.corner-radius3:not(.port-column){height:auto!important;min-height:0;overflow:visible;padding:10px 8px;box-sizing:border-box;max-width:calc(100% - 20px);font:16px/1.5 Arial,Helvetica,sans-serif;color:#eee;}\r\n\
+.corner-radius2,.corner-radius4{height:auto!important;min-height:0;display:flow-root;overflow:visible;padding-bottom:22px;max-width:100%;box-sizing:border-box;}\r\n\
+.corner-radius,.corner-radius3:not(.port-column){height:auto!important;min-height:0;overflow:visible;padding:12px 10px 22px;box-sizing:border-box;max-width:calc(100% - 20px);font:16px/1.5 Arial,Helvetica,sans-serif;color:#eee;}\r\n\
 .corner-radius .css-font-style,.corner-radius3 .css-font-style{font-size:18px;line-height:1.4;}\r\n\
 .corner-radius .css-font-style2,.corner-radius3 .css-font-style2{font-size:16px;line-height:1.5;}\r\n\
 .corner-radius table,.corner-radius3 table{font:15px/1.4 Arial,Helvetica,sans-serif;color:#eee;max-width:100%;margin:6px auto;border-spacing:4px;}\r\n\
@@ -927,6 +927,43 @@ label {\r\n\
 .x .a{font-size:42px;}.x .b{font-size:17px;}.x .z{font-size:26px;}\r\n\
 @media(max-width:600px){.corner-radius2,.corner-radius4,.y{float:none!important;width:100%!important;}.corner-radius,.corner-radius3:not(.port-column),.x{float:none!important;margin-left:auto!important;margin-right:auto!important;}.corner-radius table{font-size:14px;border-spacing:2px;}}\r\n\
 </style>\r\n\
+<style>\r\n\
+/* Consistent native H7 field rows; port configuration retains its row grid. */\r\n\
+.h7-field-row{display:grid;grid-template-columns:minmax(0,42%) minmax(0,58%);align-items:center;gap:0;margin:10px 0;text-align:left;}\r\n\
+.h7-field-label{padding-right:10px;overflow-wrap:normal;line-height:1.45;}\r\n\
+.h7-field-label .css-font-style2{font-size:15px;width:auto!important;}\r\n\
+.h7-field-controls{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;}\r\n\
+.h7-field-controls>.textbox,.h7-field-controls>select,.h7-field-controls>textarea{max-width:100%!important;min-width:0;box-sizing:border-box;}\r\n\
+.h7-field-row+br{display:none;}\r\n\
+.corner-radius>table,.corner-radius3:not(.port-column)>table{border-spacing:6px 7px;}\r\n\
+.corner-radius textarea,.corner-radius select,.corner-radius3:not(.port-column) textarea,.corner-radius3:not(.port-column) select{vertical-align:middle;box-sizing:border-box;max-width:100%;}\r\n\
+.corner-radius .textbox,.corner-radius3:not(.port-column) .textbox{vertical-align:middle;}\r\n\
+</style>\r\n\
+<script>\r\n\
+document.addEventListener('DOMContentLoaded',function(){\r\n\
+ document.querySelectorAll('.corner-radius,.corner-radius3:not(.port-column)').forEach(function(card){\r\n\
+  var group=[];\r\n\
+  function row(){\r\n\
+   var nodes=group;group=[];\r\n\
+   var field=nodes.findIndex(function(n){return n.nodeType===1&&n.matches('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]),select,textarea');});\r\n\
+   if(nodes.filter(function(n){return n.nodeType===1&&n.matches('input,select,textarea');}).length!==1)return;\r\n\
+   if(nodes.slice(field+1).map(function(n){return n.textContent;}).join('').trim().length>25)return;\r\n\
+   if(nodes.some(function(n){return n.nodeType===1&&n.querySelector('input,select,textarea');}))return;\r\n\
+   if(field<0||!nodes.slice(0,field).some(function(n){return n.textContent.replace(/\\u00a0/g,' ').trim();}))return;\r\n\
+   if(nodes.some(function(n){return n.nodeType===1&&n.matches('table,div,form,script,h1,h2,h3');}))return;\r\n\
+   var wrap=document.createElement('div'),label=document.createElement('span'),controls=document.createElement('span');\r\n\
+   wrap.className='h7-field-row';label.className='h7-field-label';controls.className='h7-field-controls';\r\n\
+   nodes[0].before(wrap);wrap.append(label,controls);\r\n\
+   nodes.forEach(function(n,i){(i<field?label:controls).append(n);});\r\n\
+  }\r\n\
+  Array.from(card.childNodes).forEach(function(n){\r\n\
+   if(n.nodeType===1&&n.tagName==='BR'){row();return;}\r\n\
+   if(n.nodeType===1&&n.matches('table,div,form,script')){row();return;}\r\n\
+   group.push(n);\r\n\
+  });row();\r\n\
+ });\r\n\
+});\r\n\
+</script>\r\n\
 </head>";
 
 const char HttpStructMainReadPanel[]="\r\n\
