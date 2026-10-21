@@ -5,8 +5,8 @@ export PYTHONDONTWRITEBYTECODE=1
 cloud_test_dir=$(mktemp -d /tmp/h7-google-tests.XXXXXX)
 trap 'rm -rf "$cloud_test_dir"' EXIT
 for cloud_test in google_cloud_protocol google_cloud_at; do
-  gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -IApplication \
-    "tests/${cloud_test}_test.c" Application/google_cloud_protocol.c Application/google_cloud_at.c \
+  gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -IApplication/GOOGLE \
+    "tests/${cloud_test}_test.c" Application/GOOGLE/google_cloud_protocol.c Application/GOOGLE/google_cloud_at.c \
     -o "$cloud_test_dir/$cloud_test"
   "$cloud_test_dir/$cloud_test"
 done

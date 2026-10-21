@@ -12,8 +12,8 @@ na STM32; TLS obsługuje ESP32.
 
 1. Zachowaj dotychczasowe wdrożenie Apps Script i prywatny arkusz. Protokół
    jest zgodny; nie trzeba tworzyć nowego konta ani zmieniać skryptu.
-2. Skopiuj `Application/google_cloud_config.local.h.example` do
-   `Application/google_cloud_config.local.h`.
+2. Skopiuj `Application/GOOGLE/google_cloud_config.local.h.example` do
+   `Application/GOOGLE/google_cloud_config.local.h`.
 3. Wpisz tam `GOOGLE_CLOUD_ENABLED 1`, identyfikator `DEVICE_ID` z dotychczasowego
    skryptu, jego `DEVICE_TOKEN` i ścieżkę `/macros/s/.../exec` z adresu wdrożenia.
    Istniejący projekt może używać `stm32f769-demo`: wpisz dokładnie ten sam

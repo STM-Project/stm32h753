@@ -167,5 +167,5 @@ int main(void){
 '''
 with tempfile.TemporaryDirectory() as name:
  p=Path(name);(p/'test.c').write_text(C)
- subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(ROOT/'Application'),str(p/'test.c'),str(ROOT/'Application/google_cloud_at.c'),str(ROOT/'Application/google_cloud_protocol.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(ROOT/'Application/GOOGLE'),str(p/'test.c'),str(ROOT/'Application/GOOGLE/google_cloud_at.c'),str(ROOT/'Application/GOOGLE/google_cloud_protocol.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)
