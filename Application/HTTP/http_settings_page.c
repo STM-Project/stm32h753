@@ -202,7 +202,7 @@ static void SettingsTranslationRender(SettingsWriter *writer)
     for (row = 0; row < 100; ++row) {
         PageAppend(writer, "<font class=\"css_list\">%02u.%u</font>&nbsp;&nbsp;", row / 10U, row % 10U);
         snprintf(name, sizeof name, "n_s_ttp%u_%03u", (unsigned)writer->instance - 1U, row);
-        PageInput(writer, name, "text", 15, 1);
+        PageInput(writer, name, "text", 32, 1);
         snprintf(name, sizeof name, "n_s_ttd%u_%03u", (unsigned)writer->instance - 1U, row);
         PageInput(writer, name, "text", 45, 4);
         PageAppend(writer, "<font class=\"css_list\">.</font>");

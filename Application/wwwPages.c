@@ -918,7 +918,7 @@ label {\r\n\
 .corner-radius table,.corner-radius3 table{font:15px/1.4 Arial,Helvetica,sans-serif;color:#eee;max-width:100%;margin:6px auto;border-spacing:4px;}\r\n\
 .corner-radius td,.corner-radius th{padding:3px 2px;vertical-align:middle;}\r\n\
 .corner-radius input:not([type=checkbox]):not([type=radio]),.corner-radius select,.corner-radius3 input:not([type=checkbox]):not([type=radio]){max-width:100%;box-sizing:border-box;}\r\n\
-.corner-radius .textbox,.corner-radius3 .textbox{height:30px;font-size:15px;}\r\n\
+.corner-radius .textbox,.corner-radius3 .textbox{height:30px;font-size:15px;margin-top:4px;margin-bottom:4px;}\r\n\
 .corner-radius .css_button,.corner-radius3 .css_button{font-size:17px;}\r\n\
 .corner-radius .regular-checkbox+label,.corner-radius3 .regular-checkbox+label{vertical-align:middle;}\r\n\
 .h7-read-grid{display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px 0;}.h7-read-grid>.y{float:none;padding-bottom:0;}\r\n\
