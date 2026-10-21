@@ -120,7 +120,7 @@ int main(void)
   MX_I2C4_Init();
   MX_UART7_Init();
   MX_USART6_UART_Init();
-  MX_ETH_Init();
+  //MX_ETH_Init();
   MX_LTDC_Init();
   MX_TIM5_Init();
   MX_RNG_Init();
