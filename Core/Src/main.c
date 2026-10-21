@@ -269,7 +269,7 @@ void MPU_Config(void)
   */
   MPU_InitStruct.Number = MPU_REGION_NUMBER4;
   MPU_InitStruct.BaseAddress = 0x60000000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_64MB;
+  MPU_InitStruct.Size = MPU_REGION_SIZE_16MB;
 
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */
