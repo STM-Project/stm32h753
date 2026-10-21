@@ -11,6 +11,9 @@ function setup() {
     props.setProperty('DEVICE_TOKEN',
       (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''));
   }
+  if (!props.getProperty('PANEL_KEY')) {
+    props.setProperty('PANEL_KEY', (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''));
+  }
   props.setProperty('SHEET_ID', ss.getId());
   if (!props.getProperty('DEVICE_ID')) props.setProperty('DEVICE_ID', 'stm32h753');
   let control = ss.getSheetByName('Sterowanie');
@@ -41,7 +44,50 @@ function text_(value) {
   return ContentService.createTextOutput(value).setMimeType(ContentService.MimeType.TEXT);
 }
 
-function doGet() { return text_('STM32 cloud: wyslij POST z urzadzenia.'); }
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('Panel')
+    .setTitle('STM32 • Temperatura i przekaźnik')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// Separate browser key; never expose the firmware DEVICE_TOKEN to the page.
+function panelSheet_(key) {
+  const props = PropertiesService.getScriptProperties();
+  const expected = props.getProperty('PANEL_KEY');
+  if (!expected || typeof key !== 'string' || key !== expected)
+    throw new Error('Nieprawidłowy klucz panelu.');
+  return SpreadsheetApp.openById(props.getProperty('SHEET_ID'));
+}
+
+function getPanelState(key) {
+  const ss = panelSheet_(key);
+  const control = ss.getSheetByName('Sterowanie');
+  const log = ss.getSheetByName('Pomiary');
+  const v = control.getRange('A2:F2').getValues()[0];
+  const count = Math.min(120, Math.max(0, log.getLastRow() - 1));
+  const history = count ? log.getRange(log.getLastRow() - count + 1, 1, count, 3).getValues()
+    .filter(r => r[0] instanceof Date && typeof r[2] === 'number' && Number.isFinite(r[2]))
+    .map(r => [r[0].getTime(), r[2]]) : [];
+  return {
+    device: String(v[0]), desired: v[1] === true,
+    ack: v[2] === 0 || v[2] === 1 ? v[2] : null,
+    updated: v[3] instanceof Date ? v[3].getTime() : null,
+    temperature: v[3] instanceof Date && typeof v[4] === 'number' && Number.isFinite(v[4]) ? v[4] : null,
+    history: history
+  };
+}
+
+function setPanelRelay(key, enabled) {
+  const ss = panelSheet_(key);
+  if (typeof enabled !== 'boolean') throw new Error('Nieprawidłowy stan.');
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) throw new Error('Serwer zajęty. Spróbuj ponownie.');
+  try {
+    ss.getSheetByName('Sterowanie').getRange('B2').setValue(enabled);
+    SpreadsheetApp.flush();
+  } finally { lock.releaseLock(); }
+  return getPanelState(key);
+}
 
 function doPost(e) {
   const p = e && e.parameter;
