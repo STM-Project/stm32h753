@@ -179,23 +179,21 @@ void DbgVarDma2(int on, unsigned int buffLen, const char *fmt, ...)
 	}
 }
 
+static int DEBUG_IsAnythingReceive(void)
+{
+	if(dbgRecvBuffer[0]>0)
+		return 1;
+	else
+		return 0;
+}
+
 void DEBUG_InvalidateDCache(void){
 	SCB_InvalidateDCache_by_Addr((uint32_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
 }
 
 int DEBUG_IsTxtReceive(char *txt)
 {
-    /* LCD polls independently of the WiFi task's UART notification handler.
-     * Always read bytes written by DMA, not an earlier cached empty buffer. */
-    DEBUG_InvalidateDCache();
-    if (!txt || !*txt || dbgRecvBuffer[0] == 0) return 0;
-    /* A completely full DMA buffer need not contain a NUL terminator. */
-    size_t length = strlen(txt);
-    int found = 0;
-    for (size_t i = 0; i + length <= sizeof dbgRecvBuffer && dbgRecvBuffer[i]; ++i) {
-        if (memcmp(dbgRecvBuffer + i, txt, length) == 0) { found = 1; break; }
-    }
-	if(found)
+	if(strstr(dbgRecvBuffer,txt))
 	{
 		DEBUG_ReceiveStop();
 		DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
@@ -213,7 +211,15 @@ void DEBUG_RxFullBuffService(void)
 
 int DEBUG_RcvStr(char *txt)
 {
-    return DEBUG_IsTxtReceive(txt);
+	if(DEBUG_IsAnythingReceive())
+	{
+	  if(DEBUG_IsTxtReceive(txt))
+		  return 1;
+	  else
+		  return 0;
+	}
+	else
+		return 0;
 }
 
 char* _Col(FONT_BKG_COLOR background, uint8_t red, uint8_t green, uint8_t blue)
