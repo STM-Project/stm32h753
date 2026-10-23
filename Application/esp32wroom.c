@@ -1498,8 +1498,8 @@ static void CLOUD_RestoreHttp(void)
     InitStructRqstToSendChnl();
     HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
     _SET_NEW_CASE_(901);
-    //SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,noArch);
-    SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,noArch );
+    SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,noArch);
+    //SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,noArch );
 }
 
 static void CLOUD_FeedReceiveRing(void)
@@ -1816,8 +1816,8 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(17,txt_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()) break;
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeSendArch );
-						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
+						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeSendArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
 
 					}
@@ -2464,8 +2464,8 @@ void vtaskWifi(void *argument)
 					else if (CASE_Service(98,ESP_EMAIL_CHANNEL",CLOSED\r\n"TXT_OK,txt_ERR,typeRecvArch))
 					{
 						if(ErrorAnswerService()){ ; }
-						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeRecvArch );
-						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
+						//SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,typeRecvArch );
+						SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,typeSendArch );
 						COMMAND_Service(_SET,sendBuff);
 
 					}
