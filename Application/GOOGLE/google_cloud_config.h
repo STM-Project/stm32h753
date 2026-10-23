@@ -6,7 +6,7 @@
 #endif
 #endif
 #ifndef GOOGLE_CLOUD_ENABLED
-#define GOOGLE_CLOUD_ENABLED 1
+#define GOOGLE_CLOUD_ENABLED 0
 #endif
 #ifndef GOOGLE_CLOUD_DEVICE
 #define GOOGLE_CLOUD_DEVICE "stm32f769-demo"
