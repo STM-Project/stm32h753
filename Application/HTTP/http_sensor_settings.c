@@ -343,23 +343,29 @@ int HTTP_SensorSettingsApplyTarget(const char *target, size_t length, unsigned *
         !valid_settings(&candidate[0], 0u) ||
         (masks[1] && !valid_settings(&candidate[1], 1u)))
         return HTTP_SENSOR_SETTINGS_INVALID;
-    if (!save_settings) return HTTP_SENSOR_SETTINGS_STORAGE_ERROR;
+    if (!masks[1]) candidate[1] = settings[(selected_port - 1u) * 2u + 1u];
+    return HTTP_SensorSettingsSavePort(selected_port, candidate);
+}
 
+int HTTP_SensorSettingsSavePort(unsigned port, const HttpSensorSettings values[2])
+{
+    if (!values || port < 1u || port > HTTP_SENSOR_PORT_COUNT ||
+        !valid_settings(&values[0], 0u) || !valid_settings(&values[1], 1u))
+        return HTTP_SENSOR_SETTINGS_INVALID;
+    if (!save_settings) return HTTP_SENSOR_SETTINGS_STORAGE_ERROR;
     memcpy(blob, "SHT1", 4u);
     put16(blob + 4u, 1u);
     put16(blob + 6u, HTTP_SENSOR_COUNT);
     put32(blob + 8u, HTTP_SENSOR_COUNT * SENSOR_RECORD_SIZE);
-    for (i = 0; i < HTTP_SENSOR_COUNT; ++i) {
-        const HttpSensorSettings *value = &settings[i];
-        if (i / 2u == selected_port - 1u && masks[i & 1u])
-            value = &candidate[i & 1u];
+    for (unsigned i = 0; i < HTTP_SENSOR_COUNT; ++i) {
+        const HttpSensorSettings *value = i / 2u == port - 1u ? &values[i & 1u] : &settings[i];
         encode_record(blob + 16u + i * SENSOR_RECORD_SIZE, value);
     }
     put32(blob + 12u, checksum(blob + 16u, sizeof blob - 16u));
     if (save_settings(blob, sizeof blob, storage_context) != 1)
         return HTTP_SENSOR_SETTINGS_STORAGE_ERROR;
-    settings[(selected_port - 1u) * 2u] = candidate[0];
-    if (masks[1]) settings[(selected_port - 1u) * 2u + 1u] = candidate[1];
+    settings[(port - 1u) * 2u] = values[0];
+    settings[(port - 1u) * 2u + 1u] = values[1];
     HTTP_SettingsSensorsUpdate(settings, HTTP_SENSOR_COUNT);
     return HTTP_SENSOR_SETTINGS_SAVED;
 }

@@ -25,7 +25,8 @@ typedef struct {
 
 /* Return 1 on success, 0 for an absent file, negative for an I/O failure.
  * Save must return 1 only once its complete byte buffer is durably committed.
- * Call from the single HTTP task, not concurrently with settings access.
+ * Call from the single owner (WiFi/HTTP) task, never concurrently.
+ * GUI uses http_sensor_lcd.h snapshots/mailbox rather than these callbacks.
  */
 typedef int (*HttpSensorSettingsLoad)(void *buffer, size_t length, void *context);
 typedef int (*HttpSensorSettingsSave)(const void *buffer, size_t length, void *context);
@@ -44,6 +45,8 @@ enum {
 int HTTP_SensorSettingsInit(HttpSensorSettingsLoad load,
                            HttpSensorSettingsSave save, void *context);
 const HttpSensorSettings *HTTP_SensorSettingsGet(unsigned port, int humidity);
+/* Typed save, same validation/durable commit as HTTP. Owner (WiFi) task only. */
+int HTTP_SensorSettingsSavePort(unsigned port, const HttpSensorSettings values[2]);
 int HTTP_SensorSettingsValidateBlob(const void *buffer, size_t length);
 
 /* target is the request target only (without GET or HTTP/version). Its length

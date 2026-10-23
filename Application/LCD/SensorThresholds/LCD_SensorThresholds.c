@@ -3,6 +3,7 @@
  * New application code only; uses the user's LCD and Keyboard APIs.
  */
 #include "LCD_SensorThresholds.h"
+#include "http_sensor_lcd.h"
 #include "SCREEN_ReadPanel.h"
 #include "LCD_BasicGraphics.h"
 #include "LCD_fonts_images.h"
@@ -28,15 +29,16 @@ _Static_assert(TOUCH_KEYS > 0 && TOUCH_KEYS + 35 <= UINT8_MAX,
 #define KEYBOARD_TYPE_ID 1
 /* Exact ordering required by the user's Keyboard.c. */
 enum { KEY_All_release=0, KEYBOARD_SETTXT_KEYS };
-/* File-local RAM: committed settings for each port and its two sensors. */
-static LCD_SensorThreshold localSettings[LCD_THRESHOLD_PORTS][2];
+/* Only edit drafts and read snapshots live here; HTTP owns committed values. */
+static LCD_SensorThreshold readback[2];
 unsigned lcdThresholdPort=1;
 volatile int lcdThresholdResult;
-int (*lcdThresholdSave)(unsigned,const LCD_SensorThreshold[2]);
+
 static struct {
     int initialized,active,font[3],wasDown,armed,editing,previousKey,dirty,keyPadding;
     unsigned port;
-    LCD_SensorThreshold draft[2];
+    int pending;
+    LCD_SensorThreshold draft[2],base[2];
     /* Keyboard.c reserves the last TWO bytes for its cursor index. */
     char edit[64],notice[64];
 } ui;
@@ -79,8 +81,8 @@ int LCD_SensorThresholdSetField(LCD_SensorThreshold *v,unsigned humidity,unsigne
 }
 const LCD_SensorThreshold *LCD_SensorThresholdGet(unsigned port,unsigned humidity)
 {
-    if(!ui.initialized||port<1||port>LCD_THRESHOLD_PORTS||humidity>1)return NULL;
-    return &localSettings[port-1][humidity];
+    if(humidity>1 || !HTTP_SensorLCDRead(port,readback))return NULL;
+    return &readback[humidity];
 }
 static uint32_t Mix(uint32_t a,uint32_t b,unsigned t)
 {
@@ -164,7 +166,7 @@ static int Draw(void)
     snprintf(text,sizeof(text),"%s",ui.notice);
     while(text[0]&&LCD_GetWholeStrPxlWidth(ui.font[0],text,0,NoConstWidth)>358)text[strlen(text)-1]=0;
     Text(0,418,423,text,WHITE_TEXT);
-    Text(0,418,447,lcdThresholdSave?"Zapis przez callback aplikacji":"Zapis lokalny RAM (bez SD / WWW)",GREEN);
+    Text(0,418,447,"Wspolne ustawienia LCD / WWW / SD",GREEN);
     if(!TouchRect(24,419,176,40,TOUCH_FIRST+18)||!TouchRect(216,419,176,40,TOUCH_FIRST+19))return -4;
     LCD_Show();return 0;
 }
@@ -219,14 +221,22 @@ static int EditorClose(int commit)
     snprintf(ui.notice,sizeof(ui.notice),"%s",!commit?"Edycja anulowana":valid?"Zmieniono pole. Nacisnij Zapisz.":"Bledna wartosc - pole bez zmian.");
     return Draw();
 }
+static int Reload(void)
+{
+    if(!HTTP_SensorLCDRead(ui.port,ui.base)) return 0;
+    memcpy(ui.draft,ui.base,sizeof ui.draft);
+    ui.dirty=0;
+    return 1;
+}
 static int Save(void)
 {
-    if(lcdThresholdSave&&lcdThresholdSave(ui.port,ui.draft)!=1){
-        snprintf(ui.notice,sizeof(ui.notice),"Blad zapisu. Zachowano edycje.");return Draw()<0?-4:0;
+    if(!HTTP_SensorLCDSubmit(ui.port,ui.base,ui.draft)){
+        snprintf(ui.notice,sizeof ui.notice,"Model zajety lub jeszcze niedostepny.");
+        return Draw()<0?-4:0;
     }
-    memcpy(localSettings[ui.port-1],ui.draft,sizeof(ui.draft));ui.dirty=0;
-    snprintf(ui.notice,sizeof(ui.notice),"%s",lcdThresholdSave?"Zapisano ustawienia.":"Zapisano ustawienia w RAM.");
-    return Draw()<0?-4:1;
+    ui.pending=1;
+    snprintf(ui.notice,sizeof ui.notice,"Zapisywanie na SD...");
+    return Draw()<0?-4:0;
 }
 int LCD_SensorThresholds(uint8_t mode)
 {
@@ -238,22 +248,41 @@ int LCD_SensorThresholds(uint8_t mode)
     if(mode>LCD_THRESH_EXIT)return -1;
     if(LCD_GetXSize()!=800||LCD_GetYSize()!=480)return -2;
     if(mode==LCD_THRESH_ENTER||!ui.active){
-        if(!ui.initialized){
-            for(int p=0;p<LCD_THRESHOLD_PORTS;p++)for(int c=0;c<2;c++)
-                if(!localSettings[p][c].name[0])strcpy(localSettings[p][c].name,c?"Wilgotnosc":"Temperatura");
-            ui.initialized=1;
-        }
         SCREEN_ResetAllParameters();LCD_TOUCH_DeleteAllSetTouch();
         const int sizes[]={FONT_12,FONT_18_bold,FONT_14};
         const int ids[]={fontID_14,fontID_15,fontID_16};
         ui.active=0;
         for(int i=0;i<3;i++){ui.font[i]=LCD_LoadFont_ChangeColor(sizes[i],Arial,ids[i]);if(ui.font[i]<0)return -3;}
         ui.port=lcdThresholdPort>=1&&lcdThresholdPort<=20?lcdThresholdPort:1;lcdThresholdPort=ui.port;
-        memcpy(ui.draft,localSettings[ui.port-1],sizeof(ui.draft));
+        ui.initialized=Reload();
         ui.dirty=0;ui.editing=-1;ui.armed=-1;ui.wasDown=LCD_TOUCH_isPress()==press;
-        snprintf(ui.notice,sizeof(ui.notice),"Dotknij pola, aby edytowac.");
+        snprintf(ui.notice,sizeof(ui.notice),"%s",ui.initialized?"Dotknij pola, aby edytowac.":"Czekam na ustawienia HTTP / SD.");
         int result=Draw();if(result<0)return result;ui.active=1;return 0;
     }
+    if(ui.pending){
+        int result=HTTP_SensorLCDResult();
+        if(result==SENSOR_LCD_PENDING)return 0;
+        ui.pending=0;
+        if(result==SENSOR_LCD_SAVED){
+            Reload();
+            snprintf(ui.notice,sizeof ui.notice,"Zapisano LCD / WWW / SD.");
+            int drawn=Draw();return drawn<0?drawn:1;
+        }
+        snprintf(ui.notice,sizeof ui.notice,"%s",result==SENSOR_LCD_CONFLICT?
+                 "Zmiana z WWW. Odrzuc i edytuj ponownie.":"Blad zapisu SD. Zachowano edycje.");
+        return Draw();
+    }
+    if(ui.editing<0 && !ui.dirty && LCD_TOUCH_isPress()!=press){
+        LCD_SensorThreshold latest[2];
+        if(HTTP_SensorLCDRead(ui.port,latest) &&
+           (!ui.initialized || memcmp(latest,ui.base,sizeof latest))){
+            memcpy(ui.base,latest,sizeof latest);memcpy(ui.draft,latest,sizeof latest);
+            ui.initialized=1;
+            snprintf(ui.notice,sizeof ui.notice,"Odczytano wspolne ustawienia WWW.");
+            return Draw();
+        }
+    }
+    if(!ui.initialized)return 0;
     screenTouchState=LCD_TOUCH_GetTypeAndPosition(&screenTouchPos);
     int down=LCD_TOUCH_isPress()==press;
     if(ui.editing>=0){
@@ -287,9 +316,9 @@ int LCD_SensorThresholds(uint8_t mode)
     if(action<0)return 0;
     if(action<16)return EditorOpen(action);
     if(action==18)return Save();
-    if(action==19){memcpy(ui.draft,localSettings[ui.port-1],sizeof(ui.draft));ui.dirty=0;snprintf(ui.notice,sizeof(ui.notice),"Odrzucono niezapisane zmiany.");return Draw();}
+    if(action==19){Reload();snprintf(ui.notice,sizeof(ui.notice),"Odrzucono niezapisane zmiany.");return Draw();}
     if(ui.dirty){snprintf(ui.notice,sizeof(ui.notice),"Najpierw Zapisz lub Odrzuc.");return Draw();}
     if(action==16&&ui.port>1)ui.port--;
     if(action==17&&ui.port<20)ui.port++;
-    lcdThresholdPort=ui.port;memcpy(ui.draft,localSettings[ui.port-1],sizeof(ui.draft));return Draw();
+    lcdThresholdPort=ui.port;ui.initialized=Reload();return Draw();
 }

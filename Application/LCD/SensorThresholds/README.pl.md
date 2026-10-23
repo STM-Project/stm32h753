@@ -23,7 +23,7 @@ master, commit `5af0e949636384b8d84d5ab32fcf9d2adabbcad1`:
 Dwa kafelki sa dopasowane do 800x480. Nazwy i wartosci nie sa obrazkiem:
 rysuje je Twoje API LCD oraz fonty Arial 12, Arial 14, Arial 18 bold z SD.
 Podglad `preview-800x480.png` uzywa zastepczej Liberation Sans.
-Nie przeniesiono serwera HTTP, H7 HAL ani bibliotek H7 do projektu F7.
+Panel dziala w projekcie H7 i korzysta z jego modelu HTTP.
 
 ## Obsluga
 
@@ -46,47 +46,57 @@ w edytorze podaj liczbe SEKUND, np. `90` daje `01:30`.
 zapisane wartosci. Strzalki wybieraja port 1..20; niezapisane zmiany blokuja
 zmiane portu do uzycia Zapisz lub Odrzuc. Wyjscie z ekranu odrzuca szkic.
 
-## Gdzie sa lokalne zmienne
+## Wspolne ustawienia LCD / HTTP / SD
 
-Wszystkie sa w nowym pliku `.c`:
+`LCD_SensorThreshold` jest aliasem `HttpSensorSettings`. Jedyny model
+zatwierdzonych wartosci to `http_sensor_settings.c`, uzywany rowniez przez
+formularze HTTP. LCD nie ma osobnej tablicy zatwierdzonych ustawien.
+
+- `ui.draft[0]` / `[1]`: niezapisana edycja temperatury / wilgotnosci.
+- `ui.base`: kopia wartosci z chwili rozpoczecia edycji, do wykrywania konfliktu.
+- `ui.edit`: bufor klawiatury, 64 bajty (2 zarezerwowane przez Keyboard.c).
+
+Most `Application/HTTP/http_sensor_lcd.c` przekazuje GUI spojne kopie
+ustawien i pojedyncze zadanie zapisu. Kopie i skrzynka zadania sa chronione
+krotkimi sekcjami krytycznymi FreeRTOS; zapis SD nigdy nie odbywa sie w sekcji
+krytycznej. Model, bufor serializacji oraz FatFs pozostaja w zadaniu WiFi.
+`HTTP_SensorLCDService()` jest wywolywane po inicjalizacji modelu i przed
+kazdym oczekiwaniem w petli WiFi. Zapis z LCD budzi to zadanie powiadomieniem.
+
+Po zmianie z WWW otwarty LCD odswieza pola automatycznie przy kolejnym
+UPDATE, jezeli nie trwa edycja ani dotyk. Aktywna edycja pozostaje na ekranie;
+jesli WWW zmieni ten sam port, zapis starego szkicu zostanie odrzucony.
+`Odrzuc` pobiera wtedy najnowsze wartosci. Zmiana innego portu nie blokuje zapisu.
+
+`Zapisz` wysyla oba czujniki do modelu. Wynik 1 z `LCD_SensorThresholds`
+pojawia sie dopiero po potwierdzonym zapisie, nie po dodaniu do kolejki.
+Obie drogi uzywaja tej samej walidacji i adaptera SD: `0:/h7sense.bin`,
+kopia `.bak`, plik przejsciowy `.tmp`. Po sukcesie aktualizowane sa rowniez
+pola `HTTP_AllSettingsData.sensors`. Po bledzie SD szkic zostaje na LCD,
+a zatwierdzone dane HTTP pozostaja bez zmian. Po resecie oba interfejsy
+korzystaja z wartosci odczytanych z SD. Zapis nie steruje GPIO.
+
+Odczyt z zadania GUI:
 
 ```c
-ui.edit           // bufor Twojej klawiatury, 64 bajty (2 na jej indeks kursora)
-ui.draft[0]       // edytowana temperatura
-ui.draft[1]       // edytowana wilgotnosc
-localSettings[port - 1][0] // zatwierdzona temperatura
-localSettings[port - 1][1] // zatwierdzona wilgotnosc
-```
-
-`ui` i `localSettings` sa `static`: lokalne dla tego pliku i zachowuja dane
-miedzy wywolaniami. Nie sa na stosie funkcji. Bez dodatkowej konfiguracji
-zapis jest tylko w RAM i znika po resecie/zasilaniu; informacja jest na LCD.
-Dane nie sa wysylane przez siec i nie zmieniaja rzeczywistych alarmow ani GPIO.
-
-Odczyt zatwierdzonej konfiguracji z kodu aplikacji:
-
-```c
-#include "../SensorThresholds/LCD_SensorThresholds.h"
-const LCD_SensorThreshold *t = LCD_SensorThresholdGet(1, 0); // port 1, temperatura
-const LCD_SensorThreshold *h = LCD_SensorThresholdGet(1, 1); // port 1, wilgotnosc
-if (t) {
-    // t->name, t->max1, t->max2, t->min1, t->min2,
-    // t->hysteresis, t->correction, t->delay_seconds
+HttpSensorSettings sensors[2];
+if (HTTP_SensorLCDRead(1, sensors)) {
+    // sensors[0].max1: temperatura, sensors[1].max1: wilgotnosc, jednostki 0.1
 }
 ```
 
-Getter zwraca NULL przed pierwszym wejsciem lub dla blednego portu.
-Opcjonalny `lcdThresholdSave` moze polaczyc Zapisz z Twoim mechanizmem
-trwalego zapisu; domyslnie NULL. Callback dostaje port i dwie struktury,
-musi zwrocic 1 po sukcesie. Blad pozostawia szkic i stare ustawienia.
-Nie przechowuj przekazanego wskaznika szkicu po powrocie z callbacku.
-Wszystkie operacje z modelu/GUI wykonuj z tego samego zadania lub synchronizuj.
+`LCD_SensorThresholdGet(port, humidity)` rowniez zwraca kopie odczytu;
+wskaznik jest wazny do kolejnego wywolania tego gettera. NULL oznacza
+bledny port lub model jeszcze niewczytany przez WiFi. Przed gotowoscia
+modelu edycja LCD jest wstrzymana. Usunieto opcjonalny `lcdThresholdSave`:
+nie trzeba rejestrowac callbacku ani tworzyc drugiego pliku konfiguracji.
 
 ## Sprawdzenie
 
 `python3 tests/lcd_sensor_thresholds_test.py` sprawdza faktyczny kod panelu
 z atrapami API LCD/Keyboard: walidacje liczb i nazw, jednostki, edycje obu
-czujnikow, zapis/anulowanie, porty, callback z bledem i granice rysowania.
+czujnikow, zapis/anulowanie, porty, HTTP -> LCD, LCD -> HTTP, blad zapisu,
+konflikt edycji, odczyt zapisanego formatu i granice rysowania.
 Mock nie zastepuje testu fizycznego dotyku, SD-fontow i natywnej klawiatury.
 Pelna kompilacja ARM obejmuje prawdziwy `Keyboard.c` bez jego modyfikacji.
 

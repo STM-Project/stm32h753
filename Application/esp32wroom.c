@@ -18,6 +18,7 @@
 #include "LPC2148/http_lpc_panel.h"
 #include "LPC2148/lpc_pages.h"
 #include "relay_states.h"
+#include "http_sensor_lcd.h"
 #include "google_cloud.h"
 #include "google_cloud_config.h"
 #include "google_cloud_at.h"
@@ -1534,6 +1535,11 @@ static TickType_t CLOUD_WaitTicks(void)
     return portMAX_DELAY;
 }
 
+void HTTP_SensorLCDWake(void)
+{
+    if(vtaskWifiHandle) xTaskNotify(vtaskWifiHandle, BIT_ESP_SRV, eSetBits);
+}
+
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;
@@ -1584,6 +1590,7 @@ void vtaskWifi(void *argument)
 
 	while(1)
 	{
+        HTTP_SensorLCDService();
         /* Apply a timeout reset in the WiFi task before copying more data. */
         if(httpResetRequested){
             taskENTER_CRITICAL();httpResetRequested=0;taskEXIT_CRITICAL();
