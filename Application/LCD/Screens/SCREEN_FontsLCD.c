@@ -1739,6 +1739,23 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 		FILE_NAME(main)(LoadPartScreen,(char**)ppMain);
 	}
 
+	else if(DEBUG_IsTxtReceive("q"))
+	{
+		SCREEN_SetNr(7);
+	}
+	else if(DEBUG_IsTxtReceive("w"))
+	{
+		SCREEN_SetNr(8);
+	}
+	else if(DEBUG_IsTxtReceive("e"))
+	{
+		SCREEN_SetNr(9);
+	}
+	else if(DEBUG_IsTxtReceive("r"))
+	{
+		SCREEN_SetNr(10);
+	}
+
 
 
 

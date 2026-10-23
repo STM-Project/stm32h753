@@ -188,7 +188,7 @@ void StartDefaultTask(void const * argument)
 //	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff));
 
 	osDelay(500);
-	//CreateWifiTask();
+	CreateWifiTask();
 
 
 
