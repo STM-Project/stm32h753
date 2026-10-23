@@ -9,6 +9,7 @@
 extern volatile struct LCD_H7_Status {
     int initialized,touch_available,last_error;
     uint32_t transfers,dma_errors,timeouts;
+    uint32_t ltdc_error_flags,ltdc_error_events; /* HAL flags: 1=bus, 2=FIFO underrun. */
 } lcdH7Status;
 int LCD_H7_Start(void);
 void PCF8575_Init(void);

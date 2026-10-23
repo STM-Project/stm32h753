@@ -128,3 +128,18 @@ Wyjscie HEX wlaczono w .cproject dla Debug i Release (Convert to Intel Hex).
 CubeIDE tworzy Debug/STM32h753bit6.hex lub Release/STM32h753bit6.hex.
 Skrypt tools/build_lcd.py tworzy dodatkowo Debug/cloud/firmware.hex przez
 arm-none-eabi-objcopy -O ihex. Pliki wynikowe nie sa przechowywane w Git.
+
+## Czesciowe odswiezanie pod obciazeniem HTTP
+
+`LCD_DisplayPart` przekazuje prostokat bezposrednio z `pLcd` do DMA2D
+przez `LCD_DisplayBuffStride`, ze skokiem wiersza 800 pikseli. Jeden
+prostokat to jeden transfer (zamiast osobnego DMA i oczekiwania dla kazdej
+linii). FGOR pomija kolumny poza prostokatem; formaty nadal ARGB8888 -> RGB888.
+Czyszczenie cache obejmuje caly zakres zrodlowy ze skokiem wiersza.
+
+Przy artefaktach pod obciazeniem sprawdz w debuggerze
+`lcdH7Status.ltdc_error_flags` i `ltdc_error_events`. Bit 0 oznacza blad
+transferu LTDC, bit 1 niedobor danych FIFO. Flagi sa zapamietywane od startu,
+bez logowania w przerwaniu. Poprawka zmniejsza liczbe transferow i opoznienia
+planisty; nie zapewnia podwojnego buforowania ani synchronizacji z VBlank.
+Plyta wymaga proby rownoczesnego odswiezania LCD i obciazenia WiFi/HTTP.

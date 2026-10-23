@@ -26,7 +26,7 @@ extern DMA_Type dma;
 #define osErrorOS 129
 extern void *osDma2dSemph,*osDeviceMutex,*LcdUpdateSemaphoreId;
 enum {Semphr_sdram};
-typedef struct {struct {uint32_t ImageWidth,ImageHeight;} LayerCfg[1];struct {uint32_t AccumulatedActiveH;} Init;} LTDC_HandleTypeDef;
+typedef struct {uint32_t ErrorCode;struct {uint32_t ImageWidth,ImageHeight;} LayerCfg[1];struct {uint32_t AccumulatedActiveH;} Init;} LTDC_HandleTypeDef;
 extern LTDC_HandleTypeDef hltdc;
 int32_t osSemaphoreWait(void*,uint32_t);int osSemaphoreRelease(void*);
 int osMutexWait(void*,uint32_t);void osMutexRelease(void*);
@@ -75,6 +75,17 @@ int main(void){
  assert(cleaned==(uintptr_t)source&&cleanedLength==sizeof(source));
  token=1;transfer(11,17,19,23);assert(lcdH7Status.transfers==2&&dma.OMAR==0x60000000+3*(17*800+11)&&dma.OOR==781);
  assert((cleanedLength&31)==0&&cleanedLength>=19*23*4);
+ /* One strided partial update must configure one DMA for the whole region. */
+ waits=0;uint32_t prior=lcdH7Status.transfers;
+ uint32_t *part=source+183*800+48;
+ LCD_DisplayPart(0,48,183,374,155);
+ assert(lcdH7Status.transfers==prior+1&&dma.FGOR==426&&dma.OOR==426);
+ assert(dma.NLR==((374U<<16)|155)&&dma.OMAR==0x60000000+3*(183*800+48));
+ assert(cleaned==(uintptr_t)part&&cleanedLength==((154*800+374)*4+31)/32*32);
+ waits=0;LCD_DisplayBuffStride(0,0,100,2,source,99);assert(lcdH7Status.last_error==-10);
+ hltdc.ErrorCode=2;HAL_LTDC_ErrorCallback(&hltdc);
+ assert(lcdH7Status.ltdc_error_flags==2&&lcdH7Status.ltdc_error_events==1);
+ hltdc.ErrorCode=1;HAL_LTDC_ErrorCallback(&hltdc);assert(lcdH7Status.ltdc_error_flags==3);
  uint32_t before=lcdH7Status.transfers;transfer(799,479,2,2);assert(lcdH7Status.last_error==-10&&lcdH7Status.transfers==before);
  mode=1;transfer(0,0,2,2);assert(lcdH7Status.timeouts==1&&lcdH7Status.last_error==-13&&(dma.CR&DMA2D_CR_ABORT));
  mode=2;transfer(0,0,2,2);assert(lcdH7Status.dma_errors==1&&lcdH7Status.last_error==-14);
@@ -84,6 +95,13 @@ int main(void){
  puts("H7 LCD DMA adapter: RGB888 addresses, source cache alignment, CMSIS osOK semantics, IRQ, timeout/error and bounds: PASS");
 }
 '''
+# Include the production partial-copy function, not a test reimplementation.
+basic=(root/'Application/LCD/LCD_BasicGraphics.c').read_text()
+a=basic.index('void LCD_DisplayPart(')
+b=basic.index('\nvoid LCD_Show(void)',a)
+partial='\n#define LCD_X 800U\n#define LCD_Y 480U\nstatic uint32_t *pLcd=source;\n'+basic[a:b]+'\n'
+test=test.replace('int main(void){',partial+'int main(void){',1)
+
 with tempfile.TemporaryDirectory(prefix='h7-lcd-port-') as folder:
     work=Path(folder)
     for name in ('stm32h7xx_hal.h','ltdc.h','timer.h'): (work/name).write_text(hal if name=='stm32h7xx_hal.h' else '#include "stm32h7xx_hal.h"\n')
