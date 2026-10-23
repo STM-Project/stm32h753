@@ -581,12 +581,16 @@ void DEBUG_ReceiveStart(uint8_t* buffer, uint16_t len)
 {
 	memset(buffer,0,len);														/* memset() takes 18us */
 	SCB_CleanDCache_by_Addr((uint32_t*)buffer, CACHE_ALLIGN_LEN(len));			/* Wypchnij bufor RecvBuffer z casha do RAMu by wyczyscic pamiec DMA */
-	UART_ClearFlags(&huart7);
+	/* RX restart must not clear TX complete or flush the logger's TX FIFO. */
+    __HAL_UART_CLEAR_FLAG(&huart7, UART_CLEAR_FEF | UART_CLEAR_PEF |
+                         UART_CLEAR_OREF | UART_CLEAR_NEF | UART_CLEAR_IDLEF | UART_CLEAR_RTOF);
+    __HAL_UART_SEND_REQ(&huart7, UART_RXDATA_FLUSH_REQUEST);
 	HAL_UART_Receive_DMA(&huart7,buffer,len);
 	UART_ClearFlags2(&huart7);
 }
 
 void DEBUG_ReceiveStop(void){
-	HAL_UART_DMAStop(&huart7);
+    /* Re-arm only RX. DMAStop also aborts the queued logger's active TX. */
+    HAL_UART_AbortReceive(&huart7);
 }
 /* USER CODE END 1 */
