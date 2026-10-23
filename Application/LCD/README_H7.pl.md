@@ -122,3 +122,9 @@ rejestrami i RTOS: format/adres, cache, osOK, IRQ, timeout, blad i granice.
 Pozostale testy sprawdzaja logike ekranow i klawiatury z atrapami sprzetu.
 Nie wykonano testu na fizycznym STM32H753: piny LCD/dotyku, czas renderowania,
 transfer DMA, dzialanie cache i pliki fontow SD wymagaja sprawdzenia na plytce.
+
+
+Wyjscie HEX wlaczono w .cproject dla Debug i Release (Convert to Intel Hex).
+CubeIDE tworzy Debug/STM32h753bit6.hex lub Release/STM32h753bit6.hex.
+Skrypt tools/build_lcd.py tworzy dodatkowo Debug/cloud/firmware.hex przez
+arm-none-eabi-objcopy -O ihex. Pliki wynikowe nie sa przechowywane w Git.

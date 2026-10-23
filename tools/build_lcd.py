@@ -39,5 +39,9 @@ for obj,r,cmd,p in results:
 print(f'Compiled {len(sources)-len(errors)}/{len(sources)} sources; failures: {errors}')
 if errors: raise SystemExit(1)
 subprocess.run([gcc,*flags,*map(str,[x[0] for x in results]),'-T'+str(root/'STM32H753BITX_FLASH.ld'),'--specs=nano.specs','--specs=nosys.specs','-Wl,--gc-sections','-Wl,-Map='+str(out/'firmware.map'),'-o',str(out/'firmware.elf'),'-Wl,--start-group','-lc','-lm','-Wl,--end-group'],check=True)
+# Same Intel HEX output enabled in STM32CubeIDE's Debug/Release settings.
+objcopy=pathlib.Path(gcc).with_name('arm-none-eabi-objcopy'+('.exe' if str(gcc).lower().endswith('.exe') else ''))
+subprocess.run([str(objcopy),'-O','ihex',str(out/'firmware.elf'),str(out/'firmware.hex')],check=True)
+print('HEX:',out/'firmware.hex')
 size=pathlib.Path(gcc).with_name('arm-none-eabi-size')
 if size.exists(): subprocess.run([str(size),str(out/'firmware.elf')],check=True)
