@@ -31,6 +31,7 @@
 #include "tim.h"
 #include "esp32wroom.h"
 #include "timer.h"
+#include "LCD_PortH7.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -179,6 +180,7 @@ void StartDefaultTask(void const * argument)
 	Dbg(1,"\r\nHello Tu nowy STM32H753BIT6 Rafal Markielowski 123456789 ");
 	MX_FATFS_Init();
 	DEBUG_Init();
+	if(!LCD_H7_Start()) Dbg(1,"\r\nLCD H7 startup failed");
 
 	osDelay(1000);
 //	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff));

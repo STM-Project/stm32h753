@@ -36,6 +36,12 @@
 									<listOptionValue builtIn="false" value="../Application/HTTP"/>
 									<listOptionValue builtIn="false" value="../Application/GOOGLE"/>
 									<listOptionValue builtIn="false" value="../Application/LPC2148"/>
+									<listOptionValue builtIn="false" value="../Application/LCD"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/Screens"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/Touch"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/SensorThresholds"/>
+									<listOptionValue builtIn="false" value="../Application/Tasks"/>
+									<listOptionValue builtIn="false" value="../Application/Lang"/>
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../FATFS/Target"/>
 									<listOptionValue builtIn="false" value="../FATFS/App"/>
@@ -63,6 +69,12 @@
 									<listOptionValue builtIn="false" value="../Application/HTTP"/>
 									<listOptionValue builtIn="false" value="../Application/GOOGLE"/>
 									<listOptionValue builtIn="false" value="../Application/LPC2148"/>
+									<listOptionValue builtIn="false" value="../Application/LCD"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/Screens"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/Touch"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/SensorThresholds"/>
+									<listOptionValue builtIn="false" value="../Application/Tasks"/>
+									<listOptionValue builtIn="false" value="../Application/Lang"/>
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy"/>
@@ -144,6 +156,12 @@
 									<listOptionValue builtIn="false" value="../Application/HTTP"/>
 									<listOptionValue builtIn="false" value="../Application/GOOGLE"/>
 									<listOptionValue builtIn="false" value="../Application/LPC2148"/>
+									<listOptionValue builtIn="false" value="../Application/LCD"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/Screens"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/Touch"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/SensorThresholds"/>
+									<listOptionValue builtIn="false" value="../Application/Tasks"/>
+									<listOptionValue builtIn="false" value="../Application/Lang"/>
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../FATFS/Target"/>
 									<listOptionValue builtIn="false" value="../FATFS/App"/>
@@ -170,6 +188,12 @@
 									<listOptionValue builtIn="false" value="../Application/HTTP"/>
 									<listOptionValue builtIn="false" value="../Application/GOOGLE"/>
 									<listOptionValue builtIn="false" value="../Application/LPC2148"/>
+									<listOptionValue builtIn="false" value="../Application/LCD"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/Screens"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/Touch"/>
+									<listOptionValue builtIn="false" value="../Application/LCD/SensorThresholds"/>
+									<listOptionValue builtIn="false" value="../Application/Tasks"/>
+									<listOptionValue builtIn="false" value="../Application/Lang"/>
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy"/>

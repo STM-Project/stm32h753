@@ -175,6 +175,24 @@ SECTIONS
   } >RAM_D2
 
   . = ALIGN(4);
+  .lcd_framebuffer ORIGIN(SDRAM) (NOLOAD) :
+  {
+    . = ALIGN(32);
+    __lcd_framebuffer_start__ = .;
+    KEEP(*(.lcd_framebuffer))
+    . = ALIGN(32);
+    __lcd_framebuffer_end__ = .;
+  } >SDRAM
+  .lcd_work (NOLOAD) :
+  {
+    . = ALIGN(32);
+    __lcd_work_start__ = .;
+    *(.lcd_work*)
+    . = ALIGN(32);
+    __lcd_work_end__ = .;
+  } >SDRAM
+  ASSERT(__lcd_framebuffer_start__ == 0x60000000, "LCD SDRAM base changed")
+  ASSERT(__lcd_framebuffer_end__ - __lcd_framebuffer_start__ == 1152000, "LCD RGB888 framebuffer size")
   .sdram (NOLOAD) :  /* do deklaracji atrybutu uzywania SDRAM */
   {
   . = ALIGN(4);

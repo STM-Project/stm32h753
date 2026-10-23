@@ -1,2 +1,6 @@
 # Private Google Apps Script credentials.
 Application/GOOGLE/google_cloud_config.local.h
+
+# Local ARM build artifacts.
+Debug/
+Release/

@@ -156,6 +156,9 @@ extern void MyTraceFree(void *pvAddress, size_t xSize);
 #define traceMALLOC( pvReturn, xWantedSize )   MyTraceMalloc( pvReturn, xWantedSize )
 #define traceFREE( pvAddress, uiSize )         MyTraceFree( pvAddress, uiSize )
 
+/* Match the F7 LCD CPU-usage instrumentation, without kernel changes. */
+#define traceTASK_SWITCHED_IN() do { extern void StartIdleMonitor(void); StartIdleMonitor(); } while (0)
+#define traceTASK_SWITCHED_OUT() do { extern void EndIdleMonitor(void); EndIdleMonitor(); } while (0)
 /* USER CODE END Defines */
 
 #endif /* FREERTOS_CONFIG_H */
