@@ -20,12 +20,6 @@ void DMA2D_IRQHandler(void)
     }
 }
 void LTDC_IRQHandler(void){HAL_LTDC_IRQHandler(&hltdc);}
-void HAL_LTDC_ErrorCallback(LTDC_HandleTypeDef *handle)
-{
-    /* Diagnose SDRAM/LTDC starvation under HTTP load without logging in IRQ. */
-    lcdH7Status.ltdc_error_flags |= handle->ErrorCode;
-    lcdH7Status.ltdc_error_events++;
-}
 void HAL_LTDC_LineEventCallback(LTDC_HandleTypeDef *handle)
 {
     if(LcdUpdateSemaphoreId)osSemaphoreRelease(LcdUpdateSemaphoreId);
@@ -33,21 +27,16 @@ void HAL_LTDC_LineEventCallback(LTDC_HandleTypeDef *handle)
 }
 void LCD_DisplayBuff(uint32_t x,uint32_t y,uint32_t width,uint32_t height,uint32_t *source)
 {
-    LCD_DisplayBuffStride(x,y,width,height,source,width);
-}
-void LCD_DisplayBuffStride(uint32_t x,uint32_t y,uint32_t width,uint32_t height,
-                           uint32_t *source,uint32_t stride)
-{
-    if(!lcdH7Status.initialized||!source||!width||!height||x>=800||y>=480||width>800-x||height>480-y||stride<width||stride>800){lcdH7Status.last_error=-10;return;}
+    if(!lcdH7Status.initialized||!source||!width||!height||x>=800||y>=480||width>800-x||height>480-y){lcdH7Status.last_error=-10;return;}
     if(osMutexWait(osDeviceMutex,osWaitForever)!=osOK){lcdH7Status.last_error=-11;return;}
     if(!TakeMutex(Semphr_sdram,osWaitForever)){osMutexRelease(osDeviceMutex);lcdH7Status.last_error=-12;return;}
     while(osSemaphoreWait(osDma2dSemph,0)==osOK){}
     uintptr_t start=(uintptr_t)source,aligned=start&~(uintptr_t)31U;
-    size_t length=((start-aligned)+((height-1U)*stride+width)*4U+31U)&~(size_t)31U;
+    size_t length=((start-aligned)+width*height*4U+31U)&~(size_t)31U;
     SCB_CleanDCache_by_Addr((uint32_t*)aligned,(int32_t)length);__DSB();
     DMA2D->CR=0;
     DMA2D->IFCR=0x3FU;
-    DMA2D->FGMAR=(uint32_t)source;DMA2D->FGOR=stride-width;
+    DMA2D->FGMAR=(uint32_t)source;DMA2D->FGOR=0;
     DMA2D->FGPFCCR=0; /* foreground ARGB8888 */
     DMA2D->OPFCCR=1; /* output RGB888: unchanged H7 LTDC pixel format */
     DMA2D->OMAR=LCD_H7_SDRAM_BASE+3U*(y*800U+x);

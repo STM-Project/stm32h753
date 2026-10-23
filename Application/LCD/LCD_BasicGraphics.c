@@ -4141,14 +4141,25 @@ void LCD_Display(uint32_t posBuff, uint32_t Xpos, uint32_t Ypos, uint32_t width,
 	LCD_DisplayBuff(Xpos,Ypos,width,height,  pLcd+posBuff);
 }
 void LCD_DisplayPart(uint32_t posBuff, uint32_t Xpos, uint32_t Ypos, uint32_t width, uint32_t height){
-    /* One rectangle transfer from the full canvas, not one DMA per scanline.
-     * DMA2D FGOR skips pixels outside this rectangle between source rows. */
-    if(Xpos>=LCD_X || Ypos>=LCD_Y || !width || !height ||
-       width>LCD_X-Xpos || height>LCD_Y-Ypos) return;
-    LCD_DisplayBuffStride(Xpos,Ypos,width,height,
-                         pLcd+posBuff+LCD_X*Ypos+Xpos,LCD_X);
+/* For another ptr2pLcd: pLcd_*/
+/*	int m=0;
+	k = posBuff + LCD_X*Ypos + Xpos;
+	for(int j=0; j<height; j++){
+		for(int i=0; i<width; i++)
+			pLcd_[m++] = pLcd[k+i];
+		k += LCD_X;
+	}
+	LCD_DisplayBuff(Xpos,Ypos,width,height, pLcd_);
+*/
+	uint32_t tab[width];
+	k = posBuff + LCD_X*Ypos + Xpos;
+	for(int j=0; j<height; j++){
+		for(int i=0; i<width; i++)
+			tab[i] = pLcd[k+i];
+		k += LCD_X;
+		LCD_DisplayBuff(Xpos,Ypos+j,width,1, tab);
+	}
 }
-
 void LCD_Show(void){
 	LCD_Display(0,0,0,LCD_X,LCD_Y);
 }
