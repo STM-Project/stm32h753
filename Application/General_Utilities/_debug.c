@@ -344,7 +344,7 @@ void DBG_EndSendInterruptQue(void)
 void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla logów musimy zrezygnowac z używanie DbgSendDma___() */
 {
     char *txt_ptr=NULL, *txt_ptr_copy=NULL;
-    xLogQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(char *));
+    /* Queue is created synchronously before any producer task is started. */
  /* xLogTaskHandle = xTaskGetCurrentTaskHandle(); */
 
     for (;;){
@@ -372,6 +372,16 @@ void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla 
 
 void CreateLogTask(void)		/* --- Najbezpiecznaiejsza wersja logów --- */
 {
-	xTaskCreate(vLogTask, "vLogTask", 1024, NULL, (unsigned portBASE_TYPE ) 4, &xLogTaskHandle);
+    if (xLogTaskHandle != NULL) return;
+    if (xLogQueue == NULL) xLogQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(char *));
+    if (xLogQueue == NULL) {
+        Dbg(1,"\r\nDEBUG: cannot allocate log queue");
+        return;
+    }
+    if (xTaskCreate(vLogTask, "vLogTask", 1024, NULL,
+                    (unsigned portBASE_TYPE)4, &xLogTaskHandle) != pdPASS) {
+        xLogTaskHandle = NULL;
+        Dbg(1,"\r\nDEBUG: cannot create log task");
+    }
 }
 
