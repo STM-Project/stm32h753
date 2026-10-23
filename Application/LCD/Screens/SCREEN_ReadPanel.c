@@ -496,48 +496,48 @@ static void DBG_SCREEN_Test_Circle(void)
 {
 	int refresh_Screen=1;
 
-		  if(DEBUG_RcvStr("]")) { if(Circle.width < MAX_WIDTH_CIRCLE) Circle.width=LCD_GetNextIncrCircleWidth(Circle.width); }
-	else if(DEBUG_RcvStr("\\")){ if(Circle.width > MIN_WIDTH_CIRCLE) Circle.width=LCD_GetNextDecrCircleWidth(Circle.width); }
+		  if(DEBUG_IsTxtReceive("]")) { if(Circle.width < MAX_WIDTH_CIRCLE) Circle.width=LCD_GetNextIncrCircleWidth(Circle.width); }
+	else if(DEBUG_IsTxtReceive("\\")){ if(Circle.width > MIN_WIDTH_CIRCLE) Circle.width=LCD_GetNextDecrCircleWidth(Circle.width); }
 
-	else if(DEBUG_RcvStr("1")) INCR_WRAP(Circle.frame[0],1,0,255);
-	else if(DEBUG_RcvStr("2")) INCR_WRAP(Circle.frame[1],1,0,255);
-	else if(DEBUG_RcvStr("3")) INCR_WRAP(Circle.frame[2],1,0,255);
-	else if(DEBUG_RcvStr("q")) DECR_WRAP(Circle.frame[0],1,0,255);
-	else if(DEBUG_RcvStr("w")) DECR_WRAP(Circle.frame[1],1,0,255);
-	else if(DEBUG_RcvStr("e")) DECR_WRAP(Circle.frame[2],1,0,255);
+	else if(DEBUG_IsTxtReceive("1")) INCR_WRAP(Circle.frame[0],1,0,255);
+	else if(DEBUG_IsTxtReceive("2")) INCR_WRAP(Circle.frame[1],1,0,255);
+	else if(DEBUG_IsTxtReceive("3")) INCR_WRAP(Circle.frame[2],1,0,255);
+	else if(DEBUG_IsTxtReceive("q")) DECR_WRAP(Circle.frame[0],1,0,255);
+	else if(DEBUG_IsTxtReceive("w")) DECR_WRAP(Circle.frame[1],1,0,255);
+	else if(DEBUG_IsTxtReceive("e")) DECR_WRAP(Circle.frame[2],1,0,255);
 /*
-	else if(DEBUG_RcvStr("a")) INCR_WRAP(Circle.bk[0],1,0,255);
-	else if(DEBUG_RcvStr("s")) INCR_WRAP(Circle.bk[1],1,0,255);
-	else if(DEBUG_RcvStr("d")) INCR_WRAP(Circle.bk[2],1,0,255);
-	else if(DEBUG_RcvStr("z")) DECR_WRAP(Circle.bk[0],1,0,255);
-	else if(DEBUG_RcvStr("x")) DECR_WRAP(Circle.bk[1],1,0,255);
-	else if(DEBUG_RcvStr("c")) DECR_WRAP(Circle.bk[2],1,0,255);
+	else if(DEBUG_IsTxtReceive("a")) INCR_WRAP(Circle.bk[0],1,0,255);
+	else if(DEBUG_IsTxtReceive("s")) INCR_WRAP(Circle.bk[1],1,0,255);
+	else if(DEBUG_IsTxtReceive("d")) INCR_WRAP(Circle.bk[2],1,0,255);
+	else if(DEBUG_IsTxtReceive("z")) DECR_WRAP(Circle.bk[0],1,0,255);
+	else if(DEBUG_IsTxtReceive("x")) DECR_WRAP(Circle.bk[1],1,0,255);
+	else if(DEBUG_IsTxtReceive("c")) DECR_WRAP(Circle.bk[2],1,0,255);
 */
-	else if(DEBUG_RcvStr("4")) INCR_WRAP(Circle.fill[0],1,0,255);
-	else if(DEBUG_RcvStr("5")) INCR_WRAP(Circle.fill[1],1,0,255);
-	else if(DEBUG_RcvStr("6")) INCR_WRAP(Circle.fill[2],1,0,255);
-	else if(DEBUG_RcvStr("r")) DECR_WRAP(Circle.fill[0],1,0,255);
-	else if(DEBUG_RcvStr("t")) DECR_WRAP(Circle.fill[1],1,0,255);
-	else if(DEBUG_RcvStr("y")) DECR_WRAP(Circle.fill[2],1,0,255);
+	else if(DEBUG_IsTxtReceive("4")) INCR_WRAP(Circle.fill[0],1,0,255);
+	else if(DEBUG_IsTxtReceive("5")) INCR_WRAP(Circle.fill[1],1,0,255);
+	else if(DEBUG_IsTxtReceive("6")) INCR_WRAP(Circle.fill[2],1,0,255);
+	else if(DEBUG_IsTxtReceive("r")) DECR_WRAP(Circle.fill[0],1,0,255);
+	else if(DEBUG_IsTxtReceive("t")) DECR_WRAP(Circle.fill[1],1,0,255);
+	else if(DEBUG_IsTxtReceive("y")) DECR_WRAP(Circle.fill[2],1,0,255);
 
-	else if(DEBUG_RcvStr("h")) INCR_FLOAT_WRAP(Circle.ratioBk,  0.10, 0.00, 1.00);
-	else if(DEBUG_RcvStr("j")) INCR_FLOAT_WRAP(Circle.ratioFill,0.10, 0.00, 1.00);
-	else if(DEBUG_RcvStr("n")) DECR_FLOAT_WRAP(Circle.ratioBk  ,0.10, 0.00, 1.00);
-	else if(DEBUG_RcvStr("m")) DECR_FLOAT_WRAP(Circle.ratioFill,0.10, 0.00, 1.00);
+	else if(DEBUG_IsTxtReceive("h")) INCR_FLOAT_WRAP(Circle.ratioBk,  0.10, 0.00, 1.00);
+	else if(DEBUG_IsTxtReceive("j")) INCR_FLOAT_WRAP(Circle.ratioFill,0.10, 0.00, 1.00);
+	else if(DEBUG_IsTxtReceive("n")) DECR_FLOAT_WRAP(Circle.ratioBk  ,0.10, 0.00, 1.00);
+	else if(DEBUG_IsTxtReceive("m")) DECR_FLOAT_WRAP(Circle.ratioFill,0.10, 0.00, 1.00);
 
-	else if(DEBUG_RcvStr("g")) Circle.bold= LCD_IncrCircleBold(Circle.width,Circle.bold);
-	else if(DEBUG_RcvStr("b")) Circle.bold= LCD_DecrCircleBold(Circle.width,Circle.bold);
+	else if(DEBUG_IsTxtReceive("g")) Circle.bold= LCD_IncrCircleBold(Circle.width,Circle.bold);
+	else if(DEBUG_IsTxtReceive("b")) Circle.bold= LCD_DecrCircleBold(Circle.width,Circle.bold);
 
-	else if(DEBUG_RcvStr("o")) INCR_WRAP(Circle.halfCircle,1,0,3);
+	else if(DEBUG_IsTxtReceive("o")) INCR_WRAP(Circle.halfCircle,1,0,3);
 
-	else if(DEBUG_RcvStr("k")) DECR(Circle.deg[0],1,0);
-	else if(DEBUG_RcvStr("l")) INCR(Circle.deg[0],1,Circle.deg[1]-1);
-	else if(DEBUG_RcvStr(",")) DECR(Circle.deg[1],1,Circle.deg[0]+1);
-	else if(DEBUG_RcvStr(".")) INCR(Circle.deg[1],1,Circle.deg[2]-1);
-	else if(DEBUG_RcvStr("9")) DECR(Circle.deg[2],1,Circle.deg[1]+1);
-	else if(DEBUG_RcvStr("0")) INCR(Circle.deg[2],1,Circle.deg[3]-1);
-	else if(DEBUG_RcvStr("7")) DECR(Circle.deg[3],1,Circle.deg[2]+1);
-	else if(DEBUG_RcvStr("8")) INCR(Circle.deg[3],1,360);
+	else if(DEBUG_IsTxtReceive("k")) DECR(Circle.deg[0],1,0);
+	else if(DEBUG_IsTxtReceive("l")) INCR(Circle.deg[0],1,Circle.deg[1]-1);
+	else if(DEBUG_IsTxtReceive(",")) DECR(Circle.deg[1],1,Circle.deg[0]+1);
+	else if(DEBUG_IsTxtReceive(".")) INCR(Circle.deg[1],1,Circle.deg[2]-1);
+	else if(DEBUG_IsTxtReceive("9")) DECR(Circle.deg[2],1,Circle.deg[1]+1);
+	else if(DEBUG_IsTxtReceive("0")) INCR(Circle.deg[2],1,Circle.deg[3]-1);
+	else if(DEBUG_IsTxtReceive("7")) DECR(Circle.deg[3],1,Circle.deg[2]+1);
+	else if(DEBUG_IsTxtReceive("8")) INCR(Circle.deg[3],1,360);
 
 	_DBG_PARAM_NOWRAP("s",GET_CIRCLE_correctForWidth(),_uint16,_Incr,_Uint16(1),_Uint16(MAX_WIDTH_CIRCLE),"Width",NULL)
 	_DBG_PARAM_NOWRAP("x",GET_CIRCLE_correctForWidth(),_uint16,_Decr,_Uint16(1),_Uint16(1),"Width",NULL)
@@ -558,6 +558,7 @@ static void DBG_SCREEN_Test_Circle(void)
 
 void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 {
+	DEBUG_InvalidateDCache(); // Same RX path as esp32wroom.c.
 	if(startScreen==0)
 	{
 		switch(SCREEN_number)
@@ -656,19 +657,19 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 			if(LCD_IsRefreshScreenTimeout(refresh_5,500)) LCD_StrRotVarIndirect				(fontVar_5,INT2STR(++test[4]));
 			if(LCD_IsRefreshScreenTimeout(refresh_6,500)) LCD_StrChangeColorRotVarIndirect(fontVar_6,INT2STR(++test[5]));
 
-			     if(DEBUG_RcvStr("1")) LCD_StrRotVarIndirect(fontVar_7,"abAb");
-			else if(DEBUG_RcvStr("2")) LCD_StrRotVarIndirect(fontVar_7,"Rafa� Markiel�wski hhhhX");
-			else if(DEBUG_RcvStr("3")){ LCD_OffsStrVar_x(fontVar_7,10);  LCD_StrRotVarIndirect(fontVar_7,"XY");  }
-			else if(DEBUG_RcvStr("4")){ LCD_OffsStrVar_x(fontVar_7,-10); LCD_StrRotVarIndirect(fontVar_7,"XY");  }
-			else if(DEBUG_RcvStr("5")){ LCD_OffsStrVar_y(fontVar_7,10);  LCD_StrRotVarIndirect(fontVar_7,"SD");  }
-			else if(DEBUG_RcvStr("6")){ LCD_OffsStrVar_y(fontVar_7,-10); LCD_StrRotVarIndirect(fontVar_7,"SD");  }
+			     if(DEBUG_IsTxtReceive("1")) LCD_StrRotVarIndirect(fontVar_7,"abAb");
+			else if(DEBUG_IsTxtReceive("2")) LCD_StrRotVarIndirect(fontVar_7,"Rafa� Markiel�wski hhhhX");
+			else if(DEBUG_IsTxtReceive("3")){ LCD_OffsStrVar_x(fontVar_7,10);  LCD_StrRotVarIndirect(fontVar_7,"XY");  }
+			else if(DEBUG_IsTxtReceive("4")){ LCD_OffsStrVar_x(fontVar_7,-10); LCD_StrRotVarIndirect(fontVar_7,"XY");  }
+			else if(DEBUG_IsTxtReceive("5")){ LCD_OffsStrVar_y(fontVar_7,10);  LCD_StrRotVarIndirect(fontVar_7,"SD");  }
+			else if(DEBUG_IsTxtReceive("6")){ LCD_OffsStrVar_y(fontVar_7,-10); LCD_StrRotVarIndirect(fontVar_7,"SD");  }
 
-			else if(DEBUG_RcvStr("a")) LCD_StrChangeColorRotVarIndirect(fontVar_8,"abAb");
-			else if(DEBUG_RcvStr("b")) LCD_StrChangeColorRotVarIndirect(fontVar_8,"Rafa� Markiel�wski hhhhX");
-			else if(DEBUG_RcvStr("c")){ LCD_OffsStrVar_x(fontVar_8,10);  LCD_StrChangeColorRotVarIndirect(fontVar_8,"XY");  }
-			else if(DEBUG_RcvStr("d")){ LCD_OffsStrVar_x(fontVar_8,-10); LCD_StrChangeColorRotVarIndirect(fontVar_8,"XY");  }
-			else if(DEBUG_RcvStr("e")){ LCD_OffsStrVar_y(fontVar_8,10);  LCD_StrChangeColorRotVarIndirect(fontVar_8,"SD");  }
-			else if(DEBUG_RcvStr("f")){ LCD_OffsStrVar_y(fontVar_8,-10); LCD_StrChangeColorRotVarIndirect(fontVar_8,"SD");  }
+			else if(DEBUG_IsTxtReceive("a")) LCD_StrChangeColorRotVarIndirect(fontVar_8,"abAb");
+			else if(DEBUG_IsTxtReceive("b")) LCD_StrChangeColorRotVarIndirect(fontVar_8,"Rafa� Markiel�wski hhhhX");
+			else if(DEBUG_IsTxtReceive("c")){ LCD_OffsStrVar_x(fontVar_8,10);  LCD_StrChangeColorRotVarIndirect(fontVar_8,"XY");  }
+			else if(DEBUG_IsTxtReceive("d")){ LCD_OffsStrVar_x(fontVar_8,-10); LCD_StrChangeColorRotVarIndirect(fontVar_8,"XY");  }
+			else if(DEBUG_IsTxtReceive("e")){ LCD_OffsStrVar_y(fontVar_8,10);  LCD_StrChangeColorRotVarIndirect(fontVar_8,"SD");  }
+			else if(DEBUG_IsTxtReceive("f")){ LCD_OffsStrVar_y(fontVar_8,-10); LCD_StrChangeColorRotVarIndirect(fontVar_8,"SD");  }
 			break;
 
 		case 3:
@@ -712,8 +713,8 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 
 
 
-	if(DEBUG_RcvStr("=")){ startScreen=0; INCR_WRAP(SCREEN_number,1,0,5); }
-	if(DEBUG_RcvStr("?")) LCD_DisplayStrMovBuffState();
+	if(DEBUG_IsTxtReceive("=")){ startScreen=0; INCR_WRAP(SCREEN_number,1,0,5); }
+	if(DEBUG_IsTxtReceive("?")) LCD_DisplayStrMovBuffState();
 
 
 }

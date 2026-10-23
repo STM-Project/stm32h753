@@ -527,6 +527,7 @@ static int FILE_NAME(keyboard)(KEYBOARD_TYPES type, SELECT_PRESS_BLOCK selBlockP
 }
 
 void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
+	DEBUG_InvalidateDCache(); // Same RX path as esp32wroom.c.
 
 }}
 

@@ -262,10 +262,11 @@ void MEMEXAMPLE_MemoryFunc(void)
 
 void DBGEXAMPLE_KeyFunctions(void)
 {
+	DEBUG_InvalidateDCache();
 	double testVal = 0.0;
 	void* FuncExample(void *arg1,void *arg2){ return NULL; }
 
-	if(DEBUG_RcvStr("example")){ ; }
+	if(DEBUG_IsTxtReceive("example")){ ; }
 
 	/* 1. Debug option */
 	_DBG_PARAM_NOWRAP("a",&testVal,_double,_Incr,_Double(0.1),_Double(20.0),"Test debug 1: ",FuncExample)		/* for 'a' increment value by step 0.1 */

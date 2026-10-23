@@ -1679,13 +1679,14 @@ static void* MainFuncRefresh(void *p1,void *p2){
 }
 
 void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
+	DEBUG_InvalidateDCache(); // Same RX path as esp32wroom.c.
 
-	if(DEBUG_RcvStr("abc"))
+	if(DEBUG_IsTxtReceive("abc"))
 		FILE_NAME(printInfo)();
 
 
 	/* ----- Debug Test For Touch Resolution ----- */
-	else if(DEBUG_RcvStr("resolution"))
+	else if(DEBUG_IsTxtReceive("resolution"))
 		TOUCH_SetDefaultResolution();
 
 	_DBG_PARAM_NOWRAP("r1",TOUCH_GetPtr2Resolution(),_uint8,_Incr,_Uint8(1),_Uint8(15),"Touch Resolution: ",NULL)
@@ -1693,18 +1694,18 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 	/* ----- END Debug Test For Touch Resolution ----- */
 
 
-	else if(DEBUG_RcvStr("p"))
+	else if(DEBUG_IsTxtReceive("p"))
 	{
 		DbgVarDma(1,100,Clr_ Mag_"\r\nStart: %s -> CPU: %d \r\n"_X_, GET_CODE_FUNCTION, osGetCPUUsage());
 		DisplayCoeffCalibration();
 	}
-	else if(DEBUG_RcvStr("s\x0D"))
+	else if(DEBUG_IsTxtReceive("s\x0D"))
 	{
 		SCREEN_Fonts_funcSet(FONT_COLOR_LoadFontTime, BLACK);
 		SCREEN_Fonts_funcSet(COLOR_FramePress, BLACK);
 	}
 
-	else if(DEBUG_RcvStr("6"))
+	else if(DEBUG_IsTxtReceive("6"))
 	{
 		if(TOOGLE(RR)) ///DAJ JAKO WYBOR BITOWY \11111111111111 dla toogle !!!!!!!!!!!!!!!!!!!!!!!!
 		{
@@ -1727,12 +1728,12 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 		//Plik_bin_Divide(GETVAL_ptr(0));
 	}
 
-	else if(DEBUG_RcvStr("7")){
+	else if(DEBUG_IsTxtReceive("7")){
 		*ppMain=(int*)FRAMES_GROUP_separat;
 		FILE_NAME(main)(LoadUserScreen,(char**)ppMain);
 	}
 
-	else if(DEBUG_RcvStr("1"))
+	else if(DEBUG_IsTxtReceive("1"))
 	{
 		DbgDma(1,"test");
 		FILE_NAME(main)(LoadPartScreen,(char**)ppMain);
@@ -1743,32 +1744,32 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 
 #if defined(LCD_ENABLE_F7_NETWORK_DEBUG)
 /* F7-only network test commands are not LCD dependencies on H7. */
-	else if(DEBUG_RcvStr("8"))
+	else if(DEBUG_IsTxtReceive("8"))
 	{
 		DbgDma(1,"8 ");
 		ESP_Send("AT+SYSTIMESTAMP?\r\n");
 	}
-	else if(DEBUG_RcvStr("9"))
+	else if(DEBUG_IsTxtReceive("9"))
 	{
 		DbgDma(1,"9 ");
 		ESP_Recv();
 	}
-	else if(DEBUG_RcvStr("0"))
+	else if(DEBUG_IsTxtReceive("0"))
 	{
 		DbgDma(1,"0 ");
 		RestartWifiTask();
 	}
-	else if(DEBUG_RcvStr("q"))
+	else if(DEBUG_IsTxtReceive("q"))
 	{
 		DbgDma(1,"q ");
 		vRestartWifiServer();
 	}
-	else if(DEBUG_RcvStr("w"))
+	else if(DEBUG_IsTxtReceive("w"))
 	{
 		DbgDma(1,"w ");
 		vTestATcommand();
 	}
-	else if(DEBUG_RcvStr("f"))
+	else if(DEBUG_IsTxtReceive("f"))
 	{
 		DbgDma(1,"f");
 		vRestoreESP();
@@ -1777,19 +1778,19 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 
 
 // to dla wifi:
-//	else if(DEBUG_RcvStr(","))   //interia
+//	else if(DEBUG_IsTxtReceive(","))   //interia
 //	{
 //		DbgDma(1,", ");
 //		SendEmail(1, 1<<5|1<<1, EMAIL_TEST);
 //	}
-//	else if(DEBUG_RcvStr("."))
+//	else if(DEBUG_IsTxtReceive("."))
 //	{
 //		DbgDma(1,". ");
 //		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
 //
 //		CreateTestEMAILTask("Info_11 ");
 //	}
-//	else if(DEBUG_RcvStr("/"))   //gmail
+//	else if(DEBUG_IsTxtReceive("/"))   //gmail
 //	{
 //		DbgDma(1,"/");
 //		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
@@ -1797,13 +1798,13 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 
 
 /* !! Wywolywania zadania z zadania generuje hardfault !! */
-	else if(DEBUG_RcvStr("."))
+	else if(DEBUG_IsTxtReceive("."))
 	{
 		DbgDma(1,". ");
 		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
 		//CreateTestEMAILTask("asdasd");
 	}
-	else if(DEBUG_RcvStr("/"))   //gmail
+	else if(DEBUG_IsTxtReceive("/"))   //gmail
 	{
 		DbgDma(1,"/");
 		SendEmail(0, 1<<1, EMAIL_MEASURE);
