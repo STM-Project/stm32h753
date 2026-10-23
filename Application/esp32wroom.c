@@ -592,10 +592,10 @@ void DefaultSettingsWIFI(void)
 		VAR_SetTabVal(Const_wifiSTA_gate, i, LWIP_MAKEU32(192,168,1,1));
 		VAR_SetTabVal(Const_wifiSTA_port, i, 80);
 		VAR_SetTabVal(Const_wifiSTA_dhcp, i, 1);
-//		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
-//		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
-		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
-		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
+		VAR_SetStr(Const_wifiSTA_name, i, "T-Mobile_Swiatlowod_8638");
+		VAR_SetStr(Const_wifiSTA_pass, i, "03109069984530029251");
+//		VAR_SetStr(Const_wifiSTA_name, i, "MetronicAKP");
+//		VAR_SetStr(Const_wifiSTA_pass, i, "1qaZ@MetronicZ3");
 	}
 	VAR_SetTabVal(Const_wifiGeneral_nrAP,NO_TAB,0);
 	VAR_SetTabVal(Const_wifiGeneral_nrSTA,NO_TAB,0);
