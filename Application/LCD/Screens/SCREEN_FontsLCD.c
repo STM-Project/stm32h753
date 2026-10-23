@@ -233,12 +233,12 @@ static int FILE_NAME(GetDefaultParam)(int param){
 
 void FILE_NAME(printInfo)(void){
 	if(v.DEBUG_ON){
-		Dbg(1,Clr_ CoG2_"\r\ntypedef struct{\r\n"_X_);
-		DbgVar2(1,200,CoGr_"%*s %*s %*s %s\r\n"_X_, -8,"id", -18,"name", -15,"default value", "value");
-		#define X(a,b,c) DbgVar2(1,200,CoGr_"%*d"_X_	"%*s" 	CoGr_"= "_X_	 	"%*s" 	"(%s0x%x)\r\n",-4,a,		-23,getName(b),	-15,getName(c), 	CHECK_bit( FILE_NAME(SelBits)[a/32], (a-32*(a/32)) )?CoR_"change to: "_X_:"", v.b);
+		DbgDma(1,Clr_ CoG2_"\r\ntypedef struct{\r\n"_X_);
+		DbgVarDma2(1,200,CoGr_"%*s %*s %*s %s\r\n"_X_, -8,"id", -18,"name", -15,"default value", "value");
+		#define X(a,b,c) DbgVarDma2(1,200,CoGr_"%*d"_X_	"%*s" 	CoGr_"= "_X_	 	"%*s" 	"(%s0x%x)\r\n",-4,a,		-23,getName(b),	-15,getName(c), 	CHECK_bit( FILE_NAME(SelBits)[a/32], (a-32*(a/32)) )?CoR_"change to: "_X_:"", v.b);
 			SCREEN_FONTS_SET_PARAMETERS
 		#undef X
-		DbgVar(1,200,CoG2_"}%s;\r\n"_X_,getName(FILE_NAME(struct)));
+		DbgVarDma(1,200,CoG2_"}%s;\r\n"_X_,getName(FILE_NAME(struct)));
 	}
 }
 //ZROBIC szablon z macro by dla kazdego pliku szybko skopioowac !!!!!!!!!!!!!!!
@@ -570,7 +570,7 @@ static int *ppMain[7] = {(int*)FRAMES_GROUP_combined,(int*)FRAMES_GROUP_separat,
 static char keyBuff[KEYBUFF_SIZE]="Test";
 
 static void KEYBOARD_SETTXT_ServiceTxtBuffer(char *buf, int size){
-	Dbg(1,"\r\n"); Dbg(1,buf); Dbg(1,"\r\n");
+	DbgDma(1,"\r\n"); DbgDma(1,buf); DbgDma(1,"\r\n");
 }
 
 static int ChangeTxt(void){
@@ -896,7 +896,7 @@ static void LCD_LoadFontVar(void)
 		Test.loadFontTime=StopMeasureTime(0,"");
 
 		if(v.FONT_ID_Fonts<0){
-			Dbg(1,"\r\nERROR_LoadFontVar ");
+			DbgDma(1,"\r\nERROR_LoadFontVar ");
 			v.FONT_ID_Fonts=0;
 		}
 		DisplayFontsStructState();
@@ -1695,7 +1695,7 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 
 	else if(DEBUG_RcvStr("p"))
 	{
-		DbgVar(1,100,Clr_ Mag_"\r\nStart: %s -> CPU: %d \r\n"_X_, GET_CODE_FUNCTION, osGetCPUUsage());
+		DbgVarDma(1,100,Clr_ Mag_"\r\nStart: %s -> CPU: %d \r\n"_X_, GET_CODE_FUNCTION, osGetCPUUsage());
 		DisplayCoeffCalibration();
 	}
 	else if(DEBUG_RcvStr("s\x0D"))
@@ -1734,7 +1734,7 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 
 	else if(DEBUG_RcvStr("1"))
 	{
-		Dbg(1,"test");
+		DbgDma(1,"test");
 		FILE_NAME(main)(LoadPartScreen,(char**)ppMain);
 	}
 
@@ -1745,32 +1745,32 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 /* F7-only network test commands are not LCD dependencies on H7. */
 	else if(DEBUG_RcvStr("8"))
 	{
-		Dbg(1,"8 ");
+		DbgDma(1,"8 ");
 		ESP_Send("AT+SYSTIMESTAMP?\r\n");
 	}
 	else if(DEBUG_RcvStr("9"))
 	{
-		Dbg(1,"9 ");
+		DbgDma(1,"9 ");
 		ESP_Recv();
 	}
 	else if(DEBUG_RcvStr("0"))
 	{
-		Dbg(1,"0 ");
+		DbgDma(1,"0 ");
 		RestartWifiTask();
 	}
 	else if(DEBUG_RcvStr("q"))
 	{
-		Dbg(1,"q ");
+		DbgDma(1,"q ");
 		vRestartWifiServer();
 	}
 	else if(DEBUG_RcvStr("w"))
 	{
-		Dbg(1,"w ");
+		DbgDma(1,"w ");
 		vTestATcommand();
 	}
 	else if(DEBUG_RcvStr("f"))
 	{
-		Dbg(1,"f");
+		DbgDma(1,"f");
 		vRestoreESP();
 	}
 
@@ -1779,19 +1779,19 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 // to dla wifi:
 //	else if(DEBUG_RcvStr(","))   //interia
 //	{
-//		Dbg(1,", ");
+//		DbgDma(1,", ");
 //		SendEmail(1, 1<<5|1<<1, EMAIL_TEST);
 //	}
 //	else if(DEBUG_RcvStr("."))
 //	{
-//		Dbg(1,". ");
+//		DbgDma(1,". ");
 //		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
 //
 //		CreateTestEMAILTask("Info_11 ");
 //	}
 //	else if(DEBUG_RcvStr("/"))   //gmail
 //	{
-//		Dbg(1,"/");
+//		DbgDma(1,"/");
 //		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
 //	}
 
@@ -1799,13 +1799,13 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 /* !! Wywolywania zadania z zadania generuje hardfault !! */
 	else if(DEBUG_RcvStr("."))
 	{
-		Dbg(1,". ");
+		DbgDma(1,". ");
 		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
 		//CreateTestEMAILTask("asdasd");
 	}
 	else if(DEBUG_RcvStr("/"))   //gmail
 	{
-		Dbg(1,"/");
+		DbgDma(1,"/");
 		SendEmail(0, 1<<1, EMAIL_MEASURE);
 		CreateTestEMAILTask("0123456789 ABCD abcd");
 	}
@@ -2221,7 +2221,7 @@ void FILE_NAME(main)(int argNmb, char **argVal)   //Dla Zmiana typu czcionki Tou
 		LCD_TOUCH_DeleteAllSetTouch();
 		FONTS_LCD_ResetParam();
 
-		DbgVar(v.DEBUG_ON,100, "%s" Cya_"\r\nStart: %s\r\n"_X_, CONDITION(USE_DBG_CLR,Clr_,""), GET_CODE_FUNCTION);
+		DbgVarDma(v.DEBUG_ON,100, "%s" Cya_"\r\nStart: %s\r\n"_X_, CONDITION(USE_DBG_CLR,Clr_,""), GET_CODE_FUNCTION);
 
 		LoadFonts(FONT_ID_Title, FONT_ID_Press);
 		LCD_LoadFontVar();

@@ -131,12 +131,12 @@ static int FILE_NAME(GetDefaultParam)(int param){
 
 void FILE_NAME(printInfo)(void){
 	if(v.DEBUG_ON){
-		Dbg(1,Clr_ CoG2_"\r\ntypedef struct{\r\n"_X_);
-		DbgVar2(1,200,CoGr_"%*s %*s %*s %s\r\n"_X_, -8,"id", -18,"name", -15,"default value", "value");
-		#define X(a,b,c) DbgVar2(1,200,CoGr_"%*d"_X_	"%*s" 	CoGr_"= "_X_	 	"%*s" 	"(%s0x%x)\r\n",-4,a,		-23,getName(b),	-15,getName(c), 	CHECK_bit( FILE_NAME(SelBits)[a/32], (a-32*(a/32)) )?CoR_"change to: "_X_:"", v.b);
+		DbgDma(1,Clr_ CoG2_"\r\ntypedef struct{\r\n"_X_);
+		DbgVarDma2(1,200,CoGr_"%*s %*s %*s %s\r\n"_X_, -8,"id", -18,"name", -15,"default value", "value");
+		#define X(a,b,c) DbgVarDma2(1,200,CoGr_"%*d"_X_	"%*s" 	CoGr_"= "_X_	 	"%*s" 	"(%s0x%x)\r\n",-4,a,		-23,getName(b),	-15,getName(c), 	CHECK_bit( FILE_NAME(SelBits)[a/32], (a-32*(a/32)) )?CoR_"change to: "_X_:"", v.b);
 		SCREEN_VISUALPARAM_SET_PARAMETERS
 		#undef X
-		DbgVar(1,200,CoG2_"}%s;\r\n"_X_,getName(FILE_NAME(struct)));
+		DbgVarDma(1,200,CoG2_"}%s;\r\n"_X_,getName(FILE_NAME(struct)));
 	}
 }
 
@@ -258,7 +258,7 @@ static int *ppMain[7] = {(int*)FRAMES_GROUP_combined,(int*)FRAMES_GROUP_separat,
 static char keyBuff[KEYBUFF_SIZE]="Test";
 
 static void KEYBOARD_SETTXT_ServiceTxtBuffer(char *buf, int size){
-	Dbg(1,"\r\n"); Dbg(1,buf); Dbg(1,"\r\n");
+	DbgDma(1,"\r\n"); DbgDma(1,buf); DbgDma(1,"\r\n");
 }
 static void ResetIndexKeyBuff		  (void){ KEYBOARD_SETTXT_ServiceTxtBuffer(keyBuff,KEYBUFF_SIZE); memset(keyBuff,0,KEYBUFF_SIZE); }
 static void CopyKeyBuff2ShowTxtBuff(void){ /* STRING_CopyBuff( buffer,keyBuff, SIZE_TXT_SHOW,strlen(keyBuff) ); */ }
@@ -610,7 +610,7 @@ void FILE_NAME(setTouch)(void)
 			if(_WasState(Touch_FieldRoll)){
 				int temp;
 				if(END_FREEROLL__NOSEL != (temp = LCDTOUCH_IsScrollRelease(ROLL_1, FUNC1_SET( FILE_NAME(keyboard),KEYBOARD_Param_2,KEY_Select_one,0,0,0,0,0,0,0,0,0,0), NULL/*BlockingFunc*/, TIMER_Scroll))){
-					DbgVar(1,100,"\r\nRoll: %d",temp);
+					DbgVarDma(1,100,"\r\nRoll: %d",temp);
 					if(IS_RANGE(temp, 0, MAX_RADIO_CHANNEL-1)){
 						Test.selRadio=temp;
 						RADIO_DispFreq();
@@ -639,7 +639,7 @@ void FILE_NAME(main)(int argNmb, char **argVal)
 		LCD_TOUCH_DeleteAllSetTouch();
 		VisualParam_LCD_Reset();
 
-		DbgVar(v.DEBUG_ON,100, "" Cya_"\r\nStart: %s\r\n"_X_, GET_CODE_FUNCTION);
+		DbgVarDma(v.DEBUG_ON,100, "" Cya_"\r\nStart: %s\r\n"_X_, GET_CODE_FUNCTION);
 
 		LoadFonts(FONT_ID_Title, FONT_ID_Param_3);
 		DisplayFontsStructState();

@@ -504,7 +504,7 @@ void LCDEXAMPLE_BezierCurves(u32 xMidd,u32 yMidd, u32 xRight,u32 yRight, u32 Bkp
 		else	posA[posAi++]=pos2[2];
 
 		stepVal+=0.1;
-		Dbg(1,"i");
+		DbgDma(1,"i");
 	}
 
 

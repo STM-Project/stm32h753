@@ -162,16 +162,16 @@ int LCD_TOUCH_CalcCoeffCalibr(int maxSize)
 }
 
 void DisplayCoeffCalibration(void){
-	 DbgVar(1,250,"\r\nCoeff Calibration: A1=%d B1=%d   A2=%d B2=%d ",_A1,_B1,_A2,_B2);
+	 DbgVarDma(1,250,"\r\nCoeff Calibration: A1=%d B1=%d   A2=%d B2=%d ",_A1,_B1,_A2,_B2);
 }
 
 void DisplayTouchPosXY(int touchIdx, XY_Touch_Struct pos, char *txt){
 	if(GetTouchToTemp(touchIdx))
-		DbgVar(1,100,"\r\nPos (%d--"Cya_"%d"_X_"--%d)  (%d--"Cya_"%d"_X_"--%d) %s",touchTemp[0].x, pos.x, touchTemp[1].x,	touchTemp[0].y, pos.y, touchTemp[1].y, txt);
+		DbgVarDma(1,100,"\r\nPos (%d--"Cya_"%d"_X_"--%d)  (%d--"Cya_"%d"_X_"--%d) %s",touchTemp[0].x, pos.x, touchTemp[1].x,	touchTemp[0].y, pos.y, touchTemp[1].y, txt);
 }
 void DisplayAnyTouchPosXY(void){
 	if(press == ServiceTouch.press)
-		DbgVar(1,20,"\r\nPos %d:  %d %d ",ServiceTouch.idx, ServiceTouch.pos[ServiceTouch.idx-1].x, ServiceTouch.pos[ServiceTouch.idx-1].y);
+		DbgVarDma(1,20,"\r\nPos %d:  %d %d ",ServiceTouch.idx, ServiceTouch.pos[ServiceTouch.idx-1].x, ServiceTouch.pos[ServiceTouch.idx-1].y);
 }
 
 static uint16_t Calibration_GetX(uint32_t x)
@@ -519,7 +519,7 @@ uint8_t LCD_TOUCH_testFunc(GET_SET action){
 	switch((int)action){
 	case _RST:
 		testTouchResolutionFlag=0;
-		Dbg(1,"\r\nSTOP touch test ");
+		DbgDma(1,"\r\nSTOP touch test ");
 		break;
 	case _SET:
 		CALCULATE_MinMaxAvr(_RST,unUsed,NULL,							_uint32);
@@ -528,7 +528,7 @@ uint8_t LCD_TOUCH_testFunc(GET_SET action){
 		CALCULATE_MinMaxAvr(_SET1,1,_Uint32(VALPERC(LCD_Y,120)), _uint32);
 		CALCULATE_MinMaxAvr(_SET2,1,_Uint32(0), 						_uint32);
 		testTouchResolutionFlag=1;
-		Dbg(1,"\r\n"CoR_"START touch test "_X_);
+		DbgDma(1,"\r\n"CoR_"START touch test "_X_);
 		break;
 	case _CALC:
 		XY_Touch_Struct posTest = LCD_TOUCH_GetPos();
@@ -577,8 +577,8 @@ uint8_t LCD_TOUCH_testFunc(GET_SET action){
 		char By6[20];  DispLongNmb(I(y.itr),By6);
 		char By7[4];	DispLongNmb(I(y.avr),By7);
 */
-		DbgVar2(1,300,"\r\n"CoGr_"PosX min:"_X_"%*s "CoGr_"max:"_X_"%*s "CoGr_"div:"_X_"%*s "CoGr_"mid:"_X_"%*s "CoGr_"sum:"_X_"%*s "CoGr_"itr:"_X_"%*s "CoGr_"avr:"_X_"%*s",L[0],t1[0],L[1],t1[1],L[2],t1[2],L[3],t1[3],L[4],t1[4],L[5],t1[5],L[6],t1[6]);
-		DbgVar2(1,300,"\r\n"CoGr_"PosY min:"_X_"%*s "CoGr_"max:"_X_"%*s "CoGr_"div:"_X_"%*s "CoGr_"mid:"_X_"%*s "CoGr_"sum:"_X_"%*s "CoGr_"itr:"_X_"%*s "CoGr_"avr:"_X_"%*s",L[0],t2[0],L[1],t2[1],L[2],t2[2],L[3],t2[3],L[4],t2[4],L[5],t2[5],L[6],t2[6]);
+		DbgVarDma2(1,300,"\r\n"CoGr_"PosX min:"_X_"%*s "CoGr_"max:"_X_"%*s "CoGr_"div:"_X_"%*s "CoGr_"mid:"_X_"%*s "CoGr_"sum:"_X_"%*s "CoGr_"itr:"_X_"%*s "CoGr_"avr:"_X_"%*s",L[0],t1[0],L[1],t1[1],L[2],t1[2],L[3],t1[3],L[4],t1[4],L[5],t1[5],L[6],t1[6]);
+		DbgVarDma2(1,300,"\r\n"CoGr_"PosY min:"_X_"%*s "CoGr_"max:"_X_"%*s "CoGr_"div:"_X_"%*s "CoGr_"mid:"_X_"%*s "CoGr_"sum:"_X_"%*s "CoGr_"itr:"_X_"%*s "CoGr_"avr:"_X_"%*s",L[0],t2[0],L[1],t2[1],L[2],t2[2],L[3],t2[3],L[4],t2[4],L[5],t2[5],L[6],t2[6]);
 		break;
 	}
 	return testTouchResolutionFlag;
@@ -944,7 +944,7 @@ void LCD_TOUCH_ScrollSel_FreeRolling(uint8_t nr, FUNC1_DEF(pFunc), VOID_FUNCTION
 		int temp = 0, temp2 = 0;
 		uint16_t val = 0;
 
-		/* DbgVar(1,7,BkR_" %d "_X,delta); */
+		/* DbgVarDma(1,7,BkR_" %d "_X,delta); */
 		if(delta > 0)
 		{
 			delta *= paramCoeff[0];

@@ -818,8 +818,8 @@ static int FONTS_CreateFileCFFfromBMP(char *pbmp, const char *pChars, u16 width,
 			 FONTS_SETTING Font_temp = *((FONTS_SETTING*)( &TAB_OUT( ADDR_FONT_STRUCT 	) ));
 			 ID_FONT 	 FontID_temp = *((ID_FONT*)		( &TAB_OUT( ADDR_FONTID_STRUCT ) ));		--- 'ADDR_FONTID_STRUCT' must be multiple of 4 otherwise hard fault occurs ---
 		*/
-		if(COMPARE_2Struct(&Font_writeToBuff, &Font_readFromBuff, sizeof(Font_writeToBuff), _char)){		Dbg(1,"\r\nStructures are NOT equal !!!");  return 1;		}
-		else																													 {		Dbg(1,"\r\nStructures are equal :) ");  	  return 0;		}
+		if(COMPARE_2Struct(&Font_writeToBuff, &Font_readFromBuff, sizeof(Font_writeToBuff), _char)){		DbgDma(1,"\r\nStructures are NOT equal !!!");  return 1;		}
+		else																													 {		DbgDma(1,"\r\nStructures are equal :) ");  	  return 0;		}
 	}
 
 	void _SetColorAATabToOut(void){
@@ -958,7 +958,7 @@ static int FONTS_CreateFileCFFfromBMP(char *pbmp, const char *pChars, u16 width,
 	if((res=_SetCharsAndDataTabToOut())<0) return res;		/* Chars Tab is omitted */
 	_SetFontIDTabToOut();
 
-	DbgVar(1,100,"\r\nCountFonts: (%d)      whole file: (%d) = header (%d) + data (%d)\r\n",countFonts, sizeFile,SIZE_HEADER,iData );
+	DbgVarDma(1,100,"\r\nCountFonts: (%d)      whole file: (%d) = header (%d) + data (%d)\r\n",countFonts, sizeFile,SIZE_HEADER,iData );
 
 	if(TakeMutex(Semphr_cardSD,1000)){
 		if(FR_OK!=SDCardFileOpen(0, newFileNameToCreate, FA_WRITE | FA_CREATE_ALWAYS))		/* compress font file */
@@ -1033,10 +1033,10 @@ static void FONTS_InfoFileBMP(char *pbmp, u16 width,u16 height, uint32_t fontID,
 	if(start_fo==1){ start_fo=0;  __nmbrOfEnterToColorFO++;  }
 	if(start_aa==1){ start_aa=0;  __nmbrOfEnterToColorAA++;  }
 
-	DbgVar(1,100,"\r\nNumber of display color:   BK: %s   FO: %s    AA: %s",DispLongNmb(__nmbrOfColorBK, bufTemp), 		 DispLongNmb(__nmbrOfColorFO, bufTemp2), 			DispLongNmb(__nmbrOfColorAA, bufTemp3));
-	DbgVar(1,100,"\r\nNumber of enter to color:  BK: %s   FO: %s    AA: %s",DispLongNmb(__nmbrOfEnterToColorBK, bufTemp), DispLongNmb(__nmbrOfEnterToColorFO, bufTemp2), DispLongNmb(__nmbrOfEnterToColorAA, bufTemp3));
-	DbgVar(1,100,"\r\nNumber of AA color in tab:  (%d) \r\n",iTab);
-	Dbg(1,"\r\n");
+	DbgVarDma(1,100,"\r\nNumber of display color:   BK: %s   FO: %s    AA: %s",DispLongNmb(__nmbrOfColorBK, bufTemp), 		 DispLongNmb(__nmbrOfColorFO, bufTemp2), 			DispLongNmb(__nmbrOfColorAA, bufTemp3));
+	DbgVarDma(1,100,"\r\nNumber of enter to color:  BK: %s   FO: %s    AA: %s",DispLongNmb(__nmbrOfEnterToColorBK, bufTemp), DispLongNmb(__nmbrOfEnterToColorFO, bufTemp2), DispLongNmb(__nmbrOfEnterToColorAA, bufTemp3));
+	DbgVarDma(1,100,"\r\nNumber of AA color in tab:  (%d) \r\n",iTab);
+	DbgDma(1,"\r\n");
 }
 
 static void SearchCurrentFont_TablePos(char *pbmp, int fontIndex, uint32_t fontID)
@@ -1813,7 +1813,7 @@ char *LCD_FontType2Str(char *buffTemp, int id, int idAlt)
 
 void DisplayFontsStructState(void){
 	char bufTemp[65],bufTemp2[210];
-	DbgVar(1,250,CoGr_"\r\nBuff address: 0x%x     Buff size: %s     busy bytes: %s\r\n"_X_, fontsImagesMemoryBuffer, DispLongNmb(MAX_FONTS_AND_IMAGES_MEMORY_SIZE,GETVAL_ptr(0)), DispLongNmb(CounterBusyBytesForFontsImages,GETVAL_ptr(20)));
+	DbgVarDma(1,250,CoGr_"\r\nBuff address: 0x%x     Buff size: %s     busy bytes: %s\r\n"_X_, fontsImagesMemoryBuffer, DispLongNmb(MAX_FONTS_AND_IMAGES_MEMORY_SIZE,GETVAL_ptr(0)), DispLongNmb(CounterBusyBytesForFontsImages,GETVAL_ptr(20)));
 	for(int i=0; i < MAX_OPEN_FONTS_SIMULTANEOUSLY; i++){
 		if(Font[i].fontSizeToIndex){
 			LCD_FontType2Str(bufTemp+40,i,0);
@@ -1824,13 +1824,13 @@ void DisplayFontsStructState(void){
 				case '4': mini_snprintf(bufTemp2,210,BkW_ CoBl_"%s"_X_, bufTemp+41); break;
 				default:  bufTemp2[0]=0; break;
 			}
-			DbgVar2(1,350,CoGr_"%*d"_X_ "%*s %*s %s %s"CoGr_"FontAddr:"_X_" 0x%06x   "CoGr_"fontSdramLenght:"_X_" %s\r\n",-2,i, -16,LCD_FontStyle2Str(bufTemp,Font[i].fontStyleToIndex), -17,LCD_FontSize2Str(bufTemp+20,Font[i].fontSizeToIndex-1), bufTemp2, CONDITION('4'==bufTemp[40],_1SPACE,TABU_2SPACE), Font[i].pointerToMemoryFont-fontsImagesMemoryBuffer, DispLongNmb(Font[i].fontSdramLenght,NULL));
+			DbgVarDma2(1,350,CoGr_"%*d"_X_ "%*s %*s %s %s"CoGr_"FontAddr:"_X_" 0x%06x   "CoGr_"fontSdramLenght:"_X_" %s\r\n",-2,i, -16,LCD_FontStyle2Str(bufTemp,Font[i].fontStyleToIndex), -17,LCD_FontSize2Str(bufTemp+20,Font[i].fontSizeToIndex-1), bufTemp2, CONDITION('4'==bufTemp[40],_1SPACE,TABU_2SPACE), Font[i].pointerToMemoryFont-fontsImagesMemoryBuffer, DispLongNmb(Font[i].fontSdramLenght,NULL));
 		}
 	}
 }
 
 void InfoForImagesFonts(void){
-	DbgVar(1,250,"\r\nImages SDRAM size: 0x%08x\r\nCounterBusyBytesForFontsImages: 0x%08x\r\nStruct size Font+Image: %d+%d=%d  ",MAX_FONTS_AND_IMAGES_MEMORY_SIZE,CounterBusyBytesForFontsImages,sizeof(Font),sizeof(Image), sizeof(Font)+sizeof(Image));
+	DbgVarDma(1,250,"\r\nImages SDRAM size: 0x%08x\r\nCounterBusyBytesForFontsImages: 0x%08x\r\nStruct size Font+Image: %d+%d=%d  ",MAX_FONTS_AND_IMAGES_MEMORY_SIZE,CounterBusyBytesForFontsImages,sizeof(Font),sizeof(Image), sizeof(Font)+sizeof(Image));
 }
 
 int LCD_LoadFont(int fontSize, int fontStyle, uint32_t backgroundColor, uint32_t fontColor, uint32_t fontID)
@@ -1967,10 +1967,10 @@ int LCD_CreateFileCFFfromAllFilesBMP(void){
 			LOOP_FOR	(size, 	STRUCT_TAB_SIZE(TxtFontSize) ){
 				LCD_DeleteAllFontAndImages();
 				if( 0 > (res=LCD_CreateFileCFFfromBMP(size, style, type))){
-					DbgVar(1,100,"\r\nERROR Creating File CFF result for type(%d) style(%d) size(%d): %d ", type,style,size, res);
+					DbgVarDma(1,100,"\r\nERROR Creating File CFF result for type(%d) style(%d) size(%d): %d ", type,style,size, res);
 					return res;
 				}
-				else Dbg(1,".");
+				else DbgDma(1,".");
 	}}}
 	return 0;
 }
@@ -1981,12 +1981,12 @@ int LCD_CkeckAllFontFilesCFF(void){
 		LOOP_FOR		(style, 	STRUCT_TAB_SIZE(TxtFontStyle)){
 			LOOP_FOR	(size, 	STRUCT_TAB_SIZE(TxtFontSize) ){
 				if( 0 > (res=LCD_GetSizeOfFontFileCFF(size, style,type))){
-					DbgVar(1,100,"\r\nERROR of file CFF:  type(%d) style(%d) size(%d) ", type,style,size);
+					DbgVarDma(1,100,"\r\nERROR of file CFF:  type(%d) style(%d) size(%d) ", type,style,size);
 					return res;
 				}
-				else{	 sizeOfAllFiles+=res;		if(res>maxSize) maxSize=res;		if(res<minSize) minSize=res; 	Dbg(1,".");	 }
+				else{	 sizeOfAllFiles+=res;		if(res>maxSize) maxSize=res;		if(res<minSize) minSize=res; 	DbgDma(1,".");	 }
 	}}}
-	DbgVar(1,200,"\r\nAll of files CFF was checked,    size of all files: %s     min size:(%s)  max size(%s)", DispLongNmb(sizeOfAllFiles,bufTemp), DispLongNmb(minSize,bufTemp2), DispLongNmb(maxSize,bufTemp3));
+	DbgVarDma(1,200,"\r\nAll of files CFF was checked,    size of all files: %s     min size:(%s)  max size(%s)", DispLongNmb(sizeOfAllFiles,bufTemp), DispLongNmb(minSize,bufTemp2), DispLongNmb(maxSize,bufTemp3));
 	return sizeOfAllFiles;
 }
 
@@ -2441,7 +2441,7 @@ void LCD_ResetStrMovBuffPos(void){
 	movableFontsBuffer_pos=0;
 }
 void LCD_DisplayStrMovBuffState(void){
-	DbgVar(1,250,"\r\nMovBuff -> MaxSize: %d   LoadedSize: %d   ",LCD_MOVABLE_FONTS_BUFF_SIZE, movableFontsBuffer_pos);
+	DbgVarDma(1,250,"\r\nMovBuff -> MaxSize: %d   LoadedSize: %d   ",LCD_MOVABLE_FONTS_BUFF_SIZE, movableFontsBuffer_pos);
 }
 
 extern void SwapUint16(uint16_t *a, uint16_t *b);
@@ -3504,10 +3504,10 @@ char* LCD_DisplayRemeberedSpacesBetweenFonts(int param, char* buff, int* maxArra
 	switch(param){
 	default:
 	case 0:
-		Dbg(1,"\r\nSpacesBetweenFonts:");
+		DbgDma(1,"\r\nSpacesBetweenFonts:");
 		for(int i=0; i<StructSpaceCount; i++)
-			DbgVar(1,50,"\r\n%d: %s %s %c %c  %d ",i+1,LCD_FontStyle2Str(bufTemp,space[i].fontStyle),LCD_FontSize2Str(bufTemp+20,space[i].fontSize),space[i].char1,space[i].char2,space[i].val);
-		Dbg(1,"\r\n");
+			DbgVarDma(1,50,"\r\n%d: %s %s %c %c  %d ",i+1,LCD_FontStyle2Str(bufTemp,space[i].fontStyle),LCD_FontSize2Str(bufTemp+20,space[i].fontSize),space[i].char1,space[i].char2,space[i].val);
+		DbgDma(1,"\r\n");
 		return NULL;
 	case 1:
 		buff[0]=0;
