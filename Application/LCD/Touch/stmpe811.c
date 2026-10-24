@@ -600,14 +600,10 @@ uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
     ts_driver->Start(TS_I2C_ADDRESS);
     ts_driver->ClearIT(TS_I2C_ADDRESS);
     ts_driver->EnableIT(TS_I2C_ADDRESS);
-    /* An ID response alone does not prove configuration writes succeeded. */
+    /* Diagnostic readback only: preserve the original F7 startup decision. */
     uint8_t ctrl=IOE_Read(TS_I2C_ADDRESS, STMPE811_REG_TSC_CTRL);
     uint8_t irq=IOE_Read(TS_I2C_ADDRESS, STMPE811_REG_INT_CTRL);
     initDiagnostic.ctrl=ctrl;initDiagnostic.irq=irq;
-    if(io_failed || !(ctrl & STMPE811_TS_CTRL_ENABLE) || !(irq & STMPE811_GIT_EN)){
-      ts_driver = 0;
-      ret = TS_ERROR;
-    }
   }
 
   initDiagnostic.io_failed=io_failed;

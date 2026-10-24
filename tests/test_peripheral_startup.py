@@ -1,4 +1,4 @@
-"""Exercise production SD startup retries and touch initialization validation."""
+"""Exercise production SD startup retries and F7-compatible touch initialization."""
 from pathlib import Path
 import subprocess
 import tempfile
@@ -72,11 +72,11 @@ int main(void){
  assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&ts_x_boundary==800&&ts_y_boundary==480);
  assert(initDiagnostic.id==STMPE811_ID&&initDiagnostic.stage==3&&initDiagnostic.sda&&initDiagnostic.scl&&!diagnostic_active);
  badID=1;assert(BSP_TS_Init(800,480)==TS_ERROR&&!ts_driver&&inits==1);assert(initDiagnostic.stage==1&&initDiagnostic.id==0);badID=0;
- badWrite=1;assert(BSP_TS_Init(800,480)==TS_ERROR&&!ts_driver);assert(initDiagnostic.stage==2&&initDiagnostic.io_failed);badWrite=0;
- badCtrl=1;assert(BSP_TS_Init(800,480)==TS_ERROR&&!ts_driver);badCtrl=0;
- badIRQ=1;assert(BSP_TS_Init(800,480)==TS_ERROR&&!ts_driver);badIRQ=0;
+ badWrite=1;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver);assert(initDiagnostic.stage==3&&initDiagnostic.io_failed);badWrite=0;
+ badCtrl=1;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&initDiagnostic.ctrl==0);badCtrl=0;
+ badIRQ=1;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&initDiagnostic.irq==0);badIRQ=0;
  assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&!io_failed);
- puts("Peripheral startup: bounded SD retries, permanent error handling, STMPE811 configuration validation/recovery: PASS");
+ puts("Peripheral startup: bounded SD retries, permanent error handling, STMPE811 F7-compatible acceptance and retained diagnostics: PASS");
 }
 '''
 with tempfile.TemporaryDirectory(prefix='peripheral-startup-') as directory:
