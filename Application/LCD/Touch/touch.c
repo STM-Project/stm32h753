@@ -59,7 +59,7 @@ static int32_t aLogY[2*AB_COEFF_TAB_SIZE]={0};
 static int32_t aPhysX[2*AB_COEFF_TAB_SIZE]={0};
 static int32_t aPhysY[2*AB_COEFF_TAB_SIZE]={0};
 
-uint8_t touchDetect;
+volatile uint8_t touchDetect;
 
 void WaitForTouchState(uint8_t Pressed)
 {

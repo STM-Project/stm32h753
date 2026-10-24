@@ -105,7 +105,7 @@ typedef struct{
   uint16_t y;
 }XY_Touch_Struct;
 
-extern uint8_t touchDetect;
+extern volatile uint8_t touchDetect;
 extern XY_Touch_Struct  touchTemp[];
 extern XY_Touch_Struct  structXY_Zero;
 
