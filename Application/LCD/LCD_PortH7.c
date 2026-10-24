@@ -41,12 +41,7 @@ int LCD_H7_Start(void)
     for(unsigned attempt=0; attempt<3; ++attempt){
         lcdH7Status.touch_available=BSP_TS_Init(800,480)==0;
         if(lcdH7Status.touch_available)break;
-        if(attempt<2){
-            uint8_t recovered=BSP_TS_RecoverBus();
-            DbgDma(1,recovered?"\r\nLCD: I2C1 bus released; retrying STMPE811":
-                               "\r\nLCD: I2C1 SDA/SCL still low; retrying STMPE811");
-            osDelay(100);
-        }
+        if(attempt<2)osDelay(100);
     }
     if(!lcdH7Status.touch_available)DbgDma(1,"\r\nLCD: STMPE811 not detected on I2C1; touch task disabled");
     SetLang(2,English);LCD_SetSpacesBetweenFonts();LCD_TOUCH_DeleteAllSetTouch();

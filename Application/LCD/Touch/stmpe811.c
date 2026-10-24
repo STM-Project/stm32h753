@@ -189,58 +189,6 @@ static void IOE_Delay(uint32_t Delay)
   HAL_Delay(Delay);
 }
 
-/* Startup recovery only: no touch task or other I2C1 user may run here.
- * PB7=SDA, PB8=SCL, matching the board's CubeMX I2C1 mapping.
- * Open-drain high releases the line; never drive against the controller. */
-static int I2C1_WaitSclHigh(void)
-{
-  for(unsigned wait=0; wait<5; ++wait){
-    if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)==GPIO_PIN_SET)return 1;
-    HAL_Delay(1);
-  }
-  return HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)==GPIO_PIN_SET;
-}
-
-uint8_t BSP_TS_RecoverBus(void)
-{
-  GPIO_InitTypeDef pins={0};
-  int released=0;
-  HAL_I2C_DeInit(&hi2c1);
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7|GPIO_PIN_8,GPIO_PIN_SET);
-  pins.Pin=GPIO_PIN_7|GPIO_PIN_8;
-  pins.Mode=GPIO_MODE_OUTPUT_OD;
-  pins.Pull=GPIO_NOPULL;
-  pins.Speed=GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB,&pins);
-  HAL_Delay(1);
-  if(!I2C1_WaitSclHigh())goto restore;
-  for(unsigned pulse=0; pulse<9 && HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_7)==GPIO_PIN_RESET; ++pulse){
-    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
-    HAL_Delay(1);
-    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
-    if(!I2C1_WaitSclHigh())goto restore;
-    HAL_Delay(1);
-  }
-  /* STOP: SDA rises while SCL is high. Lower SCL first to avoid START. */
-  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_RESET);
-  HAL_Delay(1);
-  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
-  if(!I2C1_WaitSclHigh())goto restore;
-  HAL_Delay(1);
-  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_SET);
-  HAL_Delay(1);
-  released=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_7)==GPIO_PIN_SET;
-restore:
-  /* Always return pins to their CubeMX alternate function, even if stuck. */
-  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7|GPIO_PIN_8,GPIO_PIN_SET);
-  __HAL_RCC_I2C1_FORCE_RESET();
-  __HAL_RCC_I2C1_RELEASE_RESET();
-  MX_I2C1_Init();
-  return (uint8_t)released;
-}
-
 static void I2Cx_Error(uint8_t Addr)
 {
   io_failed = 1;
