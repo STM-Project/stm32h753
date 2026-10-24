@@ -177,6 +177,23 @@ typedef struct
 
 static TS_DrvTypeDef *ts_driver;
 static uint8_t io_failed;
+static uint8_t diagnostic_active;
+static struct STMPE811_InitDiagnostic initDiagnostic;
+
+const struct STMPE811_InitDiagnostic *BSP_TS_GetInitDiagnostic(void)
+{
+  return &initDiagnostic;
+}
+
+static void RecordInitError(uint8_t operation,uint8_t reg,HAL_StatusTypeDef status)
+{
+  if(diagnostic_active && !initDiagnostic.operation){
+    initDiagnostic.operation=operation;
+    initDiagnostic.reg=reg;
+    initDiagnostic.status=(uint8_t)status;
+    initDiagnostic.hal_error=HAL_I2C_GetError(&hi2c1);
+  }
+}
 static uint16_t ts_x_boundary, ts_y_boundary;
 static uint8_t  ts_orientation;
 
@@ -209,6 +226,7 @@ static uint8_t I2Cx_Read(uint8_t Addr, uint8_t Reg)
   /* Check the communication status */
   if(status != HAL_OK)
   {
+    RecordInitError('R',Reg,status);
     /* Execute user timeout callback */
     I2Cx_Error(Addr);
   }
@@ -225,6 +243,7 @@ static void I2Cx_Write(uint8_t Addr, uint8_t Reg, uint8_t Value)
   /* Check the communication status */
   if(status != HAL_OK)
   {
+    RecordInitError('W',Reg,status);
     /* I2C error occured */
     I2Cx_Error(Addr);
   }
@@ -556,8 +575,12 @@ uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
   uint8_t ret = TS_ERROR;
   io_failed = 0;
   ts_driver = 0;
+  initDiagnostic=(struct STMPE811_InitDiagnostic){0};
+  diagnostic_active=1;
+  initDiagnostic.stage=1; /* Reading chip ID. */
+  initDiagnostic.id=stmpe811_ts_drv.ReadID(TS_I2C_ADDRESS);
 
-  if(stmpe811_ts_drv.ReadID(TS_I2C_ADDRESS) == STMPE811_ID)
+  if(initDiagnostic.id == STMPE811_ID)
   {
     /* Initialize the TS driver structure */
     ts_driver = &stmpe811_ts_drv;
@@ -571,6 +594,7 @@ uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
 
   if(ret == TS_OK)
   {
+    initDiagnostic.stage=2; /* Configuring and checking registers. */
     /* Initialize the LL TS Driver */
     ts_driver->Init(TS_I2C_ADDRESS);
     ts_driver->Start(TS_I2C_ADDRESS);
@@ -579,12 +603,18 @@ uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
     /* An ID response alone does not prove configuration writes succeeded. */
     uint8_t ctrl=IOE_Read(TS_I2C_ADDRESS, STMPE811_REG_TSC_CTRL);
     uint8_t irq=IOE_Read(TS_I2C_ADDRESS, STMPE811_REG_INT_CTRL);
+    initDiagnostic.ctrl=ctrl;initDiagnostic.irq=irq;
     if(io_failed || !(ctrl & STMPE811_TS_CTRL_ENABLE) || !(irq & STMPE811_GIT_EN)){
       ts_driver = 0;
       ret = TS_ERROR;
     }
   }
 
+  initDiagnostic.io_failed=io_failed;
+  initDiagnostic.sda=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_7)==GPIO_PIN_SET;
+  initDiagnostic.scl=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)==GPIO_PIN_SET;
+  if(ret==TS_OK)initDiagnostic.stage=3;
+  diagnostic_active=0;
   return ret;
 }
 
