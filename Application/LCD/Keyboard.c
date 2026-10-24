@@ -19,6 +19,13 @@
 
 #define FONT_COEFF	252
 
+static unsigned setTextRows = 6;
+void KEYBOARD_SetTextRows(unsigned rows)
+{
+    setTextRows = rows >= 1 && rows <= 6 ? rows : 6;
+}
+
+
 #define MAX_NUMBER_OPENED_KEYBOARD_SIMULTANEOUSLY		20
 #define KEYBOARD_NONE	0
 #define MAXNMB_widthKey	5
@@ -1938,7 +1945,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 	}}
 
 	int widthFieldTxt = 0;
-	int heightFieldTxt = _EDGE_DIST + LCD_GetFontHeight(fontID) * _ARROWS_NMBR + _EDGE_DIST;
+	int heightFieldTxt = _EDGE_DIST + LCD_GetFontHeight(fontID) * setTextRows + _EDGE_DIST;
 	int head = s[k].interSpace + heightFieldTxt + s[k].interSpace;
 	int colorFillBk = BrightDecr(bkColor,0x00);
 
@@ -2014,7 +2021,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 		for(i=0; i<strlen(txtBuff); ++i){
 			if(LCD_GetStrPxlWidth(fontID, txtBuff+m, ++cnt,param_space,param_constWidth) >= LineLenBuff[j]){
 				m=i;
-				seperateParam[1+j++]=cnt-1;	if(j>_ARROWS_NMBR){ j--; status=1; goto END_SeperateTxt2RowField; }
+				seperateParam[1+j++]=cnt-1;	if(j>setTextRows){ j--; status=1; goto END_SeperateTxt2RowField; }
 				cnt=0;
 				if(i>0) i--;
 		}}
@@ -2205,7 +2212,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 		charsInGivenRow = offsCharBuff-offsBuff;
 		cursorVar.pos.y = LCD_GetFontHeight(fontID) * CONDITION(nrRow,nrRow,1);
 		cursorVar.pos.x = CONDITION(0==charsInGivenRow, 0, LCD_GetStrPxlWidth(fontID,&charBuff[offsBuff], charsInGivenRow ,textParam.space,textParam.constWidth));
-		if( cursorVar.pos.x + LCD_GetFontWidth(fontID,_GetCursorChar()) >= LineLenBuff[nrRow-1]  	&&   nrRow < _ARROWS_NMBR ){
+		if( cursorVar.pos.x + LCD_GetFontWidth(fontID,_GetCursorChar()) >= LineLenBuff[nrRow-1]  	&&   nrRow < setTextRows ){
 			cursorVar.pos.y = LCD_GetFontHeight(fontID)*(nrRow+1);
 			cursorVar.pos.x = 0;
 	}}
@@ -2244,9 +2251,9 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 	}
 
 	int _GoToNewLine(void){
-		int row = cursorVar.pos.y / LCD_GetFontHeight(fontID);																		if(_ARROWS_NMBR==row) return 0;
+		int row = cursorVar.pos.y / LCD_GetFontHeight(fontID);																		if(setTextRows==row) return 0;
 		u8 seperateTxtParam[_ARROWS_NMBR+1];
-		_SeperateTxt2RowField(charBuff, textParam.space,textParam.constWidth, widthFieldTxt, seperateTxtParam);		if(_ARROWS_NMBR==seperateTxtParam[0]) return 0;
+		_SeperateTxt2RowField(charBuff, textParam.space,textParam.constWidth, widthFieldTxt, seperateTxtParam);		if(setTextRows==seperateTxtParam[0]) return 0;
 		int offsBuff 			= _GetCharBuffIndxViaParam(row-1, seperateTxtParam );
 		int charsInGivenRow  = 1 + cursorVar.offs-offsBuff;
 		int lenInSelectRow 	= LCD_GetStrPxlWidth(fontID,&charBuff[offsBuff], charsInGivenRow ,textParam.space,textParam.constWidth) + CONDITION(cursorVar.offs==_GetIndxCharBuff(),LCD_GetFontWidth(fontID,_GetCursorChar()),0);
@@ -2341,7 +2348,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 			char tempChar;
 			u8 seperateTxtParam[_ARROWS_NMBR+1];
 			_SeperateTxt2RowField(charBuff, textParam.space,textParam.constWidth, widthFieldTxt, seperateTxtParam);
-			if(seperateTxtParam[0]==_ARROWS_NMBR){						/* Check the max-allowed number of characters in the last row */
+			if(seperateTxtParam[0]==setTextRows){						/* Check the max-allowed number of characters in the last row */
 				char widestChar 	= 'W';
 				int offsBuff 		= _GetCharBuffIndxViaParam(seperateTxtParam[0]-1,seperateTxtParam);
 				int lenInLastRow 	= LCD_GetWholeStrPxlWidth(fontID,&charBuff[offsBuff],textParam.space,textParam.constWidth);
@@ -2377,7 +2384,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 			char tempChar;
 			u8 seperateTxtParam[_ARROWS_NMBR+1];
 			_SeperateTxt2RowField(charBuff, textParam.space,textParam.constWidth, widthFieldTxt, seperateTxtParam);
-			if(seperateTxtParam[0]==_ARROWS_NMBR){										/* Check the max-allowed number of characters in the last row */
+			if(seperateTxtParam[0]==setTextRows){										/* Check the max-allowed number of characters in the last row */
 				char widestChar 	= 'W';
 				int offsBuff 		= _GetCharBuffIndxViaParam(seperateTxtParam[0]-1,seperateTxtParam);
 				int lenInLastRow 	= LCD_GetWholeStrPxlWidth(fontID,&charBuff[offsBuff],textParam.space,textParam.constWidth);

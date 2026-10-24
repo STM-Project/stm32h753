@@ -35,7 +35,7 @@ unsigned lcdThresholdPort=1;
 volatile int lcdThresholdResult;
 
 static struct {
-    int initialized,active,font[3],wasDown,armed,editing,previousKey,dirty,keyPadding;
+    int initialized,active,font[3],wasDown,armed,editing,previousKey,dirty,keyPadding,keyWidth,keyHeight,pressed;
     unsigned port;
     int pending;
     LCD_SensorThreshold draft[2],base[2];
@@ -129,6 +129,36 @@ static void FieldRect(int column,int field,int *x,int *y,int *w,int *h)
 }
 static void Button(int x,int y,int w,char *s)
 {ThresholdRound(x,y,w,40,13,0xFF63B8EEU,0xFF468CCFU);ThresholdCenter(2,x+w/2,y+9,s,WHITE_TEXT);}
+/* Repaint only the touched control, including its background. Keyboard.c
+ * uses pLcd as scratch, so never present the complete buffer here. */
+static void PressPaint(int id,int pressed)
+{
+    int x,y,w,h=40;char text[64];uint32_t bg=BG;
+    if(id<0)return;
+    if(id<16){FieldRect(id/8,id%8,&x,&y,&w,&h);bg=CARD;}
+    else if(id==16){x=552;y=9;w=44;strcpy(text,"<");}
+    else if(id==17){x=732;y=9;w=44;strcpy(text,">");}
+    else if(id==18){x=24;y=419;w=176;strcpy(text,"Zapisz");}
+    else if(id==19){x=216;y=419;w=176;strcpy(text,"Odrzuc");}
+    else {x=id==20?550:668;y=8;w=106;bg=0xFF383838U;strcpy(text,id==20?"Gotowe":"Anuluj");}
+    for(int j=y;j<y+h;j++)for(int i=x;i<x+w;i++)LCD_Buffer(800,i,j,bg);
+    if(id<16){
+        ThresholdRound(x,y,w,h,4,pressed?0xFF8EBBD9U:0xFFFFFFFFU,pressed?0xFF5994BFU:0xFFBBBBBBU);
+        FieldText(id/8,id%8,text,sizeof text);
+        while(text[0]&&LCD_GetWholeStrPxlWidth(ui.font[2],text,0,NoConstWidth)>w-10)text[strlen(text)-1]=0;
+        Text(2,x+5,y+7,text,0xFF222222U);
+    }else{
+        ThresholdRound(x,y,w,h,13,pressed?0xFF28577FU:0xFF63B8EEU,pressed?0xFF397BA8U:0xFF468CCFU);
+        ThresholdCenter(2,x+w/2,y+9+(pressed?1:0),text,WHITE_TEXT);
+    }
+    LCD_DisplayPart(0,x,y,w,h);
+}
+static void PressFeedback(int hit,int down)
+{
+    int next=down&&hit==ui.armed?hit:-1;
+    if(next==ui.pressed)return;
+    PressPaint(ui.pressed,0);ui.pressed=next;PressPaint(next,1);
+}
 static int TouchRect(int x,int y,int w,int h,int id)
 {return LCDTOUCH_Set(x,y,w,h,ID_TOUCH_POINT,(uint16_t)id,pressRelease)>=0;}
 static int Draw(void)
@@ -177,32 +207,35 @@ static void Keyboard(int key,int create)
                         0xFFD0D0D0U,0xFF313131U,0xFFD0D0D0U,0xFF3B3B3BU,
                         0xFFBABABAU,0xFF606060U,0xFF383838U);
     figureShape shape=create?LCD_RoundRectangle:0;
-    KEYBOARD_StartUp(KEYBOARD_TYPE_ID,shape,0,24,115,KeysAutoSize,ui.keyPadding,10,0,TOUCH_KEYS,KeysDel);
-    KEYBOARD__ServiceSetTxt(KEYBOARD_TYPE_ID-1,key,shape,0,24,115,KeysAutoSize,ui.keyPadding,10,0,
+    KEYBOARD_StartUp(KEYBOARD_TYPE_ID,shape,0,10,65,ui.keyWidth,ui.keyHeight,10,0,TOUCH_KEYS,KeysDel);
+    KEYBOARD__ServiceSetTxt(KEYBOARD_TYPE_ID-1,key,shape,0,10,65,ui.keyWidth,ui.keyHeight,10,0,
         create?TOUCH_KEYS:0,KeysDel,KEY_All_release,KEY_Q,KEY_big,KEY_back,KEY_alt,
         KEY_enter,KEY_field,KEY_style,KEY_exit,0xFF999999U,ui.edit,sizeof(ui.edit));
 }
 static int EditorOpen(int field)
 {
-    /* Native auto-size: keyHeight=fontHeight+2*padding; total height
-     * =10*fontHeight+14+7*spacing+8*padding. Original padding/gaps are 10.
-     */
+    /* Twice the original auto-sized keys; compact text field leaves room
+     * for four rows of keys within the 800x480 display. */
     int available=480-115-14-7*10-10*LCD_GetFontHeight(ui.font[2]);
     ui.keyPadding=available/8;if(ui.keyPadding>10)ui.keyPadding=10;
     if(ui.keyPadding<4)return -3;
-    ui.editing=field;ui.previousKey=0;memset(ui.edit,0,sizeof(ui.edit));
+    ui.keyWidth=2*(2*ui.keyPadding+LCD_GetWholeStrPxlWidth(ui.font[2],"q",0,NoConstWidth));
+    ui.keyHeight=2*(2*ui.keyPadding+LCD_GetFontHeight(ui.font[2]));
+    if(10+11*10+10*ui.keyWidth>800 ||
+       65+14+LCD_GetFontHeight(ui.font[2])+7*10+4*ui.keyHeight>480)return -3;
+    KEYBOARD_SetTextRows(1);
+    ui.pressed=-1;ui.editing=field;ui.previousKey=0;memset(ui.edit,0,sizeof(ui.edit));
     int c=field/8,f=field%8;
     if(f==7)snprintf(ui.edit,sizeof(ui.edit),"%u",ui.draft[c].delay_seconds);
     else FieldText(c,f,ui.edit,sizeof(ui.edit));
     LCD_TOUCH_DeleteAllSetTouch();Fill(0xFF383838U);
     char *names[]={"Nazwa","Prog max 1","Prog max 2","Prog min 1","Prog min 2","Histereza","Korekta","Czas zwloki (sekundy)"};
-    Text(1,24,18,c?"Wilgotnosc - edycja":"Temperatura - edycja",WHITE_TEXT);
-    Text(2,24,60,names[f],GREEN);
-    Text(0,24,92,"alt: cyfry / znaki. Zatwierdz pole przyciskiem Gotowe.",WHITE_TEXT);
-    Button(678,150,106,"Gotowe");Button(678,206,106,"Anuluj");
+    Text(1,24,4,c?"Wilgotnosc - edycja":"Temperatura - edycja",WHITE_TEXT);
+    Text(2,24,36,names[f],GREEN);
+    Button(550,8,106,"Gotowe");Button(668,8,106,"Anuluj");
     LCD_Show();
     Keyboard(KEY_All_release,1);
-    if(!TouchRect(678,150,106,40,TOUCH_FIRST+20)||!TouchRect(678,206,106,40,TOUCH_FIRST+21))return -4;
+    if(!TouchRect(550,8,106,40,TOUCH_FIRST+20)||!TouchRect(668,8,106,40,TOUCH_FIRST+21))return -4;
     /* Native Keyboard.c presents its own window using pLcd as scratch.
      * Never present this scratch buffer as a full-screen 800-pixel canvas. */
     return 0;
@@ -217,7 +250,8 @@ static int EditorClose(int commit)
         valid=LCD_SensorThresholdSetField(&ui.draft[ui.editing/8],ui.editing/8,ui.editing%8,ui.edit);
         if(valid)ui.dirty=1;
     }
-    ui.editing=-1;ui.previousKey=0;ui.armed=-1;ui.wasDown=LCD_TOUCH_isPress()==press;
+    KEYBOARD_SetTextRows(6);
+    ui.pressed=-1;ui.editing=-1;ui.previousKey=0;ui.armed=-1;ui.wasDown=LCD_TOUCH_isPress()==press;
     snprintf(ui.notice,sizeof(ui.notice),"%s",!commit?"Edycja anulowana":valid?"Zmieniono pole. Nacisnij Zapisz.":"Bledna wartosc - pole bez zmian.");
     return Draw();
 }
@@ -243,7 +277,7 @@ int LCD_SensorThresholds(uint8_t mode)
     if(mode==LCD_THRESH_EXIT){
         KEYBOARD_StartUp(0,0,0,0,0,0,0,0,0,0,KeysDel);
         for(int i=0;i<22;i++)LCD_TOUCH_DeleteSelectTouch(TOUCH_FIRST+i);
-        ui.active=0;ui.editing=-1;return 0;
+        KEYBOARD_SetTextRows(6);ui.pressed=-1;ui.active=0;ui.editing=-1;return 0;
     }
     if(mode>LCD_THRESH_EXIT)return -1;
     if(LCD_GetXSize()!=800||LCD_GetYSize()!=480)return -2;
@@ -255,7 +289,7 @@ int LCD_SensorThresholds(uint8_t mode)
         for(int i=0;i<3;i++){ui.font[i]=LCD_LoadFont_ChangeColor(sizes[i],Arial,ids[i]);if(ui.font[i]<0)return -3;}
         ui.port=lcdThresholdPort>=1&&lcdThresholdPort<=20?lcdThresholdPort:1;lcdThresholdPort=ui.port;
         ui.initialized=Reload();
-        ui.dirty=0;ui.editing=-1;ui.armed=-1;ui.wasDown=LCD_TOUCH_isPress()==press;
+        ui.dirty=0;ui.editing=-1;ui.armed=-1;ui.pressed=-1;ui.wasDown=LCD_TOUCH_isPress()==press;
         snprintf(ui.notice,sizeof(ui.notice),"%s",ui.initialized?"Dotknij pola, aby edytowac.":"Czekam na ustawienia HTTP / SD.");
         int result=Draw();if(result<0)return result;ui.active=1;return 0;
     }
@@ -297,8 +331,9 @@ int LCD_SensorThresholds(uint8_t mode)
         }else if(!down&&ui.previousKey){Keyboard(KEY_All_release,0);ui.previousKey=0;}
         /* No event while still down is the native repeat wait, not release. */
         XY_Touch_Struct p=LCD_TOUCH_GetPos();
-        int hit=p.x>=678&&p.x<784?(p.y>=150&&p.y<190?20:p.y>=206&&p.y<246?21:-1):-1;
+        int hit=p.y>=8&&p.y<48?(p.x>=550&&p.x<656?20:p.x>=668&&p.x<774?21:-1):-1;
         if(down&&!ui.wasDown)ui.armed=hit;
+        PressFeedback(hit,down);
         if(!down&&ui.wasDown&&hit==ui.armed&&hit>=20){ui.wasDown=down;ui.armed=-1;return EditorClose(hit==20);}
         ui.wasDown=down;return 0;
     }
@@ -310,6 +345,7 @@ int LCD_SensorThresholds(uint8_t mode)
     if(p.y>=9&&p.y<49){if(p.x>=552&&p.x<596)hit=16;if(p.x>=732&&p.x<776)hit=17;}
     if(p.y>=419&&p.y<459){if(p.x>=24&&p.x<200)hit=18;if(p.x>=216&&p.x<392)hit=19;}
     if(down&&!ui.wasDown)ui.armed=hit;
+    PressFeedback(hit,down);
     int action=!down&&ui.wasDown&&hit>=0&&hit==ui.armed?hit:-1;
     ui.wasDown=down;
     if(!down)ui.armed=-1;
