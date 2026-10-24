@@ -178,6 +178,8 @@ void StartDefaultTask(void const * argument)
 	InitAllMutex();
 
 	Dbg(1,"\r\nHello Tu nowy STM32H753BIT6 Rafal Markielowski 123456789 ");
+	/* Allow the SD card and touch controller power rails to settle. */
+	osDelay(500);
 	MX_FATFS_Init();
 	DEBUG_Init();
 	/* LCD font diagnostics already use the queued logger during startup. */

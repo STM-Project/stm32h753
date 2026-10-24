@@ -38,7 +38,11 @@ int LCD_H7_Start(void)
     HAL_NVIC_SetPriority(DMA2D_IRQn,6,0);HAL_NVIC_EnableIRQ(DMA2D_IRQn);
     HAL_NVIC_SetPriority(LTDC_IRQn,6,0);HAL_NVIC_EnableIRQ(LTDC_IRQn);
     HAL_LTDC_ProgramLineEvent(&hltdc,hltdc.Init.AccumulatedActiveH+1U);
-    lcdH7Status.touch_available=BSP_TS_Init(800,480)==0;
+    for(unsigned attempt=0; attempt<3; ++attempt){
+        lcdH7Status.touch_available=BSP_TS_Init(800,480)==0;
+        if(lcdH7Status.touch_available)break;
+        if(attempt<2)osDelay(100);
+    }
     if(!lcdH7Status.touch_available)DbgDma(1,"\r\nLCD: STMPE811 not detected on I2C1; touch task disabled");
     SetLang(2,English);LCD_SetSpacesBetweenFonts();LCD_TOUCH_DeleteAllSetTouch();
     lcdH7Status.initialized=1;

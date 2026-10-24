@@ -210,7 +210,9 @@ void CalibrationWasDone(void)
 
 static uint8_t GetTouchPos(XY_Touch_Struct *pos)
 {
-  if(touchDetect)		/* if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4)==0) */
+  /* STMPE811 INT is active low. A pending level must also be serviced
+   * when its edge occurred during startup, before the task was ready. */
+  if(touchDetect || HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4)==GPIO_PIN_RESET)
   {
 	 touchDetect=0;
 	 BSP_TS_ClearIT();

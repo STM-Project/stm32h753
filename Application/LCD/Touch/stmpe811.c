@@ -176,6 +176,7 @@ typedef struct
 }TS_DrvTypeDef;
 
 static TS_DrvTypeDef *ts_driver;
+static uint8_t io_failed;
 static uint16_t ts_x_boundary, ts_y_boundary;
 static uint8_t  ts_orientation;
 
@@ -190,6 +191,7 @@ static void IOE_Delay(uint32_t Delay)
 
 static void I2Cx_Error(uint8_t Addr)
 {
+  io_failed = 1;
   /* De-initialize the IOE comunication BUS */
   HAL_I2C_DeInit(&hi2c1);
 
@@ -552,6 +554,8 @@ IO_DrvTypeDef stmpe811_io_drv =
 uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
 {
   uint8_t ret = TS_ERROR;
+  io_failed = 0;
+  ts_driver = 0;
 
   if(stmpe811_ts_drv.ReadID(TS_I2C_ADDRESS) == STMPE811_ID)
   {
@@ -572,6 +576,13 @@ uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
     ts_driver->Start(TS_I2C_ADDRESS);
     ts_driver->ClearIT(TS_I2C_ADDRESS);
     ts_driver->EnableIT(TS_I2C_ADDRESS);
+    /* An ID response alone does not prove configuration writes succeeded. */
+    uint8_t ctrl=IOE_Read(TS_I2C_ADDRESS, STMPE811_REG_TSC_CTRL);
+    uint8_t irq=IOE_Read(TS_I2C_ADDRESS, STMPE811_REG_INT_CTRL);
+    if(io_failed || !(ctrl & STMPE811_TS_CTRL_ENABLE) || !(irq & STMPE811_GIT_EN)){
+      ts_driver = 0;
+      ret = TS_ERROR;
+    }
   }
 
   return ret;
