@@ -625,13 +625,16 @@ static void GaugeLabel(int index,int word,int selected)
     float cx=gaugeGeometry[index].x+radius*cosf(theta);
     float cy=gaugeGeometry[index].y-radius*sinf(theta);
     float hw=gauges.label[id].width*0.5f,hh=gauges.label[id].height*0.5f;
-    int extent=(int)ceilf(hw+hh)+2;
+    /* Bound the rotated glyph instead of scanning a large square. Include
+     * the one-pixel bilinear fringe on all four sides. */
+    int extentX=(int)ceilf(fabsf(cs)*(hw+1)+fabsf(sn)*(hh+1))+2;
+    int extentY=(int)ceilf(fabsf(sn)*(hw+1)+fabsf(cs)*(hh+1))+2;
     uint32_t color=word==selected?0xFF444442U:0xFFADADABU;
     /* Inverse mapping and bilinear coverage preserve the native SD font's AA
      * while rotating the text tangentially along the grey arc.
      */
-    for(int y=(int)cy-extent;y<=(int)cy+extent;y++)
-        for(int x=(int)cx-extent;x<=(int)cx+extent;x++){
+    for(int y=(int)cy-extentY;y<=(int)cy+extentY;y++)
+        for(int x=(int)cx-extentX;x<=(int)cx+extentX;x++){
             float dx=x+0.5f-cx,dy=y+0.5f-cy;
             float u=cs*dx+sn*dy+hw-0.5f,v=-sn*dx+cs*dy+hh-0.5f;
             int ix=(int)floorf(u),iy=(int)floorf(v);
@@ -647,7 +650,20 @@ static void GaugeNeedle(int index,int shadow)
     float cs=cosf(angle),sn=sinf(angle),length=gaugeGeometry[index].length,base=gaugeGeometry[index].base;
     float norm=sqrtf(1.0f+base*base/(length*length));
     int x,y,w,h;GaugeRect(index,&x,&y,&w,&h);
-    for(int yy=y;yy<y+h;yy++)for(int xx=x;xx<x+w;xx++){
+    /* Conservative rotated bounds of the needle and its rounded base.
+     * Coverage outside this box is zero; keep the original pixel equations. */
+    float reach=base+1.0f;
+    float px=gaugeGeometry[index].x+(shadow?3:0);
+    float py=gaugeGeometry[index].pivot+(shadow?2:0);
+    int left=(int)floorf(px+fminf(-reach*cs,(length+1)*cs)-reach*fabsf(sn))-1;
+    int right=(int)ceilf(px+fmaxf(-reach*cs,(length+1)*cs)+reach*fabsf(sn))+1;
+    int top=(int)floorf(py+fminf(reach*sn,-(length+1)*sn)-reach*fabsf(cs))-1;
+    int bottom=(int)ceilf(py+fmaxf(reach*sn,-(length+1)*sn)+reach*fabsf(cs))+1;
+    if(left<x)left=x;
+    if(right>x+w)right=x+w;
+    if(top<y)top=y;
+    if(bottom>y+h)bottom=y+h;
+    for(int yy=top;yy<bottom;yy++)for(int xx=left;xx<right;xx++){
         float dx=xx+0.5f-gaugeGeometry[index].x-(shadow?3:0);
         float dy=yy+0.5f-gaugeGeometry[index].pivot-(shadow?2:0);
         float u=dx*cs-dy*sn,v=dx*sn+dy*cs;
@@ -669,7 +685,13 @@ static void GaugeDraw(int index)
     int x,y,w,h;GaugeRect(index,&x,&y,&w,&h);
     for(int yy=y;yy<y+h;yy++)for(int xx=x;xx<x+w;xx++){
         float dx=xx+0.5f-gaugeGeometry[index].x,dy=yy+0.5f-gaugeGeometry[index].y;
-        float radius=sqrtf(dx*dx+dy*dy);
+        float distance2=dx*dx+dy*dy;
+        float outerRadius=gaugeGeometry[index].r+0.5f;
+        if(distance2>=outerRadius*outerRadius){
+            LCD_Buffer(800,xx,yy,PANEL_WHITE);
+            continue;
+        }
+        float radius=sqrtf(distance2);
         float angle=atan2f(-dy,dx)*57.2957795131f;
         uint32_t color=PANEL_WHITE;
         float angular=fminf(angle-20.0f,160.0f-angle)*0.01745329252f*radius;

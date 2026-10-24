@@ -93,14 +93,18 @@ static uint32_t Mix(uint32_t a,uint32_t b,unsigned t)
 }
 static void ThresholdRound(int x,int y,int w,int h,int radius,uint32_t top,uint32_t bottom)
 {
-    for(int j=0;j<h;j++)for(int i=0;i<w;i++){
+    for(int j=0;j<h;j++){
+      /* The gradient and vertical corner distance are constant in a row. */
+      uint32_t rowColor=Mix(top,bottom,h>1?(unsigned)(j*255/(h-1)):0);
+      float dy=j<radius?radius-j-0.5f:j>=h-radius?j-(h-radius)+0.5f:0;
+      for(int i=0;i<w;i++){
         float dx=i<radius?radius-i-0.5f:i>=w-radius?i-(w-radius)+0.5f:0;
-        float dy=j<radius?radius-j-0.5f:j>=h-radius?j-(h-radius)+0.5f:0;
         float coverage=dx>0&&dy>0?radius+0.5f-sqrtf(dx*dx+dy*dy):1;
         if(coverage<=0)continue;
-        uint32_t c=Mix(top,bottom,h>1?(unsigned)(j*255/(h-1)):0);
+        uint32_t c=rowColor;
         if(coverage<1)c=Mix(pLcd[(y+j)*800+x+i],c,(unsigned)(coverage*255));
         LCD_Buffer(800,x+i,y+j,c);
+      }
     }
 }
 static void Text(int f,int x,int y,char *s,uint32_t color)
