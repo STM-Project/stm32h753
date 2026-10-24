@@ -353,7 +353,8 @@ static void DashStatic(void)
     DashBox(416,66,362,210,16,DASH_EDGE,DASH_CARD);
     DashText(1,40,80,"Czujnik temperatury . 1",DASH_TEXT);
     DashText(1,435,80,"Przekaznik . DEMO",DASH_TEXT);
-    DashText(0,180,204,"Ostatni pomiar ze STM32",DASH_MUTED);
+    /* Keep the caption below the temperature repaint rectangle (ends at 210). */
+    DashText(0,180,228,"Ostatni pomiar ze STM32",DASH_MUTED);
     DashText(0,435,248,"DEMO: stan w pamieci STM32, bez GPIO.",DASH_MUTED);
     DashBox(22,288,756,156,16,DASH_EDGE,DASH_CARD);
     DashText(1,40,299,"Historia temperatury",DASH_TEXT);
@@ -399,7 +400,9 @@ static void DashTemperature(void)
     PanelRound(333,165,6,6,3,DASH_MUTED,DASH_MUTED,255);
     PanelRound(335,167,2,2,1,0xFF193349U,0xFF193349U,255);
     /* Repaint graph, then connect only valid samples; oldest is on the left. */
-    DashSurface(42,327,714,90);
+    /* Include the FULL height of the time labels at y=410. Otherwise their
+     * lower antialiased rows accumulate on every sample/tooltip repaint. */
+    DashSurface(42,327,714,98);
     const int low=-500,high=900;
     for(int i=0;i<4;i++) {
         int y=331+i*23; DashLine(115,y,735,y,DASH_EDGE);
