@@ -271,10 +271,21 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
   }
 
 #if defined(ENABLE_SCRATCH_BUFFER)
+  /* Cache maintenance acts on 32-byte lines, not 4-byte words.
+   * Unaligned FatFs destinations must use the isolated scratch sector. */
+#if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
+  if (!((uint32_t)buff & 0x1F))
+#else
   if (!((uint32_t)buff & 0x3))
+#endif
   {
 #endif
     /* Fast path cause destination buffer is correctly aligned */
+#if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
+    /* Discard old destination lines before DMA so dirty evictions cannot
+     * overwrite the received sectors. Destination owns whole cache lines. */
+    SCB_InvalidateDCache_by_Addr((uint32_t*)buff, count*BLOCKSIZE);
+#endif
     ret = BSP_SD_ReadBlocks_DMA((uint32_t*)buff, (uint32_t)(sector), count);
 
     if (ret == MSD_OK) {
@@ -488,6 +499,7 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
 #endif
   }
 #if defined(ENABLE_SCRATCH_BUFFER)
+  } /* End aligned-buffer branch. */
   else {
     /* Slow path, fetch each sector a part and memcpy to destination buffer */
     int i;
@@ -501,6 +513,9 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
       for (i = 0; i < count; i++)
       {
         memcpy((void *)scratch, buff, BLOCKSIZE);
+#if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
+        SCB_CleanDCache_by_Addr((uint32_t*)scratch, BLOCKSIZE);
+#endif
         buff += BLOCKSIZE;
 
         ret = BSP_SD_WriteBlocks_DMA((uint32_t*)scratch, (uint32_t)sector++, 1);
@@ -513,14 +528,14 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
 
           if (event.status == osEventMessage)
           {
-            if (event.value.v == READ_CPLT_MSG)
+            if (event.value.v == WRITE_CPLT_MSG)
             {
               timer = osKernelSysTick();
               /* block until SDIO IP is ready or a timeout occur */
               while(osKernelSysTick() - timer <SD_TIMEOUT)
 #else
                 status = osMessageQueueGet(SDQueueID, (void *)&event, NULL, SD_TIMEOUT);
-              if ((status == osOK) && (event == READ_CPLT_MSG))
+              if ((status == osOK) && (event == WRITE_CPLT_MSG))
               {
                 timer = osKernelGetTickCount();
                 /* block until SDIO IP is ready or a timeout occur */
@@ -556,8 +571,6 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
       if ((i == count) && (ret == MSD_OK ))
         res = RES_OK;
     }
-
-  }
 #endif
 
   return res;

@@ -274,6 +274,9 @@ static Struct_SpaceCorrect space[MAX_SPACE_CORRECT];
 static uint8_t StructSpaceCount=0;
 
 static uint32_t CounterBusyBytesForFontsImages=0;
+/* Private allocation metadata: never overwritten by a serialized CFF header. */
+static struct { uint32_t offset, size; } fontAlloc[MAX_OPEN_FONTS_SIMULTANEOUSLY];
+
 static int TempSpaceCorr=0;
 
 extern uint32_t pLcd[];
@@ -624,17 +627,44 @@ static int LCD_GetFontID(int fontSize, int fontStyle, uint32_t backgroundColor, 
     return -1;
 }
 
+static void ReleaseFontMemory(int fontIndex)
+{
+    if(fontIndex<0 || fontIndex>=MAX_OPEN_FONTS_SIMULTANEOUSLY) return;
+    memset(&Font[fontIndex],0,sizeof Font[fontIndex]);
+    fontAlloc[fontIndex].size=0;
+    CounterBusyBytesForFontsImages=0;
+    for(unsigned i=0;i<MAX_OPEN_FONTS_SIMULTANEOUSLY;i++){
+        uint32_t end=fontAlloc[i].offset+fontAlloc[i].size;
+        if(fontAlloc[i].size && end>CounterBusyBytesForFontsImages)
+            CounterBusyBytesForFontsImages=end;
+    }
+}
 static bool DynamicFontMemoryAllocation(uint32_t fontFileSize, int fontIndex)
 {
-	if(CounterBusyBytesForFontsImages+fontFileSize < MAX_FONTS_AND_IMAGES_MEMORY_SIZE)
-	{
-		Font[fontIndex].fontSdramLenght=fontFileSize;
-		Font[fontIndex].pointerToMemoryFont=(char*)( fontsImagesMemoryBuffer + CounterBusyBytesForFontsImages );
-		CounterBusyBytesForFontsImages += fontFileSize;
-		return true;
-	}
-	else
-		return false;
+    if(fontIndex<0 || fontIndex>=MAX_OPEN_FONTS_SIMULTANEOUSLY ||
+       !fontFileSize || fontFileSize>MAX_FONTS_AND_IMAGES_MEMORY_SIZE ||
+       fontAlloc[fontIndex].size) return false;
+    uint32_t size=(fontFileSize+31U)&~31U, offset=0;
+    /* First-fit among live blocks; deleting a non-last font must not allow
+     * a later allocation to overwrite another font. Every block owns full
+     * cache lines, including padding after the final glyph. */
+    for(;;){
+        int overlap=0;
+        if(offset>MAX_FONTS_AND_IMAGES_MEMORY_SIZE-size) return false;
+        for(unsigned i=0;i<MAX_OPEN_FONTS_SIMULTANEOUSLY;i++){
+            if(fontAlloc[i].size && offset<fontAlloc[i].offset+fontAlloc[i].size &&
+               fontAlloc[i].offset<offset+size){
+                offset=fontAlloc[i].offset+fontAlloc[i].size;
+                overlap=1;break;
+            }
+        }
+        if(!overlap) break;
+    }
+    fontAlloc[fontIndex].offset=offset;fontAlloc[fontIndex].size=size;
+    Font[fontIndex].fontSdramLenght=fontFileSize;
+    Font[fontIndex].pointerToMemoryFont=fontsImagesMemoryBuffer+offset;
+    if(offset+size>CounterBusyBytesForFontsImages) CounterBusyBytesForFontsImages=offset+size;
+    return true;
 }
 
 static void SearchFontsField(char *pbmp, uint32_t width, uint32_t height, uint32_t bit_pixel, uint32_t *shiftXpos, uint8_t *backGround)
@@ -1698,6 +1728,7 @@ void LCD_DeleteAllFontAndImages(void)
 {
 	int i;
 	CounterBusyBytesForFontsImages=0;
+    memset(fontAlloc,0,sizeof fontAlloc);
 	for(i=0; i<MAX_OPEN_FONTS_SIMULTANEOUSLY; i++)
 	{
 		Font[i].fontSizeToIndex=0;
@@ -1729,32 +1760,13 @@ void LCD_DeleteAllFontAndImages(void)
 
 int LCD_DeleteFont(uint32_t fontID)
 {
-	int fontIndex=SearchFontIndex(FontID[fontID].size, FontID[fontID].style, FontID[fontID].bkColor, FontID[fontID].color);
-	if(fontIndex==-1)
-		return 1;
-	Font[fontIndex].fontSizeToIndex=0;
-	Font[fontIndex].fontStyleToIndex=0;
-	Font[fontIndex].fontBkColorToIndex=0;
-	Font[fontIndex].fontColorToIndex=0;
-	Font[fontIndex].pointerToMemoryFont=0;
-
-	FontID[fontID].size=0;
-	FontID[fontID].style=0;
-	FontID[fontID].bkColor=0;
-	FontID[fontID].color=0;
-
-	if( CounterBusyBytesForFontsImages >= Font[fontIndex].fontSdramLenght )
-	{
-		CounterBusyBytesForFontsImages -= Font[fontIndex].fontSdramLenght;
-		Font[fontIndex].fontSdramLenght=0;
-		return 0;
-	}
-	else
-	{
-		CounterBusyBytesForFontsImages=0;
-		Font[fontIndex].fontSdramLenght=0;
-		return 2;
-	}
+    if(fontID>=MAX_OPEN_FONTS_SIMULTANEOUSLY) return 1;
+    int fontIndex=SearchFontIndex(FontID[fontID].size,FontID[fontID].style,
+                                 FontID[fontID].bkColor,FontID[fontID].color);
+    if(fontIndex<0) return 1;
+    ReleaseFontMemory(fontIndex);
+    memset(&FontID[fontID],0,sizeof FontID[fontID]);
+    return 0;
 }
 
 int LCD_GetFontStyleMaxNmb(void){
@@ -1870,19 +1882,23 @@ int LCD_LoadFont(int fontSize, int fontStyle, uint32_t backgroundColor, uint32_t
 	strncat(fileOpenName,TxtBMP,strlen(TxtBMP));
 
 	if(FR_OK!=SDCardFileInfo(fileOpenName,&fontFileSize))
-		return -3;
+		{ ReleaseFontMemory(fontIndex); return -3; }
 
-	while((fontFileSize%4)!=0)
-		fontFileSize++;
+    uint32_t fileBytes=fontFileSize;
+    if(fontFileSize>MAX_FONTS_AND_IMAGES_MEMORY_SIZE || !fontFileSize){
+        ReleaseFontMemory(fontIndex);return -7;
+    }
 
 	if(true==DynamicFontMemoryAllocation( fontFileSize, fontIndex) )
 	{
 		if(FR_OK!=SDCardFileOpen(1,fileOpenName,FA_READ))
-			return -4;
-		if(0 > SDCardFileRead(1,Font[fontIndex].pointerToMemoryFont,MAX_FONTS_AND_IMAGES_MEMORY_SIZE))
-			return -5;
+			{ ReleaseFontMemory(fontIndex); return -4; }
+        int bytesRead=SDCardFileRead(1,Font[fontIndex].pointerToMemoryFont,fileBytes);
+        if(bytesRead!=(int)fileBytes){
+            SDCardFileClose(1);ReleaseFontMemory(fontIndex);return -5;
+        }
 		if(FR_OK!=SDCardFileClose(1))
-			return -6;
+			{ ReleaseFontMemory(fontIndex); return -6; }
 
 		if(fontID < MAX_OPEN_FONTS_SIMULTANEOUSLY)
 		{
@@ -1895,10 +1911,10 @@ int LCD_LoadFont(int fontSize, int fontStyle, uint32_t backgroundColor, uint32_t
 			return fontID;
 		}
 		else
-			return -8;
+			{ ReleaseFontMemory(fontIndex); return -8; }
 	}
 	else
-		return -7;
+		{ ReleaseFontMemory(fontIndex); return -7; }
 }
 
 int LCD_CreateFileCFFfromBMP(int fontSize, int fontStyle, FONTS_TYPES fontColorType)
@@ -2047,19 +2063,26 @@ int LCD_GetSizeOfFontFileCFF(int fontSize, int fontStyle, FONTS_TYPES fontColorT
 	strcat(fileOpenName,TxtCFF);
 
 	if(FR_OK!=SDCardFileInfo(fileOpenName,&fontFileSize))
-		return -3;
+		{ ReleaseFontMemory(fontIndex); return -3; }
 
-	while((fontFileSize%4)!=0)
-		fontFileSize++;
+    if(fontFileSize<SIZE_FONTID_TAB+SIZE_AA_TAB){
+        ReleaseFontMemory(fontIndex);return -9;
+    }
+    uint32_t fileBytes=fontFileSize;
+    if(fontFileSize>MAX_FONTS_AND_IMAGES_MEMORY_SIZE || !fontFileSize){
+        ReleaseFontMemory(fontIndex);return -7;
+    }
 
 	if(true==DynamicFontMemoryAllocation( fontFileSize, fontIndex) )
 	{
 		if(FR_OK!=SDCardFileOpen(1,fileOpenName,FA_READ))
-			return -4;
-		if(0 > SDCardFileRead(1, Font[fontIndex].pointerToMemoryFont, MAX_FONTS_AND_IMAGES_MEMORY_SIZE))
-			return -5;
+			{ ReleaseFontMemory(fontIndex); return -4; }
+        int bytesRead=SDCardFileRead(1,Font[fontIndex].pointerToMemoryFont,fileBytes);
+        if(bytesRead!=(int)fileBytes){
+            SDCardFileClose(1);ReleaseFontMemory(fontIndex);return -5;
+        }
 		if(FR_OK!=SDCardFileClose(1))
-			return -6;
+			{ ReleaseFontMemory(fontIndex); return -6; }
 
 		if(fontID < MAX_OPEN_FONTS_SIMULTANEOUSLY)
 		{
@@ -2069,14 +2092,15 @@ int LCD_GetSizeOfFontFileCFF(int fontSize, int fontStyle, FONTS_TYPES fontColorT
 			FontID[fontID].color 	= fontColor;
 
 			addrFont = (u32)Font[fontIndex].pointerToMemoryFont;
-			Font[fontIndex] = *((FONTS_SETTING*)( Font[fontIndex].pointerToMemoryFont + 2 ));
+			/* CFF header starts at byte 2: do not dereference an unaligned struct. */
+            memcpy(&Font[fontIndex],Font[fontIndex].pointerToMemoryFont+2,sizeof Font[fontIndex]);
 			Font[fontIndex].pointerToMemoryFont = (char*)addrFont;
 
 			return fontID;
 		}
-		else return -8;
+		else { ReleaseFontMemory(fontIndex); return -8; }
 	}
-	else return -7;
+	else { ReleaseFontMemory(fontIndex); return -7; }
 }
 
 int LCD_LoadFont_WhiteBlack(int fontSize, int fontStyle, uint32_t fontID){

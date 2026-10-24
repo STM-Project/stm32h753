@@ -128,3 +128,32 @@ Wyjscie HEX wlaczono w .cproject dla Debug i Release (Convert to Intel Hex).
 CubeIDE tworzy Debug/STM32h753bit6.hex lub Release/STM32h753bit6.hex.
 Skrypt tools/build_lcd.py tworzy dodatkowo Debug/cloud/firmware.hex przez
 arm-none-eabi-objcopy -O ihex. Pliki wynikowe nie sa przechowywane w Git.
+
+## Izolacja fontow i cache SD/DMA na H7
+
+Kazdy przydzial fontu zajmuje pelne linie cache (32 bajty), wlacznie z koncem
+pliku. Osobna tablica przydzialow nie jest nadpisywana naglowkiem CFF.
+Usuniecie fontu spoza konca puli nie przesuwa konca pamieci na zywy font;
+nowe przydzialy wykorzystuja tylko wolne przedzialy. Nie zmieniono formatu CFF.
+Ladowanie sprawdza pelna liczbe odczytanych bajtow, odrzuca pliki krotsze od
+naglowka i zwalnia slot po bledzie. Naglowek CFF pod adresem +2 jest kopiowany
+przez memcpy, bez dereferencji niewyrownanej struktury.
+
+SD_read kieruje bufory niewyrownane do 32 bajtow przez osobny sektor scratch,
+aby invalidate nie usuwalo brudnych bajtow sasiednich obiektow FatFs/fontow.
+Bufor bezposredniego odczytu jest uniewazniany przed i po DMA. Zapis przez
+scratch czysci cache po kazdym memcpy i czeka na WRITE_CPLT_MSG. Poprawiono
+tez przypisanie galezi else, aby obslugiwala faktycznie niewyrownane bufory.
+Nie zmieniono adresu SDRAM, polityki MPU ani zegarow.
+
+Testy bez plytki:
+
+```sh
+python3 -B tests/test_lcd_font_memory.py
+python3 -B tests/test_sd_dma_cache.py
+```
+
+Testy obejmuja rzeczywiste funkcje C, izolacje koncow fontow, kasowanie ze
+srodka puli, ponowne uzycie pamieci, bledy ladowania oraz odczyty SD przy
+wszystkich przesunieciach wzgledem linii cache. Fizyczne artefakty LCD
+wymagaja weryfikacji na plytce z uzywanymi plikami fontow i ruchem HTTP.
