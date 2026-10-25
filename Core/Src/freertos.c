@@ -32,6 +32,7 @@
 #include "esp32wroom.h"
 #include "timer.h"
 #include "LCD_PortH7.h"
+#include "network_start.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -191,6 +192,7 @@ void StartDefaultTask(void const * argument)
 
 	osDelay(500);
 	CreateWifiTask();
+    NetworkStartEthernet();
 
 
 

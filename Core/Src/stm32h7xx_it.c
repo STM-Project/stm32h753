@@ -22,6 +22,7 @@
 #include "stm32h7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "eth.h"
 #include "FreeRTOS.h"
 #include "usart.h"
 /* USER CODE END Includes */
@@ -327,5 +328,10 @@ void MDMA_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+void ETH_IRQHandler(void)
+{
+  HAL_ETH_IRQHandler(&heth);
+}
+
 
 /* USER CODE END 1 */

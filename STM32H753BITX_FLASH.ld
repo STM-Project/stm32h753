@@ -167,12 +167,39 @@ SECTIONS
     . = ALIGN(8);
   } >RAM_D1
   
-  .d2_buffers (NOLOAD) :
+  /* FP70: descriptors in SRAM3, heap at 0x30044000. */
+  .eth_dma 0x30040000 (NOLOAD) :
+  {
+    __eth_dma_start__ = .;
+    KEEP(*(.RxDescripSection))
+    . = 0x60;
+    KEEP(*(.TxDescripSection))
+    __eth_dma_end__ = .;
+  } >RAM_D2
+  ASSERT(SIZEOF(.eth_dma) <= 0x100, "Ethernet descriptors exceed FP70 MPU device region")
+  .eth_heap 0x30044000 (NOLOAD) :
+  {
+    __eth_heap_start__ = .;
+    *(.eth_heap)
+    __eth_heap_end__ = .;
+  } >RAM_D2
+  ASSERT(SIZEOF(.eth_heap) <= 0x4000, "lwIP heap exceeds SRAM3")
+  /* Twelve zero-copy RX buffers need more than FP70's legacy 0x3e00 gap.
+   * Keep an isolated cache-line-aligned pool in DMA-accessible SRAM1/2. */
+  .eth_rx_pool 0x30010000 (NOLOAD) :
+  {
+    __eth_rx_start__ = .;
+    *(.eth_rx_pool)
+    . = ALIGN(32);
+    __eth_rx_end__ = .;
+  } >RAM_D2
+  .d2_buffers ORIGIN(RAM_D2) (NOLOAD) :
   {
     . = ALIGN(32);
-    *(.d2_data)    /* To jest nazwa, której użyjemy w kodzie */
+    *(.d2_data)
     . = ALIGN(32);
   } >RAM_D2
+  ASSERT(SIZEOF(.d2_buffers) <= 0x10000, "Other DMA buffers overlap Ethernet RX pool")
 
   . = ALIGN(4);
   .lcd_framebuffer ORIGIN(SDRAM) (NOLOAD) :

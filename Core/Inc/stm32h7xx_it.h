@@ -63,6 +63,7 @@ void USART6_IRQHandler(void);
 void UART7_IRQHandler(void);
 void MDMA_IRQHandler(void);
 /* USER CODE BEGIN EFP */
+void ETH_IRQHandler(void);
 
 /* USER CODE END EFP */
 
