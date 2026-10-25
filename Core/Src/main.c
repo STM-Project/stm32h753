@@ -20,10 +20,10 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "dma.h"
-#include "eth.h"
 #include "fatfs.h"
 #include "i2c.h"
 #include "ltdc.h"
+#include "mbedtls.h"
 #include "mdma.h"
 #include "rng.h"
 #include "sdmmc.h"
@@ -120,10 +120,11 @@ int main(void)
   MX_I2C4_Init();
   MX_UART7_Init();
   MX_USART6_UART_Init();
-  //MX_ETH_Init();
   MX_LTDC_Init();
   MX_TIM5_Init();
   MX_RNG_Init();
+  /* Call PreOsInit function */
+  MX_MBEDTLS_Init();
   /* USER CODE BEGIN 2 */
   RELAY_ResetStates();
   /* USER CODE END 2 */
@@ -272,24 +273,6 @@ void MPU_Config(void)
   MPU_InitStruct.Size = MPU_REGION_SIZE_16MB;
 
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* USER CODE BEGIN Network MPU */
-  /* FP70 network memory only: SRAM3 normal non-cacheable. */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER5;
-  MPU_InitStruct.BaseAddress = 0x30040000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_32KB;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* FP70 descriptor overlay: shared device memory, 256 bytes. */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER6;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_256B;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* USER CODE END Network MPU */
   /* Enables the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 

@@ -1,21 +1,58 @@
-/* H7 entropy adapter: return actual random bytes, including a trailing partial
- * word. Never repeat one byte four times as the F7 adapter did. */
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file    hardware_rng.c
+  * @author  MCD Application Team
+  * @version V1.2.1
+  * @date    14-April-2017
+  * @brief   mbedtls alternate entropy data function.
+  *          the mbedtls_hardware_poll() is customized to use the STM32 RNG
+  *          to generate random data, required for TLS encryption algorithms.
+  *
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2026 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+
 #include "mbedtls_config.h"
+
 #ifdef MBEDTLS_ENTROPY_HARDWARE_ALT
-#include "rng.h"
-#include "cmsis_os.h"
-#include "mbedtls/entropy.h"
-#include <string.h>
-extern osMutexId networkRngMutex;
-int mbedtls_hardware_poll(void *context,unsigned char *output,size_t length,size_t *written)
+
+#include "main.h"
+#include "string.h"
+#include "stm32h7xx_hal.h"
+#include "mbedtls/entropy_poll.h"
+
+extern RNG_HandleTypeDef hrng;
+
+int mbedtls_hardware_poll( void *Data, unsigned char *Output, size_t Len, size_t *oLen )
 {
-    (void)context;*written=0;
-    if(!networkRngMutex||osMutexWait(networkRngMutex,1000)!=osOK)return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
-    while(*written<length){uint32_t word;
-        if(HAL_RNG_GenerateRandomNumber(&hrng,&word)!=HAL_OK){osMutexRelease(networkRngMutex);return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;}
-        size_t n=length-*written;if(n>sizeof word)n=sizeof word;
-        memcpy(output+*written,&word,n);*written+=n;
+  uint32_t index;
+  uint32_t randomValue;
+
+  for (index = 0; index < Len/4; index++)
+  {
+    if (HAL_RNG_GenerateRandomNumber(&hrng, &randomValue) == HAL_OK)
+    {
+      *oLen += 4;
+      memset(&(Output[index * 4]), (int)randomValue, 4);
     }
-    osMutexRelease(networkRngMutex);return 0;
+    else
+    {
+      Error_Handler();
+    }
+  }
+
+  return 0;
 }
-#endif
+
+#endif /*MBEDTLS_ENTROPY_HARDWARE_ALT*/

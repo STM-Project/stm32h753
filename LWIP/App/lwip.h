@@ -49,7 +49,6 @@ extern ETH_HandleTypeDef heth;
 
 /* LWIP init function */
 void MX_LWIP_Init(void);
-extern int networkEthernetReady;
 
 #if !WITH_RTOS
 /* USER CODE BEGIN 1 */

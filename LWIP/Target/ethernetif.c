@@ -20,8 +20,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "eth.h"
-#include "network_log.h"
 #include "lwip/opt.h"
 #include "lwip/timeouts.h"
 #include "netif/ethernet.h"
@@ -41,6 +39,8 @@
 /* Private define ------------------------------------------------------------*/
 /* The time to block waiting for input. */
 #define TIME_WAITING_FOR_INPUT ( portMAX_DELAY )
+/* Time to block waiting for transmissions to finish */
+#define ETHIF_TX_TIMEOUT (2000U)
 /* USER CODE BEGIN OS_THREAD_STACK_SIZE_WITH_RTOS */
 /* Stack size of the interface thread */
 #define INTERFACE_THREAD_STACK_SIZE ( 350 )
@@ -52,6 +52,7 @@
 /* ETH Setting  */
 #define ETH_DMA_TRANSMIT_TIMEOUT               ( 20U )
 #define ETH_TX_BUFFER_MAX             ((ETH_TX_DESC_CNT) * 2U)
+/* ETH_RX_BUFFER_SIZE parameter is defined in lwipopts.h */
 
 /* USER CODE BEGIN 1 */
 
@@ -60,9 +61,9 @@
 /* Private variables ---------------------------------------------------------*/
 /*
 @Note: This interface is implemented to operate in zero-copy mode only:
-        - Rx buffers will be allocated from LwIP stack memory heap,
+        - Rx Buffers will be allocated from LwIP stack Rx memory pool,
           then passed to ETH HAL driver.
-        - Tx buffers will be allocated from LwIP stack memory heap,
+        - Tx Buffers will be allocated from LwIP stack memory heap,
           then passed to ETH HAL driver.
 
 @Notes:
@@ -74,13 +75,11 @@
        so that updated value will be generated in stm32xxxx_hal_conf.h
 
   2.a. Rx Buffers number must be between ETH_RX_DESC_CNT and 2*ETH_RX_DESC_CNT
-  2.b. Rx Buffers must have the same size: ETH_RX_BUF_SIZE, this value must
+  2.b. Rx Buffers must have the same size: ETH_RX_BUFFER_SIZE, this value must
        passed to ETH DMA in the init field (heth.Init.RxBuffLen)
   2.c  The RX Ruffers addresses and sizes must be properly defined to be aligned
        to L1-CACHE line size (32 bytes).
 */
-
-#define ETH_RX_BUF_SIZE 1536U
 
 /* Data Type Definitions */
 typedef enum
@@ -92,25 +91,44 @@ typedef enum
 typedef struct
 {
   struct pbuf_custom pbuf_custom;
-  uint8_t buff[(ETH_RX_BUF_SIZE + 31) & ~31] __ALIGNED(32);
+  uint8_t buff[(ETH_RX_BUFFER_SIZE + 31) & ~31] __ALIGNED(32);
 } RxBuff_t;
-_Static_assert(sizeof(RxBuff_t)%32==0,"RX pool stride must own cache lines");
-_Static_assert(offsetof(RxBuff_t,buff)%32==0,"RX payload must be cache aligned");
-_Static_assert(sizeof(ETH_DMADescTypeDef)*ETH_RX_DESC_CNT<=0x60,"RX descriptors exceed FP70 slot");
-_Static_assert(sizeof(ETH_DMADescTypeDef)*ETH_TX_DESC_CNT<=0xA0,"TX descriptors exceed FP70 MPU overlay");
 
 /* Memory Pool Declaration */
 #define ETH_RX_BUFFER_CNT             12U
-#undef LWIP_DECLARE_MEMORY_ALIGNED
-#define LWIP_DECLARE_MEMORY_ALIGNED(name, size) u8_t name[LWIP_MEM_ALIGN_BUFFER(size)] __attribute__((section(".eth_rx_pool"),aligned(32)))
 LWIP_MEMPOOL_DECLARE(RX_POOL, ETH_RX_BUFFER_CNT, sizeof(RxBuff_t), "Zero-copy RX PBUF pool");
 
 /* Variable Definitions */
 static uint8_t RxAllocStatus;
+#if defined ( __ICCARM__ ) /*!< IAR Compiler */
 
-extern ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT];
-extern ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT];
-extern ETH_TxPacketConfig TxConfig;
+#pragma location=0x30000000
+ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+#pragma location=0x30000080
+ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+
+#elif defined ( __CC_ARM )  /* MDK ARM Compiler */
+
+__attribute__((at(0x30000000))) ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+__attribute__((at(0x30000080))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+
+#elif defined ( __GNUC__ ) /* GNU Compiler */
+
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));   /* Ethernet Tx DMA Descriptors */
+
+#endif
+
+#if defined ( __ICCARM__ ) /*!< IAR Compiler */
+#pragma location = 0x30000100
+extern u8_t memp_memory_RX_POOL_base[];
+
+#elif defined ( __CC_ARM ) /* MDK ARM Compiler */
+__attribute__((section(".Rx_PoolSection"))) extern u8_t memp_memory_RX_POOL_base[];
+
+#elif defined ( __GNUC__ ) /* GNU */
+__attribute__((section(".Rx_PoolSection"))) extern u8_t memp_memory_RX_POOL_base[];
+#endif
 
 /* USER CODE BEGIN 2 */
 
@@ -120,10 +138,11 @@ osSemaphoreId RxPktSemaphore = NULL;   /* Semaphore to signal incoming packets *
 osSemaphoreId TxPktSemaphore = NULL;   /* Semaphore to signal transmit packet complete */
 
 /* Global Ethernet handle */
+ETH_HandleTypeDef heth;
+ETH_TxPacketConfig TxConfig;
 
 /* Private function prototypes -----------------------------------------------*/
 static void ethernetif_input(void const * argument);
-
 int32_t ETH_PHY_IO_Init(void);
 int32_t ETH_PHY_IO_DeInit (void);
 int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr, uint32_t *pRegVal);
@@ -189,7 +208,7 @@ void HAL_ETH_ErrorCallback(ETH_HandleTypeDef *handlerEth)
  * @param netif the already initialized lwip network interface structure
  *        for this ethernetif
  */
-static int low_level_init(struct netif *netif)
+static void low_level_init(struct netif *netif)
 {
   HAL_StatusTypeDef hal_eth_init_status = HAL_OK;
   uint32_t duplex, speed = 0;
@@ -197,7 +216,7 @@ static int low_level_init(struct netif *netif)
   ETH_MACConfigTypeDef MACConf = {0};
   /* Start ETH HAL Init */
 
-   static uint8_t MACAddr[6];
+   uint8_t MACAddr[6] ;
   heth.Instance = ETH;
   MACAddr[0] = 0x00;
   MACAddr[1] = 0x80;
@@ -216,7 +235,6 @@ static int low_level_init(struct netif *netif)
   /* USER CODE END MACADDRESS */
 
   hal_eth_init_status = HAL_ETH_Init(&heth);
-  if(hal_eth_init_status!=HAL_OK){DbgDma(1,"\r\nETH: MAC init failed; check LAN8742 RMII 50 MHz clock");return 0;}
 
   memset(&TxConfig, 0 , sizeof(ETH_TxPacketConfig));
   TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
@@ -229,7 +247,6 @@ static int low_level_init(struct netif *netif)
   LWIP_MEMPOOL_INIT(RX_POOL);
 
 #if LWIP_ARP || LWIP_ETHERNET
-
   /* set MAC hardware address length */
   netif->hwaddr_len = ETH_HWADDR_LEN;
 
@@ -260,9 +277,6 @@ static int low_level_init(struct netif *netif)
   osSemaphoreDef(TxSem);
   TxPktSemaphore = osSemaphoreCreate(osSemaphore(TxSem), 1);
 
-  if(!RxPktSemaphore || !TxPktSemaphore){
-    DbgDma(1,"\r\nETH: semaphore allocation failed");return 0;
-  }
   /* Decrease the semaphore's initial count from 1 to 0 */
   osSemaphoreWait(RxPktSemaphore, 0);
   osSemaphoreWait(TxPktSemaphore, 0);
@@ -280,8 +294,11 @@ static int low_level_init(struct netif *netif)
   LAN8742_RegisterBusIO(&LAN8742, &LAN8742_IOCtx);
 
   /* Initialize the LAN8742 ETH PHY */
-  if(LAN8742_Init(&LAN8742)!=LAN8742_STATUS_OK){
-    DbgDma(1,"\r\nETH: LAN8742 init failed");return 0;
+  if(LAN8742_Init(&LAN8742) != LAN8742_STATUS_OK)
+  {
+    netif_set_link_down(netif);
+    netif_set_down(netif);
+    return;
   }
 
   if (hal_eth_init_status == HAL_OK)
@@ -329,7 +346,6 @@ static int low_level_init(struct netif *netif)
     HAL_ETH_Start_IT(&heth);
     netif_set_up(netif);
     netif_set_link_up(netif);
-
 /* USER CODE BEGIN PHY_POST_CONFIG */
 
 /* USER CODE END PHY_POST_CONFIG */
@@ -338,14 +354,13 @@ static int low_level_init(struct netif *netif)
   }
   else
   {
-    return 0;
+    Error_Handler();
   }
 #endif /* LWIP_ARP || LWIP_ETHERNET */
 
 /* USER CODE BEGIN LOW_LEVEL_INIT */
 
 /* USER CODE END LOW_LEVEL_INIT */
-  return 1;
 }
 
 /**
@@ -378,11 +393,6 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
     if(i >= ETH_TX_DESC_CNT)
       return ERR_IF;
 
-    /* DMA reads CPU-owned pbuf payloads. Clean all overlapping cache lines;
-     * no invalidation here, so neighboring dirty data is preserved. */
-    uintptr_t begin=(uintptr_t)q->payload & ~(uintptr_t)31;
-    uintptr_t end=((uintptr_t)q->payload+q->len+31)&~(uintptr_t)31;
-    if(q->len)SCB_CleanDCache_by_Addr((uint32_t *)begin,(int32_t)(end-begin));
     Txbuffer[i].buffer = q->payload;
     Txbuffer[i].len = q->len;
 
@@ -403,21 +413,32 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
   TxConfig.TxBuffer = Txbuffer;
   TxConfig.pData = p;
 
-  HAL_ETH_ReleaseTxPacket(&heth);
-  while(osSemaphoreWait(TxPktSemaphore,0)==osOK){}
   pbuf_ref(p);
 
-  if (HAL_ETH_Transmit_IT(&heth, &TxConfig) == HAL_OK) {
-    if(osSemaphoreWait(TxPktSemaphore,1000)!=osOK){
-      /* Keep the HAL's pbuf reference until a later release observes DMA done. */
-      return ERR_TIMEOUT;
+  do
+  {
+    if(HAL_ETH_Transmit_IT(&heth, &TxConfig) == HAL_OK)
+    {
+      errval = ERR_OK;
     }
+    else
+    {
 
-    HAL_ETH_ReleaseTxPacket(&heth);
-  } else {
-    errval=ERR_IF;
-    pbuf_free(p);
-  }
+      if(HAL_ETH_GetError(&heth) & HAL_ETH_ERROR_BUSY)
+      {
+        /* Wait for descriptors to become available */
+        osSemaphoreWait(TxPktSemaphore, ETHIF_TX_TIMEOUT);
+        HAL_ETH_ReleaseTxPacket(&heth);
+        errval = ERR_BUF;
+      }
+      else
+      {
+        /* Other error */
+        pbuf_free(p);
+        errval =  ERR_IF;
+      }
+    }
+  }while(errval == ERR_BUF);
 
   return errval;
 }
@@ -549,7 +570,7 @@ err_t ethernetif_init(struct netif *netif)
   netif->linkoutput = low_level_output;
 
   /* initialize the hardware */
-  if(!low_level_init(netif))return ERR_IF;
+  low_level_init(netif);
 
   return ERR_OK;
 }
@@ -595,6 +616,109 @@ u32_t sys_now(void)
   * @retval None
   */
 
+void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  if(ethHandle->Instance==ETH)
+  {
+  /* USER CODE BEGIN ETH_MspInit 0 */
+
+  /* USER CODE END ETH_MspInit 0 */
+    /* Enable Peripheral clock */
+    __HAL_RCC_ETH1MAC_CLK_ENABLE();
+    __HAL_RCC_ETH1TX_CLK_ENABLE();
+    __HAL_RCC_ETH1RX_CLK_ENABLE();
+
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    /**ETH GPIO Configuration
+    PC1     ------> ETH_MDC
+    PA1     ------> ETH_REF_CLK
+    PA2     ------> ETH_MDIO
+    PA7     ------> ETH_CRS_DV
+    PC4     ------> ETH_RXD0
+    PC5     ------> ETH_RXD1
+    PB11     ------> ETH_TX_EN
+    PB12     ------> ETH_TXD0
+    PB13     ------> ETH_TXD1
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    /* Peripheral interrupt init */
+    HAL_NVIC_SetPriority(ETH_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(ETH_IRQn);
+  /* USER CODE BEGIN ETH_MspInit 1 */
+
+  /* USER CODE END ETH_MspInit 1 */
+  }
+}
+
+void HAL_ETH_MspDeInit(ETH_HandleTypeDef* ethHandle)
+{
+  if(ethHandle->Instance==ETH)
+  {
+  /* USER CODE BEGIN ETH_MspDeInit 0 */
+
+  /* USER CODE END ETH_MspDeInit 0 */
+    /* Disable Peripheral clock */
+    __HAL_RCC_ETH1MAC_CLK_DISABLE();
+    __HAL_RCC_ETH1TX_CLK_DISABLE();
+    __HAL_RCC_ETH1RX_CLK_DISABLE();
+
+    /**ETH GPIO Configuration
+    PC1     ------> ETH_MDC
+    PA1     ------> ETH_REF_CLK
+    PA2     ------> ETH_MDIO
+    PA7     ------> ETH_CRS_DV
+    PC4     ------> ETH_RXD0
+    PC5     ------> ETH_RXD1
+    PB11     ------> ETH_TX_EN
+    PB12     ------> ETH_TXD0
+    PB13     ------> ETH_TXD1
+    */
+    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5);
+
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_7);
+
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13);
+
+    /* Peripheral interrupt Deinit*/
+    HAL_NVIC_DisableIRQ(ETH_IRQn);
+
+  /* USER CODE BEGIN ETH_MspDeInit 1 */
+
+  /* USER CODE END ETH_MspDeInit 1 */
+  }
+}
+
+/*******************************************************************************
+                       PHI IO Functions
+*******************************************************************************/
+/**
+  * @brief  Initializes the MDIO interface GPIO and clocks.
+  * @param  None
+  * @retval 0 if OK, -1 if ERROR
+  */
 int32_t ETH_PHY_IO_Init(void)
 {
   /* We assume that MDIO GPIO configuration is already done
@@ -679,8 +803,7 @@ void ethernet_link_thread(void const * argument)
   for(;;)
   {
   PHYLinkState = LAN8742_GetLinkState(&LAN8742);
-  LOCK_TCPIP_CORE();
-  linkchanged=0;
+
   if(netif_is_link_up(netif) && (PHYLinkState <= LAN8742_STATUS_LINK_DOWN))
   {
     HAL_ETH_Stop_IT(&heth);
@@ -689,6 +812,7 @@ void ethernet_link_thread(void const * argument)
   }
   else if(!netif_is_link_up(netif) && (PHYLinkState > LAN8742_STATUS_LINK_DOWN))
   {
+
     switch (PHYLinkState)
     {
     case LAN8742_STATUS_100MBITS_FULLDUPLEX:
@@ -732,7 +856,6 @@ void ethernet_link_thread(void const * argument)
 
 /* USER CODE END ETH link Thread core code for User BSP */
 
-    UNLOCK_TCPIP_CORE();
     osDelay(100);
   }
 }

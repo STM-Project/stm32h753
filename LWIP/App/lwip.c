@@ -45,7 +45,6 @@ void Error_Handler(void);
 
 /* Variables Initialization */
 struct netif gnetif;
-int networkEthernetReady;
 ip4_addr_t ipaddr;
 ip4_addr_t netmask;
 ip4_addr_t gw;
@@ -63,11 +62,6 @@ extern unsigned char __eth_dma_start__,__eth_dma_end__,__eth_rx_start__,__eth_rx
   */
 void MX_LWIP_Init(void)
 {
-  /* NOLOAD DMA memory is not covered by startup's .bss clearing. */
-  memset(&__eth_dma_start__,0,(size_t)(&__eth_dma_end__-&__eth_dma_start__));
-  memset(&__eth_rx_start__,0,(size_t)(&__eth_rx_end__-&__eth_rx_start__));
-  memset(network_lwip_heap,0,sizeof network_lwip_heap);
-  SCB_CleanInvalidateDCache_by_Addr((uint32_t *)&__eth_rx_start__,(int32_t)(&__eth_rx_end__-&__eth_rx_start__));
   /* IP addresses initialization */
   IP_ADDRESS[0] = 192;
   IP_ADDRESS[1] = 168;
@@ -85,7 +79,7 @@ void MX_LWIP_Init(void)
 /* USER CODE BEGIN IP_ADDRESSES */
 /* USER CODE END IP_ADDRESSES */
 
-  /* Initilialize the LwIP stack with RTOS */
+  /* Initialize the LwIP stack with RTOS */
   tcpip_init( NULL, NULL );
 
   /* IP addresses initialization without DHCP (IPv4) */
@@ -94,11 +88,7 @@ void MX_LWIP_Init(void)
   IP4_ADDR(&gw, GATEWAY_ADDRESS[0], GATEWAY_ADDRESS[1], GATEWAY_ADDRESS[2], GATEWAY_ADDRESS[3]);
 
   /* add the network interface (IPv4/IPv6) with RTOS */
-  LOCK_TCPIP_CORE();
-  if(!netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input)){
-    UNLOCK_TCPIP_CORE();DbgDma(1,"\r\nETH: interface unavailable; Wi-Fi/LCD continue");return;
-  }
-  networkEthernetReady=1;
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input);
 
   /* Registers the default network interface */
   netif_set_default(&gnetif);
