@@ -6,9 +6,10 @@ cfg=dict(line.split('=',1) for line in (root/'STM32h753bit6.ioc').read_text().sp
 assert cfg['LWIP.IP_ADDRESS']=='192.168.001.040'
 assert cfg['LWIP.NETMASK_ADDRESS']=='255.255.255.000'
 assert cfg['LWIP.GATEWAY_ADDRESS']=='192.168.001.001'
+assert cfg['ETH.RxBuffLen']=='1536'
 assert cfg['LWIP.LWIP_DHCP']=='0' and cfg['LWIP0.BSP.component']=='LAN8742'
 for n,base,size in [(5,'0x30040000','MPU_REGION_SIZE_32KB'),(6,'0x30040000','MPU_REGION_SIZE_256B')]:
- suffix=f'-Cortex_Memory_Protection_Unit_Region{n}_Settings'
+ suffix=f'_S-Cortex_Memory_Protection_Unit_Region{n}_Settings_S'
  assert cfg['CORTEX_M7.BaseAddress'+suffix]==base
  assert cfg['CORTEX_M7.Size'+suffix]==size
  assert cfg['CORTEX_M7.IsCacheable'+suffix]=='MPU_ACCESS_NOT_CACHEABLE'
@@ -33,11 +34,13 @@ for conf in ET.parse(root/'.cproject').findall('.//configuration'):
  for inc in ['../LWIP/App','../LWIP/Target','../MBEDTLS/App','../Application/NETWORK']:
   assert inc in values
  assert 'MBEDTLS_CONFIG_FILE=<mbedtls_config.h>' in values
-eth=(root/'LWIP/Target/ethernetif.c').read_text()
+eth=(root/'Application/NETWORK/network_ethernetif.inc').read_text()
 assert not re.search(r'^ETH_HandleTypeDef\s+heth\s*;',eth,re.M)
 assert not re.search(r'^void HAL_ETH_MspInit\(',eth,re.M)
-assert 'HAL_ETH_IRQHandler(&heth)' in (root/'Core/Src/stm32h7xx_it.c').read_text()
-assert 'HAL_NVIC_SetPriority(ETH_IRQn,5,0)' in (root/'Core/Src/eth.c').read_text()
+irq=(root/'Core/Src/stm32h7xx_it.c').read_text()
+assert irq.count('void ETH_IRQHandler(void)')==1
+assert '#include "eth.h"' not in irq
+assert 'HAL_NVIC_SetPriority(ETH_IRQn,5,0)' in (root/'Application/NETWORK/network_eth_hardware.c').read_text()
 assert 'GETVAL_ptr' not in (root/'Application/NETWORK/network_http.c').read_text()
 ld=(root/'STM32H753BITX_FLASH.ld').read_text()
 for text in ['.eth_dma 0x30040000','. = 0x60;','.eth_heap 0x30044000','.eth_rx_pool 0x30010000','ASSERT(SIZEOF(.eth_heap) <= 0x4000']:

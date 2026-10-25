@@ -23,7 +23,9 @@
 #include "mbedtls.h"
 
 /* USER CODE BEGIN 0 */
-
+/* Runtime TLS setup lives in Application/NETWORK/network_tls.c.
+ * CubeMX keeps generating its placeholder without replacing our server. */
+#define MX_MBEDTLS_Init NetworkCubeMX_TLS_Placeholder
 /* USER CODE END 0 */
 
 /* USER CODE BEGIN 1 */

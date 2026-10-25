@@ -1,4 +1,5 @@
 /* USER CODE BEGIN Header */
+
 /**
   ******************************************************************************
   * @file    hardware_rng.c
@@ -21,6 +22,9 @@
   *
   ******************************************************************************
   */
+
+/* Real RNG bytes and failure handling are application-owned. */
+#define mbedtls_hardware_poll NetworkCubeMX_RNG_Placeholder
 /* USER CODE END Header */
 
 #include "mbedtls_config.h"

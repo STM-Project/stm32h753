@@ -33,7 +33,9 @@
 
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* USER CODE BEGIN 0 */
-
+/* The maintained H7 DMA adapter is application-owned. Keep the CubeMX
+ * template below for regeneration, but compile the maintained implementation. */
+#if 0
 /* USER CODE END 0 */
 
 /* Private define ------------------------------------------------------------*/
@@ -934,6 +936,7 @@ void HAL_ETH_TxFreeCallback(uint32_t * buff)
 }
 
 /* USER CODE BEGIN 8 */
-
+#endif /* generated adapter; use the application implementation */
+#include "network_ethernetif.inc"
 /* USER CODE END 8 */
 

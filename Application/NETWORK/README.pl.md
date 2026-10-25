@@ -51,14 +51,38 @@ Nie zmieniono USART6, DMA USART6, ESP32, priorytetów SDMMC/MDMA/DMA2D, ustawie�
 SDRAM/LCD ani progu przerwań FreeRTOS. Linker i asercje C wykrywają przekroczenie
 obszarów i utratę wyrównania.
 
-CubeMX nie generuje całej adaptacji H7 (linkera i kodu aplikacji). Po ponownym
-wygenerowaniu należy uruchomić `python3 -B tests/test_network_configuration.py`
-oraz kompilację. Test sprawdza też, czy nie powstały duplikaty uchwytów ETH
-między `Core/Src/eth.c` a `LWIP/Target/ethernetif.c`.
+## Regeneracja CubeMX
+
+W plikach generowanych zmiany znajdują się wyłącznie w sekcjach `USER CODE`.
+Kod utrzymywany przez aplikację jest w `Application/NETWORK`:
+
+- `network_ethernetif.inc`: adapter DMA/cache H7; plik generowany
+  `LWIP/Target/ethernetif.c` wybiera go przez dyrektywy w `USER CODE 0/8`.
+  Szablon CubeMX pozostaje w pliku, ale nie tworzy drugiego adaptera.
+- `network_eth_hardware.c`: uchwyt ETH, deskryptory, GPIO RMII i IRQ.
+  CubeMX usuwa samodzielne `Core/Src/eth.c`, kiedy włączony jest lwIP.
+- `network_tls.c`: serwer i konfiguracja TLS. Wygenerowany placeholder
+  `MX_MBEDTLS_Init` dostaje lokalną nazwę w `USER CODE`; właściwe API aplikacji
+  nie robi alokacji przed schedulerem, mimo wywołania dodawanego przez CubeMX.
+- `network_rng.c`: rzeczywiste bajty RNG; placeholder CubeMX ma inną nazwę
+  zadaną w `USER CODE Header`.
+- `network_lwip_hooks.c`: czyszczenie pamięci NOLOAD i symetryczna blokada
+  rdzenia po inicjalizacji TCP/IP. IP nadal pochodzi z kodu CubeMX.
+- `network_memory.c`: wyłącznie dwa obszary sieci MPU, wywołanie w
+  `main.c / USER CODE SysInit`. Klucze MPU w `.ioc` używają aktualnego formatu
+  `_S`, takiego jak pozostałe obszary w tym projekcie.
+
+`Core/Src/stm32h7xx_it.c` używa jednego handlera ETH wygenerowanego przez CubeMX;
+nie ma odwołania do usuwanego `eth.h` ani drugiego handlera w `USER CODE`.
+Po regeneracji uruchomić testy poniżej i pełną kompilację. Manifest
+`tests/fixtures/network_generated_manifest.json` zapisuje część plików
+wygenerowanych w commicie `cde1881` poza `USER CODE`; po zmianie wersji
+CubeMX/generatora należy świadomie zweryfikować i odświeżyć ten manifest.
 
 ## Różnice niezbędne dla H7
 
-- Jedna definicja `heth`, deskryptorów i konfiguracji TX w `Core/Src/eth.c`.
+- Jedna definicja `heth`, deskryptorów i konfiguracji TX w
+  `Application/NETWORK/network_eth_hardware.c`.
 - Bufory NOLOAD są inicjalizowane przed uruchomieniem DMA.
 - HTTP/HTTPS mają wspólną obsługę żądań; pliki są wysyłane w porcjach 2048 B.
   Nie ma odwołań do `GETVAL_ptr()` ani buforów LCD. Blokada SD nie jest trzymana
@@ -75,6 +99,7 @@ między `Core/Src/eth.c` a `LWIP/Target/ethernetif.c`.
   plik 200 kB, zwalnianie blokady SD, błędy i zamykanie plików.
 - `python3 -B tests/test_network_rng.py`: bajty entropii, końcówki i błędy HAL.
 - `python3 -B tests/test_network_configuration.py`: spójność CubeMX/MPU/linkera.
+- `python3 -B tests/test_network_cubemx_sections.py`: brak zmian poza `USER CODE`.
 - Pełna kompilacja ARM obejmuje lwIP, TLS, adaptery i serwery.
 
 Bez płytki nie można potwierdzić linku PHY, przebiegów RMII, zachowania DMA/cache

@@ -28,11 +28,10 @@
 #include "ethernetif.h"
 
 /* USER CODE BEGIN 0 */
-#include "api.h"
 #include "dns.h"
-
-#include "string.h"
-#include "network_log.h"
+#include "network_lwip_hooks.h"
+/* Acquire the core mutex immediately after tcpip_init created it. */
+#define tcpip_init NetworkTCPIPInit
 /* USER CODE END 0 */
 /* Private function prototypes -----------------------------------------------*/
 static void ethernet_link_status_updated(struct netif *netif);
@@ -53,8 +52,7 @@ uint8_t NETMASK_ADDRESS[4];
 uint8_t GATEWAY_ADDRESS[4];
 
 /* USER CODE BEGIN 2 */
-unsigned char network_lwip_heap[16384] __attribute__((section(".eth_heap"),aligned(32)));
-extern unsigned char __eth_dma_start__,__eth_dma_end__,__eth_rx_start__,__eth_rx_end__;
+
 /* USER CODE END 2 */
 
 /**
@@ -77,6 +75,7 @@ void MX_LWIP_Init(void)
   GATEWAY_ADDRESS[3] = 1;
 
 /* USER CODE BEGIN IP_ADDRESSES */
+    NetworkPrepareDmaMemory();
 /* USER CODE END IP_ADDRESSES */
 
   /* Initialize the LwIP stack with RTOS */
@@ -106,13 +105,12 @@ void MX_LWIP_Init(void)
 /* USER CODE END H7_OS_THREAD_DEF_CREATE_CMSIS_RTOS_V1 */
 
 /* USER CODE BEGIN 3 */
-  ip_addr_t dns_primary,dns_secondary;
-  IP_ADDR4(&dns_primary,8,8,8,8);IP_ADDR4(&dns_secondary,8,8,4,4);
-  dns_setserver(0,&dns_primary);dns_setserver(1,&dns_secondary);
+  ip_addr_t primary,secondary;
+  IP_ADDR4(&primary,8,8,8,8);IP_ADDR4(&secondary,8,8,4,4);
+  dns_setserver(0,&primary);dns_setserver(1,&secondary);
+  networkEthernetReady=networkDriverReady;
   UNLOCK_TCPIP_CORE();
-  DbgDma(1,"\r\nETH: LAN8742 IP 192.168.1.40 mask 255.255.255.0 gateway 192.168.1.1");
-
-
+  NetworkLogEthernetStatus(networkEthernetReady);
 /* USER CODE END 3 */
 }
 

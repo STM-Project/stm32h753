@@ -9,7 +9,7 @@ with tempfile.TemporaryDirectory(prefix='network-rng-') as d:
  (p/'rng.h').write_text('#include <stdint.h>\n#define HAL_OK 0\nextern int hrng;\nint HAL_RNG_GenerateRandomNumber(int*,uint32_t*);\n')
  (p/'cmsis_os.h').write_text('#include <stddef.h>\ntypedef void *osMutexId;\n#define osOK 0\nint osMutexWait(osMutexId,unsigned);\nint osMutexRelease(osMutexId);\n')
  (p/'test.c').write_text(r'''
-#include "hardware_rng.c"
+#include "network_rng.c"
 #include <assert.h>
 #include <stdio.h>
 int hrng;osMutexId networkRngMutex=(void*)1;
@@ -24,5 +24,5 @@ int main(void){unsigned char data[8]={0};size_t n=99;
  networkRngMutex=NULL;assert(mbedtls_hardware_poll(NULL,data,8,&n)==-60&&n==0);
  puts("H7 TLS entropy: distinct random bytes, partial word, initialized output length and failure cleanup: PASS");}
 ''')
- subprocess.run(['gcc','-Wall','-Wextra','-Werror','-I'+str(p),'-I'+str(root/'MBEDTLS/Target'),str(p/'test.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['gcc','-Wall','-Wextra','-Werror','-I'+str(p),'-I'+str(root/'Application/NETWORK'),str(p/'test.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)

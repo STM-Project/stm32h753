@@ -34,6 +34,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "network_memory.h"
 #include "relay_states.h"
 /* USER CODE END Includes */
 
@@ -107,6 +108,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  NetworkConfigureMemory();
 
   /* USER CODE END SysInit */
 
