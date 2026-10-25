@@ -6,10 +6,9 @@ ROOT=Path(__file__).resolve().parents[1]
 s=(ROOT/'Application/esp32wroom.c').read_text()
 def function(start):
  a=s.index(start)
- if start=='static const char* CLOUD_Host':return s[a:s.index('\n',a)]
  return s[a:s.index('\n}',a)+2]
-case=s[s.index('                case GOOGLE_CLOUD_CONNECTION:'):s.index('\n\t\t\t\tcase HTTP_CONNECTION_2:')]
-helpers='\n'.join(function(t) for t in ['static const char* CLOUD_Host','__attribute__((weak)) int GoogleCloud_ReadTemperature10','static void CLOUD_Close','static void CLOUD_RestoreHttp','static void CLOUD_FeedReceiveRing','static TickType_t CLOUD_WaitTicks'])
+case=s[s.index('\t\t\t\tcase GOOGLE_CLOUD_CONNECTION:'):s.index('\n\t\t\t\tcase HTTP_CONNECTION_2:')]
+helpers='\n'.join(function(t) for t in ['static const char *CLOUD_Host','__attribute__ ( ( weak ) ) int GoogleCloud_ReadTemperature10','static void CLOUD_Close','static void CLOUD_RestoreHttp','static void CLOUD_FeedReceiveRing','static TickType_t CLOUD_WaitTicks'])
 C=r'''
 #include "google_cloud.h"
 #include "google_cloud_at.h"
@@ -85,12 +84,12 @@ static int SendToEsp32(int length,char*data,int arch){
 }
 '''
 C+=function('static int CASE_Service(int nrCase,')+'\nstatic void BackToHttpService(int*p){(void)p;connectionType=HTTP_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();}\n'+helpers
-init_at=s.index('                    else if (CASE_Service(22,">",txt_ERR,noArch))')
+init_at=s.index('\t\t\t\t\telse if ( CASE_Service ( 22, ">", txt_ERR, noArch ) )')
 init=s[init_at:s.index('\n\t\t\t\t\telse\n',init_at)]
-init=init.replace('else if (CASE_Service(22,','if (CASE_Service(22,',1)
+init=init.replace('else if ( CASE_Service ( 22,','if ( CASE_Service ( 22,',1)
 C+='\nstatic void init_step(const char *data){raw=data;'+init+'}\n'
-a=s.index('        if(connectionType==INIT_CONNECTION && googleCloudStatus.configured &&')
-b=s.index('        }else if(connectionType==HTTP_CONNECTION && googleCloudStatus.ready &&',a)
+a=s.index('\t  if ( connectionType == INIT_CONNECTION && googleCloudStatus.configured &&')
+b=s.index('\t  }\n\t  else if ( connectionType == HTTP_CONNECTION && googleCloudStatus.ready &&',a)
 C+='\nstatic void periodic(void){int nrHTTPpacket=0;(void)nrHTTPpacket;'+s[a:b]+'}}\n'
 C+='\nstatic void step(const char *data){int nrHTTPpacket=0;for(;*data;data++){RecvBuffer[recvByteFromEsp_copy]=*data;recvByteFromEsp_copy=(recvByteFromEsp_copy+1)%4096;}switch(connectionType){'+case+'default:break;}}\n'
 C+=r'''

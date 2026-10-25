@@ -262,11 +262,14 @@ void MEMEXAMPLE_MemoryFunc(void)
 
 void DBGEXAMPLE_KeyFunctions(void)
 {
-	DEBUG_InvalidateDCache();
+	DEBUG_InvalidateDCache ();
 	double testVal = 0.0;
 	void* FuncExample(void *arg1,void *arg2){ return NULL; }
 
-	if(DEBUG_IsTxtReceive("example")){ ; }
+	if ( DEBUG_IsTxtReceive ( "example" ) )
+	{
+		;
+	}
 
 	/* 1. Debug option */
 	_DBG_PARAM_NOWRAP("a",&testVal,_double,_Incr,_Double(0.1),_Double(20.0),"Test debug 1: ",FuncExample)		/* for 'a' increment value by step 0.1 */
@@ -505,7 +508,7 @@ void LCDEXAMPLE_BezierCurves(u32 xMidd,u32 yMidd, u32 xRight,u32 yRight, u32 Bkp
 		else	posA[posAi++]=pos2[2];
 
 		stepVal+=0.1;
-		DbgDma(1,"i");
+		DbgDma ( 1, "i" );
 	}
 
 

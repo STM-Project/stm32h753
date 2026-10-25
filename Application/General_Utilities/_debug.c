@@ -179,9 +179,9 @@ void DbgVarDma2(int on, unsigned int buffLen, const char *fmt, ...)
 	}
 }
 
-static int DEBUG_IsAnythingReceive(void)
+static int DEBUG_IsAnythingReceive ( void )
 {
-	if(dbgRecvBuffer[0]>0)
+	if ( dbgRecvBuffer[0] > 0 )
 		return 1;
 	else
 		return 0;
@@ -193,7 +193,7 @@ void DEBUG_InvalidateDCache(void){
 
 int DEBUG_IsTxtReceive(char *txt)
 {
-	if(strstr(dbgRecvBuffer,txt))
+	if ( strstr ( dbgRecvBuffer, txt ) )
 	{
 		DEBUG_ReceiveStop();
 		DEBUG_ReceiveStart((uint8_t*)dbgRecvBuffer, RECV_BUFF_SIZE);
@@ -211,12 +211,12 @@ void DEBUG_RxFullBuffService(void)
 
 int DEBUG_RcvStr(char *txt)
 {
-	if(DEBUG_IsAnythingReceive())
+	if ( DEBUG_IsAnythingReceive () )
 	{
-	  if(DEBUG_IsTxtReceive(txt))
-		  return 1;
-	  else
-		  return 0;
+		if ( DEBUG_IsTxtReceive ( txt ) )
+			return 1;
+		else
+			return 0;
 	}
 	else
 		return 0;
@@ -344,10 +344,10 @@ void DBG_EndSendInterruptQue(void)
 void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla logów musimy zrezygnowac z używanie DbgSendDma___() */
 {
     char *txt_ptr=NULL, *txt_ptr_copy=NULL;
-    /* Queue is created synchronously before any producer task is started. */
- /* xLogTaskHandle = xTaskGetCurrentTaskHandle(); */
+	/* Queue is created synchronously before any producer task is started. */
+	/* xLogTaskHandle = xTaskGetCurrentTaskHandle(); */
 
-    for (;;){
+	for (;;){
         if (xQueueReceive(xLogQueue, &txt_ptr, portMAX_DELAY) == pdTRUE)
         {
         	txt_ptr_copy = txt_ptr;
@@ -372,16 +372,20 @@ void vLogTask(void *pvParameters)		/* UWAGA: Jesli korzystamy z tego wątku dla 
 
 void CreateLogTask(void)		/* --- Najbezpiecznaiejsza wersja logów --- */
 {
-    if (xLogTaskHandle != NULL) return;
-    if (xLogQueue == NULL) xLogQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(char *));
-    if (xLogQueue == NULL) {
-        Dbg(1,"\r\nDEBUG: cannot allocate log queue");
-        return;
-    }
-    if (xTaskCreate(vLogTask, "vLogTask", 1024, NULL,
-                    (unsigned portBASE_TYPE)4, &xLogTaskHandle) != pdPASS) {
-        xLogTaskHandle = NULL;
-        Dbg(1,"\r\nDEBUG: cannot create log task");
-    }
+	if ( xLogTaskHandle != NULL )
+		return;
+	if ( xLogQueue == NULL )
+		xLogQueue = xQueueCreate ( LOG_QUEUE_SIZE, sizeof ( char * ) );
+	if ( xLogQueue == NULL )
+	{
+		Dbg ( 1, "\r\nDEBUG: cannot allocate log queue" );
+		return;
+	}
+	if ( xTaskCreate ( vLogTask, "vLogTask", 1024, NULL,
+					   (unsigned portBASE_TYPE) 4, &xLogTaskHandle ) != pdPASS )
+	{
+		xLogTaskHandle = NULL;
+		Dbg ( 1, "\r\nDEBUG: cannot create log task" );
+	}
 }
 

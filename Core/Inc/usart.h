@@ -30,28 +30,28 @@ extern "C" {
 
 /* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
+	/* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart7;
 
 extern UART_HandleTypeDef huart6;
 
 /* USER CODE BEGIN Private defines */
-void UART_ClearFlags(UART_HandleTypeDef *huart);
-void UART_ClearFlags2(UART_HandleTypeDef *huart);
-void DEBUG_Send(char *txt);
-int DEBUG_SendDma(uint8_t *txt, int size);
-void DEBUG_ReceiveStart(uint8_t* buffer, uint16_t len);
-void DEBUG_ReceiveStop(void);
-/* USER CODE END Private defines */
+	void UART_ClearFlags ( UART_HandleTypeDef *huart );
+	void UART_ClearFlags2 ( UART_HandleTypeDef *huart );
+	void DEBUG_Send ( char *txt );
+	int DEBUG_SendDma ( uint8_t *txt, int size );
+	void DEBUG_ReceiveStart ( uint8_t *buffer, uint16_t len );
+	void DEBUG_ReceiveStop ( void );
+	/* USER CODE END Private defines */
 
 void MX_UART7_Init(void);
 void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void ESP32_UartHandler(long *pxWoken);
-void DEBUG_UartHandler(long *pxWoken);
-/* USER CODE END Prototypes */
+	void ESP32_UartHandler ( long *pxWoken );
+	void DEBUG_UartHandler ( long *pxWoken );
+	/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }

@@ -13,8 +13,8 @@
  * Returns HTML bytes excluding NUL, or zero with an empty output on failure.
  * The caller owns the output buffer (128 KiB covers the largest matrix).
  */
-size_t HTTP_SettingsPageRender(char *out, size_t capacity,
-                               const HTTP_SettingPage *page,
-                               uint16_t instance, const char *notice);
+size_t HTTP_SettingsPageRender ( char *out, size_t capacity,
+								 const HTTP_SettingPage *page,
+								 uint16_t instance, const char *notice );
 
 #endif

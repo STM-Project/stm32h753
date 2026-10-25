@@ -21,13 +21,14 @@
 #define HTTP_REQUEST_STREAM_MAX_FRAME 65535u
 #endif
 
-#define HTTP_REQUEST_STREAM_LINE_CAPACITY (HTTP_REQUEST_STREAM_MAX_TARGET + 20u)
+#define HTTP_REQUEST_STREAM_LINE_CAPACITY ( HTTP_REQUEST_STREAM_MAX_TARGET + 20u )
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/* POST /lpc.cgi/A117 accepts application/x-www-form-urlencoded with an
+	/* POST /lpc.cgi/A117 accepts application/x-www-form-urlencoded with an
  * explicit Content-Length. Once the full body arrives it is normalized to
  * /lpc.cgi/A117?<body> for the existing settings decoder (not a wire GET).
  * Exactly one event is delivered per channel until ResetChannel is called.
@@ -36,46 +37,48 @@ extern "C" {
  * The target belongs to stream and must be copied during the callback if it
  * will be needed later. Feed must not be called recursively from a callback.
  */
-typedef void (*HTTP_RequestStreamCallback)(unsigned channel,
-                                           const char *target,
-                                           size_t length,
-                                           void *context);
+	typedef void ( *HTTP_RequestStreamCallback ) ( unsigned channel,
+												   const char *target,
+												   size_t length,
+												   void *context );
 
-typedef struct {
-    char line[HTTP_REQUEST_STREAM_LINE_CAPACITY];
-    size_t length;
-    char header[1024];
-    size_t header_length, header_bytes, content_length, body_received;
-    uint8_t phase, has_length, has_type;
-    uint8_t finished;
-    uint8_t saw_cr;
-} HTTP_RequestStreamChannel;
+	typedef struct
+	{
+		char line[HTTP_REQUEST_STREAM_LINE_CAPACITY];
+		size_t length;
+		char header[1024];
+		size_t header_length, header_bytes, content_length, body_received;
+		uint8_t phase, has_length, has_type;
+		uint8_t finished;
+		uint8_t saw_cr;
+	} HTTP_RequestStreamChannel;
 
-/* Allocate this object statically (or in SDRAM); it is about 320 KiB with
+	/* Allocate this object statically (or in SDRAM); it is about 320 KiB with
  * the default limits. All state is per object; no global state is used.
  * Members are implementation details and should not be modified directly.
  */
-typedef struct {
-    HTTP_RequestStreamChannel channels[HTTP_REQUEST_STREAM_CHANNELS];
-    HTTP_RequestStreamCallback callback;
-    void *context;
-    uint32_t frame_channel;
-    uint32_t number;
-    uint32_t remaining;
-    char at_line[24];
-    uint8_t state;
-    uint8_t prefix_length;
-    uint8_t digits;
-    uint8_t discard_payload;
-    uint8_t at_line_length;
-    uint8_t at_line_overflow;
-} HTTP_RequestStream;
+	typedef struct
+	{
+		HTTP_RequestStreamChannel channels[HTTP_REQUEST_STREAM_CHANNELS];
+		HTTP_RequestStreamCallback callback;
+		void *context;
+		uint32_t frame_channel;
+		uint32_t number;
+		uint32_t remaining;
+		char at_line[24];
+		uint8_t state;
+		uint8_t prefix_length;
+		uint8_t digits;
+		uint8_t discard_payload;
+		uint8_t at_line_length;
+		uint8_t at_line_overflow;
+	} HTTP_RequestStream;
 
-void HTTP_RequestStreamInit(HTTP_RequestStream *stream,
-                            HTTP_RequestStreamCallback callback,
-                            void *context);
+	void HTTP_RequestStreamInit ( HTTP_RequestStream *stream,
+								  HTTP_RequestStreamCallback callback,
+								  void *context );
 
-/* Feed only newly received UART bytes, once, in arrival order. Arbitrary
+	/* Feed only newly received UART bytes, once, in arrival order. Arbitrary
  * chunk boundaries (including inside +IPD headers and CRLF) are supported.
  * This accepts +IPD,<channel>,<length>: in ESP-AT multiplexed mode, without
  * CIPDINFO. Responses outside frames are ignored, except complete
@@ -83,16 +86,16 @@ void HTTP_RequestStreamInit(HTTP_RequestStream *stream,
  * in stream order. Bytes inside a frame are never scanned for nested +IPD
  * markers or connection notifications, even for unhandled channels.
  */
-void HTTP_RequestStreamFeed(HTTP_RequestStream *stream,
-                            const uint8_t *data,
-                            size_t length);
+	void HTTP_RequestStreamFeed ( HTTP_RequestStream *stream,
+								  const uint8_t *data,
+								  size_t length );
 
-/* Call when the corresponding connection is CLOSED, before its next use.
+	/* Call when the corresponding connection is CLOSED, before its next use.
  * This clears that channel's HTTP state, not other channels or AT framing.
  * Reinitialize the entire object when restarting/resetting the ESP module.
  */
-void HTTP_RequestStreamResetChannel(HTTP_RequestStream *stream,
-                                    unsigned channel);
+	void HTTP_RequestStreamResetChannel ( HTTP_RequestStream *stream,
+										  unsigned channel );
 
 #ifdef __cplusplus
 }

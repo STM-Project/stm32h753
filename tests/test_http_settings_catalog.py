@@ -134,8 +134,8 @@ def verify_h753_modes(pages):
     # Exercise the actual getter: defaults now come from the catalog rather
     # than a second, duplicated C array in wwwPages.c.
     source = (ROOT / "Application/wwwPages.c").read_text()
-    getter = source[source.index("unsigned HTTP_SettingsPortMode(unsigned port)"):
-                    source.index("const char* HTTP_SettingsPortName(")]
+    getter = source[source.index('unsigned HTTP_SettingsPortMode ( unsigned port )'):
+                    source.index('const char *HTTP_SettingsPortName (')]
     program = ('#include <stdlib.h>\n#include <stdio.h>\n#include <assert.h>\n'
                '#include "http_settings_model.h"\n#define mini_snprintf snprintf\n'
                'enum { HTTP_MODE_DISABLED=6 };\n' + getter +

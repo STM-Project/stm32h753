@@ -24,23 +24,23 @@
 /* USER CODE BEGIN 0 */
 #include "errors_service.h"
 
-#define SDRAM_TIMEOUT     ((uint32_t)0xFFFF)
+#define SDRAM_TIMEOUT ( (uint32_t) 0xFFFF )
 
-#define SDRAM_MODEREG_BURST_LENGTH_1             ((uint16_t)0x0000)
-#define SDRAM_MODEREG_BURST_LENGTH_2             ((uint16_t)0x0001)
-#define SDRAM_MODEREG_BURST_LENGTH_4             ((uint16_t)0x0002)
-#define SDRAM_MODEREG_BURST_LENGTH_8             ((uint16_t)0x0004)
-#define SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL      ((uint16_t)0x0000)
-#define SDRAM_MODEREG_BURST_TYPE_INTERLEAVED     ((uint16_t)0x0008)
-#define SDRAM_MODEREG_CAS_LATENCY_2              ((uint16_t)0x0020)
-#define SDRAM_MODEREG_CAS_LATENCY_3              ((uint16_t)0x0030)
-#define SDRAM_MODEREG_OPERATING_MODE_STANDARD    ((uint16_t)0x0000)
-#define SDRAM_MODEREG_WRITEBURST_MODE_PROGRAMMED ((uint16_t)0x0000)
-#define SDRAM_MODEREG_WRITEBURST_MODE_SINGLE     ((uint16_t)0x0200)
+#define SDRAM_MODEREG_BURST_LENGTH_1 ( (uint16_t) 0x0000 )
+#define SDRAM_MODEREG_BURST_LENGTH_2 ( (uint16_t) 0x0001 )
+#define SDRAM_MODEREG_BURST_LENGTH_4 ( (uint16_t) 0x0002 )
+#define SDRAM_MODEREG_BURST_LENGTH_8 ( (uint16_t) 0x0004 )
+#define SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL ( (uint16_t) 0x0000 )
+#define SDRAM_MODEREG_BURST_TYPE_INTERLEAVED ( (uint16_t) 0x0008 )
+#define SDRAM_MODEREG_CAS_LATENCY_2 ( (uint16_t) 0x0020 )
+#define SDRAM_MODEREG_CAS_LATENCY_3 ( (uint16_t) 0x0030 )
+#define SDRAM_MODEREG_OPERATING_MODE_STANDARD ( (uint16_t) 0x0000 )
+#define SDRAM_MODEREG_WRITEBURST_MODE_PROGRAMMED ( (uint16_t) 0x0000 )
+#define SDRAM_MODEREG_WRITEBURST_MODE_SINGLE ( (uint16_t) 0x0200 )
 
 FMC_SDRAM_CommandTypeDef command;
 
-static void SDRAM_Initialization_Sequence(void)
+static void SDRAM_Initialization_Sequence ( void )
 {
 	__IO uint32_t tmpmrd = 0;
 	/* Step 3:  Configure a clock configuration enable command */
@@ -50,14 +50,14 @@ static void SDRAM_Initialization_Sequence(void)
 	command.ModeRegisterDefinition = 0;
 
 	/* Send the command */
-	if (HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT) != HAL_OK)
-    {
-        Error_Handler();
-    }
+	if ( HAL_SDRAM_SendCommand ( &hsdram1, &command, SDRAM_TIMEOUT ) != HAL_OK )
+	{
+		Error_Handler ();
+	}
 
 	/* Step 4: Insert 100 us minimum delay */
 	/* Inserted delay is equal to 1 ms due to systick time base unit (ms) */
-	HAL_Delay(1);
+	HAL_Delay ( 1 );
 
 	/* Step 5: Configure a PALL (precharge all) command */
 	command.CommandMode = FMC_SDRAM_CMD_PALL;
@@ -66,10 +66,10 @@ static void SDRAM_Initialization_Sequence(void)
 	command.ModeRegisterDefinition = 0;
 
 	/* Send the command */
-	if (HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT) != HAL_OK)
-    {
-        Error_Handler();
-    }
+	if ( HAL_SDRAM_SendCommand ( &hsdram1, &command, SDRAM_TIMEOUT ) != HAL_OK )
+	{
+		Error_Handler ();
+	}
 
 	/* Step 6 : Configure a Auto-Refresh command */
 	command.CommandMode = FMC_SDRAM_CMD_AUTOREFRESH_MODE;
@@ -78,17 +78,17 @@ static void SDRAM_Initialization_Sequence(void)
 	command.ModeRegisterDefinition = 0;
 
 	/* Send the command */
-	if (HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT) != HAL_OK)
-    {
-        Error_Handler();
-    }
+	if ( HAL_SDRAM_SendCommand ( &hsdram1, &command, SDRAM_TIMEOUT ) != HAL_OK )
+	{
+		Error_Handler ();
+	}
 
 	/* Step 7: Program the external memory mode register */
 	tmpmrd = (uint32_t) SDRAM_MODEREG_BURST_LENGTH_4 |
-	SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL |
-	SDRAM_MODEREG_CAS_LATENCY_2 |
-	SDRAM_MODEREG_OPERATING_MODE_STANDARD |
-	SDRAM_MODEREG_WRITEBURST_MODE_SINGLE;
+			 SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL |
+			 SDRAM_MODEREG_CAS_LATENCY_2 |
+			 SDRAM_MODEREG_OPERATING_MODE_STANDARD |
+			 SDRAM_MODEREG_WRITEBURST_MODE_SINGLE;
 
 	command.CommandMode = FMC_SDRAM_CMD_LOAD_MODE;
 	command.CommandTarget = FMC_SDRAM_CMD_TARGET_BANK1;
@@ -96,13 +96,13 @@ static void SDRAM_Initialization_Sequence(void)
 	command.ModeRegisterDefinition = tmpmrd;
 
 	/* Send the command */
-	if (HAL_SDRAM_SendCommand(&hsdram1, &command, SDRAM_TIMEOUT) != HAL_OK)
-    {
-        Error_Handler();
-    }
+	if ( HAL_SDRAM_SendCommand ( &hsdram1, &command, SDRAM_TIMEOUT ) != HAL_OK )
+	{
+		Error_Handler ();
+	}
 
 	/* Step 8: Set the refresh rate counter */
-    /*
+	/*
       IS42S32400F:
       4096 refresh / 64 ms
       SDRAM clock = 100 MHz
@@ -110,13 +110,13 @@ static void SDRAM_Initialization_Sequence(void)
       15.625 us * 100 MHz = 1562.5
       1562.5 - 20 ≈ 1542
      */
-    if (HAL_SDRAM_ProgramRefreshRate(&hsdram1,1542) != HAL_OK)
-    {
-        Error_Handler();
-    }
+	if ( HAL_SDRAM_ProgramRefreshRate ( &hsdram1, 1542 ) != HAL_OK )
+	{
+		Error_Handler ();
+	}
 }
 
-static void TestSDRAM(uint32_t sdramAddr, uint32_t sdramSize)
+static void TestSDRAM ( uint32_t sdramAddr, uint32_t sdramSize )
 {
 	uint32_t WriteReadAddr = 4;
 	uint32_t aTxBuffer;
@@ -131,32 +131,30 @@ static void TestSDRAM(uint32_t sdramAddr, uint32_t sdramSize)
 
 	//-----------------------------START TEST 1-----------------------------
 
-	for (i = 0; i < iter; i++)
+	for ( i = 0; i < iter; i++ )
 	{
 		Sdram_addr = sdramAddr + WriteReadAddr * i;
 		aTxBuffer = Sdram_addr;
-		*(volatile uint32_t*) Sdram_addr = aTxBuffer;
+		*(volatile uint32_t *) Sdram_addr = aTxBuffer;
 	}
 
-	for (i = 0; i < iter; i++)
+	for ( i = 0; i < iter; i++ )
 	{
 		aRxBuffer = 0x0;
 		Sdram_addr = sdramAddr + WriteReadAddr * i;
-		aRxBuffer = *(volatile uint32_t*) Sdram_addr;
+		aRxBuffer = *(volatile uint32_t *) Sdram_addr;
 
-		if (aRxBuffer != Sdram_addr)
+		if ( aRxBuffer != Sdram_addr )
 			uwWriteReadStatus++;
 
-		if (uwWriteReadStatus)
+		if ( uwWriteReadStatus )
 		{
-			ERROR_Sdram();
+			ERROR_Sdram ();
 			break;
 		}
-
 	}
-	if (!uwWriteReadStatus)
+	if ( !uwWriteReadStatus )
 	{
-
 	}
 
 	uwWriteReadStatus = 0;
@@ -165,30 +163,29 @@ static void TestSDRAM(uint32_t sdramAddr, uint32_t sdramSize)
 
 	//-----------------------------START TEST 2-----------------------------
 
-	for (i = 0; i < iter; i++)
+	for ( i = 0; i < iter; i++ )
 	{
 		Sdram_addr = sdramAddr + WriteReadAddr * i;
 		aTxBuffer = ~Sdram_addr;
-		*(volatile uint32_t*) Sdram_addr = aTxBuffer;
+		*(volatile uint32_t *) Sdram_addr = aTxBuffer;
 	}
 
-	for (i = 0; i < iter; i++)
+	for ( i = 0; i < iter; i++ )
 	{
 		aRxBuffer = 0x0;
 		Sdram_addr = sdramAddr + WriteReadAddr * i;
-		aRxBuffer = *(volatile uint32_t*) Sdram_addr;
+		aRxBuffer = *(volatile uint32_t *) Sdram_addr;
 
-		if (aRxBuffer != ~Sdram_addr)
+		if ( aRxBuffer != ~Sdram_addr )
 			uwWriteReadStatus++;
 
-		if (uwWriteReadStatus)
+		if ( uwWriteReadStatus )
 		{
-			ERROR_Sdram();
+			ERROR_Sdram ();
 			break;
 		}
-
 	}
-	if (!uwWriteReadStatus)
+	if ( !uwWriteReadStatus )
 	{
 	}
 
@@ -204,13 +201,13 @@ void MX_FMC_Init(void)
 {
   /* USER CODE BEGIN FMC_Init 0 */
 
-  /* USER CODE END FMC_Init 0 */
+	/* USER CODE END FMC_Init 0 */
 
   FMC_SDRAM_TimingTypeDef SdramTiming = {0};
 
   /* USER CODE BEGIN FMC_Init 1 */
 
-  /* USER CODE END FMC_Init 1 */
+	/* USER CODE END FMC_Init 1 */
 
   /** Perform the SDRAM1 memory initialization sequence
   */
@@ -243,14 +240,14 @@ void MX_FMC_Init(void)
   HAL_SetFMCMemorySwappingConfig(FMC_SWAPBMAP_SDRAM_SRAM);
 
   /* USER CODE BEGIN FMC_Init 2 */
-  /*
+	/*
   	  0xC0000000 jako External Device memory,
   	  0x60000000 jako External Normal Memory, domyślnie z atrybutem Write-Back / Write-Allocate.    -> remap z 0xC0000000 do 0x60000000 poprzez funkcje:  HAL_SetFMCMemorySwappingConfig(FMC_SWAPBMAP_SDRAM_SRAM);
   */
-  SDRAM_Initialization_Sequence();
-  TestSDRAM(SDRAM_MEMORY_ADDR, SDRAM_DEVICE_SIZE);		/* UWAGA ! Test SDRAM jest przeprowadzany przy WLACZONYM D-Cashe co moze test przejsc mimo fizycznych problemow z SDRAM. ! */
-  	  	  	  	  	  	  	  	  	  	  	  	  	  	/* PROPOZYCJA: Nie włączaj D-Cache przed tym testem, bo procesor może zapisać dane tylko do cache i potem odczytać je z cache — test może wyjść poprawnie mimo problemów z fizycznym SDRAM  */
-  /* USER CODE END FMC_Init 2 */
+	SDRAM_Initialization_Sequence ();
+	TestSDRAM ( SDRAM_MEMORY_ADDR, SDRAM_DEVICE_SIZE ); /* UWAGA ! Test SDRAM jest przeprowadzany przy WLACZONYM D-Cashe co moze test przejsc mimo fizycznych problemow z SDRAM. ! */
+														/* PROPOZYCJA: Nie włączaj D-Cache przed tym testem, bo procesor może zapisać dane tylko do cache i potem odczytać je z cache — test może wyjść poprawnie mimo problemów z fizycznym SDRAM  */
+														/* USER CODE END FMC_Init 2 */
 }
 
 static uint32_t FMC_Initialized = 0;
@@ -258,7 +255,7 @@ static uint32_t FMC_Initialized = 0;
 static void HAL_FMC_MspInit(void){
   /* USER CODE BEGIN FMC_MspInit 0 */
 
-  /* USER CODE END FMC_MspInit 0 */
+	/* USER CODE END FMC_MspInit 0 */
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   if (FMC_Initialized) {
     return;
@@ -409,17 +406,17 @@ static void HAL_FMC_MspInit(void){
 
   /* USER CODE BEGIN FMC_MspInit 1 */
 
-  /* USER CODE END FMC_MspInit 1 */
+	/* USER CODE END FMC_MspInit 1 */
 }
 
 void HAL_SDRAM_MspInit(SDRAM_HandleTypeDef* sdramHandle){
   /* USER CODE BEGIN SDRAM_MspInit 0 */
 
-  /* USER CODE END SDRAM_MspInit 0 */
+	/* USER CODE END SDRAM_MspInit 0 */
   HAL_FMC_MspInit();
   /* USER CODE BEGIN SDRAM_MspInit 1 */
 
-  /* USER CODE END SDRAM_MspInit 1 */
+	/* USER CODE END SDRAM_MspInit 1 */
 }
 
 static uint32_t FMC_DeInitialized = 0;
@@ -427,7 +424,7 @@ static uint32_t FMC_DeInitialized = 0;
 static void HAL_FMC_MspDeInit(void){
   /* USER CODE BEGIN FMC_MspDeInit 0 */
 
-  /* USER CODE END FMC_MspDeInit 0 */
+	/* USER CODE END FMC_MspDeInit 0 */
   if (FMC_DeInitialized) {
     return;
   }
@@ -518,17 +515,17 @@ static void HAL_FMC_MspDeInit(void){
 
   /* USER CODE BEGIN FMC_MspDeInit 1 */
 
-  /* USER CODE END FMC_MspDeInit 1 */
+	/* USER CODE END FMC_MspDeInit 1 */
 }
 
 void HAL_SDRAM_MspDeInit(SDRAM_HandleTypeDef* sdramHandle){
   /* USER CODE BEGIN SDRAM_MspDeInit 0 */
 
-  /* USER CODE END SDRAM_MspDeInit 0 */
+	/* USER CODE END SDRAM_MspDeInit 0 */
   HAL_FMC_MspDeInit();
   /* USER CODE BEGIN SDRAM_MspDeInit 1 */
 
-  /* USER CODE END SDRAM_MspDeInit 1 */
+	/* USER CODE END SDRAM_MspDeInit 1 */
 }
 /**
   * @}

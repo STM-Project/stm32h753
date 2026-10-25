@@ -57,8 +57,8 @@ def main():
     helper = source[source.index('/* Mode values are CGI'):source.index('SDRAM_ALIGN32 char HttpRefr_sdram')]
     templates = source[source.index('/* Settings page templates.'):source.index('const char HttpStructMainReadPanel2')]
     calls = esp[esp.index('case WWW_MAIN_SETTING:'):esp.index('case WWW_FAVICON:')]
-    calls = '\n'.join(line for line in calls.splitlines() if 'ptr=HTTP_TEMPLATE_2_' in line)
-    enums = '\n'.join(re.findall(r'typedef enum\{.*?\}\w+;',header,re.S))
+    calls = '\n'.join(line for line in calls.splitlines() if 'ptr = HTTP_TEMPLATE_2_' in line)
+    enums = '\n'.join(re.findall(r'typedef\s+enum\s*\{.*?\}\s*\w+\s*;',header,re.S))
     preamble = '#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include <assert.h>\n#include <stdlib.h>\n#include "http_settings_model.h"\n#include "relay_states.h"\n#include "mini_printf.h"\ntypedef uint8_t u8;\n'
     harness = preamble+enums+'\n'+helper+templates+'''
 int main(void) {

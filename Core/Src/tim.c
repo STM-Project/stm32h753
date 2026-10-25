@@ -33,14 +33,14 @@ void MX_TIM5_Init(void)
 
   /* USER CODE BEGIN TIM5_Init 0 */
 
-  /* USER CODE END TIM5_Init 0 */
+	/* USER CODE END TIM5_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM5_Init 1 */
 
-  /* USER CODE END TIM5_Init 1 */
+	/* USER CODE END TIM5_Init 1 */
   htim5.Instance = TIM5;
   htim5.Init.Prescaler = 0;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -64,7 +64,7 @@ void MX_TIM5_Init(void)
   }
   /* USER CODE BEGIN TIM5_Init 2 */
 
-  /* USER CODE END TIM5_Init 2 */
+	/* USER CODE END TIM5_Init 2 */
 
 }
 
@@ -75,12 +75,12 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
   {
   /* USER CODE BEGIN TIM5_MspInit 0 */
 
-  /* USER CODE END TIM5_MspInit 0 */
+		/* USER CODE END TIM5_MspInit 0 */
     /* TIM5 clock enable */
     __HAL_RCC_TIM5_CLK_ENABLE();
   /* USER CODE BEGIN TIM5_MspInit 1 */
 
-  /* USER CODE END TIM5_MspInit 1 */
+		/* USER CODE END TIM5_MspInit 1 */
   }
 }
 
@@ -91,34 +91,34 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
   {
   /* USER CODE BEGIN TIM5_MspDeInit 0 */
 
-  /* USER CODE END TIM5_MspDeInit 0 */
+		/* USER CODE END TIM5_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM5_CLK_DISABLE();
   /* USER CODE BEGIN TIM5_MspDeInit 1 */
 
-  /* USER CODE END TIM5_MspDeInit 1 */
+		/* USER CODE END TIM5_MspDeInit 1 */
   }
 }
 
 /* USER CODE BEGIN 1 */
-void StartMeasureTime_us(void)
+void StartMeasureTime_us ( void )
 {
-	__HAL_TIM_SET_COUNTER(&htim5,0);
-	HAL_TIM_Base_Start(&htim5);
+	__HAL_TIM_SET_COUNTER ( &htim5, 0 );
+	HAL_TIM_Base_Start ( &htim5 );
 }
 
-uint32_t StopMeasureTime_us(char *nameTime)  //przenies w osobny plik np TIMER.c a do HAL_TIM_Base_Stop odwolac sie jako MX_... w tim.c
+uint32_t StopMeasureTime_us ( char *nameTime ) //przenies w osobny plik np TIMER.c a do HAL_TIM_Base_Stop odwolac sie jako MX_... w tim.c
 {
-/*	register uint32_t counterTicks =__HAL_TIM_GET_COUNTER(&htim5);
+	/*	register uint32_t counterTicks =__HAL_TIM_GET_COUNTER(&htim5);
 	register float counterClock = 2*HAL_RCC_GetPCLK1Freq();
 	register uint32_t result = (uint32_t)(1000000 / (counterClock/(double)counterTicks));
 */
 
-	register uint32_t result = (uint32_t)(1000000 / ((2*HAL_RCC_GetPCLK1Freq()) / ((double)__HAL_TIM_GET_COUNTER(&htim5))) );
+	register uint32_t result = (uint32_t) ( 1000000 / ( ( 2 * HAL_RCC_GetPCLK1Freq () ) / ( (double) __HAL_TIM_GET_COUNTER ( &htim5 ) ) ) );
 
-	HAL_TIM_Base_Stop(&htim5);
-	if(nameTime[0]>0)
-		DbgVar(1,100,"%s%d us ",nameTime,result);
+	HAL_TIM_Base_Stop ( &htim5 );
+	if ( nameTime[0] > 0 )
+		DbgVar ( 1, 100, "%s%d us ", nameTime, result );
 	return result;
 }
 /* USER CODE END 1 */

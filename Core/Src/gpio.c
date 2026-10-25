@@ -81,13 +81,13 @@ void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 2 */
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void HAL_GPIO_EXTI_Callback ( uint16_t GPIO_Pin )
 {
-  if (GPIO_Pin == GPIO_PIN_4) {
-    /* As on F7, signal the touch task; keep I2C outside the ISR. */
-    touchDetect = 1;
-  }
+	if ( GPIO_Pin == GPIO_PIN_4 )
+	{
+		/* As on F7, signal the touch task; keep I2C outside the ISR. */
+		touchDetect = 1;
+	}
 }
-
 
 /* USER CODE END 2 */

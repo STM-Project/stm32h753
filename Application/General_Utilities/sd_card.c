@@ -39,13 +39,16 @@ static char ASCII_to_hex (char val)
 void SDCard_Init(void)
 {
 	FRESULT result;
-    /* Startup only, before file users/tasks run. Do not retry missing paths
+	/* Startup only, before file users/tasks run. Do not retry missing paths
      * or corrupt/unformatted volumes as if they were power-up delays. */
-    for (unsigned attempt=0; attempt<3; ++attempt) {
-        result=f_mount(&SDFatFS, (TCHAR const*) SDPath, 1);
-        if (result!=FR_NOT_READY && result!=FR_DISK_ERR) break;
-        if (attempt<2) osDelay(250);
-    }
+	for ( unsigned attempt = 0; attempt < 3; ++attempt )
+	{
+		result = f_mount ( &SDFatFS, (TCHAR const *) SDPath, 1 );
+		if ( result != FR_NOT_READY && result != FR_DISK_ERR )
+			break;
+		if ( attempt < 2 )
+			osDelay ( 250 );
+	}
 	if(FR_OK!=result)
 		ERROR_SDcardMount((int)result);
 }

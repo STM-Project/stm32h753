@@ -195,7 +195,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="h7-settings-page-") as directory:
         tmp = Path(directory)
         common = tmp / "common.c"
-        common.write_text("const char HttpStyle[]=" + json.dumps(style) + ";\n" +
+        common.write_text('const char HttpStyle[] =' + json.dumps(style) + ";\n" +
                           "const char HttpMainMenu[]=" + json.dumps(menu) + ";\n" +
                           "unsigned HTTP_SettingsPortMode(unsigned port) { return port % 14; }\n")
         sources = [str(ROOT / "Application/HTTP" / file) for file in

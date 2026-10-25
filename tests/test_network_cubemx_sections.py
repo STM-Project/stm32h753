@@ -13,7 +13,7 @@ assert '#if 0' in pattern.search(eth,eth.index('/* USER CODE BEGIN 0 */')).group
 assert '#include "network_ethernetif.inc"' in eth
 assert eth.count('#if 0')==1
 assert '#define MX_MBEDTLS_Init NetworkCubeMX_TLS_Placeholder' in (root/'MBEDTLS/App/mbedtls.c').read_text()
-assert 'if(!osKernelRunning() || tlsReady)return;' in (root/'Application/NETWORK/network_tls.c').read_text()
+assert 'if ( !osKernelRunning () || tlsReady )\n\t\treturn;' in (root/'Application/NETWORK/network_tls.c').read_text()
 assert '#define mbedtls_hardware_poll NetworkCubeMX_RNG_Placeholder' in (root/'MBEDTLS/Target/hardware_rng.c').read_text()
 assert 'NetworkPrepareDmaMemory();' in (root/'LWIP/App/lwip.c').read_text()
 print('CubeMX: generated code unchanged outside USER CODE; application TLS/RNG/DMA hooks preserved: PASS')

@@ -8,7 +8,7 @@ from test_settings_templates import literal
 ROOT=Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory() as name:
  tmp=Path(name);source=(ROOT/'Application/wwwPages.c').read_text()
- (tmp/'common.c').write_text('const char HttpStyle[]='+json.dumps(literal(source,'HttpStyle'))+';\nconst char HttpMainMenu[]='+json.dumps(literal(source,'HttpMainMenu'))+';\nunsigned HTTP_SettingsPortMode(unsigned p){return p%14;}')
+ (tmp/'common.c').write_text('const char HttpStyle[] ='+json.dumps(literal(source,'HttpStyle'))+';\nconst char HttpMainMenu[]='+json.dumps(literal(source,'HttpMainMenu'))+';\nunsigned HTTP_SettingsPortMode(unsigned p){return p%14;}')
  files=[str(ROOT/'Application/HTTP'/n) for n in ('http_settings_catalog.c','http_settings_model.c','http_settings_page.c')]
  subprocess.run(['gcc','-shared','-fPIC','-I'+str(ROOT/'Application/HTTP'),str(tmp/'common.c'),*files,'-o',str(tmp/'page.so')],check=True)
  lib=C.CDLL(str(tmp/'page.so'));configure(lib);lib.HTTP_SettingsModelInit(None,None,None)

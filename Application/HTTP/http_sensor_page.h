@@ -11,7 +11,7 @@
  * Numeric fields retain the original 50px width, but maxlength is 7 rather
  * than Sandwitch's 5 to accommodate 100.0% and all signed int16_t tenths.
  */
-size_t HTTP_SensorPageRender(char *out, size_t capacity, unsigned port,
-                           int humidity_enabled, const char *notice);
+size_t HTTP_SensorPageRender ( char *out, size_t capacity, unsigned port,
+							   int humidity_enabled, const char *notice );
 
 #endif /* HTTP_SENSOR_PAGE_H_ */

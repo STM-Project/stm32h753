@@ -299,14 +299,14 @@ def harness_source(tests=TESTS):
     header = (ROOT / "Application/wwwPages.h").read_text()
     hardware_header = (ROOT / "Application/esp32wroom.h").read_text()
     channels = re.search(r"#define\s+ESP_MAX_HTTP_CONN\s+(\d+)", hardware_header)[1]
-    web_enum = re.search(r"typedef enum\s*\{\s*WWW_MAIN_SETTING,.*?\}WEB_WWW;", esp, re.S)[0]
-    enums = "\n".join(re.findall(r"typedef enum\{.*?\}\w+;", header, re.S))
+    web_enum = re.search(r"typedef enum\s*\{\s*WWW_MAIN_SETTING,.*?\}\s*WEB_WWW\s*;", esp, re.S)[0]
+    enums = "\n".join(re.findall(r"typedef\s+enum\s*\{.*?\}\s*\w+\s*;", header, re.S))
     queue = esp[esp.index("#define MAX_HTML_WEBs"):esp.index("TimerHandle_t xWaitOnSendTimeoutTimer")]
     buffers = esp[esp.index("/* Queued pages must retain"):esp.index("static char* pMem=NULL;")]
     buffers = re.sub(r"^SDRAM static HTTP_RequestStream.*?;\n", "", buffers, flags=re.M)
-    route = esp[esp.index("static char* HTTP_SetWeb("):esp.index("static void HTTP_FeedReceiveRing(")]
+    route = esp[esp.index("static char* HTTP_SetWeb("):esp.index('static void HTTP_FeedReceiveRing (')]
     read_templates = source[source.index("char* HTTP_TEMPLATE_AdcTempRhu("):source.index("/* Separate tile templates for HttpMainReadPanel2.")]
-    read_hidden = source[source.index("char* HTTP_TEMPLATE_Hidden2("):source.index("/* Mode values are CGI")]
+    read_hidden = source[source.index('char *HTTP_TEMPLATE_Hidden2 ('):source.index("/* Mode values are CGI")]
     helpers = source[source.index("/* Mode values are CGI"):source.index("SDRAM_ALIGN32 char HttpRefr_sdram")]
     templates = source[source.index("/* Settings page templates."):source.index("const char HttpStructMainReadPanel2")]
     fragments = "\n".join(constant(source, name) for name in

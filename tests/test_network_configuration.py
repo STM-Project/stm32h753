@@ -53,7 +53,7 @@ assert not re.search(r'^void HAL_ETH_MspInit\(',eth,re.M)
 irq=(root/'Core/Src/stm32h7xx_it.c').read_text()
 assert irq.count('void ETH_IRQHandler(void)')==1
 assert '#include "eth.h"' not in irq
-assert 'HAL_NVIC_SetPriority(ETH_IRQn,5,0)' in (root/'Application/NETWORK/network_eth_hardware.c').read_text()
+assert 'HAL_NVIC_SetPriority ( ETH_IRQn, 5, 0 )' in (root/'Application/NETWORK/network_eth_hardware.c').read_text()
 assert 'GETVAL_ptr' not in (root/'Application/NETWORK/network_http.c').read_text()
 ld=(root/'STM32H753BITX_FLASH.ld').read_text()
 for text in ['.eth_dma 0x30040000','. = 0x60;','.eth_heap 0x30044000','.eth_rx_pool 0x30010000','ASSERT(SIZEOF(.eth_heap) <= 0x4000']:

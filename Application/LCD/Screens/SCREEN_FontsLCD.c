@@ -233,12 +233,14 @@ static int FILE_NAME(GetDefaultParam)(int param){
 
 void FILE_NAME(printInfo)(void){
 	if(v.DEBUG_ON){
-		DbgDma(1,Clr_ CoG2_"\r\ntypedef struct{\r\n"_X_);
-		DbgVarDma2(1,200,CoGr_"%*s %*s %*s %s\r\n"_X_, -8,"id", -18,"name", -15,"default value", "value");
-		#define X(a,b,c) DbgVarDma2(1,200,CoGr_"%*d"_X_	"%*s" 	CoGr_"= "_X_	 	"%*s" 	"(%s0x%x)\r\n",-4,a,		-23,getName(b),	-15,getName(c), 	CHECK_bit( FILE_NAME(SelBits)[a/32], (a-32*(a/32)) )?CoR_"change to: "_X_:"", v.b);
-			SCREEN_FONTS_SET_PARAMETERS
-		#undef X
-		DbgVarDma(1,200,CoG2_"}%s;\r\n"_X_,getName(FILE_NAME(struct)));
+		DbgDma ( 1, Clr_ CoG2_ "\r\ntypedef struct{\r\n" _X_ );
+		DbgVarDma2 ( 1, 200, CoGr_ "%*s %*s %*s %s\r\n" _X_, -8, "id", -18, "name", -15, "default value", "value" );
+#define X( a, b, c ) DbgVarDma2 ( 1, 200, CoGr_ "%*d" _X_ "%*s" CoGr_ "= " _X_ "%*s" \
+												"(%s0x%x)\r\n",                      \
+								  -4, a, -23, getName ( b ), -15, getName ( c ), CHECK_bit ( FILE_NAME ( SelBits )[a / 32], ( a - 32 * ( a / 32 ) ) ) ? CoR_ "change to: " _X_ : "", v.b );
+		SCREEN_FONTS_SET_PARAMETERS
+#undef X
+		DbgVarDma ( 1, 200, CoG2_ "}%s;\r\n" _X_, getName ( FILE_NAME ( struct ) ) );
 	}
 }
 //ZROBIC szablon z macro by dla kazdego pliku szybko skopioowac !!!!!!!!!!!!!!!
@@ -570,7 +572,9 @@ static int *ppMain[7] = {(int*)FRAMES_GROUP_combined,(int*)FRAMES_GROUP_separat,
 static char keyBuff[KEYBUFF_SIZE]="Test";
 
 static void KEYBOARD_SETTXT_ServiceTxtBuffer(char *buf, int size){
-	DbgDma(1,"\r\n"); DbgDma(1,buf); DbgDma(1,"\r\n");
+	DbgDma ( 1, "\r\n" );
+	DbgDma ( 1, buf );
+	DbgDma ( 1, "\r\n" );
 }
 
 static int ChangeTxt(void){
@@ -896,7 +900,7 @@ static void LCD_LoadFontVar(void)
 		Test.loadFontTime=StopMeasureTime(0,"");
 
 		if(v.FONT_ID_Fonts<0){
-			DbgDma(1,"\r\nERROR_LoadFontVar ");
+			DbgDma ( 1, "\r\nERROR_LoadFontVar " );
 			v.FONT_ID_Fonts=0;
 		}
 		DisplayFontsStructState();
@@ -1679,65 +1683,64 @@ static void* MainFuncRefresh(void *p1,void *p2){
 }
 
 void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
-	DEBUG_InvalidateDCache(); // Same RX path as esp32wroom.c.
+		DEBUG_InvalidateDCache (); // Same RX path as esp32wroom.c.
 
-	if(DEBUG_IsTxtReceive("abc"))
-		FILE_NAME(printInfo)();
+		if ( DEBUG_IsTxtReceive ( "abc" ) )
+			FILE_NAME ( printInfo ) ();
 
+		/* ----- Debug Test For Touch Resolution ----- */
+		else if ( DEBUG_IsTxtReceive ( "resolution" ) )
+			TOUCH_SetDefaultResolution ();
 
-	/* ----- Debug Test For Touch Resolution ----- */
-	else if(DEBUG_IsTxtReceive("resolution"))
-		TOUCH_SetDefaultResolution();
+		_DBG_PARAM_NOWRAP ( "r1", TOUCH_GetPtr2Resolution (), _uint8, _Incr, _Uint8 ( 1 ), _Uint8 ( 15 ), "Touch Resolution: ", NULL )
+		_DBG_PARAM_NOWRAP ( "r2", TOUCH_GetPtr2Resolution (), _uint8, _Decr, _Uint8 ( 1 ), _Uint8 ( 1 ), "Touch Resolution: ", NULL )
+		/* ----- END Debug Test For Touch Resolution ----- */
 
-	_DBG_PARAM_NOWRAP("r1",TOUCH_GetPtr2Resolution(),_uint8,_Incr,_Uint8(1),_Uint8(15),"Touch Resolution: ",NULL)
-	_DBG_PARAM_NOWRAP("r2",TOUCH_GetPtr2Resolution(),_uint8,_Decr,_Uint8(1),_Uint8(1), "Touch Resolution: ",NULL)
-	/* ----- END Debug Test For Touch Resolution ----- */
-
-
-	else if(DEBUG_IsTxtReceive("p"))
-	{
-		DbgVarDma(1,100,Clr_ Mag_"\r\nStart: %s -> CPU: %d \r\n"_X_, GET_CODE_FUNCTION, osGetCPUUsage());
-		DisplayCoeffCalibration();
-	}
-	else if(DEBUG_IsTxtReceive("s\x0D"))
-	{
-		SCREEN_Fonts_funcSet(FONT_COLOR_LoadFontTime, BLACK);
-		SCREEN_Fonts_funcSet(COLOR_FramePress, BLACK);
-	}
-
-	else if(DEBUG_IsTxtReceive("6"))
-	{
-		if(TOOGLE(RR)) ///DAJ JAKO WYBOR BITOWY \11111111111111 dla toogle !!!!!!!!!!!!!!!!!!!!!!!!
+		else if ( DEBUG_IsTxtReceive ( "p" ) )
 		{
-//			FILE_NAME(keyboard)(KEYBOARD_fontRGB, KEY_All_release, LCD_RoundRectangle,0,  10,160, KeysAutoSize,12, 4, Touch_FontColor, Touch_fontRp, KeysDel);
-//			FILE_NAME(keyboard)(KEYBOARD_bkRGB,   KEY_All_release, LCD_RoundRectangle,0, 600,160, KeysAutoSize,12, 4, Touch_BkColor, 	Touch_bkRp,	  KeysNotDel);
-/*
+			DbgVarDma ( 1, 100, Clr_ Mag_ "\r\nStart: %s -> CPU: %d \r\n" _X_, GET_CODE_FUNCTION, osGetCPUUsage () );
+			DisplayCoeffCalibration ();
+		}
+		else if ( DEBUG_IsTxtReceive ( "s\x0D" ) )
+		{
+			SCREEN_Fonts_funcSet ( FONT_COLOR_LoadFontTime, BLACK );
+			SCREEN_Fonts_funcSet ( COLOR_FramePress, BLACK );
+		}
+
+		else if ( DEBUG_IsTxtReceive ( "6" ) )
+		{
+			if ( TOOGLE ( RR ) ) ///DAJ JAKO WYBOR BITOWY \11111111111111 dla toogle !!!!!!!!!!!!!!!!!!!!!!!!
+			{
+				//			FILE_NAME(keyboard)(KEYBOARD_fontRGB, KEY_All_release, LCD_RoundRectangle,0,  10,160, KeysAutoSize,12, 4, Touch_FontColor, Touch_fontRp, KeysDel);
+				//			FILE_NAME(keyboard)(KEYBOARD_bkRGB,   KEY_All_release, LCD_RoundRectangle,0, 600,160, KeysAutoSize,12, 4, Touch_BkColor, 	Touch_bkRp,	  KeysNotDel);
+				/*
 			FILE_NAME(keyboard)(KEYBOARD_sliderRGB, 	KEY_All_release, LCD_RoundRectangle,0, 50,160, 39,140,  16, Touch_FontColor2, Touch2_fontSliderR_left, KeysDel);
 			FILE_NAME(keyboard)(KEYBOARD_sliderBkRGB, KEY_All_release, LCD_RoundRectangle,0, 550,160, 39,140, 16, Touch_BkColor2,   Touch2_bkSliderR_left, 	 KeysNotDel);
 */
 
-			FILE_NAME(keyboard)(KEYBOARD_fontSize2, KEY_Select_one,  LCD_Rectangle,		 0, 615,100, KeysAutoSize,10, 0, Touch_FontSizeMove, Touch_FontSizeRoll,KeysDel);
-			FILE_NAME(keyboard)(KEYBOARD_bkRGB,   	 KEY_All_release, LCD_RoundRectangle,0, 300,200, KeysAutoSize,12, 4, Touch_BkColor, 	  Touch_bkRp,	  		KeysNotDel);
+				FILE_NAME ( keyboard ) ( KEYBOARD_fontSize2, KEY_Select_one, LCD_Rectangle, 0, 615, 100, KeysAutoSize, 10, 0, Touch_FontSizeMove, Touch_FontSizeRoll, KeysDel );
+				FILE_NAME ( keyboard ) ( KEYBOARD_bkRGB, KEY_All_release, LCD_RoundRectangle, 0, 300, 200, KeysAutoSize, 12, 4, Touch_BkColor, Touch_bkRp, KeysNotDel );
+			}
+			else
+			{
+				FILE_NAME ( main ) ( LoadPartScreen, (char **) ppMain );
+				KEYBOARD_TYPE ( KEYBOARD_none, 0 );
+			}
+
+			//Plik_bin_Divide(GETVAL_ptr(0));
 		}
-		else
+
+		else if ( DEBUG_IsTxtReceive ( "7" ) )
 		{
-			FILE_NAME(main)(LoadPartScreen,(char**)ppMain);
-			KEYBOARD_TYPE(KEYBOARD_none,0);
+			*ppMain = (int *) FRAMES_GROUP_separat;
+			FILE_NAME ( main ) ( LoadUserScreen, (char **) ppMain );
 		}
 
-		//Plik_bin_Divide(GETVAL_ptr(0));
-	}
-
-	else if(DEBUG_IsTxtReceive("7")){
-		*ppMain=(int*)FRAMES_GROUP_separat;
-		FILE_NAME(main)(LoadUserScreen,(char**)ppMain);
-	}
-
-	else if(DEBUG_IsTxtReceive("1"))
-	{
-		DbgDma(1,"test");
-		FILE_NAME(main)(LoadPartScreen,(char**)ppMain);
-	}
+		else if ( DEBUG_IsTxtReceive ( "1" ) )
+		{
+			DbgDma ( 1, "test" );
+			FILE_NAME ( main ) ( LoadPartScreen, (char **) ppMain );
+		}
 
 	else if(DEBUG_IsTxtReceive("q"))
 	{
@@ -1761,69 +1764,68 @@ void FILE_NAME(debugRcvStr)(void){	 if(v.DEBUG_ON){
 
 #if defined(LCD_ENABLE_F7_NETWORK_DEBUG)
 /* F7-only network test commands are not LCD dependencies on H7. */
-	else if(DEBUG_IsTxtReceive("8"))
+	else if ( DEBUG_IsTxtReceive ( "8" ) )
 	{
-		DbgDma(1,"8 ");
+		DbgDma ( 1, "8 " );
 		ESP_Send("AT+SYSTIMESTAMP?\r\n");
 	}
-	else if(DEBUG_IsTxtReceive("9"))
+	else if ( DEBUG_IsTxtReceive ( "9" ) )
 	{
-		DbgDma(1,"9 ");
+		DbgDma ( 1, "9 " );
 		ESP_Recv();
 	}
-	else if(DEBUG_IsTxtReceive("0"))
+	else if ( DEBUG_IsTxtReceive ( "0" ) )
 	{
-		DbgDma(1,"0 ");
+		DbgDma ( 1, "0 " );
 		RestartWifiTask();
 	}
-	else if(DEBUG_IsTxtReceive("q"))
+	else if ( DEBUG_IsTxtReceive ( "q" ) )
 	{
-		DbgDma(1,"q ");
+		DbgDma ( 1, "q " );
 		vRestartWifiServer();
 	}
-	else if(DEBUG_IsTxtReceive("w"))
+	else if ( DEBUG_IsTxtReceive ( "w" ) )
 	{
-		DbgDma(1,"w ");
+		DbgDma ( 1, "w " );
 		vTestATcommand();
 	}
-	else if(DEBUG_IsTxtReceive("f"))
+	else if ( DEBUG_IsTxtReceive ( "f" ) )
 	{
-		DbgDma(1,"f");
+		DbgDma ( 1, "f" );
 		vRestoreESP();
 	}
 
 
 
 // to dla wifi:
-//	else if(DEBUG_IsTxtReceive(","))   //interia
-//	{
-//		DbgDma(1,", ");
-//		SendEmail(1, 1<<5|1<<1, EMAIL_TEST);
-//	}
-//	else if(DEBUG_IsTxtReceive("."))
-//	{
-//		DbgDma(1,". ");
-//		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
-//
-//		CreateTestEMAILTask("Info_11 ");
-//	}
-//	else if(DEBUG_IsTxtReceive("/"))   //gmail
-//	{
-//		DbgDma(1,"/");
-//		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
-//	}
+	//	else if(DEBUG_IsTxtReceive(","))   //interia
+	//	{
+	//		DbgDma(1,", ");
+	//		SendEmail(1, 1<<5|1<<1, EMAIL_TEST);
+	//	}
+	//	else if(DEBUG_IsTxtReceive("."))
+	//	{
+	//		DbgDma(1,". ");
+	//		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
+	//
+	//		CreateTestEMAILTask("Info_11 ");
+	//	}
+	//	else if(DEBUG_IsTxtReceive("/"))   //gmail
+	//	{
+	//		DbgDma(1,"/");
+	//		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
+	//	}
 
-
-/* !! Wywolywania zadania z zadania generuje hardfault !! */
-	else if(DEBUG_IsTxtReceive("."))
+	/* !! Wywolywania zadania z zadania generuje hardfault !! */
+	else if ( DEBUG_IsTxtReceive ( "." ) )
 	{
-		DbgDma(1,". ");
+		DbgDma ( 1, ". " );
 		SendEmail(0, 1<<5|1<<1, EMAIL_TEST);
 		//CreateTestEMAILTask("asdasd");
 	}
-	else if(DEBUG_IsTxtReceive("/"))   //gmail
+	else if ( DEBUG_IsTxtReceive ( "/" ) ) //gmail
 	{
-		DbgDma(1,"/");
+		DbgDma ( 1, "/" );
 		SendEmail(0, 1<<1, EMAIL_MEASURE);
 		CreateTestEMAILTask("0123456789 ABCD abcd");
 	}
@@ -2239,7 +2241,7 @@ void FILE_NAME(main)(int argNmb, char **argVal)   //Dla Zmiana typu czcionki Tou
 		LCD_TOUCH_DeleteAllSetTouch();
 		FONTS_LCD_ResetParam();
 
-		DbgVarDma(v.DEBUG_ON,100, "%s" Cya_"\r\nStart: %s\r\n"_X_, CONDITION(USE_DBG_CLR,Clr_,""), GET_CODE_FUNCTION);
+		DbgVarDma ( v.DEBUG_ON, 100, "%s" Cya_ "\r\nStart: %s\r\n" _X_, CONDITION ( USE_DBG_CLR, Clr_, "" ), GET_CODE_FUNCTION );
 
 		LoadFonts(FONT_ID_Title, FONT_ID_Press);
 		LCD_LoadFontVar();

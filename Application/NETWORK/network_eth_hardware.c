@@ -20,22 +20,22 @@
 /* Includes ------------------------------------------------------------------*/
 #include "network_eth_hardware.h"
 
-#if defined ( __ICCARM__ ) /*!< IAR Compiler */
+#if defined( __ICCARM__ ) /*!< IAR Compiler */
 
-#pragma location=0x30000000
-ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-#pragma location=0x30000080
-ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+#pragma location = 0x30000000
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+#pragma location = 0x30000080
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
-#elif defined ( __CC_ARM )  /* MDK ARM Compiler */
+#elif defined( __CC_ARM ) /* MDK ARM Compiler */
 
-__attribute__((at(0x30000000))) ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((at(0x30000080))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+__attribute__ ( ( at ( 0x30000000 ) ) ) ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+__attribute__ ( ( at ( 0x30000080 ) ) ) ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
-#elif defined ( __GNUC__ ) /* GNU Compiler */
+#elif defined( __GNUC__ ) /* GNU Compiler */
 
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDescripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDescripSection")));   /* Ethernet Tx DMA Descriptors */
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__ ( ( section ( ".RxDescripSection" ) ) ); /* Ethernet Rx DMA Descriptors */
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__ ( ( section ( ".TxDescripSection" ) ) ); /* Ethernet Tx DMA Descriptors */
 
 #endif
 ETH_BufferTypeDef Txbuffer[ETH_TX_DESC_CNT * 2U];
@@ -47,24 +47,24 @@ ETH_TxPacketConfig TxConfig;
 
 ETH_HandleTypeDef heth;
 
-void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
+void HAL_ETH_MspInit ( ETH_HandleTypeDef *ethHandle )
 {
 
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(ethHandle->Instance==ETH)
-  {
-  /* USER CODE BEGIN ETH_MspInit 0 */
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	if ( ethHandle->Instance == ETH )
+	{
+		/* USER CODE BEGIN ETH_MspInit 0 */
 
-  /* USER CODE END ETH_MspInit 0 */
-    /* ETH clock enable */
-    __HAL_RCC_ETH1MAC_CLK_ENABLE();
-    __HAL_RCC_ETH1TX_CLK_ENABLE();
-    __HAL_RCC_ETH1RX_CLK_ENABLE();
+		/* USER CODE END ETH_MspInit 0 */
+		/* ETH clock enable */
+		__HAL_RCC_ETH1MAC_CLK_ENABLE ();
+		__HAL_RCC_ETH1TX_CLK_ENABLE ();
+		__HAL_RCC_ETH1RX_CLK_ENABLE ();
 
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    /**ETH GPIO Configuration
+		__HAL_RCC_GPIOC_CLK_ENABLE ();
+		__HAL_RCC_GPIOA_CLK_ENABLE ();
+		__HAL_RCC_GPIOB_CLK_ENABLE ();
+		/**ETH GPIO Configuration
     PC1     ------> ETH_MDC
     PA1     ------> ETH_REF_CLK
     PA2     ------> ETH_MDIO
@@ -75,49 +75,49 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
     PB12     ------> ETH_TXD0
     PB13     ------> ETH_TXD1
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+		GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+		HAL_GPIO_Init ( GPIOC, &GPIO_InitStruct );
 
-    GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_7;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+		GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_7;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+		HAL_GPIO_Init ( GPIOA, &GPIO_InitStruct );
 
-    GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+		GPIO_InitStruct.Pin = GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+		HAL_GPIO_Init ( GPIOB, &GPIO_InitStruct );
 
-  /* USER CODE BEGIN ETH_MspInit 1 */
-    HAL_NVIC_SetPriority(ETH_IRQn,5,0);
-    HAL_NVIC_EnableIRQ(ETH_IRQn);
+		/* USER CODE BEGIN ETH_MspInit 1 */
+		HAL_NVIC_SetPriority ( ETH_IRQn, 5, 0 );
+		HAL_NVIC_EnableIRQ ( ETH_IRQn );
 
-  /* USER CODE END ETH_MspInit 1 */
-  }
+		/* USER CODE END ETH_MspInit 1 */
+	}
 }
 
-void HAL_ETH_MspDeInit(ETH_HandleTypeDef* ethHandle)
+void HAL_ETH_MspDeInit ( ETH_HandleTypeDef *ethHandle )
 {
 
-  if(ethHandle->Instance==ETH)
-  {
-  /* USER CODE BEGIN ETH_MspDeInit 0 */
+	if ( ethHandle->Instance == ETH )
+	{
+		/* USER CODE BEGIN ETH_MspDeInit 0 */
 
-  /* USER CODE END ETH_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_ETH1MAC_CLK_DISABLE();
-    __HAL_RCC_ETH1TX_CLK_DISABLE();
-    __HAL_RCC_ETH1RX_CLK_DISABLE();
+		/* USER CODE END ETH_MspDeInit 0 */
+		/* Peripheral clock disable */
+		__HAL_RCC_ETH1MAC_CLK_DISABLE ();
+		__HAL_RCC_ETH1TX_CLK_DISABLE ();
+		__HAL_RCC_ETH1RX_CLK_DISABLE ();
 
-    /**ETH GPIO Configuration
+		/**ETH GPIO Configuration
     PC1     ------> ETH_MDC
     PA1     ------> ETH_REF_CLK
     PA2     ------> ETH_MDIO
@@ -128,16 +128,16 @@ void HAL_ETH_MspDeInit(ETH_HandleTypeDef* ethHandle)
     PB12     ------> ETH_TXD0
     PB13     ------> ETH_TXD1
     */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5);
+		HAL_GPIO_DeInit ( GPIOC, GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5 );
 
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_7);
+		HAL_GPIO_DeInit ( GPIOA, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_7 );
 
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13);
+		HAL_GPIO_DeInit ( GPIOB, GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 );
 
-  /* USER CODE BEGIN ETH_MspDeInit 1 */
+		/* USER CODE BEGIN ETH_MspDeInit 1 */
 
-  /* USER CODE END ETH_MspDeInit 1 */
-  }
+		/* USER CODE END ETH_MspDeInit 1 */
+	}
 }
 
 /* USER CODE BEGIN 1 */

@@ -117,12 +117,14 @@ static int FILE_NAME(GetDefaultParam)(int param){
 
 void FILE_NAME(printInfo)(void){
 	if(v.DEBUG_ON){
-		DbgDma(1,Clr_ CoG2_"\r\ntypedef struct{\r\n"_X_);
-		DbgVarDma2(1,200,CoGr_"%*s %*s %*s %s\r\n"_X_, -8,"id", -18,"name", -15,"default value", "value");
-		#define X(a,b,c) DbgVarDma2(1,200,CoGr_"%*d"_X_	"%*s" 	CoGr_"= "_X_	 	"%*s" 	"(%s0x%x)\r\n",-4,a,		-23,getName(b),	-15,getName(c), 	CHECK_bit(FILE_NAME(SelBits),a)?CoR_"change to: "_X_:"", v.b);
-			SCREEN_CALIBRATION_SET_PARAMETERS
-		#undef X
-		DbgVarDma(1,200,CoG2_"}%s;\r\n"_X_,getName(FILE_NAME(struct)));
+		DbgDma ( 1, Clr_ CoG2_ "\r\ntypedef struct{\r\n" _X_ );
+		DbgVarDma2 ( 1, 200, CoGr_ "%*s %*s %*s %s\r\n" _X_, -8, "id", -18, "name", -15, "default value", "value" );
+#define X( a, b, c ) DbgVarDma2 ( 1, 200, CoGr_ "%*d" _X_ "%*s" CoGr_ "= " _X_ "%*s" \
+												"(%s0x%x)\r\n",                      \
+								  -4, a, -23, getName ( b ), -15, getName ( c ), CHECK_bit ( FILE_NAME ( SelBits ), a ) ? CoR_ "change to: " _X_ : "", v.b );
+		SCREEN_CALIBRATION_SET_PARAMETERS
+#undef X
+		DbgVarDma ( 1, 200, CoG2_ "}%s;\r\n" _X_, getName ( FILE_NAME ( struct ) ) );
 	}
 }
 
@@ -269,7 +271,7 @@ void FILE_NAME(main)(int argNmb, char **argVal)
 	uint8_t status = BSP_TS_Init(LCD_GetXSize(), LCD_GetYSize());
 
 	if(status)
-		DbgDma(v.DEBUG_ON, TEXT2PRINT(DEBUG_Text_1,1));
+		DbgDma ( v.DEBUG_ON, TEXT2PRINT ( DEBUG_Text_1, 1 ) );
 	else
 	{
 	   SetLogXY(pos,width,CIRCLES_NUMBER);
@@ -280,7 +282,7 @@ void FILE_NAME(main)(int argNmb, char **argVal)
 	   SetPhysXY(phys,CIRCLES_NUMBER);
 
 	   if(LCD_TOUCH_CalcCoeffCalibr(CIRCLES_NUMBER))
-	   	DbgDma(v.DEBUG_ON, TEXT2PRINT(DEBUG_Text_2,1));
+		   DbgDma ( v.DEBUG_ON, TEXT2PRINT ( DEBUG_Text_2, 1 ) );
 	   else{
 		   CalibrationWasDone();
 		   DisplayCoeffCalibration();

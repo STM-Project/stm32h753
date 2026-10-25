@@ -1,0 +1,15 @@
+Core/**
+Drivers/**
+Middlewares/**
+LWIP/**
+MBEDTLS/**
+FATFS/**
+Application/LCD/Touch/**
+Application/LCD/LCD_BasicGraphics.*
+Application/LCD/LCD_fonts_images.*
+Application/LCD/Keyboard.*
+Application/HTTP/http_all_settings.h
+Application/HTTP/http_all_settings_bindings.inc
+Application/HTTP/http_settings_catalog.*
+Application/LPC2148/http_lpc_assets.c
+Application/LPC2148/lpc_manifest.c

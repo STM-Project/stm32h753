@@ -28,22 +28,22 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
+	/* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
-/* USER CODE END ET */
+	/* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 
-/* USER CODE END EC */
+	/* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
-/* USER CODE END EM */
+	/* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
 void NMI_Handler(void);
@@ -64,9 +64,9 @@ void USART6_IRQHandler(void);
 void UART7_IRQHandler(void);
 void MDMA_IRQHandler(void);
 /* USER CODE BEGIN EFP */
-void ETH_IRQHandler(void);
+	void ETH_IRQHandler ( void );
 
-/* USER CODE END EFP */
+	/* USER CODE END EFP */
 
 #ifdef __cplusplus
 }

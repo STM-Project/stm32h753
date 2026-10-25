@@ -14,7 +14,7 @@
 
 /* Both startup defaults and SNTP updates write through this pointer. */
 static struct tm sntpTimeStorage;
-struct tm *sntpTime=&sntpTimeStorage;
+struct tm *sntpTime = &sntpTimeStorage;
 
 void DefaultSettingsDNS(void)
 {

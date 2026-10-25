@@ -157,7 +157,7 @@ def main():
         tmp = Path(directory)
         fixtures = tmp / "shared.c"
         fixtures.write_text(
-            "const char HttpStyle[]=" + json.dumps(style) + ";\n" +
+            'const char HttpStyle[] =' + json.dumps(style) + ";\n" +
             "const char HttpMainMenu[]=" + json.dumps(menu) + ";\n"
         )
         harness = tmp / "test.c"

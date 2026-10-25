@@ -103,11 +103,11 @@ int main(void) {
 def main():
     source=(ROOT/'Application/esp32wroom.c').read_text()
     init=source[source.index('static void InitStructRqstToSendChnl('):source.index('static int IsActiveAnyRqstToSendChnl(')]
-    tx=source[source.index('int CheckReadyToSendChnl('):source.index('static int HTTP_GetClosedChannel(')]
+    tx=source[source.index('int CheckReadyToSendChnl ('):source.index('static int HTTP_GetClosedChannel(')]
     # Guard against reintroducing a timer-task mutation of the HTTP queue.
     callback=source[source.index('static void vWaitOnSendTimeoutTimerCallback('):source.index('static int RcvTimeoutTimerInit(')]
     assert 'InitStructRqstToSendChnl(' not in callback
-    assert 'httpResetRequested=1' in callback
+    assert 'httpResetRequested = 1' in callback
     base=sensor.TESTS.replace('int main(void)','static int __attribute__((unused)) sensor_routes_suite(void)')
     sensor.compile_and_run(sensor.harness_source(base+STUBS+init+tx+TESTS))
 if __name__=='__main__':main()

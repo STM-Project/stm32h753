@@ -1,7 +1,7 @@
 #ifndef GOOGLE_CLOUD_CONFIG_H
 #define GOOGLE_CLOUD_CONFIG_H
-#if defined(__has_include)
-#if __has_include("google_cloud_config.local.h")
+#if defined( __has_include )
+#if __has_include( "google_cloud_config.local.h" )
 #include "google_cloud_config.local.h"
 #endif
 #endif

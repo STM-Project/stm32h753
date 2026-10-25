@@ -33,11 +33,11 @@ void MX_I2C1_Init(void)
 
   /* USER CODE BEGIN I2C1_Init 0 */
 
-  /* USER CODE END I2C1_Init 0 */
+	/* USER CODE END I2C1_Init 0 */
 
   /* USER CODE BEGIN I2C1_Init 1 */
 
-  /* USER CODE END I2C1_Init 1 */
+	/* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
   hi2c1.Init.Timing = 0x307075B1;
   hi2c1.Init.OwnAddress1 = 0;
@@ -67,7 +67,7 @@ void MX_I2C1_Init(void)
   }
   /* USER CODE BEGIN I2C1_Init 2 */
 
-  /* USER CODE END I2C1_Init 2 */
+	/* USER CODE END I2C1_Init 2 */
 
 }
 /* I2C4 init function */
@@ -76,11 +76,11 @@ void MX_I2C4_Init(void)
 
   /* USER CODE BEGIN I2C4_Init 0 */
 
-  /* USER CODE END I2C4_Init 0 */
+	/* USER CODE END I2C4_Init 0 */
 
   /* USER CODE BEGIN I2C4_Init 1 */
 
-  /* USER CODE END I2C4_Init 1 */
+	/* USER CODE END I2C4_Init 1 */
   hi2c4.Instance = I2C4;
   hi2c4.Init.Timing = 0x307075B1;
   hi2c4.Init.OwnAddress1 = 0;
@@ -110,7 +110,7 @@ void MX_I2C4_Init(void)
   }
   /* USER CODE BEGIN I2C4_Init 2 */
 
-  /* USER CODE END I2C4_Init 2 */
+	/* USER CODE END I2C4_Init 2 */
 
 }
 
@@ -123,7 +123,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
   {
   /* USER CODE BEGIN I2C1_MspInit 0 */
 
-  /* USER CODE END I2C1_MspInit 0 */
+		/* USER CODE END I2C1_MspInit 0 */
 
   /** Initializes the peripherals clock
   */
@@ -150,13 +150,13 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
     __HAL_RCC_I2C1_CLK_ENABLE();
   /* USER CODE BEGIN I2C1_MspInit 1 */
 
-  /* USER CODE END I2C1_MspInit 1 */
+		/* USER CODE END I2C1_MspInit 1 */
   }
   else if(i2cHandle->Instance==I2C4)
   {
   /* USER CODE BEGIN I2C4_MspInit 0 */
 
-  /* USER CODE END I2C4_MspInit 0 */
+		/* USER CODE END I2C4_MspInit 0 */
 
   /** Initializes the peripherals clock
   */
@@ -183,7 +183,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
     __HAL_RCC_I2C4_CLK_ENABLE();
   /* USER CODE BEGIN I2C4_MspInit 1 */
 
-  /* USER CODE END I2C4_MspInit 1 */
+		/* USER CODE END I2C4_MspInit 1 */
   }
 }
 
@@ -194,7 +194,7 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
   {
   /* USER CODE BEGIN I2C1_MspDeInit 0 */
 
-  /* USER CODE END I2C1_MspDeInit 0 */
+		/* USER CODE END I2C1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_I2C1_CLK_DISABLE();
 
@@ -208,13 +208,13 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 
   /* USER CODE BEGIN I2C1_MspDeInit 1 */
 
-  /* USER CODE END I2C1_MspDeInit 1 */
+		/* USER CODE END I2C1_MspDeInit 1 */
   }
   else if(i2cHandle->Instance==I2C4)
   {
   /* USER CODE BEGIN I2C4_MspDeInit 0 */
 
-  /* USER CODE END I2C4_MspDeInit 0 */
+		/* USER CODE END I2C4_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_I2C4_CLK_DISABLE();
 
@@ -228,7 +228,7 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 
   /* USER CODE BEGIN I2C4_MspDeInit 1 */
 
-  /* USER CODE END I2C4_MspDeInit 1 */
+		/* USER CODE END I2C4_MspDeInit 1 */
   }
 }
 

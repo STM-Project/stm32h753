@@ -97,7 +97,12 @@ typedef enum
 
 typedef enum
 {
-	INIT_CONNECTION, HTTP_CONNECTION, HTTP_CONNECTION_2, SMTP_CONNECTION, TEST_CONNECTION, GOOGLE_CLOUD_CONNECTION
+	INIT_CONNECTION,
+	HTTP_CONNECTION,
+	HTTP_CONNECTION_2,
+	SMTP_CONNECTION,
+	TEST_CONNECTION,
+	GOOGLE_CLOUD_CONNECTION
 } CONNECTION_TYPE;
 
 typedef enum
@@ -153,7 +158,11 @@ typedef enum
 	WWW_DATA_REFRESH,
 	WWW_LPC_ASSET,
 	WWW_LPC_DATA,
-    WWW_LPC_SD, WWW_LPC_CONFIG, WWW_LPC_SAVE, WWW_LPC_CATALOG, WWW_LPC_LIVE,
+	WWW_LPC_SD,
+	WWW_LPC_CONFIG,
+	WWW_LPC_SAVE,
+	WWW_LPC_CATALOG,
+	WWW_LPC_LIVE,
 	WWW_OUTPUT_CONTROL,
 	WWW_FAVICON,
 	WWW_SENSOR_SETTING,
@@ -194,18 +203,18 @@ TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
 /* Queued pages must retain their contents until that slot finishes sending. */
 SDRAM static char httpPageBuff[ESP_MAX_HTTP_CONN][100000];
-SDRAM static char httpLpcSdBuff[ESP_MAX_HTTP_CONN][LPC_PAGE_BUFFER_SIZE] __attribute__((aligned(32)));
+SDRAM static char httpLpcSdBuff[ESP_MAX_HTTP_CONN][LPC_PAGE_BUFFER_SIZE] __attribute__ ( ( aligned ( 32 ) ) );
 SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][131072];
 SDRAM static HTTP_RequestStream httpRequestStream;
 static char httpResponseHeader[ESP_MAX_HTTP_CONN][192];
 static char httpCleanAddress[ESP_MAX_HTTP_CONN][384];
 static char httpStorageNotice[ESP_MAX_HTTP_CONN][320];
 static unsigned httpSensorPort[ESP_MAX_HTTP_CONN];
-static const char* httpSensorNotice[ESP_MAX_HTTP_CONN];
+static const char *httpSensorNotice[ESP_MAX_HTTP_CONN];
 static int httpResponseStatus[ESP_MAX_HTTP_CONN];
-static const HTTP_SettingPage* httpSettingsPage[ESP_MAX_HTTP_CONN];
+static const HTTP_SettingPage *httpSettingsPage[ESP_MAX_HTTP_CONN];
 static uint16_t httpSettingsInstance[ESP_MAX_HTTP_CONN];
-static const HTTP_LpcAsset* httpLpcAsset[ESP_MAX_HTTP_CONN];
+static const HTTP_LpcAsset *httpLpcAsset[ESP_MAX_HTTP_CONN];
 /* WiFi task owns all transmit state. 1=prompt pending, 2=SEND OK pending,
  * 3=close pending. Offset counts bytes, not issued CIPSEND commands. */
 static uint8_t httpTxPhase[ESP_MAX_HTTP_CONN];
@@ -228,8 +237,8 @@ static uint32_t cloudStarted, cloudLastAttempt, cloudCleanupTick;
 static int cloudRedirected, cloudResult;
 static size_t cloudCertOffset;
 
-static volatile int recvByteFromEsp=0; /* Updated by UART ISR. */
-static int recvByteFromEsp_copy=0;
+static volatile int recvByteFromEsp = 0; /* Updated by UART ISR. */
+static int recvByteFromEsp_copy = 0;
 static int read_pos=0;
 static TickType_t tickCnt=0;
 
@@ -435,7 +444,21 @@ static int IsTimeoutForReloadHttp(void){
 
 static void InitStructRqstToSendChnl(void){
 	httpPar.chnl = 0xFF;
-	LOOP_FOR(i,ESP_MAX_HTTP_CONN){ httpTxPhase[i]=0; httpTxOffset[i]=0; httpPar.ptr[i]=NULL; httpPar.que[i]=0xFF; httpPar.nr[i]=0; httpPar.len[i]=0; httpPar.nrWeb[i]=0;   LOOP_FOR(j,MAX_HTML_WEBs){ httpPar.web[i][j]=NULL; httpPar.siz[i][j]=0; }  }
+	LOOP_FOR ( i, ESP_MAX_HTTP_CONN )
+	{
+		httpTxPhase[i] = 0;
+		httpTxOffset[i] = 0;
+		httpPar.ptr[i] = NULL;
+		httpPar.que[i] = 0xFF;
+		httpPar.nr[i] = 0;
+		httpPar.len[i] = 0;
+		httpPar.nrWeb[i] = 0;
+		LOOP_FOR ( j, MAX_HTML_WEBs )
+		{
+			httpPar.web[i][j] = NULL;
+			httpPar.siz[i][j] = 0;
+		}
+	}
 }
 
 static int IsActiveAnyRqstToSendChnl(void){
@@ -453,13 +476,19 @@ static void vWaitOnSendTimeoutTimerCallback(TimerHandle_t pxTimer)
 {
 	DbgDma(DBG,_SE_"\r\nTIMEOUT RECV "_E_);		DbgVarDma(DBG,100,_S_"connType:%d "_E_,connectionType);
 	switch(connectionType){
-        case HTTP_CONNECTION: case HTTP_CONNECTION_2:
-            /* Never clear pointers underneath the WiFi task's packet copy. */
-            httpResetRequested=1;
-            if(vtaskWifiHandle)xTaskNotify(vtaskWifiHandle,BIT_ESP_SRV,eSetBits);
-            break;
-		case INIT_CONNECTION:	DbgDma(DBG,_SE_"\r\nINIT_ESP !!!"_E_);  break;
-		case SMTP_CONNECTION:	BackFromEmail(1);  break;
+	case HTTP_CONNECTION:
+	case HTTP_CONNECTION_2:
+		/* Never clear pointers underneath the WiFi task's packet copy. */
+		httpResetRequested = 1;
+		if ( vtaskWifiHandle )
+			xTaskNotify ( vtaskWifiHandle, BIT_ESP_SRV, eSetBits );
+		break;
+	case INIT_CONNECTION:
+		DbgDma ( DBG, _SE_ "\r\nINIT_ESP !!!" _E_ );
+		break;
+	case SMTP_CONNECTION:
+		BackFromEmail ( 1 );
+		break;
 	}
 	xTimerStop(pxTimer, 0);   /* RcvTimeoutTimerStop() */
 }
@@ -525,16 +554,22 @@ static int CASE_Service(int nrCase, const char* recv1, const char* recv2, ARCHIV
 	int flag=0;
 	if( recv1 == NULL && recv2 == NULL ){  actualCase = nrCase;  return ++repeatCase;  }
 	if( nrCase == actualCase ){
-		int hasRecv1 = connectionType==GOOGLE_CLOUD_CONNECTION ? CloudAt_Has(&cloudAt,recv1) : (recv1 != NULL) && (strstr_(NULL,recv1) != NULL);
-		int hasRecv2 = connectionType==GOOGLE_CLOUD_CONNECTION ? CloudAt_Has(&cloudAt,recv2) : (recv2 != NULL) && (strstr_(NULL,recv2) != NULL);
-	    if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
+		int hasRecv1 = connectionType == GOOGLE_CLOUD_CONNECTION ? CloudAt_Has ( &cloudAt, recv1 ) : ( recv1 != NULL ) && ( strstr_ ( NULL, recv1 ) != NULL );
+		int hasRecv2 = connectionType == GOOGLE_CLOUD_CONNECTION ? CloudAt_Has ( &cloudAt, recv2 ) : ( recv2 != NULL ) && ( strstr_ ( NULL, recv2 ) != NULL );
+		if (hasRecv1 && hasRecv2){ actualCase++; flag=3; flagCase=3; }
 	    if (hasRecv2)  			 { actualCase++; flag=2; flagCase=2; }
 	    if (hasRecv1) 			 { actualCase++; flag=1; flagCase=1; }
-	    if(flag){
-            if(connectionType==GOOGLE_CLOUD_CONNECTION)cloudAt.events=0;
-            else{DispRecvBuff(nrCase,archType);ESP32_FreeAnswers(0);}
-            RcvTimeoutTimerStop();
-        }
+		if ( flag )
+		{
+			if ( connectionType == GOOGLE_CLOUD_CONNECTION )
+				cloudAt.events = 0;
+			else
+			{
+				DispRecvBuff ( nrCase, archType );
+				ESP32_FreeAnswers ( 0 );
+			}
+			RcvTimeoutTimerStop ();
+		}
 	}
 	return flag;
 }
@@ -733,61 +768,73 @@ static void GoToTest(char* txt){
 static char* HTTP_SetWeb(int channel, int nrWWW)
 {
 	LOOP_FOR(i,MAX_HTML_WEBs){  httpPar.web[channel][i] = NULL;		httpPar.siz[channel][i] = 0;  }
-	int nrPartWWW=0;	char* httpBuff=httpPageBuff[channel];	char* ptr=httpBuff;
+	int nrPartWWW = 0;
+	char *httpBuff = httpPageBuff[channel];
+	char *ptr = httpBuff;
 	switch(nrWWW){
-    case WWW_LPC_SD:
-        DbgVarDma(1,120,"\r\nHTTP LPC: TCP=%u /nowa%u odczyt SD...\r\n",(unsigned)httpPar.que[channel]+1u,httpSensorPort[channel]);
-        httpPar.web[channel][nrPartWWW]=httpLpcSdBuff[channel];
-        httpPar.siz[channel][nrPartWWW++]=(u32)LPC_StorageReadPage(httpSensorPort[channel],httpLpcSdBuff[channel],sizeof httpLpcSdBuff[channel]);
-        if(!httpPar.siz[channel][0]){
-            httpResponseStatus[channel]=503;
-            snprintf(httpBuff,sizeof httpPageBuff[channel],"<!doctype html><meta charset='UTF-8'><p>Nie wczytano strony z karty SD.</p><p>%s</p><p>Rozpakuj sdcard.zip i skopiuj folder LPC do katalogu glownego karty.</p><a href='/lpc'>Lista stron</a> | <a href='/nowa'>Panel we Flash</a>",LPC_StoragePageError());
-            DbgVarDma(1,200,"\r\nHTTP LPC: /nowa%u BLAD: %s\r\n",httpSensorPort[channel],LPC_StoragePageError());
-            httpPar.web[channel][0]=httpBuff;httpPar.siz[channel][0]=(u32)strlen(httpBuff);
-        }else{
-            DbgVarDma(1,128,"\r\nHTTP LPC: /nowa%u SD OK, %u bajtow do wyslania\r\n",httpSensorPort[channel],(unsigned)httpPar.siz[channel][0]);
-        }
-        break;
-    case WWW_LPC_CONFIG:
-        httpPar.web[channel][nrPartWWW]=httpLpcSdBuff[channel];
-        httpPar.siz[channel][nrPartWWW++]=(u32)LPC_SettingsJson(httpSensorPort[channel],httpLpcSdBuff[channel],sizeof httpLpcSdBuff[channel]);
-        if(!httpPar.siz[channel][0])httpResponseStatus[channel]=500;
-        break;
-    case WWW_LPC_SAVE:
-        snprintf(httpBuff,sizeof(httpPageBuff[channel]),"{\"ok\":%s,\"message\":\"%s\"}",httpResponseStatus[channel]==200?"true":"false",
-            httpResponseStatus[channel]==200?"Zapisano ustawienia LPC na karcie SD.":
-            httpResponseStatus[channel]==503?"Nie zapisano. Sprawdz karte SD i pakiet LPC.":
-            httpResponseStatus[channel]==501?"Ta akcja sprzetowa LPC2148 nie jest dostepna w sterowniku STM32H753.":"Nie zapisano. Sprawdz komplet i wartosci formularza.");
-        httpPar.web[channel][nrPartWWW]=httpBuff;httpPar.siz[channel][nrPartWWW++]=(u32)strlen(httpBuff);
-        break;
-    case WWW_LPC_CATALOG:
-        httpPar.web[channel][nrPartWWW]=httpBuff;httpPar.siz[channel][nrPartWWW++]=(u32)LPC_CatalogRender(httpBuff,sizeof(httpPageBuff[channel]));
-        break;
-    case WWW_LPC_LIVE:
-        httpPar.web[channel][nrPartWWW]=httpBuff;httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_LpcLegacyJson(httpBuff,sizeof(httpPageBuff[channel]),HttpRefr_sdram,strlen(HttpRefr_sdram));
-        break;
+	case WWW_LPC_SD:
+		DbgVarDma ( 1, 120, "\r\nHTTP LPC: TCP=%u /nowa%u odczyt SD...\r\n", (unsigned) httpPar.que[channel] + 1u, httpSensorPort[channel] );
+		httpPar.web[channel][nrPartWWW] = httpLpcSdBuff[channel];
+		httpPar.siz[channel][nrPartWWW++] = (u32) LPC_StorageReadPage ( httpSensorPort[channel], httpLpcSdBuff[channel], sizeof httpLpcSdBuff[channel] );
+		if ( !httpPar.siz[channel][0] )
+		{
+			httpResponseStatus[channel] = 503;
+			snprintf ( httpBuff, sizeof httpPageBuff[channel], "<!doctype html><meta charset='UTF-8'><p>Nie wczytano strony z karty SD.</p><p>%s</p><p>Rozpakuj sdcard.zip i skopiuj folder LPC do katalogu glownego karty.</p><a href='/lpc'>Lista stron</a> | <a href='/nowa'>Panel we Flash</a>", LPC_StoragePageError () );
+			DbgVarDma ( 1, 200, "\r\nHTTP LPC: /nowa%u BLAD: %s\r\n", httpSensorPort[channel], LPC_StoragePageError () );
+			httpPar.web[channel][0] = httpBuff;
+			httpPar.siz[channel][0] = (u32) strlen ( httpBuff );
+		}
+		else
+		{
+			DbgVarDma ( 1, 128, "\r\nHTTP LPC: /nowa%u SD OK, %u bajtow do wyslania\r\n", httpSensorPort[channel], (unsigned) httpPar.siz[channel][0] );
+		}
+		break;
+	case WWW_LPC_CONFIG:
+		httpPar.web[channel][nrPartWWW] = httpLpcSdBuff[channel];
+		httpPar.siz[channel][nrPartWWW++] = (u32) LPC_SettingsJson ( httpSensorPort[channel], httpLpcSdBuff[channel], sizeof httpLpcSdBuff[channel] );
+		if ( !httpPar.siz[channel][0] )
+			httpResponseStatus[channel] = 500;
+		break;
+	case WWW_LPC_SAVE:
+		snprintf ( httpBuff, sizeof ( httpPageBuff[channel] ), "{\"ok\":%s,\"message\":\"%s\"}", httpResponseStatus[channel] == 200 ? "true" : "false",
+				   httpResponseStatus[channel] == 200 ? "Zapisano ustawienia LPC na karcie SD." : httpResponseStatus[channel] == 503 ? "Nie zapisano. Sprawdz karte SD i pakiet LPC."
+																							  : httpResponseStatus[channel] == 501	 ? "Ta akcja sprzetowa LPC2148 nie jest dostepna w sterowniku STM32H753."
+																																	 : "Nie zapisano. Sprawdz komplet i wartosci formularza." );
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) strlen ( httpBuff );
+		break;
+	case WWW_LPC_CATALOG:
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) LPC_CatalogRender ( httpBuff, sizeof ( httpPageBuff[channel] ) );
+		break;
+	case WWW_LPC_LIVE:
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) HTTP_LpcLegacyJson ( httpBuff, sizeof ( httpPageBuff[channel] ), HttpRefr_sdram, strlen ( HttpRefr_sdram ) );
+		break;
 	case WWW_LPC_ASSET:
-        httpPar.web[channel][nrPartWWW]=(char*)httpLpcAsset[channel]->data;
-        httpPar.siz[channel][nrPartWWW++]=(u32)httpLpcAsset[channel]->length;
-        break;
-    case WWW_LPC_DATA:
-        httpPar.web[channel][nrPartWWW]=httpBuff;
-        httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_LpcPanelJsonFromRefresh(httpBuff,sizeof(httpPageBuff[channel]),HttpRefr_sdram,strlen(HttpRefr_sdram));
-        if (!httpPar.siz[channel][0]) httpResponseStatus[channel]=500;
-        break;
+		httpPar.web[channel][nrPartWWW] = (char *) httpLpcAsset[channel]->data;
+		httpPar.siz[channel][nrPartWWW++] = (u32) httpLpcAsset[channel]->length;
+		break;
+	case WWW_LPC_DATA:
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) HTTP_LpcPanelJsonFromRefresh ( httpBuff, sizeof ( httpPageBuff[channel] ), HttpRefr_sdram, strlen ( HttpRefr_sdram ) );
+		if ( !httpPar.siz[channel][0] )
+			httpResponseStatus[channel] = 500;
+		break;
 	case WWW_MAIN_READ:
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
 		httpPar.web[channel][nrPartWWW] = (char*)HttpMainMenu;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainMenu);
 
 		{
-			size_t length=HTTP_MainReadPanelRender(httpBuff,sizeof(httpPageBuff[channel]));
-			if(!length){
-				httpResponseStatus[channel]=500;
-				strcpy(httpBuff,"<p>Nie mozna wygenerowac strony glownej.</p>");
-				length=strlen(httpBuff);
+			size_t length = HTTP_MainReadPanelRender ( httpBuff, sizeof ( httpPageBuff[channel] ) );
+			if ( !length )
+			{
+				httpResponseStatus[channel] = 500;
+				strcpy ( httpBuff, "<p>Nie mozna wygenerowac strony glownej.</p>" );
+				length = strlen ( httpBuff );
 			}
-			httpPar.web[channel][nrPartWWW]=httpBuff;
-			httpPar.siz[channel][nrPartWWW++]=(u32)length;
+			httpPar.web[channel][nrPartWWW] = httpBuff;
+			httpPar.siz[channel][nrPartWWW++] = (u32) length;
 		}
 
 		httpPar.web[channel][nrPartWWW] = (char*)HttpStructMainReadPanel;	httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStructMainReadPanel);
@@ -795,307 +842,313 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	case WWW_DATA_REFRESH:
 		/* Retain this slot's snapshot and overlay requested/reported output
 		 * states in the legacy protocol's 13-byte output block. */
-		strcpy(httpBuff,HttpRefr_sdram);
-		for(unsigned i=0;i<RELAY_OUTPUT_COUNT && strlen(httpBuff)>25u+i;i++){
-			int state=RELAY_GetDisplayState(RELAY_GetStates()->outputs[i].port);
-			if(state>=0) httpBuff[25u+i]=(char)('0'+state);
+		strcpy ( httpBuff, HttpRefr_sdram );
+		for ( unsigned i = 0; i < RELAY_OUTPUT_COUNT && strlen ( httpBuff ) > 25u + i; i++ )
+		{
+			int state = RELAY_GetDisplayState ( RELAY_GetStates ()->outputs[i].port );
+			if ( state >= 0 )
+				httpBuff[25u + i] = (char) ( '0' + state );
 		}
-		httpPar.web[channel][nrPartWWW]=httpBuff;
-		httpPar.siz[channel][nrPartWWW++]=(u32)strlen(httpBuff);
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) strlen ( httpBuff );
 		break;
 	case WWW_OUTPUT_CONTROL:
-		{
-			const RelayState* state=RELAY_GetState(httpSensorPort[channel]);
-			if(httpSensorNotice[channel])
-				snprintf(httpBuff,sizeof(httpPageBuff[channel]),"%u",state->pwm_percent);
-			else snprintf(httpBuff,sizeof(httpPageBuff[channel]),
-				"<font color='#000'>Stan %s</font>",state->requested_on?"ON":"OFF");
-			httpPar.web[channel][nrPartWWW]=httpBuff;
-			httpPar.siz[channel][nrPartWWW++]=(u32)strlen(httpBuff);
-		}
+	{
+		const RelayState *state = RELAY_GetState ( httpSensorPort[channel] );
+		if ( httpSensorNotice[channel] )
+			snprintf ( httpBuff, sizeof ( httpPageBuff[channel] ), "%u", state->pwm_percent );
+		else
+			snprintf ( httpBuff, sizeof ( httpPageBuff[channel] ),
+					   "<font color='#000'>Stan %s</font>", state->requested_on ? "ON" : "OFF" );
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) strlen ( httpBuff );
+	}
 		break;
 	case WWW_MAIN_SETTING:
-		httpPar.web[channel][nrPartWWW]=(char*)HttpStyle;
-		httpPar.siz[channel][nrPartWWW++]=mini_strlen(HttpStyle);
-		httpPar.web[channel][nrPartWWW]=(char*)HttpMainMenu;
-		httpPar.siz[channel][nrPartWWW++]=mini_strlen(HttpMainMenu);
-		if(httpSensorNotice[channel]){
-			httpPar.web[channel][nrPartWWW]=(char*)httpSensorNotice[channel];
-			httpPar.siz[channel][nrPartWWW++]=mini_strlen(httpSensorNotice[channel]);
+		httpPar.web[channel][nrPartWWW] = (char *) HttpStyle;
+		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( HttpStyle );
+		httpPar.web[channel][nrPartWWW] = (char *) HttpMainMenu;
+		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( HttpMainMenu );
+		if ( httpSensorNotice[channel] )
+		{
+			httpPar.web[channel][nrPartWWW] = (char *) httpSensorNotice[channel];
+			httpPar.siz[channel][nrPartWWW++] = mini_strlen ( httpSensorNotice[channel] );
 		}
-		ptr=HTTP_TEMPLATE_2_NamesBegin(ptr);
-		ptr=HTTP_TEMPLATE_2_Name(ptr,1,HTTP_SettingsPortName(1,"Nazwa portu nr 1"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,2,HTTP_SettingsPortName(2,"Nazwa portu nr 2"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,3,HTTP_SettingsPortName(3,"Nazwa portu nr 3"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,4,HTTP_SettingsPortName(4,"Nazwa portu nr 4"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,5,HTTP_SettingsPortName(5,"Nazwa portu nr 5"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,6,HTTP_SettingsPortName(6,"Nazwa portu nr 6"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,7,HTTP_SettingsPortName(7,"Nazwa portu nr 7"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,8,HTTP_SettingsPortName(8,"Nazwa portu nr 8"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,9,HTTP_SettingsPortName(9,"Nazwa portu nr 9"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,10,HTTP_SettingsPortName(10,"Nazwa portu nr 10"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,11,HTTP_SettingsPortName(11,"Nazwa portu nr 11"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,12,HTTP_SettingsPortName(12,"Nazwa portu nr 12"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,13,HTTP_SettingsPortName(13,"Nazwa portu nr 13"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,14,HTTP_SettingsPortName(14,"Nazwa portu nr 14"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,15,HTTP_SettingsPortName(15,"Nazwa portu nr 15     0-10V"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,16,HTTP_SettingsPortName(16,"Nazwa portu nr 16     0-10V"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,17,HTTP_SettingsPortName(17,"Nazwa portu nr 17     E1"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,18,HTTP_SettingsPortName(18,"Nazwa portu nr 18     E2"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,19,HTTP_SettingsPortName(19,"Nazwa portu nr 19     E3"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,20,HTTP_SettingsPortName(20,"Nazwa portu nr 20     E4"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,21,HTTP_SettingsPortName(21,"Nazwa portu nr 21     PW1"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,22,HTTP_SettingsPortName(22,"Nazwa portu nr 22     PW2"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,23,HTTP_SettingsPortName(23,"Nazwa portu nr 23     PW3"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,24,HTTP_SettingsPortName(24,"Nazwa portu nr 24     OC1"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,25,HTTP_SettingsPortName(25,"Nazwa portu nr 25     OC2"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,26,HTTP_SettingsPortName(26,"Nazwa portu nr 26     OC3"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,27,HTTP_SettingsPortName(27,"Nazwa portu nr 27     OC4"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,28,HTTP_SettingsPortName(28,"Nazwa portu nr 28     PK1"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,29,HTTP_SettingsPortName(29,"Moj Przekaznik"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,30,HTTP_SettingsPortName(30,"Nazwa portu nr 30     PK3"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,31,HTTP_SettingsPortName(31,"Nazwa portu nr 31     PK4"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,32,HTTP_SettingsPortName(32,"Nazwa portu nr 32     PK5"));
-		ptr=HTTP_TEMPLATE_2_Name(ptr,33,HTTP_SettingsPortName(33,"Nazwa portu nr 33     PK6"));
-		ptr=HTTP_TEMPLATE_2_NamesEnd(ptr);
-		ptr=HTTP_TEMPLATE_2_ModesBegin(ptr);
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,1,HTTP_SettingsPortMode(1));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,2,HTTP_SettingsPortMode(2));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,3,HTTP_SettingsPortMode(3));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,4,HTTP_SettingsPortMode(4));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,5,HTTP_SettingsPortMode(5));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,6,HTTP_SettingsPortMode(6));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,7,HTTP_SettingsPortMode(7));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,8,HTTP_SettingsPortMode(8));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,9,HTTP_SettingsPortMode(9));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,10,HTTP_SettingsPortMode(10));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,11,HTTP_SettingsPortMode(11));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,12,HTTP_SettingsPortMode(12));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,13,HTTP_SettingsPortMode(13));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,14,HTTP_SettingsPortMode(14));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,15,HTTP_SettingsPortMode(15));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,16,HTTP_SettingsPortMode(16));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,17,HTTP_SettingsPortMode(17));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,18,HTTP_SettingsPortMode(18));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,19,HTTP_SettingsPortMode(19));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,20,HTTP_SettingsPortMode(20));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,21,HTTP_SettingsPortMode(21));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,22,HTTP_SettingsPortMode(22));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,23,HTTP_SettingsPortMode(23));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,24,HTTP_SettingsPortMode(24));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,25,HTTP_SettingsPortMode(25));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,26,HTTP_SettingsPortMode(26));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,27,HTTP_SettingsPortMode(27));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,28,HTTP_SettingsPortMode(28));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,29,HTTP_SettingsPortMode(29));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,30,HTTP_SettingsPortMode(30));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,31,HTTP_SettingsPortMode(31));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,32,HTTP_SettingsPortMode(32));
-		ptr=HTTP_TEMPLATE_2_Mode(ptr,33,HTTP_SettingsPortMode(33));
-		ptr=HTTP_TEMPLATE_2_ModesEnd(ptr);
-		ptr=HTTP_TEMPLATE_2_PanelBegin(ptr);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,1,1,"<font color='#000'>   --.- °C</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,1,1," --- °C",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,1,1," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,1,1,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,1,1,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,1);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,2,2,"<font color='#000'>   --.- °C</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,2,2," --- °C",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,2,2," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,2,2,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,2,2,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,2);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,3,3,"<font color='#000'>   --.- °C</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,3,3," --- °C",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,3,3," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,3,3,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,3,3,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,3);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,4,4,"<font color='#000'>   --.- °C</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,4,4," --- °C",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,4,4," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,4,4,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,4,4,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,4);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,5,5," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,5,5," --- °C",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,5,5,"<font color='#000'>   --.- °C</font>","<font color='#000'>  -- %</font>",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,5,5,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,5,5,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,5);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,6,6," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,6,6," --- °C",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,6,6,"<font color='#000'>   --.- °C</font>","<font color='#000'>  -- %</font>",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,6,6,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,6,6,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,6);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,7,7," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,7,7," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,7,7," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,7,7,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,7,7,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,7);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,8,8," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,8,8," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,8,8," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,8,8,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,8,8,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,8);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,9,9," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,9,9," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,9,9," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,9,9,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,9,9,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,9);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,10,10," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,10,10," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,10,10," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,10,10,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,10,10,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,10);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,11,11," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,11,11," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,11,11," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,11,11,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,11,11,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,11);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,12,12," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,12,12," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,12,12," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,12,12,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,12,12,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,12);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,13,13," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,13,13," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,13,13," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,13,13,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,13,13,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,13);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,14,14,"<font color='#000'>   --.- °C</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_PT1000,14,14," --- °C",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,14,14," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,14,14,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_EOL,14,14,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,14);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_ADC,15,1,"     7.5   V",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,15);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_ADC,16,2,"     6.7   V",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,16);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,17,17," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,17,17," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,17,15,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Impl(ptr,HTTP_MODE_COUNTER,17,1,"0.000 KWh",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,17);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,18,18," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,18,18," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,18,16,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Impl(ptr,HTTP_MODE_COUNTER,18,2,"0.000 KWh",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,18);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,19,19,"<font color='#000'>   --.- °C</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,19,19," --.-"," -- ",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,19,17,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Impl(ptr,HTTP_MODE_COUNTER,19,3,"0.000 KWh",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,19);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP,20,20," --.-",NULL,0);
-		ptr=HTTP_TEMPLATE_2_AdcTempRhu(ptr,HTTP_MODE_TEMP_RHU,20,20,"<font color='#000'>   --.- °C</font>","<font color='#000'>  -- %</font>",0);
-		ptr=HTTP_TEMPLATE_2_In(ptr,HTTP_MODE_INPUT,20,18,"<font color='#000'>Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Impl(ptr,HTTP_MODE_COUNTER,20,4,"0.000 KWh",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,20);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,21,11,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,21,11,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,21,11,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_PWM,21,0,NULL,NULL,50);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_IR,21,11,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,21);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,22,12,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,22,12,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,22,12,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_PWM,22,0,NULL,NULL,18);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_IR,22,12,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,22);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,23,13,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,23,13,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,23,13,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_PWM,23,0,NULL,NULL,50);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_IR,23,13,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,23);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,24,7,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,24,7,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,24,7,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_IR,24,7,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,24);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,25,8,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,25,8,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,25,8,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_IR,25,8,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,25);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,26,9,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,26,9,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,26,9,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_IR,26,9,"<font color=\"#fff\">Stan ON</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,26);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,27,10,NULL,NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,27,10,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,27,10,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_IR,27,10,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,27);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,28,1,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,28,1,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,28,1,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,28);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,29,2,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,29,2,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,29,2,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,29);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,30,3,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,30,3,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,30,3,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,30);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,31,4,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,31,4,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,31,4,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,31);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,32,5,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,32,5,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,32,5,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,32);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_RELAY,33,6,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_TIMER,33,6,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Out(ptr,HTTP_MODE_THERMOSTAT,33,6,"<font color=\"#000\">Stan OFF</font>",NULL,0);
-		ptr=HTTP_TEMPLATE_2_Hidden(ptr,33);
-		ptr=HTTP_TEMPLATE_2_PanelEnd(ptr);
-		httpPar.web[channel][nrPartWWW]=(char*)httpBuff;
-		httpPar.siz[channel][nrPartWWW++]=(unsigned int)(ptr-httpBuff);
-		httpPar.web[channel][nrPartWWW]=(char*)HttpStructMainReadPanel2;
-		httpPar.siz[channel][nrPartWWW++]=mini_strlen(HttpStructMainReadPanel2);
+		ptr = HTTP_TEMPLATE_2_NamesBegin ( ptr );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 1, HTTP_SettingsPortName ( 1, "Nazwa portu nr 1" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 2, HTTP_SettingsPortName ( 2, "Nazwa portu nr 2" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 3, HTTP_SettingsPortName ( 3, "Nazwa portu nr 3" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 4, HTTP_SettingsPortName ( 4, "Nazwa portu nr 4" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 5, HTTP_SettingsPortName ( 5, "Nazwa portu nr 5" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 6, HTTP_SettingsPortName ( 6, "Nazwa portu nr 6" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 7, HTTP_SettingsPortName ( 7, "Nazwa portu nr 7" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 8, HTTP_SettingsPortName ( 8, "Nazwa portu nr 8" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 9, HTTP_SettingsPortName ( 9, "Nazwa portu nr 9" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 10, HTTP_SettingsPortName ( 10, "Nazwa portu nr 10" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 11, HTTP_SettingsPortName ( 11, "Nazwa portu nr 11" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 12, HTTP_SettingsPortName ( 12, "Nazwa portu nr 12" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 13, HTTP_SettingsPortName ( 13, "Nazwa portu nr 13" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 14, HTTP_SettingsPortName ( 14, "Nazwa portu nr 14" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 15, HTTP_SettingsPortName ( 15, "Nazwa portu nr 15     0-10V" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 16, HTTP_SettingsPortName ( 16, "Nazwa portu nr 16     0-10V" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 17, HTTP_SettingsPortName ( 17, "Nazwa portu nr 17     E1" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 18, HTTP_SettingsPortName ( 18, "Nazwa portu nr 18     E2" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 19, HTTP_SettingsPortName ( 19, "Nazwa portu nr 19     E3" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 20, HTTP_SettingsPortName ( 20, "Nazwa portu nr 20     E4" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 21, HTTP_SettingsPortName ( 21, "Nazwa portu nr 21     PW1" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 22, HTTP_SettingsPortName ( 22, "Nazwa portu nr 22     PW2" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 23, HTTP_SettingsPortName ( 23, "Nazwa portu nr 23     PW3" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 24, HTTP_SettingsPortName ( 24, "Nazwa portu nr 24     OC1" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 25, HTTP_SettingsPortName ( 25, "Nazwa portu nr 25     OC2" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 26, HTTP_SettingsPortName ( 26, "Nazwa portu nr 26     OC3" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 27, HTTP_SettingsPortName ( 27, "Nazwa portu nr 27     OC4" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 28, HTTP_SettingsPortName ( 28, "Nazwa portu nr 28     PK1" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 29, HTTP_SettingsPortName ( 29, "Moj Przekaznik" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 30, HTTP_SettingsPortName ( 30, "Nazwa portu nr 30     PK3" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 31, HTTP_SettingsPortName ( 31, "Nazwa portu nr 31     PK4" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 32, HTTP_SettingsPortName ( 32, "Nazwa portu nr 32     PK5" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 33, HTTP_SettingsPortName ( 33, "Nazwa portu nr 33     PK6" ) );
+		ptr = HTTP_TEMPLATE_2_NamesEnd ( ptr );
+		ptr = HTTP_TEMPLATE_2_ModesBegin ( ptr );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 1, HTTP_SettingsPortMode ( 1 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 2, HTTP_SettingsPortMode ( 2 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 3, HTTP_SettingsPortMode ( 3 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 4, HTTP_SettingsPortMode ( 4 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 5, HTTP_SettingsPortMode ( 5 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 6, HTTP_SettingsPortMode ( 6 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 7, HTTP_SettingsPortMode ( 7 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 8, HTTP_SettingsPortMode ( 8 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 9, HTTP_SettingsPortMode ( 9 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 10, HTTP_SettingsPortMode ( 10 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 11, HTTP_SettingsPortMode ( 11 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 12, HTTP_SettingsPortMode ( 12 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 13, HTTP_SettingsPortMode ( 13 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 14, HTTP_SettingsPortMode ( 14 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 15, HTTP_SettingsPortMode ( 15 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 16, HTTP_SettingsPortMode ( 16 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 17, HTTP_SettingsPortMode ( 17 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 18, HTTP_SettingsPortMode ( 18 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 19, HTTP_SettingsPortMode ( 19 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 20, HTTP_SettingsPortMode ( 20 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 21, HTTP_SettingsPortMode ( 21 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 22, HTTP_SettingsPortMode ( 22 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 23, HTTP_SettingsPortMode ( 23 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 24, HTTP_SettingsPortMode ( 24 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 25, HTTP_SettingsPortMode ( 25 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 26, HTTP_SettingsPortMode ( 26 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 27, HTTP_SettingsPortMode ( 27 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 28, HTTP_SettingsPortMode ( 28 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 29, HTTP_SettingsPortMode ( 29 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 30, HTTP_SettingsPortMode ( 30 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 31, HTTP_SettingsPortMode ( 31 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 32, HTTP_SettingsPortMode ( 32 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 33, HTTP_SettingsPortMode ( 33 ) );
+		ptr = HTTP_TEMPLATE_2_ModesEnd ( ptr );
+		ptr = HTTP_TEMPLATE_2_PanelBegin ( ptr );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 1, 1, "<font color='#000'>   --.- °C</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 1, 1, " --- °C", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 1, 1, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 1, 1, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 1, 1, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 1 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 2, 2, "<font color='#000'>   --.- °C</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 2, 2, " --- °C", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 2, 2, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 2, 2, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 2, 2, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 2 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 3, 3, "<font color='#000'>   --.- °C</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 3, 3, " --- °C", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 3, 3, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 3, 3, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 3, 3, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 3 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 4, 4, "<font color='#000'>   --.- °C</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 4, 4, " --- °C", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 4, 4, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 4, 4, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 4, 4, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 4 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 5, 5, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 5, 5, " --- °C", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 5, 5, "<font color='#000'>   --.- °C</font>", "<font color='#000'>  -- %</font>", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 5, 5, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 5, 5, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 5 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 6, 6, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 6, 6, " --- °C", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 6, 6, "<font color='#000'>   --.- °C</font>", "<font color='#000'>  -- %</font>", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 6, 6, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 6, 6, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 6 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 7, 7, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 7, 7, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 7, 7, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 7, 7, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 7, 7, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 7 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 8, 8, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 8, 8, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 8, 8, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 8, 8, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 8, 8, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 8 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 9, 9, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 9, 9, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 9, 9, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 9, 9, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 9, 9, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 9 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 10, 10, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 10, 10, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 10, 10, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 10, 10, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 10, 10, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 10 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 11, 11, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 11, 11, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 11, 11, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 11, 11, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 11, 11, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 11 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 12, 12, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 12, 12, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 12, 12, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 12, 12, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 12, 12, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 12 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 13, 13, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 13, 13, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 13, 13, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 13, 13, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 13, 13, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 13 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 14, 14, "<font color='#000'>   --.- °C</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_PT1000, 14, 14, " --- °C", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 14, 14, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 14, 14, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_EOL, 14, 14, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 14 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_ADC, 15, 1, "     7.5   V", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 15 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_ADC, 16, 2, "     6.7   V", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 16 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 17, 17, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 17, 17, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 17, 15, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Impl ( ptr, HTTP_MODE_COUNTER, 17, 1, "0.000 KWh", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 17 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 18, 18, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 18, 18, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 18, 16, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Impl ( ptr, HTTP_MODE_COUNTER, 18, 2, "0.000 KWh", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 18 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 19, 19, "<font color='#000'>   --.- °C</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 19, 19, " --.-", " -- ", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 19, 17, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Impl ( ptr, HTTP_MODE_COUNTER, 19, 3, "0.000 KWh", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 19 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 20, 20, " --.-", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP_RHU, 20, 20, "<font color='#000'>   --.- °C</font>", "<font color='#000'>  -- %</font>", 0 );
+		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 20, 18, "<font color='#000'>Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Impl ( ptr, HTTP_MODE_COUNTER, 20, 4, "0.000 KWh", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 20 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_PWM, 21, 0, NULL, NULL, 50 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 21 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_PWM, 22, 0, NULL, NULL, 18 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 22 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_PWM, 23, 0, NULL, NULL, 50 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 23 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 24 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 25 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 26 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 27, 10, NULL, NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 27 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 28 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 29 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 30 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 31 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 32 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 33 );
+		ptr = HTTP_TEMPLATE_2_PanelEnd ( ptr );
+		httpPar.web[channel][nrPartWWW] = (char *) httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (unsigned int) ( ptr - httpBuff );
+		httpPar.web[channel][nrPartWWW] = (char *) HttpStructMainReadPanel2;
+		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( HttpStructMainReadPanel2 );
 		break;
 	case WWW_SENSOR_SETTING:
-		httpPar.web[channel][nrPartWWW]=httpSensorBuff[channel];
-		httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_SensorPageRender(
-			httpSensorBuff[channel],sizeof(httpSensorBuff[channel]),httpSensorPort[channel],
-			HTTP_SettingsPortMode(httpSensorPort[channel])==HTTP_MODE_TEMP_RHU,
-			httpSensorNotice[channel]);
-		if(httpPar.siz[channel][0]==0){
-			httpResponseStatus[channel]=500;
-			httpPar.web[channel][0]="<html><body>Nie mozna utworzyc strony.</body></html>";
-			httpPar.siz[channel][0]=mini_strlen(httpPar.web[channel][0]);
+		httpPar.web[channel][nrPartWWW] = httpSensorBuff[channel];
+		httpPar.siz[channel][nrPartWWW++] = (u32) HTTP_SensorPageRender (
+			httpSensorBuff[channel], sizeof ( httpSensorBuff[channel] ), httpSensorPort[channel],
+			HTTP_SettingsPortMode ( httpSensorPort[channel] ) == HTTP_MODE_TEMP_RHU,
+			httpSensorNotice[channel] );
+		if ( httpPar.siz[channel][0] == 0 )
+		{
+			httpResponseStatus[channel] = 500;
+			httpPar.web[channel][0] = "<html><body>Nie mozna utworzyc strony.</body></html>";
+			httpPar.siz[channel][0] = mini_strlen ( httpPar.web[channel][0] );
 		}
 		break;
 	case WWW_OTHER_SETTING:
-		httpPar.web[channel][nrPartWWW]=httpSensorBuff[channel];
-		httpPar.siz[channel][nrPartWWW++]=(u32)HTTP_SettingsPageRender(
-			httpSensorBuff[channel],sizeof(httpSensorBuff[channel]),httpSettingsPage[channel],
-			httpSettingsInstance[channel],httpSensorNotice[channel]);
-		if(httpPar.siz[channel][0]==0){
-			httpResponseStatus[channel]=500;
-			httpPar.web[channel][0]="<html><body>Nie mozna utworzyc strony ustawien.</body></html>";
-			httpPar.siz[channel][0]=mini_strlen(httpPar.web[channel][0]);
+		httpPar.web[channel][nrPartWWW] = httpSensorBuff[channel];
+		httpPar.siz[channel][nrPartWWW++] = (u32) HTTP_SettingsPageRender (
+			httpSensorBuff[channel], sizeof ( httpSensorBuff[channel] ), httpSettingsPage[channel],
+			httpSettingsInstance[channel], httpSensorNotice[channel] );
+		if ( httpPar.siz[channel][0] == 0 )
+		{
+			httpResponseStatus[channel] = 500;
+			httpPar.web[channel][0] = "<html><body>Nie mozna utworzyc strony ustawien.</body></html>";
+			httpPar.siz[channel][0] = mini_strlen ( httpPar.web[channel][0] );
 		}
 		break;
 	case WWW_HTTP_ERROR:
-		httpPar.web[channel][nrPartWWW]="<!doctype html><html><body><p>Niepoprawny lub nieobslugiwany adres.</p><a href='/set'>Ustawienia</a></body></html>";
-		httpPar.siz[channel][nrPartWWW++]=mini_strlen(httpPar.web[channel][0]);
+		httpPar.web[channel][nrPartWWW] = "<!doctype html><html><body><p>Niepoprawny lub nieobslugiwany adres.</p><a href='/set'>Ustawienia</a></body></html>";
+		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( httpPar.web[channel][0] );
 		break;
 	case WWW_FAVICON:
 	default:
@@ -1103,206 +1156,314 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	}
 	/* A CGI response already contains the freshly rendered form and its save
 	 * result. Replace its URL without re-submitting the write or losing errors. */
-	if(httpSensorNotice[channel] && httpResponseStatus[channel]!=500){
-		char path[64]={0};
-		if(nrWWW==WWW_MAIN_SETTING) strcpy(path,"/set");
-		else if(nrWWW==WWW_SENSOR_SETTING)
-			snprintf(path,sizeof path,"/temp%03u",httpSensorPort[channel]);
-		else if(nrWWW==WWW_OTHER_SETTING)
-			HTTP_SettingsCatalogPath(httpSettingsPage[channel],httpSettingsInstance[channel],path,sizeof path);
-		if(path[0]){
-			int length=snprintf(httpCleanAddress[channel],sizeof httpCleanAddress[channel],
-				"<script>if(window.history&&window.history.replaceState){"
-				"window.history.replaceState(null,'','%s');}"
-				"else{window.location.replace('%s');}</script>",path,path);
-			httpPar.web[channel][nrPartWWW]=httpCleanAddress[channel];
-			httpPar.siz[channel][nrPartWWW++]=(u32)length;
+	if ( httpSensorNotice[channel] && httpResponseStatus[channel] != 500 )
+	{
+		char path[64] = { 0 };
+		if ( nrWWW == WWW_MAIN_SETTING )
+			strcpy ( path, "/set" );
+		else if ( nrWWW == WWW_SENSOR_SETTING )
+			snprintf ( path, sizeof path, "/temp%03u", httpSensorPort[channel] );
+		else if ( nrWWW == WWW_OTHER_SETTING )
+			HTTP_SettingsCatalogPath ( httpSettingsPage[channel], httpSettingsInstance[channel], path, sizeof path );
+		if ( path[0] )
+		{
+			int length = snprintf ( httpCleanAddress[channel], sizeof httpCleanAddress[channel],
+									"<script>if(window.history&&window.history.replaceState){"
+									"window.history.replaceState(null,'','%s');}"
+									"else{window.location.replace('%s');}</script>",
+									path, path );
+			httpPar.web[channel][nrPartWWW] = httpCleanAddress[channel];
+			httpPar.siz[channel][nrPartWWW++] = (u32) length;
 		}
 	}
 	/* HTTP/1.x clients require a status line, content type and a body boundary. */
 	{
-		u32 bodySize=0;
-		for(int i=0;i<nrPartWWW;i++) bodySize+=httpPar.siz[channel][i];
-		const char* reason=httpResponseStatus[channel]==200?"OK":
-			httpResponseStatus[channel]==400?"Bad Request":
-			httpResponseStatus[channel]==404?"Not Found":
-			httpResponseStatus[channel]==503?"Service Unavailable":
-			httpResponseStatus[channel]==501?"Not Implemented":"Internal Server Error";
-		const char* contentType=nrWWW==WWW_LPC_ASSET?httpLpcAsset[channel]->content_type:
-            (nrWWW==WWW_LPC_DATA || nrWWW==WWW_LPC_CONFIG || nrWWW==WWW_LPC_SAVE || nrWWW==WWW_LPC_LIVE)?"application/json; charset=UTF-8":(nrWWW==WWW_DATA_REFRESH ||
-			(nrWWW==WWW_OUTPUT_CONTROL && httpSensorNotice[channel]))?"text/plain; charset=UTF-8":
-			nrWWW==WWW_FAVICON?"image/x-icon":"text/html; charset=UTF-8";
-		int headerSize=snprintf(httpResponseHeader[channel],sizeof(httpResponseHeader[channel]),
-			"HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %lu\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n",
-			httpResponseStatus[channel],reason,contentType,(unsigned long)bodySize);
-		for(int i=nrPartWWW;i>0;i--){
-			httpPar.web[channel][i]=httpPar.web[channel][i-1];
-			httpPar.siz[channel][i]=httpPar.siz[channel][i-1];
+		u32 bodySize = 0;
+		for ( int i = 0; i < nrPartWWW; i++ )
+			bodySize += httpPar.siz[channel][i];
+		const char *reason = httpResponseStatus[channel] == 200 ? "OK" : httpResponseStatus[channel] == 400 ? "Bad Request"
+																	 : httpResponseStatus[channel] == 404	? "Not Found"
+																	 : httpResponseStatus[channel] == 503	? "Service Unavailable"
+																	 : httpResponseStatus[channel] == 501	? "Not Implemented"
+																											: "Internal Server Error";
+		const char *contentType = nrWWW == WWW_LPC_ASSET ? httpLpcAsset[channel]->content_type : ( nrWWW == WWW_LPC_DATA || nrWWW == WWW_LPC_CONFIG || nrWWW == WWW_LPC_SAVE || nrWWW == WWW_LPC_LIVE ) ? "application/json; charset=UTF-8"
+																							 : ( nrWWW == WWW_DATA_REFRESH || ( nrWWW == WWW_OUTPUT_CONTROL && httpSensorNotice[channel] ) )			? "text/plain; charset=UTF-8"
+																							 : nrWWW == WWW_FAVICON																						? "image/x-icon"
+																																																		: "text/html; charset=UTF-8";
+		int headerSize = snprintf ( httpResponseHeader[channel], sizeof ( httpResponseHeader[channel] ),
+									"HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %lu\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n",
+									httpResponseStatus[channel], reason, contentType, (unsigned long) bodySize );
+		for ( int i = nrPartWWW; i > 0; i-- )
+		{
+			httpPar.web[channel][i] = httpPar.web[channel][i - 1];
+			httpPar.siz[channel][i] = httpPar.siz[channel][i - 1];
 		}
-		httpPar.web[channel][0]=httpResponseHeader[channel];
-		httpPar.siz[channel][0]=(u32)headerSize;
+		httpPar.web[channel][0] = httpResponseHeader[channel];
+		httpPar.siz[channel][0] = (u32) headerSize;
 		nrPartWWW++;
 	}
-	httpPar.web[channel][nrPartWWW]=NULL; httpPar.siz[channel][nrPartWWW]=0;
-	httpPar.nrWeb[channel]=0;
+	httpPar.web[channel][nrPartWWW] = NULL;
+	httpPar.siz[channel][nrPartWWW] = 0;
+	httpPar.nrWeb[channel] = 0;
 	return httpPar.web[channel][0];
 }
 
-static int HTTP_QueueResponse(unsigned channel, int page, unsigned port,
-                              const char* notice, int status,
-                              const HTTP_SettingPage* settingsPage, uint16_t settingsInstance,
-                              const HTTP_LpcAsset* asset)
+static int HTTP_QueueResponse ( unsigned channel, int page, unsigned port,
+								const char *notice, int status,
+								const HTTP_SettingPage *settingsPage, uint16_t settingsInstance,
+								const HTTP_LpcAsset *asset )
 {
-	for(int i=0;i<ESP_MAX_HTTP_CONN;i++) if(httpPar.que[i]==channel) return -1;
-	for(int i=0;i<ESP_MAX_HTTP_CONN;i++) if(httpPar.que[i]==0xFF){
-		httpPar.que[i]=(u8)channel;
-		httpSensorPort[i]=port;
-		httpSensorNotice[i]=notice;
-		httpResponseStatus[i]=status;
-		httpSettingsPage[i]=settingsPage; httpSettingsInstance[i]=settingsInstance;
-        httpLpcAsset[i]=asset;
-        httpTxPhase[i]=0; httpTxOffset[i]=0;
-		httpPar.ptr[i]=HTTP_SetWeb(i,page);
-		httpPar.nr[i]=0; httpPar.len[i]=0;
-		return i;
-	}
+	for ( int i = 0; i < ESP_MAX_HTTP_CONN; i++ )
+		if ( httpPar.que[i] == channel )
+			return -1;
+	for ( int i = 0; i < ESP_MAX_HTTP_CONN; i++ )
+		if ( httpPar.que[i] == 0xFF )
+		{
+			httpPar.que[i] = (u8) channel;
+			httpSensorPort[i] = port;
+			httpSensorNotice[i] = notice;
+			httpResponseStatus[i] = status;
+			httpSettingsPage[i] = settingsPage;
+			httpSettingsInstance[i] = settingsInstance;
+			httpLpcAsset[i] = asset;
+			httpTxPhase[i] = 0;
+			httpTxOffset[i] = 0;
+			httpPar.ptr[i] = HTTP_SetWeb ( i, page );
+			httpPar.nr[i] = 0;
+			httpPar.len[i] = 0;
+			return i;
+		}
 	return -1;
 }
 
-static int HTTP_TargetEquals(const char* target, size_t length, const char* expected)
+static int HTTP_TargetEquals ( const char *target, size_t length, const char *expected )
 {
-	return strlen(expected)==length && memcmp(target,expected,length)==0;
+	return strlen ( expected ) == length && memcmp ( target, expected, length ) == 0;
 }
 
-static void HTTP_HandleTarget(unsigned channel, const char* target, size_t length, void* context)
+static void HTTP_HandleTarget ( unsigned channel, const char *target, size_t length, void *context )
 {
-	int page=WWW_HTTP_ERROR, status=404;
-	unsigned port=0;
-	const HTTP_SettingPage* settingsPage=NULL;
-	uint16_t settingsInstance=0;
-	const char* notice=NULL;
-    const HTTP_LpcAsset* asset=HTTP_LpcFindAsset(target,length);
-    unsigned lpcPage=LPC_ResolvePage(target,length),lpcApi=LPC_ResolveSettingsApi(target,length);
-	(void)context;
-	if(channel>=ESP_MAX_HTTP_CONN) return;
+	int page = WWW_HTTP_ERROR, status = 404;
+	unsigned port = 0;
+	const HTTP_SettingPage *settingsPage = NULL;
+	uint16_t settingsInstance = 0;
+	const char *notice = NULL;
+	const HTTP_LpcAsset *asset = HTTP_LpcFindAsset ( target, length );
+	unsigned lpcPage = LPC_ResolvePage ( target, length ), lpcApi = LPC_ResolveSettingsApi ( target, length );
+	(void) context;
+	if ( channel >= ESP_MAX_HTTP_CONN )
+		return;
 	/* Do not execute a write if its response cannot be queued. */
-	int freeSlot=0;
-	for(int i=0;i<ESP_MAX_HTTP_CONN;i++){
-		if(httpPar.que[i]==channel) return;
-		if(httpPar.que[i]==0xFF) freeSlot=1;
+	int freeSlot = 0;
+	for ( int i = 0; i < ESP_MAX_HTTP_CONN; i++ )
+	{
+		if ( httpPar.que[i] == channel )
+			return;
+		if ( httpPar.que[i] == 0xFF )
+			freeSlot = 1;
 	}
-	if(!freeSlot) return;
+	if ( !freeSlot )
+		return;
 	HTTP_OutputCommand command;
-	int outputCommand=HTTP_OutputControlParse(target,length,&command);
-	if(outputCommand){
-		status=400;
-		if(outputCommand>0){
-			unsigned mode=HTTP_SettingsPortMode(command.port);
-            /* Toggle against the same source displayed by /nowa and /TME.txt,
+	int outputCommand = HTTP_OutputControlParse ( target, length, &command );
+	if ( outputCommand )
+	{
+		status = 400;
+		if ( outputCommand > 0 )
+		{
+			unsigned mode = HTTP_SettingsPortMode ( command.port );
+			/* Toggle against the same source displayed by /nowa and /TME.txt,
              * instead of treating an unreported relay as initially OFF. */
-            if(command.kind!=HTTP_OUTPUT_PWM && (mode==HTTP_MODE_RELAY || mode==HTTP_MODE_IR)){
-                int state=HTTP_LpcOutputStateFromRefresh(HttpRefr_sdram,strlen(HttpRefr_sdram),command.port);
-                if(state>=0)RELAY_UpdateState(command.port,(unsigned)state);
-            }
-			int accepted=command.kind==HTTP_OUTPUT_PWM?
-				(mode==HTTP_MODE_PWM && RELAY_RequestPwm(command.port,command.value)):
-				((mode==HTTP_MODE_RELAY || mode==HTTP_MODE_IR) && RELAY_RequestToggle(command.port));
-			if(accepted){
-				page=WWW_OUTPUT_CONTROL; status=200; port=command.port;
-				notice=command.kind==HTTP_OUTPUT_PWM?"pwm":NULL;
+			if ( command.kind != HTTP_OUTPUT_PWM && ( mode == HTTP_MODE_RELAY || mode == HTTP_MODE_IR ) )
+			{
+				int state = HTTP_LpcOutputStateFromRefresh ( HttpRefr_sdram, strlen ( HttpRefr_sdram ), command.port );
+				if ( state >= 0 )
+					RELAY_UpdateState ( command.port, (unsigned) state );
 			}
-            if(command.kind==HTTP_OUTPUT_PWM){
-                DbgVarDma(1,160,"\r\nHTTP GET PWM: TCP=%u port=%u PWM=%u%% -> %s\r\n",
-                    channel+1u,command.port,command.value,accepted?"OK":"ODRZUCONO (tryb portu)");
-            }else{
-                const RelayState* state=RELAY_GetState(command.port);
-                DbgVarDma(1,160,"\r\nHTTP GET PK: TCP=%u port=%u zadano=%s -> %s\r\n",
-                    channel+1u,command.port,accepted && state?(state->requested_on?"ON":"OFF"):"-",
-                    accepted?"OK":"ODRZUCONO (tryb portu)");
-            }
-		}else{
-            DbgVarDma(1,128,"\r\nHTTP GET PWM/PK: TCP=%u ODRZUCONO (bledne parametry)\r\n",channel+1u);
-        }
-	}else if(!target){ status=400; }
-    else if(asset){page=WWW_LPC_ASSET;status=200;}
-    else if(lpcPage){page=WWW_LPC_SD;port=lpcPage;status=200;}
-    else if(lpcApi){page=WWW_LPC_CONFIG;port=lpcApi;status=200;}
-    else if(HTTP_TargetEquals(target,length,"/lpc")){page=WWW_LPC_CATALOG;status=200;}
-    else if(HTTP_TargetEquals(target,length,"/api/lpcdata")){page=WWW_LPC_LIVE;status=200;}
-    else if(HTTP_TargetEquals(target,length,"/api/nowa")){page=WWW_LPC_DATA;status=200;}
-	else if(HTTP_TargetEquals(target,length,"/") || HTTP_TargetEquals(target,length,"/main")){
-		page=WWW_MAIN_READ; status=200;
-	}else if(HTTP_TargetEquals(target,length,"/set") || HTTP_TargetEquals(target,length,"/Set") || HTTP_TargetEquals(target,length,"/3main")){
-		page=WWW_MAIN_SETTING; status=200;
-	}else if(length==8 && memcmp(target,"/temp",5)==0 &&
-		target[5]>='0' && target[5]<='9' && target[6]>='0' && target[6]<='9' && target[7]>='0' && target[7]<='9'){
-		port=(unsigned)(target[5]-'0')*100+(unsigned)(target[6]-'0')*10+(unsigned)(target[7]-'0');
-		if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT && port!=15 && port!=16){page=WWW_SENSOR_SETTING; status=200;}
-	}else if(length>=14 && memcmp(target,"/lpc.cgi/A117?",14)==0){
-        int lpcStatus=LPC_ApplyTarget(target,length,&lpcPage);
-        if(lpcStatus){page=WWW_LPC_SAVE;status=lpcStatus;port=lpcPage;}
-        else {
-		int result=HTTP_SettingsApplyTarget(target,length,&settingsPage,&settingsInstance);
-		/* A failed boot-time SD read previously left the save callback unset.
-		 * Load existing settings before retrying, so other saved fields survive. */
-		if(result==HTTP_SETTINGS_STORAGE_ERROR && HTTP_SettingsStorageRetryLoad())
-			result=HTTP_SettingsApplyTarget(target,length,&settingsPage,&settingsInstance);
-		if(result!=HTTP_SETTINGS_NOT_HANDLED){
-			if(settingsPage){
-				page=strcmp(settingsPage->route,"/set")==0?WWW_MAIN_SETTING:WWW_OTHER_SETTING;
-				status=result==HTTP_SETTINGS_SAVED?200:
-					result==HTTP_SETTINGS_STORAGE_ERROR?503:400;
-				notice=result==HTTP_SETTINGS_SAVED?"<p style='color:#eee'>Zapisano ustawienia.</p>":
-					result==HTTP_SETTINGS_STORAGE_ERROR?"<p style='color:#eee'>Nie zapisano ustawien. Sprawdz karte SD.</p>":
-					"<p style='color:#eee'>Nie zapisano: sprawdz wartosci formularza.</p>";
-				if(page==WWW_OTHER_SETTING) notice=result==HTTP_SETTINGS_SAVED?"Zapisano ustawienia.":
-					result==HTTP_SETTINGS_STORAGE_ERROR?"Nie zapisano ustawien. Sprawdz karte SD.":"Nie zapisano: sprawdz wartosci formularza.";
-				if(result==HTTP_SETTINGS_STORAGE_ERROR){
-					const char* message=HTTP_SettingsStorageGetErrorMessage();
-					if(page==WWW_MAIN_SETTING){
-						snprintf(httpStorageNotice[channel],sizeof httpStorageNotice[channel],"<p style='color:#eee'>%s</p>",message);
-						notice=httpStorageNotice[channel];
-					}else notice=message;
-				}
-				if(result==HTTP_SETTINGS_SAVED) HTTP_SettingsBindingsCommitted(settingsPage,settingsInstance);
-			}else status=400;
-		}else{
-			result=HTTP_SensorSettingsApplyTarget(target,length,&port);
-			if(port>=1 && port<=HTTP_SENSOR_PORT_COUNT){
-				page=WWW_SENSOR_SETTING;
-				status=result==HTTP_SENSOR_SETTINGS_SAVED?200:result==HTTP_SENSOR_SETTINGS_STORAGE_ERROR?503:400;
-				notice=result==HTTP_SENSOR_SETTINGS_SAVED?"Zapisano ustawienia.":
-					result==HTTP_SENSOR_SETTINGS_STORAGE_ERROR?"Nie zapisano ustawien. Sprawdz karte SD.":
-					"Nie zapisano: sprawdz progi, histereze i czas zwloki.";
-			}else status=400;
+			int accepted = command.kind == HTTP_OUTPUT_PWM ? ( mode == HTTP_MODE_PWM && RELAY_RequestPwm ( command.port, command.value ) ) : ( ( mode == HTTP_MODE_RELAY || mode == HTTP_MODE_IR ) && RELAY_RequestToggle ( command.port ) );
+			if ( accepted )
+			{
+				page = WWW_OUTPUT_CONTROL;
+				status = 200;
+				port = command.port;
+				notice = command.kind == HTTP_OUTPUT_PWM ? "pwm" : NULL;
+			}
+			if ( command.kind == HTTP_OUTPUT_PWM )
+			{
+				DbgVarDma ( 1, 160, "\r\nHTTP GET PWM: TCP=%u port=%u PWM=%u%% -> %s\r\n",
+							channel + 1u, command.port, command.value, accepted ? "OK" : "ODRZUCONO (tryb portu)" );
+			}
+			else
+			{
+				const RelayState *state = RELAY_GetState ( command.port );
+				DbgVarDma ( 1, 160, "\r\nHTTP GET PK: TCP=%u port=%u zadano=%s -> %s\r\n",
+							channel + 1u, command.port, accepted && state ? ( state->requested_on ? "ON" : "OFF" ) : "-",
+							accepted ? "OK" : "ODRZUCONO (tryb portu)" );
+			}
 		}
-        }
-	}else if(HTTP_TargetEquals(target,length,"/TME.txt")){
-		page=WWW_DATA_REFRESH; status=200;
-	}else if(HTTP_TargetEquals(target,length,"/favicon.ico") || (length>=8 && memcmp(target,"/mobile/",8)==0)){
-		page=WWW_FAVICON; status=200;
+		else
+		{
+			DbgVarDma ( 1, 128, "\r\nHTTP GET PWM/PK: TCP=%u ODRZUCONO (bledne parametry)\r\n", channel + 1u );
+		}
 	}
-	if(page==WWW_HTTP_ERROR && target && status==404 && length<64 && !memchr(target,'?',length)){
-		char path[64]; memcpy(path,target,length); path[length]=0;
-		settingsPage=HTTP_SettingsCatalogFind(path,&settingsInstance);
-		if(settingsPage){ page=WWW_OTHER_SETTING; status=settingsPage->field_count?200:501; }
+	else if ( !target )
+	{
+		status = 400;
 	}
-	if(HTTP_QueueResponse(channel,page,port,notice,status,settingsPage,settingsInstance,asset)>=0) InitReloadHttpTime();
+	else if ( asset )
+	{
+		page = WWW_LPC_ASSET;
+		status = 200;
+	}
+	else if ( lpcPage )
+	{
+		page = WWW_LPC_SD;
+		port = lpcPage;
+		status = 200;
+	}
+	else if ( lpcApi )
+	{
+		page = WWW_LPC_CONFIG;
+		port = lpcApi;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, "/lpc" ) )
+	{
+		page = WWW_LPC_CATALOG;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, "/api/lpcdata" ) )
+	{
+		page = WWW_LPC_LIVE;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, "/api/nowa" ) )
+	{
+		page = WWW_LPC_DATA;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, "/" ) || HTTP_TargetEquals ( target, length, "/main" ) )
+	{
+		page = WWW_MAIN_READ;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, "/set" ) || HTTP_TargetEquals ( target, length, "/Set" ) || HTTP_TargetEquals ( target, length, "/3main" ) )
+	{
+		page = WWW_MAIN_SETTING;
+		status = 200;
+	}
+	else if ( length == 8 && memcmp ( target, "/temp", 5 ) == 0 &&
+			  target[5] >= '0' && target[5] <= '9' && target[6] >= '0' && target[6] <= '9' && target[7] >= '0' && target[7] <= '9' )
+	{
+		port = (unsigned) ( target[5] - '0' ) * 100 + (unsigned) ( target[6] - '0' ) * 10 + (unsigned) ( target[7] - '0' );
+		if ( port >= 1 && port <= HTTP_SENSOR_PORT_COUNT && port != 15 && port != 16 )
+		{
+			page = WWW_SENSOR_SETTING;
+			status = 200;
+		}
+	}
+	else if ( length >= 14 && memcmp ( target, "/lpc.cgi/A117?", 14 ) == 0 )
+	{
+		int lpcStatus = LPC_ApplyTarget ( target, length, &lpcPage );
+		if ( lpcStatus )
+		{
+			page = WWW_LPC_SAVE;
+			status = lpcStatus;
+			port = lpcPage;
+		}
+		else
+		{
+			int result = HTTP_SettingsApplyTarget ( target, length, &settingsPage, &settingsInstance );
+			/* A failed boot-time SD read previously left the save callback unset.
+		 * Load existing settings before retrying, so other saved fields survive. */
+			if ( result == HTTP_SETTINGS_STORAGE_ERROR && HTTP_SettingsStorageRetryLoad () )
+				result = HTTP_SettingsApplyTarget ( target, length, &settingsPage, &settingsInstance );
+			if ( result != HTTP_SETTINGS_NOT_HANDLED )
+			{
+				if ( settingsPage )
+				{
+					page = strcmp ( settingsPage->route, "/set" ) == 0 ? WWW_MAIN_SETTING : WWW_OTHER_SETTING;
+					status = result == HTTP_SETTINGS_SAVED ? 200 : result == HTTP_SETTINGS_STORAGE_ERROR ? 503
+																										 : 400;
+					notice = result == HTTP_SETTINGS_SAVED ? "<p style='color:#eee'>Zapisano ustawienia.</p>" : result == HTTP_SETTINGS_STORAGE_ERROR ? "<p style='color:#eee'>Nie zapisano ustawien. Sprawdz karte SD.</p>"
+																																					  : "<p style='color:#eee'>Nie zapisano: sprawdz wartosci formularza.</p>";
+					if ( page == WWW_OTHER_SETTING )
+						notice = result == HTTP_SETTINGS_SAVED ? "Zapisano ustawienia." : result == HTTP_SETTINGS_STORAGE_ERROR ? "Nie zapisano ustawien. Sprawdz karte SD."
+																																: "Nie zapisano: sprawdz wartosci formularza.";
+					if ( result == HTTP_SETTINGS_STORAGE_ERROR )
+					{
+						const char *message = HTTP_SettingsStorageGetErrorMessage ();
+						if ( page == WWW_MAIN_SETTING )
+						{
+							snprintf ( httpStorageNotice[channel], sizeof httpStorageNotice[channel], "<p style='color:#eee'>%s</p>", message );
+							notice = httpStorageNotice[channel];
+						}
+						else
+							notice = message;
+					}
+					if ( result == HTTP_SETTINGS_SAVED )
+						HTTP_SettingsBindingsCommitted ( settingsPage, settingsInstance );
+				}
+				else
+					status = 400;
+			}
+			else
+			{
+				result = HTTP_SensorSettingsApplyTarget ( target, length, &port );
+				if ( port >= 1 && port <= HTTP_SENSOR_PORT_COUNT )
+				{
+					page = WWW_SENSOR_SETTING;
+					status = result == HTTP_SENSOR_SETTINGS_SAVED ? 200 : result == HTTP_SENSOR_SETTINGS_STORAGE_ERROR ? 503
+																													   : 400;
+					notice = result == HTTP_SENSOR_SETTINGS_SAVED ? "Zapisano ustawienia." : result == HTTP_SENSOR_SETTINGS_STORAGE_ERROR ? "Nie zapisano ustawien. Sprawdz karte SD."
+																																		  : "Nie zapisano: sprawdz progi, histereze i czas zwloki.";
+				}
+				else
+					status = 400;
+			}
+		}
+	}
+	else if ( HTTP_TargetEquals ( target, length, "/TME.txt" ) )
+	{
+		page = WWW_DATA_REFRESH;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, "/favicon.ico" ) || ( length >= 8 && memcmp ( target, "/mobile/", 8 ) == 0 ) )
+	{
+		page = WWW_FAVICON;
+		status = 200;
+	}
+	if ( page == WWW_HTTP_ERROR && target && status == 404 && length < 64 && !memchr ( target, '?', length ) )
+	{
+		char path[64];
+		memcpy ( path, target, length );
+		path[length] = 0;
+		settingsPage = HTTP_SettingsCatalogFind ( path, &settingsInstance );
+		if ( settingsPage )
+		{
+			page = WWW_OTHER_SETTING;
+			status = settingsPage->field_count ? 200 : 501;
+		}
+	}
+	if ( HTTP_QueueResponse ( channel, page, port, notice, status, settingsPage, settingsInstance, asset ) >= 0 )
+		InitReloadHttpTime ();
 }
 
-static void HTTP_FeedReceiveRing(void)
+static void HTTP_FeedReceiveRing ( void )
 {
 	/* Feed the producer snapshot once. Incomplete +IPD and GET lines survive
 	 * subsequent DMA notifications and may wrap at the end of RecvBuffer. */
-	int position=read_pos;
-	const int end=recvByteFromEsp_copy;
-	while(position!=end){
-		HTTP_RequestStreamFeed(&httpRequestStream,(const uint8_t*)&RecvBuffer[position],1);
-		IncPos(&position);
+	int position = read_pos;
+	const int end = recvByteFromEsp_copy;
+	while ( position != end )
+	{
+		HTTP_RequestStreamFeed ( &httpRequestStream, (const uint8_t *) &RecvBuffer[position], 1 );
+		IncPos ( &position );
 	}
 }
 
-int CheckReadyToSendChnl(int chnlPrev){
+int CheckReadyToSendChnl ( int chnlPrev )
+{
 	if(httpPar.chnl==0xFF)		/* gdy nie ma w tle oczekiwania na SEND OK */
 	{
 		if(chnlPrev==-1)
@@ -1338,36 +1499,57 @@ int CheckReadyToSendChnl(int chnlPrev){
 	return -1;
 }
 
-static void HTTP_SendCloseChnl(ARCHIVING_TYPE archType, int prevChnl)
+static void HTTP_SendCloseChnl ( ARCHIVING_TYPE archType, int prevChnl )
 {
-    int slot=CheckReadyToSendChnl(prevChnl);
-    if(slot<0)return;
-    /* Skip empty fragments and validate the index before every array access. */
-    while(httpPar.nrWeb[slot]<MAX_HTML_WEBs){
-        unsigned part=httpPar.nrWeb[slot];
-        if(!httpPar.web[slot][part])break;
-        if(httpTxOffset[slot]>httpPar.siz[slot][part])break;
-        if(httpTxOffset[slot]<httpPar.siz[slot][part])break;
-        ++httpPar.nrWeb[slot];httpTxOffset[slot]=0;httpPar.nr[slot]=0;
-    }
-    unsigned part=httpPar.nrWeb[slot];
-    if(part>=MAX_HTML_WEBs || !httpPar.web[slot][part] ||
-       httpTxOffset[slot]>httpPar.siz[slot][part]){
-        httpPar.ptr[slot]=NULL;httpPar.len[slot]=0;httpTxPhase[slot]=3;
-        if(httpPar.web[slot][1]==httpLpcSdBuff[slot])
-            DbgVarDma(1,120,"\r\nHTTP LPC: TCP=%u cala odpowiedz wyslana, zamykam polaczenie\r\n",(unsigned)httpPar.chnl+1u);
-        SendToEsp32_http(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPCLOSE=%d\r\n",httpPar.chnl),NULL,archType);
-        return;
-    }
-    uint32_t remaining=httpPar.siz[slot][part]-httpTxOffset[slot];
-    uint32_t length=remaining>ETH_PACKET_LEN?ETH_PACKET_LEN:remaining;
-    if(!length || length>=sizeof(sendBuff)){httpPar.chnl=0xFF;return;}
-    httpPar.ptr[slot]=httpPar.web[slot][part]+httpTxOffset[slot];
-    httpPar.len[slot]=length;httpTxPhase[slot]=1;
-    /* Console uses channels 1..5; ESP AT commands retain IDs 0..4. */
-    if(archType==noArch)DbgVarDma(1,5,"%u",(unsigned)httpPar.chnl+1u);
-    int status=SendToEsp32_http(mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSEND=%d,%u\r\n",httpPar.chnl,(unsigned)length),NULL,archType);
-    if(status!=HAL_OK){httpTxPhase[slot]=0;httpPar.len[slot]=0;httpPar.chnl=0xFF;}
+	int slot = CheckReadyToSendChnl ( prevChnl );
+	if ( slot < 0 )
+		return;
+	/* Skip empty fragments and validate the index before every array access. */
+	while ( httpPar.nrWeb[slot] < MAX_HTML_WEBs )
+	{
+		unsigned part = httpPar.nrWeb[slot];
+		if ( !httpPar.web[slot][part] )
+			break;
+		if ( httpTxOffset[slot] > httpPar.siz[slot][part] )
+			break;
+		if ( httpTxOffset[slot] < httpPar.siz[slot][part] )
+			break;
+		++httpPar.nrWeb[slot];
+		httpTxOffset[slot] = 0;
+		httpPar.nr[slot] = 0;
+	}
+	unsigned part = httpPar.nrWeb[slot];
+	if ( part >= MAX_HTML_WEBs || !httpPar.web[slot][part] ||
+		 httpTxOffset[slot] > httpPar.siz[slot][part] )
+	{
+		httpPar.ptr[slot] = NULL;
+		httpPar.len[slot] = 0;
+		httpTxPhase[slot] = 3;
+		if ( httpPar.web[slot][1] == httpLpcSdBuff[slot] )
+			DbgVarDma ( 1, 120, "\r\nHTTP LPC: TCP=%u cala odpowiedz wyslana, zamykam polaczenie\r\n", (unsigned) httpPar.chnl + 1u );
+		SendToEsp32_http ( mini_snprintf ( sendBuff, sizeof ( sendBuff ), "AT+CIPCLOSE=%d\r\n", httpPar.chnl ), NULL, archType );
+		return;
+	}
+	uint32_t remaining = httpPar.siz[slot][part] - httpTxOffset[slot];
+	uint32_t length = remaining > ETH_PACKET_LEN ? ETH_PACKET_LEN : remaining;
+	if ( !length || length >= sizeof ( sendBuff ) )
+	{
+		httpPar.chnl = 0xFF;
+		return;
+	}
+	httpPar.ptr[slot] = httpPar.web[slot][part] + httpTxOffset[slot];
+	httpPar.len[slot] = length;
+	httpTxPhase[slot] = 1;
+	/* Console uses channels 1..5; ESP AT commands retain IDs 0..4. */
+	if ( archType == noArch )
+		DbgVarDma ( 1, 5, "%u", (unsigned) httpPar.chnl + 1u );
+	int status = SendToEsp32_http ( mini_snprintf ( sendBuff, sizeof ( sendBuff ), "AT+CIPSEND=%d,%u\r\n", httpPar.chnl, (unsigned) length ), NULL, archType );
+	if ( status != HAL_OK )
+	{
+		httpTxPhase[slot] = 0;
+		httpPar.len[slot] = 0;
+		httpPar.chnl = 0xFF;
+	}
 }
 
 static int SearchChnl(u8 channel){
@@ -1379,40 +1561,51 @@ static int SearchChnl(u8 channel){
 
 /* A prompt may be duplicated/stale after a close or a timeout. Copy only a
  * packet that was explicitly planned for this live slot and fragment. */
-static int HTTP_SendPayload(ARCHIVING_TYPE archType)
+static int HTTP_SendPayload ( ARCHIVING_TYPE archType )
 {
-    int slot=SearchChnl(httpPar.chnl);
-    if(slot<0 || httpTxPhase[slot]!=1)return 0;
-    unsigned part=httpPar.nrWeb[slot];
-    uint32_t length=httpPar.len[slot],offset=httpTxOffset[slot];
-    if(part>=MAX_HTML_WEBs || !httpPar.web[slot][part] || !httpPar.ptr[slot] ||
-       !length || length>ETH_PACKET_LEN || length>=sizeof(sendBuff) ||
-       offset>httpPar.siz[slot][part] || length>httpPar.siz[slot][part]-offset ||
-       httpPar.ptr[slot]!=httpPar.web[slot][part]+offset){
-        httpPar.ptr[slot]=NULL;httpPar.len[slot]=0;
-        httpPar.nrWeb[slot]=MAX_HTML_WEBs;httpTxPhase[slot]=0;httpPar.chnl=0xFF;
-        return 0;
-    }
-    memcpy(sendBuff,httpPar.ptr[slot],length);
-    if(SendToEsp32((int)length,NULL,archType)!=HAL_OK){
-        httpPar.len[slot]=0;httpTxPhase[slot]=0;httpPar.chnl=0xFF;
-        return 0;
-    }
-    httpTxOffset[slot]+=length;
-    httpPar.ptr[slot]=httpPar.web[slot][part]+httpTxOffset[slot];
-    httpPar.len[slot]=0;httpTxPhase[slot]=2;
-    ++httpPar.nr[slot];
-    return 1;
+	int slot = SearchChnl ( httpPar.chnl );
+	if ( slot < 0 || httpTxPhase[slot] != 1 )
+		return 0;
+	unsigned part = httpPar.nrWeb[slot];
+	uint32_t length = httpPar.len[slot], offset = httpTxOffset[slot];
+	if ( part >= MAX_HTML_WEBs || !httpPar.web[slot][part] || !httpPar.ptr[slot] ||
+		 !length || length > ETH_PACKET_LEN || length >= sizeof ( sendBuff ) ||
+		 offset > httpPar.siz[slot][part] || length > httpPar.siz[slot][part] - offset ||
+		 httpPar.ptr[slot] != httpPar.web[slot][part] + offset )
+	{
+		httpPar.ptr[slot] = NULL;
+		httpPar.len[slot] = 0;
+		httpPar.nrWeb[slot] = MAX_HTML_WEBs;
+		httpTxPhase[slot] = 0;
+		httpPar.chnl = 0xFF;
+		return 0;
+	}
+	memcpy ( sendBuff, httpPar.ptr[slot], length );
+	if ( SendToEsp32 ( (int) length, NULL, archType ) != HAL_OK )
+	{
+		httpPar.len[slot] = 0;
+		httpTxPhase[slot] = 0;
+		httpPar.chnl = 0xFF;
+		return 0;
+	}
+	httpTxOffset[slot] += length;
+	httpPar.ptr[slot] = httpPar.web[slot][part] + httpTxOffset[slot];
+	httpPar.len[slot] = 0;
+	httpTxPhase[slot] = 2;
+	++httpPar.nr[slot];
+	return 1;
 }
 
-static int HTTP_SendAcknowledged(ARCHIVING_TYPE archType)
+static int HTTP_SendAcknowledged ( ARCHIVING_TYPE archType )
 {
-    int slot=SearchChnl(httpPar.chnl);
-    if(slot<0 || httpTxPhase[slot]!=2)return 0;
-    int previous=httpPar.chnl;
-    httpTxPhase[slot]=0;httpPar.chnl=0xFF;
-    HTTP_SendCloseChnl(archType,previous);
-    return 1;
+	int slot = SearchChnl ( httpPar.chnl );
+	if ( slot < 0 || httpTxPhase[slot] != 2 )
+		return 0;
+	int previous = httpPar.chnl;
+	httpTxPhase[slot] = 0;
+	httpPar.chnl = 0xFF;
+	HTTP_SendCloseChnl ( archType, previous );
+	return 1;
 }
 
 static int HTTP_GetClosedChannel(char* ptr){
@@ -1444,100 +1637,149 @@ static void HTTP_ShowInitChannel(int channel,int size, ARCHIVING_TYPE archType){
 }
 
 /* Cloud transport shares INIT, UART DMA and CASE_Service with HTTP/SMTP. */
-static const char* CLOUD_Host(void){return cloudRedirected?"script.googleusercontent.com":"script.google.com";}
-
-__attribute__((weak)) int GoogleCloud_ReadTemperature10(void)
+static const char *CLOUD_Host ( void )
 {
-    const size_t offset=73u+(GOOGLE_CLOUD_TEMPERATURE_PORT-1u)*12u;
-    char field[6],*end;int sign=1,value=0;
-    if(GOOGLE_CLOUD_TEMPERATURE_PORT<1 || GOOGLE_CLOUD_TEMPERATURE_PORT>20 || strlen(HttpRefr_sdram)<offset+5)return -32768;
-    memcpy(field,HttpRefr_sdram+offset,5);field[5]=0;end=field;
-    while(*end==' ')end++;
-    if(*end=='-'){sign=-1;end++;}else if(*end=='+')end++;
-    if(*end<'0'||*end>'9')return -32768;
-    while(*end>='0'&&*end<='9'){value=value*10+(*end++-'0');}
-    if(*end++!='.'||*end<'0'||*end>'9')return -32768;
-    value=value*10+(*end++-'0');while(*end==' ')end++;
-    return *end?-32768:sign*value;
+	return cloudRedirected ? "script.googleusercontent.com" : "script.google.com";
 }
 
-static int CLOUD_Nonce(void)
+__attribute__ ( ( weak ) ) int GoogleCloud_ReadTemperature10 ( void )
 {
-    static int initialized;
-    if(!initialized){
-        RCC_OscInitTypeDef osc={0};RCC_PeriphCLKInitTypeDef clock={0};
-        osc.OscillatorType=RCC_OSCILLATORTYPE_HSI48;osc.HSI48State=RCC_HSI48_ON;
-        if(HAL_RCC_OscConfig(&osc)!=HAL_OK)return 0;
-        clock.PeriphClockSelection=RCC_PERIPHCLK_RNG;clock.RngClockSelection=RCC_RNGCLKSOURCE_HSI48;
-        if(HAL_RCCEx_PeriphCLKConfig(&clock)!=HAL_OK)return 0;
-        __HAL_RCC_RNG_CLK_ENABLE();RNG->CR=RNG_CR_RNGEN;initialized=1;
-    }
-    for(unsigned i=0;i<4;i++){
-        uint32_t start=HAL_GetTick();
-        while(!(RNG->SR&RNG_SR_DRDY)){
-            if((RNG->SR&(RNG_SR_CECS|RNG_SR_SECS)) || HAL_GetTick()-start>10u){RNG->CR=0;initialized=0;return 0;}
-        }
-        if(RNG->SR&(RNG_SR_CECS|RNG_SR_SECS)){RNG->CR=0;initialized=0;return 0;}
-        snprintf(cloudNonce+i*8u,9,"%08x",(unsigned)RNG->DR);
-    }
-    return 1;
+	const size_t offset = 73u + ( GOOGLE_CLOUD_TEMPERATURE_PORT - 1u ) * 12u;
+	char field[6], *end;
+	int sign = 1, value = 0;
+	if ( GOOGLE_CLOUD_TEMPERATURE_PORT < 1 || GOOGLE_CLOUD_TEMPERATURE_PORT > 20 || strlen ( HttpRefr_sdram ) < offset + 5 )
+		return -32768;
+	memcpy ( field, HttpRefr_sdram + offset, 5 );
+	field[5] = 0;
+	end = field;
+	while ( *end == ' ' )
+		end++;
+	if ( *end == '-' )
+	{
+		sign = -1;
+		end++;
+	}
+	else if ( *end == '+' )
+		end++;
+	if ( *end < '0' || *end > '9' )
+		return -32768;
+	while ( *end >= '0' && *end <= '9' )
+	{
+		value = value * 10 + ( *end++ - '0' );
+	}
+	if ( *end++ != '.' || *end < '0' || *end > '9' )
+		return -32768;
+	value = value * 10 + ( *end++ - '0' );
+	while ( *end == ' ' )
+		end++;
+	return *end ? -32768 : sign * value;
 }
 
-static void CLOUD_Close(int error)
+static int CLOUD_Nonce ( void )
 {
-    DbgVarDma(DBG,200,"Google CLOSE: wynik=%d, etap=%d (0=OK, -4=timeout, -5=AT, -6=HTTP, -7=potwierdzenie)\r\n",error,_GET_ACTUAL_CASE_);
-    cloudResult=error;cloudAt.events=0;cloudCleanupTick=xTaskGetTickCount();
-    _SET_NEW_CASE_(900);
-    SendToEsp32(0,"AT+CIPCLOSE=3\r\n",noArch);
+	static int initialized;
+	if ( !initialized )
+	{
+		RCC_OscInitTypeDef osc = { 0 };
+		RCC_PeriphCLKInitTypeDef clock = { 0 };
+		osc.OscillatorType = RCC_OSCILLATORTYPE_HSI48;
+		osc.HSI48State = RCC_HSI48_ON;
+		if ( HAL_RCC_OscConfig ( &osc ) != HAL_OK )
+			return 0;
+		clock.PeriphClockSelection = RCC_PERIPHCLK_RNG;
+		clock.RngClockSelection = RCC_RNGCLKSOURCE_HSI48;
+		if ( HAL_RCCEx_PeriphCLKConfig ( &clock ) != HAL_OK )
+			return 0;
+		__HAL_RCC_RNG_CLK_ENABLE ();
+		RNG->CR = RNG_CR_RNGEN;
+		initialized = 1;
+	}
+	for ( unsigned i = 0; i < 4; i++ )
+	{
+		uint32_t start = HAL_GetTick ();
+		while ( !( RNG->SR & RNG_SR_DRDY ) )
+		{
+			if ( ( RNG->SR & ( RNG_SR_CECS | RNG_SR_SECS ) ) || HAL_GetTick () - start > 10u )
+			{
+				RNG->CR = 0;
+				initialized = 0;
+				return 0;
+			}
+		}
+		if ( RNG->SR & ( RNG_SR_CECS | RNG_SR_SECS ) )
+		{
+			RNG->CR = 0;
+			initialized = 0;
+			return 0;
+		}
+		snprintf ( cloudNonce + i * 8u, 9, "%08x", (unsigned) RNG->DR );
+	}
+	return 1;
 }
 
-static void CLOUD_RestoreHttp(void)
+static void CLOUD_Close ( int error )
 {
-    DbgVarDma(DBG,100,"Google HTTP: przywracam serwer, port=%d\r\n",GetHttpPort());
-    cloudAt.events=0;cloudCleanupTick=xTaskGetTickCount();
-    InitStructRqstToSendChnl();
-    HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
-    _SET_NEW_CASE_(901);
-    SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,noArch);
+	DbgVarDma ( DBG, 200, "Google CLOSE: wynik=%d, etap=%d (0=OK, -4=timeout, -5=AT, -6=HTTP, -7=potwierdzenie)\r\n", error, _GET_ACTUAL_CASE_ );
+	cloudResult = error;
+	cloudAt.events = 0;
+	cloudCleanupTick = xTaskGetTickCount ();
+	_SET_NEW_CASE_ ( 900 );
+	SendToEsp32 ( 0, "AT+CIPCLOSE=3\r\n", noArch );
+}
+
+static void CLOUD_RestoreHttp ( void )
+{
+	DbgVarDma ( DBG, 100, "Google HTTP: przywracam serwer, port=%d\r\n", GetHttpPort () );
+	cloudAt.events = 0;
+	cloudCleanupTick = xTaskGetTickCount ();
+	InitStructRqstToSendChnl ();
+	HTTP_RequestStreamInit ( &httpRequestStream, HTTP_HandleTarget, NULL );
+	_SET_NEW_CASE_ ( 901 );
+	SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSERVER=1,%d\r\n",GetHttpPort()),NULL,noArch);
     //SendToEsp32( mini_snprintf(sendBuff,sizeof(sendBuff),"AT+CIPSERVER=1,443,\"SSL\"\r\n"),NULL,noArch );
 }
 
-static void CLOUD_FeedReceiveRing(void)
+static void CLOUD_FeedReceiveRing ( void )
 {
-    int position=read_pos;
-    while(position!=recvByteFromEsp_copy){
-        CloudAt_Feed(&cloudAt,(const uint8_t*)&RecvBuffer[position],1);
-        if(_GET_ACTUAL_CASE_==901)HTTP_RequestStreamFeed(&httpRequestStream,(const uint8_t*)&RecvBuffer[position],1);
-        IncPos(&position);
-    }
-    UpdateReadPos();
+	int position = read_pos;
+	while ( position != recvByteFromEsp_copy )
+	{
+		CloudAt_Feed ( &cloudAt, (const uint8_t *) &RecvBuffer[position], 1 );
+		if ( _GET_ACTUAL_CASE_ == 901 )
+			HTTP_RequestStreamFeed ( &httpRequestStream, (const uint8_t *) &RecvBuffer[position], 1 );
+		IncPos ( &position );
+	}
+	UpdateReadPos ();
 }
 
 /* UART/debug notifications always wake us immediately. Only active cloud
  * transfers need short polls; idle HTTP sleeps until the next upload is due. */
-static TickType_t CLOUD_WaitTicks(void)
+static TickType_t CLOUD_WaitTicks ( void )
 {
-    if(connectionType==GOOGLE_CLOUD_CONNECTION)
-        return pdMS_TO_TICKS(100);
-    if(!googleCloudStatus.configured)
-        return portMAX_DELAY;
-    if(connectionType==INIT_CONNECTION){
-        int step=_GET_ACTUAL_CASE_;
-        return step>=22 && step<=27 ? pdMS_TO_TICKS(100) : portMAX_DELAY;
-    }
-    if(connectionType==HTTP_CONNECTION && googleCloudStatus.ready &&
-       (Const.wifiGeneral.mode==WIFI_MODE_STA || Const.wifiGeneral.mode==WIFI_MODE_AP_STA)){
-        TickType_t elapsed=xTaskGetTickCount()-(TickType_t)cloudLastAttempt;
-        TickType_t period=pdMS_TO_TICKS(GOOGLE_CLOUD_PERIOD_MS);
-        /* When HTTP is busy, defer the attempt without spinning at zero ticks. */
-        return elapsed<period ? period-elapsed : pdMS_TO_TICKS(250);
-    }
-    return portMAX_DELAY;
+	if ( connectionType == GOOGLE_CLOUD_CONNECTION )
+		return pdMS_TO_TICKS ( 100 );
+	if ( !googleCloudStatus.configured )
+		return portMAX_DELAY;
+	if ( connectionType == INIT_CONNECTION )
+	{
+		int step = _GET_ACTUAL_CASE_;
+		return step >= 22 && step <= 27 ? pdMS_TO_TICKS ( 100 ) : portMAX_DELAY;
+	}
+	if ( connectionType == HTTP_CONNECTION && googleCloudStatus.ready &&
+		 ( Const.wifiGeneral.mode == WIFI_MODE_STA || Const.wifiGeneral.mode == WIFI_MODE_AP_STA ) )
+	{
+		TickType_t elapsed = xTaskGetTickCount () - (TickType_t) cloudLastAttempt;
+		TickType_t period = pdMS_TO_TICKS ( GOOGLE_CLOUD_PERIOD_MS );
+		/* When HTTP is busy, defer the attempt without spinning at zero ticks. */
+		return elapsed < period ? period - elapsed : pdMS_TO_TICKS ( 250 );
+	}
+	return portMAX_DELAY;
 }
 
-void HTTP_SensorLCDWake(void)
+void HTTP_SensorLCDWake ( void )
 {
-    if(vtaskWifiHandle) xTaskNotify(vtaskWifiHandle, BIT_ESP_SRV, eSetBits);
+	if ( vtaskWifiHandle )
+		xTaskNotify ( vtaskWifiHandle, BIT_ESP_SRV, eSetBits );
 }
 
 void vtaskWifi(void *argument)
@@ -1561,20 +1803,19 @@ void vtaskWifi(void *argument)
 	DefaultSettingsEmail();
 	DefaultSettingsDNS();
 	DefaultSettingsSNTP();
-	HTTP_SensorStorageInit();
-	HTTP_SettingsStorageInit();
-	HTTP_SettingsBindingsApply();
-    LPC_StorageInit();
-	HTTP_RequestStreamInit(&httpRequestStream,HTTP_HandleTarget,NULL);
+	HTTP_SensorStorageInit ();
+	HTTP_SettingsStorageInit ();
+	HTTP_SettingsBindingsApply ();
+	LPC_StorageInit ();
+	HTTP_RequestStreamInit ( &httpRequestStream, HTTP_HandleTarget, NULL );
 	InitStructRqstToSendChnl();
 	RcvTimeoutTimerInit();
-    memset((void*)&googleCloudStatus,0,sizeof googleCloudStatus);
-    googleCloudStatus.configured=GOOGLE_CLOUD_ENABLED && CloudConfig_Valid(GOOGLE_CLOUD_TOKEN,GOOGLE_CLOUD_DEVICE,GOOGLE_CLOUD_PATH);
-    googleCloudStatus.last_error=GOOGLE_CLOUD_ENABLED && !googleCloudStatus.configured?-1:0;
-    DbgVarDma(DBG,160,"Google CONFIG: enabled=%d, poprawna=%d, okres=%u ms, port temperatury=%u\r\n",GOOGLE_CLOUD_ENABLED,googleCloudStatus.configured,(unsigned)GOOGLE_CLOUD_PERIOD_MS,(unsigned)GOOGLE_CLOUD_TEMPERATURE_PORT);
-    cloudLastAttempt=xTaskGetTickCount();
-    CloudAt_Reset(&cloudAt);
-
+	memset ( (void *) &googleCloudStatus, 0, sizeof googleCloudStatus );
+	googleCloudStatus.configured = GOOGLE_CLOUD_ENABLED && CloudConfig_Valid ( GOOGLE_CLOUD_TOKEN, GOOGLE_CLOUD_DEVICE, GOOGLE_CLOUD_PATH );
+	googleCloudStatus.last_error = GOOGLE_CLOUD_ENABLED && !googleCloudStatus.configured ? -1 : 0;
+	DbgVarDma ( DBG, 160, "Google CONFIG: enabled=%d, poprawna=%d, okres=%u ms, port temperatury=%u\r\n", GOOGLE_CLOUD_ENABLED, googleCloudStatus.configured, (unsigned) GOOGLE_CLOUD_PERIOD_MS, (unsigned) GOOGLE_CLOUD_TEMPERATURE_PORT );
+	cloudLastAttempt = xTaskGetTickCount ();
+	CloudAt_Reset ( &cloudAt );
 
 	Dbg(DBG,"\r\nStart vtaskWifi\r\n");   //StartUp aktivity dla tego watki jezeli nie ma odp na AT to innty watek restartuje ten watek
 
@@ -1590,25 +1831,28 @@ void vtaskWifi(void *argument)
 
 	while(1)
 	{
-        HTTP_SensorLCDService();
-        /* Apply a timeout reset in the WiFi task before copying more data. */
-        if(httpResetRequested){
-            taskENTER_CRITICAL();httpResetRequested=0;taskEXIT_CRITICAL();
-            InitStructRqstToSendChnl();
-            UpdateReadPos();
-        }
-      /* FreeRTOS copies and clears pending bits atomically before returning.
-       * Notifications arriving during processing remain pending for next time. */
-      if(xTaskNotifyWait(0, UINT32_MAX, &ulNotifiedValue, CLOUD_WaitTicks()) == pdPASS)
-	  {
-	 /*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */										/* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
-		if (ulNotifiedValue & BIT_ESP_SRV)
+		HTTP_SensorLCDService ();
+		/* Apply a timeout reset in the WiFi task before copying more data. */
+		if ( httpResetRequested )
 		{
-			GetNewReadPos();		//Zastanowic sie co w przypadku przepelnienia bufora cyklicznego i nie zdarzenie oblugi go
-			SCB_InvalidateDCache_by_Addr((uint32_t*)RecvBuffer, ESP_RECV_BUFF_SIZE);		/* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_InvalidateDCache_by_Addr() nie jest potrzebny */
-
-			switch (connectionType)
+			taskENTER_CRITICAL ();
+			httpResetRequested = 0;
+			taskEXIT_CRITICAL ();
+			InitStructRqstToSendChnl ();
+			UpdateReadPos ();
+		}
+		/* FreeRTOS copies and clears pending bits atomically before returning.
+       * Notifications arriving during processing remain pending for next time. */
+		if ( xTaskNotifyWait ( 0, UINT32_MAX, &ulNotifiedValue, CLOUD_WaitTicks () ) == pdPASS )
+		{
+			/*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */ /* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
+			if ( ulNotifiedValue & BIT_ESP_SRV )
 			{
+				GetNewReadPos ();															  //Zastanowic sie co w przypadku przepelnienia bufora cyklicznego i nie zdarzenie oblugi go
+				SCB_InvalidateDCache_by_Addr ( (uint32_t *) RecvBuffer, ESP_RECV_BUFF_SIZE ); /* Jesli w MPU ustawimy adres bufora w kawalku pamieci jako MPU_ACCESS_NOT_CACHEABLE to SCB_InvalidateDCache_by_Addr() nie jest potrzebny */
+
+				switch ( connectionType )
+				{
 				case INIT_CONNECTION:
 
 					if (CASE_Service(0,"ready",NULL,typeRecvArch))			/* Jezeli wchodzimy w dany case to wywolujemy ESP32_FreeAnswers() */
@@ -1911,28 +2155,44 @@ void vtaskWifi(void *argument)
 										sntpTime->tm_min,
 										sntpTime->tm_sec);
 
-                                if(googleCloudStatus.configured){
-                                    cloudCleanupTick=xTaskGetTickCount();
-                                    DbgVarDma(DBG,120,"Google INIT: czas SNTP OK, certyfikat CA=%u, instalacja=%d\r\n",(unsigned)GOOGLE_CLOUD_CA_INDEX,GOOGLE_CLOUD_INSTALL_CA);
-                                    if(GOOGLE_CLOUD_INSTALL_CA){
-                                        _SET_NEW_CASE_(22);cloudCertOffset=0;cloudCleanupTick=xTaskGetTickCount();
-                                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+SYSMFG=2,\"client_ca\",\"client_ca.%u\",8,%u\r\n",
-                                            (unsigned)GOOGLE_CLOUD_CA_INDEX,(unsigned)sizeof google_cloud_roots),NULL,noArch);
-                                    }else{
-                                        _SET_NEW_CASE_(25);
-                                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCCONF=3,2,0,%u\r\n",(unsigned)GOOGLE_CLOUD_CA_INDEX),NULL,noArch);
-                                    }
-                                    COMMAND_Service(_SET,sendBuff);
-                                }else{connectionType=HTTP_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();}
-                                /* Time comes from the existing SNTP INIT, no second Wi-Fi setup. */				/* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
+								if ( googleCloudStatus.configured )
+								{
+									cloudCleanupTick = xTaskGetTickCount ();
+									DbgVarDma ( DBG, 120, "Google INIT: czas SNTP OK, certyfikat CA=%u, instalacja=%d\r\n", (unsigned) GOOGLE_CLOUD_CA_INDEX, GOOGLE_CLOUD_INSTALL_CA );
+									if ( GOOGLE_CLOUD_INSTALL_CA )
+									{
+										_SET_NEW_CASE_ ( 22 );
+										cloudCertOffset = 0;
+										cloudCleanupTick = xTaskGetTickCount ();
+										SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+SYSMFG=2,\"client_ca\",\"client_ca.%u\",8,%u\r\n",
+																	  (unsigned) GOOGLE_CLOUD_CA_INDEX, (unsigned) sizeof google_cloud_roots ),
+													  NULL, noArch );
+									}
+									else
+									{
+										_SET_NEW_CASE_ ( 25 );
+										SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPSSLCCONF=3,2,0,%u\r\n", (unsigned) GOOGLE_CLOUD_CA_INDEX ), NULL, noArch );
+									}
+									COMMAND_Service ( _SET, sendBuff );
+								}
+								else
+								{
+									connectionType = HTTP_CONNECTION;
+									_SET_NEW_CASE_ ( 0 );
+									UpdateReadPos ();
+								}
+								/* Time comes from the existing SNTP INIT, no second Wi-Fi setup. */ /* Poniewż nie używasz w tym case funkcji SendToEsp32(), w której jest UpdateReadPos() musisz sam wywołać UpdateReadPos() */
 							}
 							else
 							{
 								vTaskDelay(2000);    //jezeli nie ma odpowiedzi sntp to trzeba cyklicznie co godzine np pytac
 								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY)
 								{
-                                    if(googleCloudStatus.configured){googleCloudStatus.last_error=-2;
-                                        DbgVarDma(DBG,100,"Google INIT BLAD: brak czasu SNTP (-2), wysylanie zablokowane\r\n");}
+									if ( googleCloudStatus.configured )
+									{
+										googleCloudStatus.last_error = -2;
+										DbgVarDma ( DBG, 100, "Google INIT BLAD: brak czasu SNTP (-2), wysylanie zablokowane\r\n" );
+									}
 									UpdateReadPos();
 									connectionType = HTTP_CONNECTION;   _SET_NEW_CASE_(0);
 								}
@@ -1945,146 +2205,220 @@ void vtaskWifi(void *argument)
 						}
 
 					}
-                    else if (CASE_Service(22,">",txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){
-                            googleCloudStatus.last_error=-3;_SET_NEW_CASE_(26);
-                            SendToEsp32(0,"AT\r\n",noArch);
-                        }else{
-                            _SET_NEW_CASE_(23); /* Certificate chunks continue on DMA-ready ticks. */
-                        }
-                    }
-                    else if (CASE_Service(24,txt_OK,txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){
-                            googleCloudStatus.last_error=-3;_SET_NEW_CASE_(26);
-                            SendToEsp32(0,"AT\r\n",noArch);
-                        }else{
-                            SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCCONF=3,2,0,%u\r\n",(unsigned)GOOGLE_CLOUD_CA_INDEX),NULL,noArch);
-                        }
-                    }
-                    else if (CASE_Service(25,txt_OK,txt_ERR,noArch))
-                    {
-                        DbgVarDma(DBG,100,"Google INIT: konfiguracja weryfikacji TLS=%s\r\n",_GET_ANSW_CASE_==_OK?"OK":"BLAD");
-                        googleCloudStatus.ready=_GET_ANSW_CASE_==_OK;
-                        if(!googleCloudStatus.ready)googleCloudStatus.last_error=-3;
-                        SendToEsp32(0,"AT+CIPRECVMODE=0\r\n",noArch);
-                        COMMAND_Service(_SET,sendBuff);
-                    }
-                    else if (CASE_Service(26,txt_OK,txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){googleCloudStatus.ready=0;googleCloudStatus.last_error=-3;}
-                        SendToEsp32(0,"AT+CIPDINFO=0\r\n",noArch);
-                    }
-                    else if (CASE_Service(27,txt_OK,txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){googleCloudStatus.ready=0;googleCloudStatus.last_error=-3;}
-                        connectionType=HTTP_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();
-                        DbgVarDma(DBG,100,"Google INIT: %s\r\n",googleCloudStatus.ready?"TLS ready":"TLS configuration error");
-                    }
+					else if ( CASE_Service ( 22, ">", txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							googleCloudStatus.last_error = -3;
+							_SET_NEW_CASE_ ( 26 );
+							SendToEsp32 ( 0, "AT\r\n", noArch );
+						}
+						else
+						{
+							_SET_NEW_CASE_ ( 23 ); /* Certificate chunks continue on DMA-ready ticks. */
+						}
+					}
+					else if ( CASE_Service ( 24, txt_OK, txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							googleCloudStatus.last_error = -3;
+							_SET_NEW_CASE_ ( 26 );
+							SendToEsp32 ( 0, "AT\r\n", noArch );
+						}
+						else
+						{
+							SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPSSLCCONF=3,2,0,%u\r\n", (unsigned) GOOGLE_CLOUD_CA_INDEX ), NULL, noArch );
+						}
+					}
+					else if ( CASE_Service ( 25, txt_OK, txt_ERR, noArch ) )
+					{
+						DbgVarDma ( DBG, 100, "Google INIT: konfiguracja weryfikacji TLS=%s\r\n", _GET_ANSW_CASE_ == _OK ? "OK" : "BLAD" );
+						googleCloudStatus.ready = _GET_ANSW_CASE_ == _OK;
+						if ( !googleCloudStatus.ready )
+							googleCloudStatus.last_error = -3;
+						SendToEsp32 ( 0, "AT+CIPRECVMODE=0\r\n", noArch );
+						COMMAND_Service ( _SET, sendBuff );
+					}
+					else if ( CASE_Service ( 26, txt_OK, txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							googleCloudStatus.ready = 0;
+							googleCloudStatus.last_error = -3;
+						}
+						SendToEsp32 ( 0, "AT+CIPDINFO=0\r\n", noArch );
+					}
+					else if ( CASE_Service ( 27, txt_OK, txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							googleCloudStatus.ready = 0;
+							googleCloudStatus.last_error = -3;
+						}
+						connectionType = HTTP_CONNECTION;
+						_SET_NEW_CASE_ ( 0 );
+						UpdateReadPos ();
+						DbgVarDma ( DBG, 100, "Google INIT: %s\r\n", googleCloudStatus.ready ? "TLS ready" : "TLS configuration error" );
+					}
 					else
 					{
 						ESP32_FreeAnswers(1/*2*/);			/* Jezeli NIE wchodzimy w żaden case to rownież wywolujemy ESP32_FreeAnswers() */
 					}
 					break;
 
-
-                case GOOGLE_CLOUD_CONNECTION:
-                    CLOUD_FeedReceiveRing();
-                    if (CASE_Service(0,txt_OK,txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
-                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCCN=3,\"%s\"\r\n",CLOUD_Host()),NULL,noArch);
-                    }
-                    else if (CASE_Service(1,txt_OK,txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
-                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCSNI=3,\"%s\"\r\n",CLOUD_Host()),NULL,noArch);
-                    }
-                    else if (CASE_Service(2,txt_OK,txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
-                        DbgVarDma(DBG,120,"Google TLS: lacze z %s:443, TCP=3\r\n",CLOUD_Host());
-                        CloudAt_Reset(&cloudAt);
-                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSTART=3,\"SSL\",\"%s\",443\r\n",CLOUD_Host()),NULL,noArch);
-                    }
-                    else if (CASE_Service(3,txt_OK,txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
-                        DbgVarDma(DBG,120,"Google TLS: OK; wysylam %s, %u bajtow\r\n",cloudRedirected?"GET potwierdzenia":"POST pomiaru",(unsigned)cloudRequestLength);
-                        cloudOffset=0;cloudPacketLength=cloudRequestLength;
-                        if(cloudPacketLength>sizeof sendBuff-1)cloudPacketLength=sizeof sendBuff-1;
-                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSEND=3,%u\r\n",(unsigned)cloudPacketLength),NULL,noArch);
-                    }
-                    else if (CASE_Service(4,">",txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
-                        SendToEsp32((int)cloudPacketLength,cloudRequest+cloudOffset,noArch);
-                    }
-                    else if (CASE_Service(5,"\r\nSEND OK",txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){CLOUD_Close(-5);break;}
-                        cloudOffset+=cloudPacketLength;
-                        DbgVarDma(DBG,120,"Google SEND OK: TCP=3, %u/%u bajtow\r\n",(unsigned)cloudOffset,(unsigned)cloudRequestLength);
-                        if(cloudOffset<cloudRequestLength){
-                            cloudPacketLength=cloudRequestLength-cloudOffset;
-                            if(cloudPacketLength>sizeof sendBuff-1)cloudPacketLength=sizeof sendBuff-1;
-                            _SET_NEW_CASE_(4);
-                            SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSEND=3,%u\r\n",(unsigned)cloudPacketLength),NULL,noArch);
-                        }
-                    }
-                    else if (CASE_Service(10,txt_OK,txt_ERR,noArch))
-                    {
-                        CloudAt_Reset(&cloudAt);_SET_NEW_CASE_(1);
-                        SendToEsp32(mini_snprintf(sendBuff,sizeof sendBuff,"AT+CIPSSLCCN=3,\"%s\"\r\n",CLOUD_Host()),NULL,noArch);
-                    }
-                    else if (CASE_Service(900,txt_OK,txt_ERR,noArch))
-                    {
-                        CLOUD_RestoreHttp();
-                    }
-                    else if (CASE_Service(901,txt_OK,txt_ERR,noArch))
-                    {
-                        if(_GET_ANSW_CASE_!=_OK){cloudResult=-9;googleCloudStatus.ready=0;}
-                        googleCloudStatus.last_error=cloudResult;
-                        if(cloudResult)googleCloudStatus.failures++;else googleCloudStatus.successes++;
-                        cloudLastAttempt=xTaskGetTickCount();
-                        DbgVarDma(DBG,200,"Google KONIEC: wynik=%d, HTTP=%s, OK=%u, bledy=%u\r\n",cloudResult,cloudResult==-9?"BLAD - restart ESP":"przywrocony",(unsigned)googleCloudStatus.successes,(unsigned)googleCloudStatus.failures);
-                        RcvTimeoutTimerStop();BackToHttpService(&nrHTTPpacket);
-                        xTaskNotify(vtaskWifiHandle,BIT_ESP_SRV,eSetBits);
-                        if(cloudResult==-9){
-                            connectionType=INIT_CONNECTION;_SET_NEW_CASE_(0);
-                            ESP_OFF;vTaskDelay(pdMS_TO_TICKS(20));ESP_ON;
-                        }
-                    }
-                    /* SEND OK and the complete HTTP response may arrive together. */
-                    if(connectionType==GOOGLE_CLOUD_CONNECTION && _GET_ACTUAL_CASE_==6){
-                        int parsed=cloudAt.overflow?-1:CloudHttp_Parse(cloudAt.wire,cloudAt.used,cloudAt.eof,&cloudResponse);
-                        if(parsed<0){CLOUD_Close(-6);}
-                        else if(!parsed){
-                            DbgVarDma(DBG,120,"Google RESPONSE: HTTP=%d, przekierowanie=%d\r\n",cloudResponse.status,cloudRedirected);
-                            if((cloudResponse.status==302 || cloudResponse.status==303) && !cloudRedirected &&
-                               !CloudRedirect_Path(cloudResponse.location,cloudRedirect,sizeof cloudRedirect)){
-                                DbgVarDma(DBG,120,"Google REDIRECT: HTTPS script.googleusercontent.com (bez tokenu)\r\n");
-                                cloudRedirected=1;
-                                cloudRequestLength=CloudRequest_Build(cloudRequest,sizeof cloudRequest,CLOUD_Host(),cloudRedirect,NULL,NULL,0,0,NULL);
-                                if(!cloudRequestLength){CLOUD_Close(-6);break;}
-                                cloudAt.events=0;_SET_NEW_CASE_(10);
-                                SendToEsp32(0,"AT+CIPCLOSE=3\r\n",noArch);
-                            }else{
-                                int relay;
-                                if(cloudResponse.status!=200 || CloudReply_Parse(cloudResponse.body,cloudNonce,&relay)){
-                                    DbgVarDma(DBG,120,"Google ACK BLAD: HTTP=%d lub niezgodne potwierdzenie/nonce\r\n",cloudResponse.status);
-                                    CLOUD_Close(-7);
-                                }
-                                else{
-                                    googleCloudStatus.demo_relay=relay;
-                                    DbgVarDma(DBG,200,CoB_"Google ACK OK: HTTP 200, poprawne nonce; przekaznik DEMO odebrany z Google=%s (%d)\r\n"_X_,relay?"ON":"OFF",relay);
-                                    CLOUD_Close(0);
-                                }
-                            }
-                        }
-                    }
-                    break;
+				case GOOGLE_CLOUD_CONNECTION:
+					CLOUD_FeedReceiveRing ();
+					if ( CASE_Service ( 0, txt_OK, txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							CLOUD_Close ( -5 );
+							break;
+						}
+						SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPSSLCCN=3,\"%s\"\r\n", CLOUD_Host () ), NULL, noArch );
+					}
+					else if ( CASE_Service ( 1, txt_OK, txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							CLOUD_Close ( -5 );
+							break;
+						}
+						SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPSSLCSNI=3,\"%s\"\r\n", CLOUD_Host () ), NULL, noArch );
+					}
+					else if ( CASE_Service ( 2, txt_OK, txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							CLOUD_Close ( -5 );
+							break;
+						}
+						DbgVarDma ( DBG, 120, "Google TLS: lacze z %s:443, TCP=3\r\n", CLOUD_Host () );
+						CloudAt_Reset ( &cloudAt );
+						SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPSTART=3,\"SSL\",\"%s\",443\r\n", CLOUD_Host () ), NULL, noArch );
+					}
+					else if ( CASE_Service ( 3, txt_OK, txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							CLOUD_Close ( -5 );
+							break;
+						}
+						DbgVarDma ( DBG, 120, "Google TLS: OK; wysylam %s, %u bajtow\r\n", cloudRedirected ? "GET potwierdzenia" : "POST pomiaru", (unsigned) cloudRequestLength );
+						cloudOffset = 0;
+						cloudPacketLength = cloudRequestLength;
+						if ( cloudPacketLength > sizeof sendBuff - 1 )
+							cloudPacketLength = sizeof sendBuff - 1;
+						SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPSEND=3,%u\r\n", (unsigned) cloudPacketLength ), NULL, noArch );
+					}
+					else if ( CASE_Service ( 4, ">", txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							CLOUD_Close ( -5 );
+							break;
+						}
+						SendToEsp32 ( (int) cloudPacketLength, cloudRequest + cloudOffset, noArch );
+					}
+					else if ( CASE_Service ( 5, "\r\nSEND OK", txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							CLOUD_Close ( -5 );
+							break;
+						}
+						cloudOffset += cloudPacketLength;
+						DbgVarDma ( DBG, 120, "Google SEND OK: TCP=3, %u/%u bajtow\r\n", (unsigned) cloudOffset, (unsigned) cloudRequestLength );
+						if ( cloudOffset < cloudRequestLength )
+						{
+							cloudPacketLength = cloudRequestLength - cloudOffset;
+							if ( cloudPacketLength > sizeof sendBuff - 1 )
+								cloudPacketLength = sizeof sendBuff - 1;
+							_SET_NEW_CASE_ ( 4 );
+							SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPSEND=3,%u\r\n", (unsigned) cloudPacketLength ), NULL, noArch );
+						}
+					}
+					else if ( CASE_Service ( 10, txt_OK, txt_ERR, noArch ) )
+					{
+						CloudAt_Reset ( &cloudAt );
+						_SET_NEW_CASE_ ( 1 );
+						SendToEsp32 ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPSSLCCN=3,\"%s\"\r\n", CLOUD_Host () ), NULL, noArch );
+					}
+					else if ( CASE_Service ( 900, txt_OK, txt_ERR, noArch ) )
+					{
+						CLOUD_RestoreHttp ();
+					}
+					else if ( CASE_Service ( 901, txt_OK, txt_ERR, noArch ) )
+					{
+						if ( _GET_ANSW_CASE_ != _OK )
+						{
+							cloudResult = -9;
+							googleCloudStatus.ready = 0;
+						}
+						googleCloudStatus.last_error = cloudResult;
+						if ( cloudResult )
+							googleCloudStatus.failures++;
+						else
+							googleCloudStatus.successes++;
+						cloudLastAttempt = xTaskGetTickCount ();
+						DbgVarDma ( DBG, 200, "Google KONIEC: wynik=%d, HTTP=%s, OK=%u, bledy=%u\r\n", cloudResult, cloudResult == -9 ? "BLAD - restart ESP" : "przywrocony", (unsigned) googleCloudStatus.successes, (unsigned) googleCloudStatus.failures );
+						RcvTimeoutTimerStop ();
+						BackToHttpService ( &nrHTTPpacket );
+						xTaskNotify ( vtaskWifiHandle, BIT_ESP_SRV, eSetBits );
+						if ( cloudResult == -9 )
+						{
+							connectionType = INIT_CONNECTION;
+							_SET_NEW_CASE_ ( 0 );
+							ESP_OFF;
+							vTaskDelay ( pdMS_TO_TICKS ( 20 ) );
+							ESP_ON;
+						}
+					}
+					/* SEND OK and the complete HTTP response may arrive together. */
+					if ( connectionType == GOOGLE_CLOUD_CONNECTION && _GET_ACTUAL_CASE_ == 6 )
+					{
+						int parsed = cloudAt.overflow ? -1 : CloudHttp_Parse ( cloudAt.wire, cloudAt.used, cloudAt.eof, &cloudResponse );
+						if ( parsed < 0 )
+						{
+							CLOUD_Close ( -6 );
+						}
+						else if ( !parsed )
+						{
+							DbgVarDma ( DBG, 120, "Google RESPONSE: HTTP=%d, przekierowanie=%d\r\n", cloudResponse.status, cloudRedirected );
+							if ( ( cloudResponse.status == 302 || cloudResponse.status == 303 ) && !cloudRedirected &&
+								 !CloudRedirect_Path ( cloudResponse.location, cloudRedirect, sizeof cloudRedirect ) )
+							{
+								DbgVarDma ( DBG, 120, "Google REDIRECT: HTTPS script.googleusercontent.com (bez tokenu)\r\n" );
+								cloudRedirected = 1;
+								cloudRequestLength = CloudRequest_Build ( cloudRequest, sizeof cloudRequest, CLOUD_Host (), cloudRedirect, NULL, NULL, 0, 0, NULL );
+								if ( !cloudRequestLength )
+								{
+									CLOUD_Close ( -6 );
+									break;
+								}
+								cloudAt.events = 0;
+								_SET_NEW_CASE_ ( 10 );
+								SendToEsp32 ( 0, "AT+CIPCLOSE=3\r\n", noArch );
+							}
+							else
+							{
+								int relay;
+								if ( cloudResponse.status != 200 || CloudReply_Parse ( cloudResponse.body, cloudNonce, &relay ) )
+								{
+									DbgVarDma ( DBG, 120, "Google ACK BLAD: HTTP=%d lub niezgodne potwierdzenie/nonce\r\n", cloudResponse.status );
+									CLOUD_Close ( -7 );
+								}
+								else
+								{
+									googleCloudStatus.demo_relay = relay;
+									DbgVarDma ( DBG, 200, CoB_ "Google ACK OK: HTTP 200, poprawne nonce; przekaznik DEMO odebrany z Google=%s (%d)\r\n" _X_, relay ? "ON" : "OFF", relay );
+									CLOUD_Close ( 0 );
+								}
+							}
+						}
+					}
+					break;
 
 				case HTTP_CONNECTION_2:		/* Only for:  AT+CIPSERVERMAXCONN=1 */
 					RcvTimeoutTimerStop();
@@ -2161,13 +2495,13 @@ void vtaskWifi(void *argument)
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
 
-					HTTP_FeedReceiveRing();
-					HTTP_SendCloseChnl(typeSendArch,-1);
+					HTTP_FeedReceiveRing ();
+					HTTP_SendCloseChnl ( typeSendArch, -1 );
 
 					if ((pHttp=RecvFromEsp("\r\nOK\r\n\r\n>")))
 					{
-                        HTTP_SendPayload(typeSendArch);
-                    }
+						HTTP_SendPayload ( typeSendArch );
+					}
 
 					if ((pHttp=RecvFromEsp(",CLOSED\r\n")))
 					{
@@ -2178,8 +2512,9 @@ void vtaskWifi(void *argument)
 						{
 							int nr = SearchChnl(httpPar.chnl);
 							if(nr>=0){
-								httpTxPhase[nr]=0;httpTxOffset[nr]=0;
-                                httpPar.que[nr]=0xFF;  // daj jako funkcja zerujaca to szwszystko
+								httpTxPhase[nr] = 0;
+								httpTxOffset[nr] = 0;
+								httpPar.que[nr] = 0xFF; // daj jako funkcja zerujaca to szwszystko
 								httpPar.nr[nr]=0;
 								httpPar.ptr[nr]=NULL;
 								httpPar.siz[nr][0]=0;
@@ -2194,8 +2529,9 @@ void vtaskWifi(void *argument)
 						{
 							int nr = SearchChnl(chnlClose);
 							if(nr>=0){
-								httpTxPhase[nr]=0;httpTxOffset[nr]=0;
-                                httpPar.que[nr]=0xFF;
+								httpTxPhase[nr] = 0;
+								httpTxOffset[nr] = 0;
+								httpPar.que[nr] = 0xFF;
 								httpPar.nr[nr]=0;
 								httpPar.ptr[nr]=NULL;
 								httpPar.siz[nr][0]=0;
@@ -2213,8 +2549,7 @@ void vtaskWifi(void *argument)
 					}
 					if ((pHttp=RecvFromEsp("\r\nSEND OK")))
 					{
-                        HTTP_SendAcknowledged(typeSendArch);
-
+						HTTP_SendAcknowledged ( typeSendArch );
 					}
 					UpdateReadPos();
 					break;
@@ -2491,19 +2826,19 @@ void vtaskWifi(void *argument)
 		{
 			DEBUG_InvalidateDCache();
 
-            if(DEBUG_IsTxtReceive("cloud"))
-            {
-                DbgVarDma(1,220,"Google: configured=%d ready=%d error=%d OK=%u FAIL=%u temp10=%d DEMO=%d\r\n",
-                    googleCloudStatus.configured,googleCloudStatus.ready,googleCloudStatus.last_error,
-                    (unsigned)googleCloudStatus.successes,(unsigned)googleCloudStatus.failures,
-                    googleCloudStatus.temperature10,googleCloudStatus.demo_relay);
-            }
-            else if(connectionType==GOOGLE_CLOUD_CONNECTION ||
-                    (connectionType==INIT_CONNECTION && _GET_ACTUAL_CASE_>=22 && _GET_ACTUAL_CASE_<=27))
-            {
-                DbgDma(DBG,"\r\nESP zajety przez Google; ponow polecenie po zakonczeniu.\r\n");
-            }
-            else if(DEBUG_IsTxtReceive("a"))
+			if ( DEBUG_IsTxtReceive ( "cloud" ) )
+			{
+				DbgVarDma ( 1, 220, "Google: configured=%d ready=%d error=%d OK=%u FAIL=%u temp10=%d DEMO=%d\r\n",
+							googleCloudStatus.configured, googleCloudStatus.ready, googleCloudStatus.last_error,
+							(unsigned) googleCloudStatus.successes, (unsigned) googleCloudStatus.failures,
+							googleCloudStatus.temperature10, googleCloudStatus.demo_relay );
+			}
+			else if ( connectionType == GOOGLE_CLOUD_CONNECTION ||
+					  ( connectionType == INIT_CONNECTION && _GET_ACTUAL_CASE_ >= 22 && _GET_ACTUAL_CASE_ <= 27 ) )
+			{
+				DbgDma ( DBG, "\r\nESP zajety przez Google; ponow polecenie po zakonczeniu.\r\n" );
+			}
+			else if ( DEBUG_IsTxtReceive ( "a" ) )
 			{
 				DbgVarDma2(1,50,"\r\nHTTP PAR: chnl:%d\r\n",httpPar.chnl);
 				HTTP_ShowHttpStruct();
@@ -2612,65 +2947,118 @@ void vtaskWifi(void *argument)
 
 		}
 	  }
-        if(connectionType==INIT_CONNECTION && googleCloudStatus.configured &&
-           _GET_ACTUAL_CASE_>=22 && _GET_ACTUAL_CASE_<=27 &&
-           xTaskGetTickCount()-cloudCleanupTick>=pdMS_TO_TICKS(GOOGLE_CLOUD_TIMEOUT_MS)){
-            DbgVarDma(DBG,120,"Google INIT BLAD: timeout certyfikatu/TLS, etap=%d; restart ESP\r\n",_GET_ACTUAL_CASE_);
-            /* An ESP stuck in raw certificate upload must be reset, not fed AT text. */
-            googleCloudStatus.configured=0;googleCloudStatus.ready=0;googleCloudStatus.last_error=-3;
-            RcvTimeoutTimerStop();_SET_NEW_CASE_(0);UpdateReadPos();
-            ESP_OFF;vTaskDelay(pdMS_TO_TICKS(20));ESP_ON;
-        }else if(connectionType==INIT_CONNECTION && _GET_ACTUAL_CASE_==23){
-            /* SYSMFG takes raw bytes, not CIPSEND; never overwrite active UART DMA. */
-            if(ESP_UART_HANDLE.gState==HAL_UART_STATE_READY){
-                size_t bytes=sizeof google_cloud_roots-cloudCertOffset;
-                if(bytes>sizeof sendBuff-1)bytes=sizeof sendBuff-1;
-                if(cloudCertOffset+bytes==sizeof google_cloud_roots){_SET_NEW_CASE_(24);}
-                if(SendToEsp32((int)bytes,(char*)google_cloud_roots+cloudCertOffset,noArch)==HAL_OK)cloudCertOffset+=bytes;
-                else{
-                    googleCloudStatus.configured=0;googleCloudStatus.last_error=-3;
-                    RcvTimeoutTimerStop();_SET_NEW_CASE_(0);UpdateReadPos();
-                    ESP_OFF;vTaskDelay(pdMS_TO_TICKS(20));ESP_ON;
-                }
-            }
-        }
-        if(connectionType==GOOGLE_CLOUD_CONNECTION){
-            uint32_t now=xTaskGetTickCount();int step=_GET_ACTUAL_CASE_;
-            if(step<900 && now-cloudStarted>=pdMS_TO_TICKS(GOOGLE_CLOUD_TIMEOUT_MS))CLOUD_Close(-4);
-            else if(step==900 && now-cloudCleanupTick>=pdMS_TO_TICKS(5000))CLOUD_RestoreHttp();
-            else if(step==901 && now-cloudCleanupTick>=pdMS_TO_TICKS(5000)){
-                DbgVarDma(DBG,120,"Google HTTP BLAD: timeout przywracania serwera (-9); restart ESP\r\n");
-                googleCloudStatus.last_error=-9;googleCloudStatus.failures++;googleCloudStatus.ready=0;
-                cloudLastAttempt=now;RcvTimeoutTimerStop();InitStructRqstToSendChnl();
-                connectionType=INIT_CONNECTION;_SET_NEW_CASE_(0);UpdateReadPos();
-                ESP_OFF;vTaskDelay(pdMS_TO_TICKS(20));ESP_ON;
-            }
-        }else if(connectionType==HTTP_CONNECTION && googleCloudStatus.ready &&
-                 (Const.wifiGeneral.mode==WIFI_MODE_STA || Const.wifiGeneral.mode==WIFI_MODE_AP_STA) &&
-                 !IsActiveAnyRqstToSendChnl() && xTaskGetTickCount()-tickCnt>=pdMS_TO_TICKS(250) &&
-                 xTimerIsTimerActive(xWaitOnSendTimeoutTimer)==pdFALSE &&
-                 xTaskGetTickCount()-cloudLastAttempt>=pdMS_TO_TICKS(GOOGLE_CLOUD_PERIOD_MS)){
-            cloudLastAttempt=xTaskGetTickCount();
-            int temp=GoogleCloud_ReadTemperature10();
-            if(temp< -800 || temp>1500){googleCloudStatus.last_error=-18;googleCloudStatus.failures++;
-                DbgVarDma(DBG,120,"Google POMINIETO: brak temperatury lub poza zakresem (-18), odczyt=%d\r\n",temp);}
-            else if(!CLOUD_Nonce()){googleCloudStatus.last_error=-8;googleCloudStatus.failures++;
-                DbgVarDma(DBG,100,"Google BLAD: generator RNG/nonce (-8)\r\n");}
-            else{
-                googleCloudStatus.temperature10=temp;cloudRedirected=0;cloudResult=0;
-                cloudRequestLength=CloudRequest_Build(cloudRequest,sizeof cloudRequest,CLOUD_Host(),GOOGLE_CLOUD_PATH,
-                    GOOGLE_CLOUD_TOKEN,GOOGLE_CLOUD_DEVICE,temp,googleCloudStatus.demo_relay,cloudNonce);
-                if(!cloudRequestLength){googleCloudStatus.last_error=-1;googleCloudStatus.failures++;
-                    DbgVarDma(DBG,100,"Google BLAD: nie mozna zbudowac zadania (-1)\r\n");}
-                else{
-                    CloudAt_Reset(&cloudAt);cloudStarted=xTaskGetTickCount();
-                    DbgVarDma(DBG,200,CoB_"\r\nGoogle START: wysylana temperatura=%s%d.%d C; DEMO ACK=%d; wstrzymuje HTTP\r\n"_X_,temp<0?"-":"",(temp<0?-temp:temp)/10,(temp<0?-temp:temp)%10,googleCloudStatus.demo_relay);
-                    connectionType=GOOGLE_CLOUD_CONNECTION;_SET_NEW_CASE_(0);
-                    SendToEsp32(0,"AT+CIPSERVER=0\r\n",noArch);
-                }
-            }
-        }
-
+	  if ( connectionType == INIT_CONNECTION && googleCloudStatus.configured &&
+		   _GET_ACTUAL_CASE_ >= 22 && _GET_ACTUAL_CASE_ <= 27 &&
+		   xTaskGetTickCount () - cloudCleanupTick >= pdMS_TO_TICKS ( GOOGLE_CLOUD_TIMEOUT_MS ) )
+	  {
+		  DbgVarDma ( DBG, 120, "Google INIT BLAD: timeout certyfikatu/TLS, etap=%d; restart ESP\r\n", _GET_ACTUAL_CASE_ );
+		  /* An ESP stuck in raw certificate upload must be reset, not fed AT text. */
+		  googleCloudStatus.configured = 0;
+		  googleCloudStatus.ready = 0;
+		  googleCloudStatus.last_error = -3;
+		  RcvTimeoutTimerStop ();
+		  _SET_NEW_CASE_ ( 0 );
+		  UpdateReadPos ();
+		  ESP_OFF;
+		  vTaskDelay ( pdMS_TO_TICKS ( 20 ) );
+		  ESP_ON;
+	  }
+	  else if ( connectionType == INIT_CONNECTION && _GET_ACTUAL_CASE_ == 23 )
+	  {
+		  /* SYSMFG takes raw bytes, not CIPSEND; never overwrite active UART DMA. */
+		  if ( ESP_UART_HANDLE.gState == HAL_UART_STATE_READY )
+		  {
+			  size_t bytes = sizeof google_cloud_roots - cloudCertOffset;
+			  if ( bytes > sizeof sendBuff - 1 )
+				  bytes = sizeof sendBuff - 1;
+			  if ( cloudCertOffset + bytes == sizeof google_cloud_roots )
+			  {
+				  _SET_NEW_CASE_ ( 24 );
+			  }
+			  if ( SendToEsp32 ( (int) bytes, (char *) google_cloud_roots + cloudCertOffset, noArch ) == HAL_OK )
+				  cloudCertOffset += bytes;
+			  else
+			  {
+				  googleCloudStatus.configured = 0;
+				  googleCloudStatus.last_error = -3;
+				  RcvTimeoutTimerStop ();
+				  _SET_NEW_CASE_ ( 0 );
+				  UpdateReadPos ();
+				  ESP_OFF;
+				  vTaskDelay ( pdMS_TO_TICKS ( 20 ) );
+				  ESP_ON;
+			  }
+		  }
+	  }
+	  if ( connectionType == GOOGLE_CLOUD_CONNECTION )
+	  {
+		  uint32_t now = xTaskGetTickCount ();
+		  int step = _GET_ACTUAL_CASE_;
+		  if ( step < 900 && now - cloudStarted >= pdMS_TO_TICKS ( GOOGLE_CLOUD_TIMEOUT_MS ) )
+			  CLOUD_Close ( -4 );
+		  else if ( step == 900 && now - cloudCleanupTick >= pdMS_TO_TICKS ( 5000 ) )
+			  CLOUD_RestoreHttp ();
+		  else if ( step == 901 && now - cloudCleanupTick >= pdMS_TO_TICKS ( 5000 ) )
+		  {
+			  DbgVarDma ( DBG, 120, "Google HTTP BLAD: timeout przywracania serwera (-9); restart ESP\r\n" );
+			  googleCloudStatus.last_error = -9;
+			  googleCloudStatus.failures++;
+			  googleCloudStatus.ready = 0;
+			  cloudLastAttempt = now;
+			  RcvTimeoutTimerStop ();
+			  InitStructRqstToSendChnl ();
+			  connectionType = INIT_CONNECTION;
+			  _SET_NEW_CASE_ ( 0 );
+			  UpdateReadPos ();
+			  ESP_OFF;
+			  vTaskDelay ( pdMS_TO_TICKS ( 20 ) );
+			  ESP_ON;
+		  }
+	  }
+	  else if ( connectionType == HTTP_CONNECTION && googleCloudStatus.ready &&
+				( Const.wifiGeneral.mode == WIFI_MODE_STA || Const.wifiGeneral.mode == WIFI_MODE_AP_STA ) &&
+				!IsActiveAnyRqstToSendChnl () && xTaskGetTickCount () - tickCnt >= pdMS_TO_TICKS ( 250 ) &&
+				xTimerIsTimerActive ( xWaitOnSendTimeoutTimer ) == pdFALSE &&
+				xTaskGetTickCount () - cloudLastAttempt >= pdMS_TO_TICKS ( GOOGLE_CLOUD_PERIOD_MS ) )
+	  {
+		  cloudLastAttempt = xTaskGetTickCount ();
+		  int temp = GoogleCloud_ReadTemperature10 ();
+		  if ( temp < -800 || temp > 1500 )
+		  {
+			  googleCloudStatus.last_error = -18;
+			  googleCloudStatus.failures++;
+			  DbgVarDma ( DBG, 120, "Google POMINIETO: brak temperatury lub poza zakresem (-18), odczyt=%d\r\n", temp );
+		  }
+		  else if ( !CLOUD_Nonce () )
+		  {
+			  googleCloudStatus.last_error = -8;
+			  googleCloudStatus.failures++;
+			  DbgVarDma ( DBG, 100, "Google BLAD: generator RNG/nonce (-8)\r\n" );
+		  }
+		  else
+		  {
+			  googleCloudStatus.temperature10 = temp;
+			  cloudRedirected = 0;
+			  cloudResult = 0;
+			  cloudRequestLength = CloudRequest_Build ( cloudRequest, sizeof cloudRequest, CLOUD_Host (), GOOGLE_CLOUD_PATH,
+														GOOGLE_CLOUD_TOKEN, GOOGLE_CLOUD_DEVICE, temp, googleCloudStatus.demo_relay, cloudNonce );
+			  if ( !cloudRequestLength )
+			  {
+				  googleCloudStatus.last_error = -1;
+				  googleCloudStatus.failures++;
+				  DbgVarDma ( DBG, 100, "Google BLAD: nie mozna zbudowac zadania (-1)\r\n" );
+			  }
+			  else
+			  {
+				  CloudAt_Reset ( &cloudAt );
+				  cloudStarted = xTaskGetTickCount ();
+				  DbgVarDma ( DBG, 200, CoB_ "\r\nGoogle START: wysylana temperatura=%s%d.%d C; DEMO ACK=%d; wstrzymuje HTTP\r\n" _X_, temp < 0 ? "-" : "", ( temp < 0 ? -temp : temp ) / 10, ( temp < 0 ? -temp : temp ) % 10, googleCloudStatus.demo_relay );
+				  connectionType = GOOGLE_CLOUD_CONNECTION;
+				  _SET_NEW_CASE_ ( 0 );
+				  SendToEsp32 ( 0, "AT+CIPSERVER=0\r\n", noArch );
+			  }
+		  }
+	  }
 	}
 }
 

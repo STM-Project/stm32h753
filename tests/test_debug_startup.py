@@ -6,7 +6,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 source = (ROOT / 'Application/General_Utilities/_debug.c').read_text()
 startup = (ROOT / 'Core/Src/freertos.c').read_text().split('void StartDefaultTask(void const * argument)', 1)[1]
-assert startup.index('DEBUG_Init();') < startup.index('CreateLogTask();') < startup.index('LCD_H7_Start()')
+assert startup.index('DEBUG_Init ();') < startup.index('CreateLogTask ();') < startup.index('LCD_H7_Start ()')
 
 def function(signature):
     start = source.index(signature)

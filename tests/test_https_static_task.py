@@ -3,9 +3,9 @@ from pathlib import Path
 import subprocess,tempfile
 root=Path(__file__).resolve().parents[1]
 s=(root/'Application/NETWORK/network_tls.c').read_text()
-a=s.index('enum { HTTPS_STACK_BYTES');b=s.index('osMutexId networkRngMutex;',a)
-decls=s[a:b].replace('__attribute__((section(".sdram"),aligned(32)))','')
-a=s.index('void https_server_netconn_init(void)');fn=s[a:]
+a=s.index('enum\n{\n\tHTTPS_STACK_BYTES');b=s.index('osMutexId networkRngMutex;',a)
+decls=s[a:b].replace('__attribute__ ( ( section ( ".sdram" ), aligned ( 32 ) ) )','')
+a=s.index('void https_server_netconn_init ( void )');fn=s[a:]
 code=r'''
 #include <stdint.h>
 #include <assert.h>

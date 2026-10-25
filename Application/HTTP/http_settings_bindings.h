@@ -9,7 +9,7 @@
  * untouched WiFi/SMTP/clock fields show the current nonsecret configuration.
  * The saved date is not a real-time clock and is not reapplied during boot.
  */
-void HTTP_SettingsBindingsApply(void);
+void HTTP_SettingsBindingsApply ( void );
 
 /* Call only after HTTP_SETTINGS_SAVED. Network settings update the existing
  * configuration for the next connection/reboot; this does not interrupt the
@@ -17,6 +17,6 @@ void HTTP_SettingsBindingsApply(void);
  * Other Sandwitch settings remain available through HTTP_SettingsGet* until
  * their hardware/control-loop adapters are implemented.
  */
-void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage *page, uint16_t instance);
+void HTTP_SettingsBindingsCommitted ( const HTTP_SettingPage *page, uint16_t instance );
 
 #endif

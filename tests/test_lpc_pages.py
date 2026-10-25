@@ -6,7 +6,7 @@ from lxml import html as dom
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 SRC=ROOT/'Application/LPC2148'
-PAGE_CAPACITY=int(re.search(r'LPC_PAGE_BUFFER_SIZE \((\d+)u\*1024u\)',(SRC/'lpc_pages.h').read_text()).group(1))*1024
+PAGE_CAPACITY=int(re.search(r'LPC_PAGE_BUFFER_SIZE\s*\(\s*(\d+)u\s*\*\s*1024u\s*\)',(SRC/'lpc_pages.h').read_text()).group(1))*1024
 C=r'''
 #include "lpc_pages.h"
 #include <assert.h>

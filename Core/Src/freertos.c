@@ -77,9 +77,9 @@ void vApplicationIdleHook(void);
 void vApplicationTickHook(void);
 
 /* USER CODE BEGIN 2 */
-__weak void vApplicationIdleHook( void )
+__weak void vApplicationIdleHook ( void )
 {
-   /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
+	/* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
    to 1 in FreeRTOSConfig.h. It will be called on each iteration of the idle
    task. It is essential that code added to this hook function never attempts
    to block in any way (for example, call xQueueReceive() with a block time
@@ -92,9 +92,9 @@ __weak void vApplicationIdleHook( void )
 /* USER CODE END 2 */
 
 /* USER CODE BEGIN 3 */
-__weak void vApplicationTickHook( void )
+__weak void vApplicationTickHook ( void )
 {
-   /* This function will be called by each tick interrupt if
+	/* This function will be called by each tick interrupt if
    configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h. User code can be
    added here, but the tick hook is called from an interrupt context, so
    code must not attempt to block, and only the interrupt safe FreeRTOS API
@@ -106,12 +106,12 @@ __weak void vApplicationTickHook( void )
 static StaticTask_t xIdleTaskTCBBuffer;
 static StackType_t xIdleStack[configMINIMAL_STACK_SIZE];
 
-void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize )
+void vApplicationGetIdleTaskMemory ( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize )
 {
-  *ppxIdleTaskTCBBuffer = &xIdleTaskTCBBuffer;
-  *ppxIdleTaskStackBuffer = &xIdleStack[0];
-  *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
-  /* place for user code */
+	*ppxIdleTaskTCBBuffer = &xIdleTaskTCBBuffer;
+	*ppxIdleTaskStackBuffer = &xIdleStack[0];
+	*pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+	/* place for user code */
 }
 /* USER CODE END GET_IDLE_TASK_MEMORY */
 
@@ -119,12 +119,12 @@ void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackTy
 static StaticTask_t xTimerTaskTCBBuffer;
 static StackType_t xTimerStack[configTIMER_TASK_STACK_DEPTH];
 
-void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize )
+void vApplicationGetTimerTaskMemory ( StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize )
 {
-  *ppxTimerTaskTCBBuffer = &xTimerTaskTCBBuffer;
-  *ppxTimerTaskStackBuffer = &xTimerStack[0];
-  *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
-  /* place for user code */
+	*ppxTimerTaskTCBBuffer = &xTimerTaskTCBBuffer;
+	*ppxTimerTaskStackBuffer = &xTimerStack[0];
+	*pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
+	/* place for user code */
 }
 /* USER CODE END GET_TIMER_TASK_MEMORY */
 
@@ -136,23 +136,23 @@ void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer, Stack
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
+	/* add mutexes, ... */
+	/* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
+	/* add semaphores, ... */
+	/* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
+	/* start timers, add new ones, ... */
+	/* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
+	/* add queues, ... */
+	/* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
@@ -160,8 +160,8 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
+	/* add threads, ... */
+	/* USER CODE END RTOS_THREADS */
 
 }
 
@@ -177,37 +177,32 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-	InitAllMutex();
+	InitAllMutex ();
 
-	Dbg(1,"\r\nHello Tu nowy STM32H753BIT6 Rafal Markielowski 123456789 ");
+	Dbg ( 1, "\r\nHello Tu nowy STM32H753BIT6 Rafal Markielowski 123456789 " );
 	/* Allow the SD card and touch controller power rails to settle. */
-	osDelay(500);
-	MX_FATFS_Init();
-	DEBUG_Init();
+	osDelay ( 500 );
+	MX_FATFS_Init ();
+	DEBUG_Init ();
 	/* LCD font diagnostics already use the queued logger during startup. */
-	CreateLogTask();
-	if(!LCD_H7_Start()) Dbg(1,"\r\nLCD H7 startup failed");
+	CreateLogTask ();
+	if ( !LCD_H7_Start () )
+		Dbg ( 1, "\r\nLCD H7 startup failed" );
 
-	osDelay(1000);
-//	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff));
+	osDelay ( 1000 );
+	//	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff));
 
-	osDelay(500);
-	CreateWifiTask();
-    NetworkStartEthernet();
+	osDelay ( 500 );
+	CreateWifiTask ();
+	NetworkStartEthernet ();
 
-
-
-
-
-
-
-  /* Infinite loop */
-  for(;;)
-  {
-	 // Dbg(1,"i");
-    osDelay(500);
-  }
-  /* USER CODE END StartDefaultTask */
+	/* Infinite loop */
+	for ( ;; )
+	{
+		// Dbg(1,"i");
+		osDelay ( 500 );
+	}
+	/* USER CODE END StartDefaultTask */
 }
 
 /* Private application code --------------------------------------------------*/

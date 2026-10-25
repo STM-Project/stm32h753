@@ -34,17 +34,17 @@ extern MDMA_HandleTypeDef hmdma_mdma_channel0_sdmmc1_end_data_0;
 
 /* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
+	/* USER CODE END Includes */
 
 /* USER CODE BEGIN Private defines */
 
-/* USER CODE END Private defines */
+	/* USER CODE END Private defines */
 
 void MX_MDMA_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
-/* USER CODE END Prototypes */
+	/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
