@@ -52,7 +52,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-/* uint8_t ucHeap[ configTOTAL_HEAP_SIZE ] __attribute__ ((section(".sdram"))); */
+ uint8_t ucHeap[ configTOTAL_HEAP_SIZE ] __attribute__ ((section(".sdram")));
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 

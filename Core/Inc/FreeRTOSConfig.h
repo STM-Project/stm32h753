@@ -150,11 +150,11 @@ standard names. */
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
 
-/*
+
   #define configAPPLICATION_ALLOCATED_HEAP 1
   #undef configTOTAL_HEAP_SIZE
   #define configTOTAL_HEAP_SIZE                 ((size_t)2097152)
-  */
+
 
 extern void MyTraceMalloc ( void *pvAddress, size_t xSize );
 extern void MyTraceFree ( void *pvAddress, size_t xSize );
