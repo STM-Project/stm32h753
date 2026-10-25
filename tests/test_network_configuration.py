@@ -8,11 +8,24 @@ assert cfg['LWIP.NETMASK_ADDRESS']=='255.255.255.000'
 assert cfg['LWIP.GATEWAY_ADDRESS']=='192.168.001.001'
 assert cfg['ETH.RxBuffLen']=='1536'
 assert cfg['LWIP.LWIP_DHCP']=='0' and cfg['LWIP0.BSP.component']=='LAN8742'
+def mpu(field,region,default=None):
+ # CubeMX versions serialize the same MPU attributes with or without _S.
+ keys=[f'CORTEX_M7.{field}-Cortex_Memory_Protection_Unit_Region{region}_Settings',
+       f'CORTEX_M7.{field}_S-Cortex_Memory_Protection_Unit_Region{region}_Settings_S']
+ values=[cfg[k] for k in keys if k in cfg]
+ assert len(set(values))<=1, f'Conflicting MPU aliases: {keys}'
+ return values[0] if values else default
 for n,base,size in [(5,'0x30040000','MPU_REGION_SIZE_32KB'),(6,'0x30040000','MPU_REGION_SIZE_256B')]:
- suffix=f'_S-Cortex_Memory_Protection_Unit_Region{n}_Settings_S'
- assert cfg['CORTEX_M7.BaseAddress'+suffix]==base
- assert cfg['CORTEX_M7.Size'+suffix]==size
- assert cfg['CORTEX_M7.IsCacheable'+suffix]=='MPU_ACCESS_NOT_CACHEABLE'
+ assert mpu('BaseAddress',n)==base
+ assert mpu('Size',n)==size
+ assert mpu('Enable',n)=='MPU_REGION_ENABLE'
+ assert mpu('AccessPermission',n)=='MPU_REGION_FULL_ACCESS'
+ assert mpu('DisableExec',n)=='MPU_INSTRUCTION_ACCESS_DISABLE'
+ assert mpu('IsCacheable',n)=='MPU_ACCESS_NOT_CACHEABLE'
+ assert mpu('IsBufferable',n)==('MPU_ACCESS_NOT_BUFFERABLE' if n==5 else 'MPU_ACCESS_BUFFERABLE')
+ assert mpu('TypeExtField',n,'MPU_TEX_LEVEL0')==('MPU_TEX_LEVEL1' if n==5 else 'MPU_TEX_LEVEL0')
+ assert mpu('IsShareable',n,'MPU_ACCESS_NOT_SHAREABLE')==('MPU_ACCESS_NOT_SHAREABLE' if n==5 else 'MPU_ACCESS_SHAREABLE')
+ assert int(mpu('SubRegionDisable',n,'0'),0)==0
 # Explicit user boundary: USART6/ESP32 must retain the existing mapping/mode.
 assert cfg['Dma.USART6_RX.0.Instance']=='DMA1_Stream0'
 assert cfg['Dma.USART6_RX.0.Mode']=='DMA_CIRCULAR'

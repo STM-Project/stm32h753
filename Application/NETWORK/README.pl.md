@@ -69,8 +69,8 @@ Kod utrzymywany przez aplikację jest w `Application/NETWORK`:
 - `network_lwip_hooks.c`: czyszczenie pamięci NOLOAD i symetryczna blokada
   rdzenia po inicjalizacji TCP/IP. IP nadal pochodzi z kodu CubeMX.
 - `network_memory.c`: wyłącznie dwa obszary sieci MPU, wywołanie w
-  `main.c / USER CODE SysInit`. Klucze MPU w `.ioc` używają aktualnego formatu
-  `_S`, takiego jak pozostałe obszary w tym projekcie.
+  `main.c / USER CODE SysInit`. CubeMX może zapisywać klucze MPU w `.ioc` z końcówką `_S` albo bez niej;
+  test akceptuje oba zapisy i sprawdza rzeczywiste wartości, także domyślne.
 
 `Core/Src/stm32h7xx_it.c` używa jednego handlera ETH wygenerowanego przez CubeMX;
 nie ma odwołania do usuwanego `eth.h` ani drugiego handlera w `USER CODE`.
