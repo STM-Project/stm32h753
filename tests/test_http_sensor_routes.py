@@ -73,12 +73,19 @@ unsigned HTTP_SettingsPortMode(unsigned port);
 const char *HTTP_SettingsPortName(unsigned port, const char *fallback);
 char *HTTP_TEMPLATE_Hidden2(char *out, u8 type, u8 port);
 static char HttpRefr_sdram[2048]="refresh";
-static const char *lpc_test_page;
+static int lpc_force_json_stream;
+static size_t test_lpc_json(unsigned page,char *out,size_t capacity){
+    return lpc_force_json_stream?0:LPC_SettingsJson(page,out,capacity);
+}
+#define LPC_SettingsJson(...) test_lpc_json(__VA_ARGS__)
+static const char *lpc_test_page,*lpc_test_page2;
+static int lpc_chunk_fail;
+static const char *test_sd_page(unsigned page){return page==2&&lpc_test_page2?lpc_test_page2:lpc_test_page;}
 const char *LPC_StoragePageError(void){return "brak pliku testowego";}
-size_t LPC_StorageReadPage(unsigned page,char *out,size_t capacity){
-    (void)page;if(!lpc_test_page)return 0;size_t n=strlen(lpc_test_page);
-    if(n>=capacity)return 0;
-    memcpy(out,lpc_test_page,n+1);return n;
+size_t LPC_StoragePageSize(unsigned page){const char *p=test_sd_page(page);return p?strlen(p):0;}
+size_t LPC_StorageReadPageChunk(unsigned page,size_t expected,size_t offset,char *out,size_t length){
+    const char *p=test_sd_page(page);if(lpc_chunk_fail||!p||strlen(p)!=expected||offset>expected||length>expected-offset)return 0;
+    memcpy(out,p+offset,length);return length;
 }
 
 '''
@@ -102,6 +109,8 @@ static int save(const void *data, size_t size, void *context) {
 }
 static void clear_queue(void) {
     memset(&httpPar, 0, sizeof httpPar);
+    memset(httpLpcPage,0,sizeof httpLpcPage);
+    memset(httpLpcChunkOffset,0,sizeof httpLpcChunkOffset);
     memset(httpPar.que, 0xff, sizeof httpPar.que);
 }
 static int slot_for(unsigned channel) {
@@ -116,7 +125,9 @@ static size_t body(unsigned slot, char *out, size_t capacity) {
         if (length + size >= capacity)
             fprintf(stderr, "Response exceeds test buffer: slot=%u part=%u total=%zu part=%zu capacity=%zu\n", slot, i, length, size, capacity);
         assert(length + size < capacity);
-        memcpy(out + length, httpPar.web[slot][i], size); length += size;
+        if(httpLpcPage[slot]&&i==1)assert(LPC_StorageReadPageChunk(httpLpcPage[slot],size,0,out+length,size)==size);
+        else memcpy(out + length, httpPar.web[slot][i], size);
+        length += size;
     }
     out[length] = 0; return length;
 }

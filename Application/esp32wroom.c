@@ -203,7 +203,12 @@ TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
 /* Queued pages must retain their contents until that slot finishes sending. */
 SDRAM static char httpPageBuff[ESP_MAX_HTTP_CONN][100000];
-SDRAM static char httpLpcSdBuff[ESP_MAX_HTTP_CONN][LPC_PAGE_BUFFER_SIZE] __attribute__ ( ( aligned ( 32 ) ) );
+/* One small packet per connection, rather than five complete HTML pages. */
+SDRAM static char httpLpcChunk[ESP_MAX_HTTP_CONN][LPC_STREAM_BUFFER_SIZE] __attribute__ ( ( aligned ( 32 ) ) );
+#define HTTP_LPC_JSON_STREAM 0x80000000U
+static unsigned httpLpcPage[ESP_MAX_HTTP_CONN];
+static uint32_t httpLpcJsonHash[ESP_MAX_HTTP_CONN];
+static uint32_t httpLpcChunkOffset[ESP_MAX_HTTP_CONN];
 SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][131072];
 SDRAM static HTTP_RequestStream httpRequestStream;
 static char httpResponseHeader[ESP_MAX_HTTP_CONN][192];
@@ -448,6 +453,7 @@ static void InitStructRqstToSendChnl(void){
 	{
 		httpTxPhase[i] = 0;
 		httpTxOffset[i] = 0;
+		httpLpcPage[i] = 0;
 		httpPar.ptr[i] = NULL;
 		httpPar.que[i] = 0xFF;
 		httpPar.nr[i] = 0;
@@ -771,11 +777,12 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	int nrPartWWW = 0;
 	char *httpBuff = httpPageBuff[channel];
 	char *ptr = httpBuff;
+	httpLpcPage[channel] = 0;
 	switch(nrWWW){
 	case WWW_LPC_SD:
 		DbgVarDma ( 1, 120, "\r\nHTTP LPC: TCP=%u /nowa%u odczyt SD...\r\n", (unsigned) httpPar.que[channel] + 1u, httpSensorPort[channel] );
-		httpPar.web[channel][nrPartWWW] = httpLpcSdBuff[channel];
-		httpPar.siz[channel][nrPartWWW++] = (u32) LPC_StorageReadPage ( httpSensorPort[channel], httpLpcSdBuff[channel], sizeof httpLpcSdBuff[channel] );
+		httpPar.web[channel][nrPartWWW] = httpLpcChunk[channel];
+		httpPar.siz[channel][nrPartWWW++] = (u32) LPC_StoragePageSize ( httpSensorPort[channel] );
 		if ( !httpPar.siz[channel][0] )
 		{
 			httpResponseStatus[channel] = 503;
@@ -786,14 +793,26 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		}
 		else
 		{
+			httpLpcPage[channel] = httpSensorPort[channel];
 			DbgVarDma ( 1, 128, "\r\nHTTP LPC: /nowa%u SD OK, %u bajtow do wyslania\r\n", httpSensorPort[channel], (unsigned) httpPar.siz[channel][0] );
 		}
 		break;
 	case WWW_LPC_CONFIG:
-		httpPar.web[channel][nrPartWWW] = httpLpcSdBuff[channel];
-		httpPar.siz[channel][nrPartWWW++] = (u32) LPC_SettingsJson ( httpSensorPort[channel], httpLpcSdBuff[channel], sizeof httpLpcSdBuff[channel] );
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) LPC_SettingsJson ( httpSensorPort[channel], httpBuff, sizeof httpPageBuff[channel] );
 		if ( !httpPar.siz[channel][0] )
-			httpResponseStatus[channel] = 500;
+		{
+			size_t total = 0;
+			LPC_SettingsJsonWindow ( httpSensorPort[channel], NULL, 0, 0, &total, &httpLpcJsonHash[channel] );
+			if ( total )
+			{
+				httpLpcPage[channel] = httpSensorPort[channel] | HTTP_LPC_JSON_STREAM;
+				httpPar.web[channel][0] = httpLpcChunk[channel];
+				httpPar.siz[channel][0] = (u32) total;
+			}
+			else
+				httpResponseStatus[channel] = 500;
+		}
 		break;
 	case WWW_LPC_SAVE:
 		snprintf ( httpBuff, sizeof ( httpPageBuff[channel] ), "{\"ok\":%s,\"message\":\"%s\"}", httpResponseStatus[channel] == 200 ? "true" : "false",
@@ -1228,6 +1247,7 @@ static int HTTP_QueueResponse ( unsigned channel, int page, unsigned port,
 			httpLpcAsset[i] = asset;
 			httpTxPhase[i] = 0;
 			httpTxOffset[i] = 0;
+		httpLpcPage[i] = 0;
 			httpPar.ptr[i] = HTTP_SetWeb ( i, page );
 			httpPar.nr[i] = 0;
 			httpPar.len[i] = 0;
@@ -1525,7 +1545,7 @@ static void HTTP_SendCloseChnl ( ARCHIVING_TYPE archType, int prevChnl )
 		httpPar.ptr[slot] = NULL;
 		httpPar.len[slot] = 0;
 		httpTxPhase[slot] = 3;
-		if ( httpPar.web[slot][1] == httpLpcSdBuff[slot] )
+		if ( httpLpcPage[slot] != 0 )
 			DbgVarDma ( 1, 120, "\r\nHTTP LPC: TCP=%u cala odpowiedz wyslana, zamykam polaczenie\r\n", (unsigned) httpPar.chnl + 1u );
 		SendToEsp32_http ( mini_snprintf ( sendBuff, sizeof ( sendBuff ), "AT+CIPCLOSE=%d\r\n", httpPar.chnl ), NULL, archType );
 		return;
@@ -1537,7 +1557,34 @@ static void HTTP_SendCloseChnl ( ARCHIVING_TYPE archType, int prevChnl )
 		httpPar.chnl = 0xFF;
 		return;
 	}
-	httpPar.ptr[slot] = httpPar.web[slot][part] + httpTxOffset[slot];
+	if ( httpLpcPage[slot] && part == 1 )
+	{
+		size_t got;
+		if ( httpLpcPage[slot] & HTTP_LPC_JSON_STREAM )
+		{
+			size_t total = 0;
+			uint32_t hash = 0;
+			got = LPC_SettingsJsonWindow ( httpLpcPage[slot] & ~HTTP_LPC_JSON_STREAM, httpLpcChunk[slot], length, httpTxOffset[slot], &total, &hash );
+			if ( total != httpPar.siz[slot][part] || hash != httpLpcJsonHash[slot] )
+				got = 0;
+		}
+		else
+			got = LPC_StorageReadPageChunk ( httpLpcPage[slot], httpPar.siz[slot][part], httpTxOffset[slot], httpLpcChunk[slot], length );
+		if ( got != length )
+		{
+			DbgVarDma ( 1, 160, "\r\nHTTP LPC: TCP=%u blad odczytu SD, zamykam odpowiedz\r\n", (unsigned) httpPar.chnl + 1u );
+			httpPar.nrWeb[slot] = MAX_HTML_WEBs;
+			httpPar.ptr[slot] = NULL;
+			httpPar.len[slot] = 0;
+			httpTxPhase[slot] = 3;
+			SendToEsp32_http ( mini_snprintf ( sendBuff, sizeof sendBuff, "AT+CIPCLOSE=%d\r\n", httpPar.chnl ), NULL, archType );
+			return;
+		}
+		httpLpcChunkOffset[slot] = httpTxOffset[slot];
+		httpPar.ptr[slot] = httpLpcChunk[slot];
+	}
+	else
+		httpPar.ptr[slot] = httpPar.web[slot][part] + httpTxOffset[slot];
 	httpPar.len[slot] = length;
 	httpTxPhase[slot] = 1;
 	/* Console uses channels 1..5; ESP AT commands retain IDs 0..4. */
@@ -1571,7 +1618,8 @@ static int HTTP_SendPayload ( ARCHIVING_TYPE archType )
 	if ( part >= MAX_HTML_WEBs || !httpPar.web[slot][part] || !httpPar.ptr[slot] ||
 		 !length || length > ETH_PACKET_LEN || length >= sizeof ( sendBuff ) ||
 		 offset > httpPar.siz[slot][part] || length > httpPar.siz[slot][part] - offset ||
-		 httpPar.ptr[slot] != httpPar.web[slot][part] + offset )
+		 ( httpLpcPage[slot] && part == 1 && offset != httpLpcChunkOffset[slot] ) ||
+		 httpPar.ptr[slot] != ( httpLpcPage[slot] && part == 1 ? httpLpcChunk[slot] : httpPar.web[slot][part] + offset ) )
 	{
 		httpPar.ptr[slot] = NULL;
 		httpPar.len[slot] = 0;
@@ -1589,7 +1637,7 @@ static int HTTP_SendPayload ( ARCHIVING_TYPE archType )
 		return 0;
 	}
 	httpTxOffset[slot] += length;
-	httpPar.ptr[slot] = httpPar.web[slot][part] + httpTxOffset[slot];
+	httpPar.ptr[slot] = httpLpcPage[slot] && part == 1 ? httpLpcChunk[slot] : httpPar.web[slot][part] + httpTxOffset[slot];
 	httpPar.len[slot] = 0;
 	httpTxPhase[slot] = 2;
 	++httpPar.nr[slot];

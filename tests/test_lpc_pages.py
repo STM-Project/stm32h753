@@ -24,7 +24,16 @@ int main(void){
  for(unsigned p=1;p<=LPC_PAGE_COUNT;p++){
   char path[40];sprintf(path,"/nowa%u",p);assert(LPC_ResolvePage(path,strlen(path))==p);
   sprintf(path,"/api/lpc%u",p);assert(LPC_ResolveSettingsApi(path,strlen(path))==p);
-  assert(LPC_SettingsJson(p,json,sizeof json)>0);
+  size_t json_size=LPC_SettingsJson(p,json,sizeof json);assert(json_size>0);
+  if(p==1||p==36||p==LPC_PAGE_COUNT){
+  size_t total=0;uint32_t hash=0,baseline=0;char chunk[2039];
+  assert(!LPC_SettingsJsonWindow(p,NULL,0,0,&total,&baseline)&&total==json_size);
+  for(size_t offset=0;offset<json_size;){
+   size_t n=json_size-offset;if(n>sizeof chunk)n=sizeof chunk;
+   assert(LPC_SettingsJsonWindow(p,chunk,n,offset,&total,&hash)==n);
+   assert(total==json_size&&hash==baseline&&!memcmp(chunk,json+offset,n));offset+=n;
+  }
+  }
  }
  assert(!LPC_ResolvePage("/nowa01",7));assert(!LPC_ResolvePage("/nowa196",8));
  unsigned tested=0;

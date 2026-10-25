@@ -208,6 +208,9 @@ typedef struct
 	char *out;
 	size_t cap, n;
 	int failed;
+	int window;
+	size_t offset, position;
+	uint32_t hash;
 } Writer;
 static void append ( Writer *w, const char *fmt, ... )
 {
@@ -215,6 +218,27 @@ static void append ( Writer *w, const char *fmt, ... )
 		return;
 	va_list v;
 	va_start ( v, fmt );
+	if ( w->window )
+	{
+		/* JSON emits only short scalar fragments; catalogue rendering continues
+		 * to use the original direct writer below. */
+		char fragment[64];
+		int count = vsnprintf ( fragment, sizeof fragment, fmt, v );
+		va_end ( v );
+		if ( count < 0 || (size_t) count >= sizeof fragment )
+		{
+			w->failed = 1;
+			return;
+		}
+		for ( int i = 0; i < count; ++i )
+		{
+			w->hash = ( w->hash ^ (unsigned char) fragment[i] ) * 16777619U;
+			if ( w->position >= w->offset && w->n < w->cap )
+				w->out[w->n++] = fragment[i];
+			++w->position;
+		}
+		return;
+	}
 	int n = vsnprintf ( w->out + w->n, w->cap - w->n, fmt, v );
 	va_end ( v );
 	if ( n < 0 || (size_t) n >= w->cap - w->n )
@@ -237,13 +261,9 @@ static void string ( Writer *w, const char *s )
 	}
 	append ( w, "\"" );
 }
-size_t LPC_SettingsJson ( unsigned page, char *out, size_t capacity )
+static void JsonFields ( unsigned page, Writer *w )
 {
-	if ( !out || !capacity || !page || page > LPC_PAGE_COUNT )
-		return 0;
-	out[0] = 0;
-	Writer w = { out, capacity, 0, 0 };
-	append ( &w, "{\"page\":%u,\"fields\":{", page );
+	append ( w, "{\"page\":%u,\"fields\":{", page );
 	memset ( seen, 0, sizeof seen );
 	unsigned count = 0;
 	const LpcPage *p = &LPC_Pages[page - 1];
@@ -257,13 +277,21 @@ size_t LPC_SettingsJson ( unsigned page, char *out, size_t capacity )
 				continue;
 			seen[id] = 1;
 			if ( count++ )
-				append ( &w, "," );
-			string ( &w, LPC_Fields[id].name );
-			append ( &w, ":" );
-			string ( &w, LPC_Fields[id].kind == 2 ? "" : LPC_GetSetting ( LPC_Fields[id].name ) );
+				append ( w, "," );
+			string ( w, LPC_Fields[id].name );
+			append ( w, ":" );
+			string ( w, LPC_Fields[id].kind == 2 ? "" : LPC_GetSetting ( LPC_Fields[id].name ) );
 		}
 	}
-	append ( &w, "}}" );
+	append ( w, "}}" );
+}
+size_t LPC_SettingsJson ( unsigned page, char *out, size_t capacity )
+{
+	if ( !out || !capacity || !page || page > LPC_PAGE_COUNT )
+		return 0;
+	out[0] = 0;
+	Writer w = { .out = out, .cap = capacity };
+	JsonFields ( page, &w );
 	if ( w.failed )
 	{
 		out[0] = 0;
@@ -271,6 +299,19 @@ size_t LPC_SettingsJson ( unsigned page, char *out, size_t capacity )
 	}
 	return w.n;
 }
+/* Fallback for JSON larger than the normal per-connection page buffer.
+ * A full-response fingerprint prevents mixing settings changed mid-transfer. */
+size_t LPC_SettingsJsonWindow ( unsigned page, char *out, size_t capacity, size_t offset, size_t *total, uint32_t *hash )
+{
+	if ( !total || !hash || ( capacity && !out ) || !page || page > LPC_PAGE_COUNT )
+		return 0;
+	Writer w = { .out = out, .cap = capacity, .window = 1, .offset = offset, .hash = 2166136261U };
+	JsonFields ( page, &w );
+	*total = w.failed ? 0 : w.position;
+	*hash = w.hash;
+	return w.failed ? 0 : w.n;
+}
+
 static int unhex ( char c )
 {
 	return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10
@@ -426,7 +467,7 @@ size_t LPC_CatalogRender ( char *out, size_t capacity )
 {
 	if ( !out || !capacity )
 		return 0;
-	Writer w = { out, capacity, 0, 0 };
+	Writer w = { .out = out, .cap = capacity };
 	append ( &w, "<!doctype html><html lang='pl'><meta charset='UTF-8'><title>Strony LPC2148</title><style>body{font:16px Arial;margin:24px}td,th{padding:8px;text-align:left}tr:nth-child(even){background:#eee}</style><h1>Strony LPC2148</h1><p><a href='/nowa'>Panel we Flash</a> | <a href='/set'>Ustawienia H7</a></p><p>Strony numerowane wymagają folderu LPC z pakietu sdcard.zip na karcie SD.</p><table><tr><th>Adres</th><th>Plik źródłowy</th></tr>" );
 	for ( unsigned i = 0; i < LPC_PAGE_COUNT; i++ )
 		append ( &w, "<tr><td><a href='/nowa%u'>/nowa%u</a></td><td>%s</td></tr>", i + 1, i + 1, LPC_Pages[i].source );

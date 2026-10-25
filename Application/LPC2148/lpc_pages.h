@@ -5,7 +5,8 @@
 #include "lpc_manifest.h"
 #define LPC_VALUE_MAX 256u
 #define LPC_BLOB_SIZE ( 16u + LPC_FIELD_COUNT * ( LPC_VALUE_MAX + 2u ) )
-/* Largest packaged page is below 640 KiB. Keep all five slots within 16 MiB SDRAM. */
+/* HTTP uses 2 KiB chunks; the legacy full-page API keeps its size limit. */
+#define LPC_STREAM_BUFFER_SIZE ( 2u * 1024u )
 #define LPC_PAGE_BUFFER_SIZE ( 768u * 1024u )
 #if defined( __arm__ ) || defined( __thumb__ )
 #define LPC_SDRAM __attribute__ ( ( section ( ".sdram" ), aligned ( 32 ) ) )
@@ -40,6 +41,7 @@ int LPC_ValidateSettings ( const void *bytes, size_t length );
 const char *LPC_GetSetting ( const char *name );	  /* saved or original form default */
 const char *LPC_GetSavedSetting ( const char *name ); /* NULL if never set */
 size_t LPC_SettingsJson ( unsigned page, char *out, size_t capacity );
+size_t LPC_SettingsJsonWindow ( unsigned page, char *out, size_t capacity, size_t offset, size_t *total, uint32_t *hash );
 /* 0 unrelated; 200 saved; 400 malformed; 501 unsupported hardware action;
  * 503 storage failure. No RAM commit before successful durable save. */
 int LPC_ApplyTarget ( const char *target, size_t length, unsigned *page );
@@ -50,4 +52,6 @@ size_t LPC_CatalogRender ( char *out, size_t capacity );
 int LPC_StorageInit ( void );
 const char *LPC_StoragePageError ( void );
 size_t LPC_StorageReadPage ( unsigned page, char *out, size_t capacity );
+size_t LPC_StoragePageSize ( unsigned page );
+size_t LPC_StorageReadPageChunk ( unsigned page, size_t expected, size_t offset, char *out, size_t length );
 #endif

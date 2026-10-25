@@ -147,3 +147,67 @@ size_t LPC_StorageReadPage ( unsigned page, char *out, size_t capacity )
 	out[size] = 0;
 	return size;
 }
+
+/* Open only while inspecting/reading SD; no FIL or SD mutex survives a packet.
+ * This also makes cancellation, timeout and channel reuse resource-free. */
+size_t LPC_StoragePageSize ( unsigned page )
+{
+	pageError[0] = 0;
+	if ( !page || page > LPC_PAGE_COUNT )
+		return 0;
+	if ( !settings_ready )
+		LPC_StorageInit ();
+	char path[32];
+	snprintf ( path, sizeof path, "0:/LPC/P%05u.HTM", page );
+	if ( !TakeMutex ( Semphr_cardSD, 1000 ) )
+	{
+		snprintf ( pageError, sizeof pageError, "SD zajeta." );
+		return 0;
+	}
+	size_t size = 0;
+	FRESULT result = f_open ( &file, path, FA_READ );
+	if ( result == FR_OK )
+	{
+		size = f_size ( &file );
+		result = f_close ( &file );
+		if ( result != FR_OK )
+			size = 0;
+	}
+	if ( !size )
+		snprintf ( pageError, sizeof pageError, "Nie odczytano rozmiaru %s (FatFs=%u).", path, (unsigned) result );
+	GiveMutex ( Semphr_cardSD );
+	return size;
+}
+
+size_t LPC_StorageReadPageChunk ( unsigned page, size_t expected, size_t offset, char *out, size_t length )
+{
+	if ( !page || page > LPC_PAGE_COUNT || !out || !length || length > sizeof pageReadBuffer || offset > expected || length > expected - offset )
+		return 0;
+	char path[32];
+	snprintf ( path, sizeof path, "0:/LPC/P%05u.HTM", page );
+	if ( !TakeMutex ( Semphr_cardSD, 1000 ) )
+		return 0;
+	UINT got = 0;
+	FRESULT result = f_open ( &file, path, FA_READ );
+	if ( result == FR_OK )
+	{
+		if ( f_size ( &file ) != expected )
+			result = FR_INVALID_OBJECT;
+		if ( result == FR_OK )
+			result = f_lseek ( &file, offset );
+		if ( result == FR_OK )
+			result = f_read ( &file, pageReadBuffer, (UINT) length, &got );
+		FRESULT closed = f_close ( &file );
+		if ( result == FR_OK )
+			result = closed;
+	}
+	if ( result == FR_OK && got == length )
+		memcpy ( out, pageReadBuffer, length );
+	else
+	{
+		got = 0;
+		snprintf ( pageError, sizeof pageError, "Blad strumienia %s po %u bajtach (FatFs=%u).", path, (unsigned) offset, (unsigned) result );
+	}
+	GiveMutex ( Semphr_cardSD );
+	return got;
+}

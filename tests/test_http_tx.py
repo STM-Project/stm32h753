@@ -96,6 +96,41 @@ int main(void) {
         assert(HTTP_SendPayload(noArch));assert(HTTP_SendAcknowledged(noArch));
     }
     assert(closes==3 && sent==total);
+    /* Stream distinct SD pages across interleaved ESP channels. */
+    static char sd1[17001],sd2[23001];
+    for(unsigned i=0;i<sizeof sd1-1;i++)sd1[i]=(char)('a'+i%26);
+    for(unsigned i=0;i<sizeof sd2-1;i++)sd2[i]=(char)('A'+i%26);
+    lpc_test_page=sd1;lpc_test_page2=sd2;
+    clear_queue();HTTP_HandleTarget(0,"/nowa1",6,NULL);HTTP_HandleTarget(4,"/nowa2",6,NULL);
+    total=0;for(unsigned q=0;q<2;q++)for(unsigned p=0;p<MAX_HTML_WEBs&&httpPar.web[q][p];p++)total+=httpPar.siz[q][p];
+    closes=0;sent=0;httpPar.chnl=0xFF;HTTP_SendCloseChnl(noArch,-1);
+    for(unsigned guard=0;guard<100&&closes<2;guard++){
+        int slot=SearchChnl(httpPar.chnl);assert(slot>=0);
+        if(httpTxPhase[slot]==3){httpPar.que[slot]=0xFF;httpPar.ptr[slot]=NULL;httpPar.chnl=0xFF;HTTP_SendCloseChnl(noArch,-1);continue;}
+        unsigned part=httpPar.nrWeb[slot];
+        expected=(part==1?test_sd_page(httpLpcPage[slot]):httpPar.web[slot][part])+httpTxOffset[slot];
+        assert(HTTP_SendPayload(noArch));assert(HTTP_SendAcknowledged(noArch));
+    }
+    assert(closes==2&&sent==total);
+    /* A removed/unreadable SD page closes before announcing its next packet. */
+    clear_queue();request(0,"/nowa1");httpPar.chnl=0xFF;closes=0;
+    HTTP_SendCloseChnl(noArch,-1);expected=httpPar.web[0][0];assert(HTTP_SendPayload(noArch));
+    lpc_chunk_fail=1;assert(HTTP_SendAcknowledged(noArch));
+    assert(closes==1&&httpTxPhase[0]==3&&!HTTP_SendPayload(noArch));lpc_chunk_fail=0;
+    /* Force the real JSON window fallback without a large staging allocation. */
+    static char jsonExpected[100000];
+    size_t jsonLength=LPC_SettingsJson(1,jsonExpected,sizeof jsonExpected);assert(jsonLength);
+    lpc_force_json_stream=1;clear_queue();request(0,"/api/lpc1");lpc_force_json_stream=0;
+    assert(httpLpcPage[0]&HTTP_LPC_JSON_STREAM);
+    closes=0;sent=0;httpPar.chnl=0xFF;HTTP_SendCloseChnl(noArch,-1);
+    size_t jsonTotal=httpPar.siz[0][0]+jsonLength;
+    for(unsigned guard=0;guard<100&&!closes;guard++){
+        unsigned part=httpPar.nrWeb[0];expected=(part==1?jsonExpected:httpPar.web[0][part])+httpTxOffset[0];
+        assert(HTTP_SendPayload(noArch));assert(HTTP_SendAcknowledged(noArch));
+    }
+    assert(closes==1&&sent==jsonTotal);
+    puts("PASS: real JSON window fallback preserves serialized content and response length.");
+    puts("PASS: interleaved SD streams preserve page/offset; midstream SD failure closes without stale payload.");
     puts("PASS: full 500KB page, exact packet boundaries, empty fragments, duplicate/late prompts and acknowledgements, timeout reset, corrupted cursors and DMA rejection (ASan/UBSan).");
     return 0;
 }
