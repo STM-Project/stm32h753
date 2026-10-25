@@ -1115,13 +1115,13 @@ var myVar = setInterval(loadXMLDoc, 1000      );\r\n\
  var txt4=[]; \r\n\
  var txt5=[]; \r\n\
  var ccol=[]; \r\n\
- function loadXMLDoc()\r\n\
- {if(wst==0){wst=1;       now=0;\r\n\
+ var httpRefreshBusy=false,httpRefreshRequest=null; function loadXMLDoc()\r\n\
+ {if(httpRefreshBusy)return;if(wst==0){httpRefreshBusy=true;wst=1;       now=0;\r\n\
    var xmlhttp;\r\n\
    if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
    else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");\r\n\
-   xmlhttp.onreadystatechange=function()\r\n\
-   { if (xmlhttp.readyState==4 && xmlhttp.status==200)\r\n\
+   httpRefreshRequest=xmlhttp;xmlhttp.onreadystatechange=function()\r\n\
+   { if(httpRefreshRequest!==xmlhttp)return;if(xmlhttp.readyState==4){httpRefreshBusy=false;httpRefreshRequest=null;} if (xmlhttp.readyState==4 && xmlhttp.status==200)\r\n\
      {  \r\n\
 		 txt= xmlhttp.responseText;\r\n\
 		 txt3=txt[0]+txt[1]+txt[2]+txt[3]+txt[4]+txt[5]+txt[6]+txt[7]; document.getElementById(\"tu_zgr\").innerHTML=txt3;\r\n\
@@ -1287,7 +1287,7 @@ j=0;for(i=0;i<17;i++){ txt5[i]=txt[450+14+1+23*3+4*18*3+18*3+23+i]; if((txt5[i]=
  }\r\n\
  }\r\n\
  xmlhttp.open(\"GET\",\"/TME.txt\", true);\r\n\
- xmlhttp.send();\r\n\
+ try{xmlhttp.timeout=10000;xmlhttp.onerror=xmlhttp.ontimeout=xmlhttp.onabort=function(){if(httpRefreshRequest===xmlhttp){httpRefreshBusy=false;httpRefreshRequest=null;}};}catch(ignore){}xmlhttp.send();\r\n\
  }}\r\n\
  </script> \r\n\
     <script>\r\n\
@@ -1754,13 +1754,13 @@ var myVar = setInterval(loadXMLDoc, 5000       );\r\n\
  var txt4=[]; \r\n\
  var txt5=[]; \r\n\
  var ccol=[]; \r\n\
- function loadXMLDoc()\r\n\
- {if(wst==0){wst=1;       now=0;\r\n\
+ var httpRefreshBusy=false,httpRefreshRequest=null; function loadXMLDoc()\r\n\
+ {if(httpRefreshBusy)return;if(wst==0){httpRefreshBusy=true;wst=1;       now=0;\r\n\
    var xmlhttp;\r\n\
    if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n\
    else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");\r\n\
-   xmlhttp.onreadystatechange=function()\r\n\
-   { if (xmlhttp.readyState==4 && xmlhttp.status==200)\r\n\
+   httpRefreshRequest=xmlhttp;xmlhttp.onreadystatechange=function()\r\n\
+   { if(httpRefreshRequest!==xmlhttp)return;if(xmlhttp.readyState==4){httpRefreshBusy=false;httpRefreshRequest=null;} if (xmlhttp.readyState==4 && xmlhttp.status==200)\r\n\
      {  \r\n\
 		 txt= xmlhttp.responseText;\r\n\
 		 txt3=txt[0]+txt[1]+txt[2]+txt[3]+txt[4]+txt[5]+txt[6]+txt[7]; document.getElementById(\"tu_zgr\").innerHTML=txt3;\r\n\
@@ -1821,7 +1821,7 @@ for(i=0;i<10;i++) txt4[i]=txt[25+13+1+18+1+14+1+216+1+90+1+20+i];if(txt4[9]=='1'
  }\r\n\
  }\r\n\
  xmlhttp.open(\"GET\",\"/TME.txt\", true);\r\n\
- xmlhttp.send();\r\n\
+ try{xmlhttp.timeout=10000;xmlhttp.onerror=xmlhttp.ontimeout=xmlhttp.onabort=function(){if(httpRefreshRequest===xmlhttp){httpRefreshBusy=false;httpRefreshRequest=null;}};}catch(ignore){}xmlhttp.send();\r\n\
  }}\r\n\
  </script> \r\n\
     <script>\r\n\
@@ -2693,13 +2693,13 @@ const char HttpStructMainReadPanel2[] =
 	" var txt4=[]; \r\n"
 	" var txt5=[]; \r\n"
 	" var ccol=[]; \r\n"
-	" function loadXMLDoc()\r\n"
-	" {if(wst==0){wst=1;       now=0;\r\n"
+	" var httpRefreshBusy=false,httpRefreshRequest=null; function loadXMLDoc()\r\n"
+	" {if(httpRefreshBusy)return;if(wst==0){httpRefreshBusy=true;wst=1;       now=0;\r\n"
 	"   var xmlhttp;\r\n"
 	"   if (window.XMLHttpRequest) xmlhttp=new XMLHttpRequest();\r\n"
 	"   else xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\");\r\n"
-	"   xmlhttp.onreadystatechange=function()\r\n"
-	"   { if (xmlhttp.readyState==4 && xmlhttp.status==200)\r\n"
+	"   httpRefreshRequest=xmlhttp;xmlhttp.onreadystatechange=function()\r\n"
+	"   { if(httpRefreshRequest!==xmlhttp)return;if(xmlhttp.readyState==4){httpRefreshBusy=false;httpRefreshRequest=null;} if (xmlhttp.readyState==4 && xmlhttp.status==200)\r\n"
 	"     {  \r\n"
 	"\t\t txt= xmlhttp.responseText;\r\n"
 	"\t\t txt3=txt[0]+txt[1]+txt[2]+txt[3]+txt[4]+txt[5]+txt[6]+txt[7]; document.getElementById(\"tu_zgr\").innerHTML=txt3;\r\n"
@@ -2849,7 +2849,7 @@ const char HttpStructMainReadPanel2[] =
 	" }\r\n"
 	" }\r\n"
 	" xmlhttp.open(\"GET\",\"/TME.txt\", true);\r\n"
-	" xmlhttp.send();\r\n"
+	" try{xmlhttp.timeout=10000;xmlhttp.onerror=xmlhttp.ontimeout=xmlhttp.onabort=function(){if(httpRefreshRequest===xmlhttp){httpRefreshBusy=false;httpRefreshRequest=null;}};}catch(ignore){}xmlhttp.send();\r\n"
 	" }}\r\n"
 	" </script> \r\n"
 	"    <script>\r\n"

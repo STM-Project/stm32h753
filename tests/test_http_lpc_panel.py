@@ -56,7 +56,8 @@ int main(void) {
     memcpy(HttpRefr_sdram+73," 25.1",5);
     clear_queue();HTTP_HandleTarget(2,"/api/nowa",9,NULL);body(0,snapshot,sizeof snapshot);
     memcpy(HttpRefr_sdram+73,"-05.5",5);HTTP_HandleTarget(1,"/api/nowa",9,NULL);
-    body(0,data,sizeof data);assert(!strcmp(data,snapshot));body(1,data,sizeof data);assert(strstr(data,"\"tenths\":-55"));
+    body(0,data,sizeof data);assert(strcmp(data,snapshot));assert(strstr(data,"\"tenths\":-55"));
+    strcpy(snapshot,data);body(1,data,sizeof data);assert(!strcmp(data,snapshot));
     request(0,"/mobile/pk001");check_response(0,200,"text/html; charset=UTF-8");
     HTTP_LpcPanelJson(data,sizeof data);assert(strstr(data,"\"state\":false,\"requested\":true"));
     assert(HTTP_LpcSetTemperature(1,0,0));assert(HTTP_LpcSetInput(4,0,0));

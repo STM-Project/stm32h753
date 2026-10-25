@@ -223,6 +223,10 @@ static const HTTP_LpcAsset *httpLpcAsset[ESP_MAX_HTTP_CONN];
 /* WiFi task owns all transmit state. 1=prompt pending, 2=SEND OK pending,
  * 3=close pending. Offset counts bytes, not issued CIPSEND commands. */
 static uint8_t httpTxPhase[ESP_MAX_HTTP_CONN];
+/* Refresh jobs are coalesced; each TCP client retains its own response slot. */
+static uint8_t httpRefreshPage[ESP_MAX_HTTP_CONN];
+static uint8_t httpRefreshPrepared[ESP_MAX_HTTP_CONN];
+static uint8_t httpResponseStarted[ESP_MAX_HTTP_CONN];
 static uint32_t httpTxOffset[ESP_MAX_HTTP_CONN];
 static char* pMem=NULL;
 static int DBG = 1;
@@ -454,6 +458,9 @@ static void InitStructRqstToSendChnl(void){
 		httpTxPhase[i] = 0;
 		httpTxOffset[i] = 0;
 		httpLpcPage[i] = 0;
+		httpRefreshPage[i] = 0;
+		httpRefreshPrepared[i] = 0;
+		httpResponseStarted[i] = 0;
 		httpPar.ptr[i] = NULL;
 		httpPar.que[i] = 0xFF;
 		httpPar.nr[i] = 0;
@@ -1227,6 +1234,47 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	return httpPar.web[channel][0];
 }
 
+/* Only exact, read-only polling endpoints are eligible. CGI, settings
+ * forms, relay/PWM commands and SD pages never enter this group. */
+static int HTTP_IsRefreshPage ( int page )
+{
+	return page == WWW_DATA_REFRESH || page == WWW_LPC_DATA || page == WWW_LPC_LIVE;
+}
+
+static void HTTP_PrepareRefresh ( unsigned slot )
+{
+	if ( slot >= ESP_MAX_HTTP_CONN || !httpRefreshPage[slot] || httpRefreshPrepared[slot] || httpResponseStarted[slot] )
+		return;
+	unsigned page = httpRefreshPage[slot];
+	httpResponseStatus[slot] = 200;
+	HTTP_SetWeb ( (int) slot, (int) page );
+	httpRefreshPrepared[slot] = 1;
+	/* These three responses have one header and one buffer-owned body.
+	 * Copy the newest snapshot only to waiting clients, never active DMA. */
+	for ( unsigned i = 0; i < ESP_MAX_HTTP_CONN; ++i )
+	{
+		if ( i == slot || httpPar.que[i] == 0xFF || httpRefreshPage[i] != page || httpResponseStarted[i] )
+			continue;
+		size_t length = httpPar.siz[slot][1];
+		if ( length >= sizeof httpPageBuff[i] )
+			continue;
+		memcpy ( httpPageBuff[i], httpPageBuff[slot], length + 1 );
+		memcpy ( httpResponseHeader[i], httpResponseHeader[slot], sizeof httpResponseHeader[i] );
+		httpResponseStatus[i] = httpResponseStatus[slot];
+		httpPar.web[i][0] = httpResponseHeader[i];
+		httpPar.siz[i][0] = httpPar.siz[slot][0];
+		httpPar.web[i][1] = httpPageBuff[i];
+		httpPar.siz[i][1] = (u32) length;
+		httpPar.web[i][2] = NULL;
+		httpPar.siz[i][2] = 0;
+		httpPar.ptr[i] = httpResponseHeader[i];
+		httpPar.nrWeb[i] = 0;
+		httpPar.nr[i] = 0;
+		httpPar.len[i] = 0;
+		httpRefreshPrepared[i] = 1;
+	}
+}
+
 static int HTTP_QueueResponse ( unsigned channel, int page, unsigned port,
 								const char *notice, int status,
 								const HTTP_SettingPage *settingsPage, uint16_t settingsInstance,
@@ -1247,8 +1295,25 @@ static int HTTP_QueueResponse ( unsigned channel, int page, unsigned port,
 			httpLpcAsset[i] = asset;
 			httpTxPhase[i] = 0;
 			httpTxOffset[i] = 0;
-		httpLpcPage[i] = 0;
-			httpPar.ptr[i] = HTTP_SetWeb ( i, page );
+			httpLpcPage[i] = 0;
+			httpRefreshPage[i] = status == 200 && HTTP_IsRefreshPage ( page ) ? (uint8_t) page : 0;
+			httpRefreshPrepared[i] = 0;
+			httpResponseStarted[i] = 0;
+			/* A newer read, or a write handled before this response, invalidates
+			 * only unsent snapshots. The owner task serializes all these updates. */
+			for ( unsigned j = 0; j < ESP_MAX_HTTP_CONN; ++j )
+				if ( httpPar.que[j] != 0xFF && !httpResponseStarted[j] &&
+					 ( !httpRefreshPage[i] || httpRefreshPage[j] == httpRefreshPage[i] ) )
+					httpRefreshPrepared[j] = 0;
+			if ( httpRefreshPage[i] )
+			{
+				memset ( httpPar.web[i], 0, sizeof httpPar.web[i] );
+				memset ( httpPar.siz[i], 0, sizeof httpPar.siz[i] );
+				httpPar.ptr[i] = httpPageBuff[i];
+				httpPar.nrWeb[i] = 0;
+			}
+			else
+				httpPar.ptr[i] = HTTP_SetWeb ( i, page );
 			httpPar.nr[i] = 0;
 			httpPar.len[i] = 0;
 			return i;
@@ -1524,6 +1589,7 @@ static void HTTP_SendCloseChnl ( ARCHIVING_TYPE archType, int prevChnl )
 	int slot = CheckReadyToSendChnl ( prevChnl );
 	if ( slot < 0 )
 		return;
+	HTTP_PrepareRefresh ( (unsigned) slot );
 	/* Skip empty fragments and validate the index before every array access. */
 	while ( httpPar.nrWeb[slot] < MAX_HTML_WEBs )
 	{
@@ -1591,6 +1657,8 @@ static void HTTP_SendCloseChnl ( ARCHIVING_TYPE archType, int prevChnl )
 	if ( archType == noArch )
 		DbgVarDma ( 1, 5, "%u", (unsigned) httpPar.chnl + 1u );
 	int status = SendToEsp32_http ( mini_snprintf ( sendBuff, sizeof ( sendBuff ), "AT+CIPSEND=%d,%u\r\n", httpPar.chnl, (unsigned) length ), NULL, archType );
+	if ( status == HAL_OK )
+		httpResponseStarted[slot] = 1;
 	if ( status != HAL_OK )
 	{
 		httpTxPhase[slot] = 0;

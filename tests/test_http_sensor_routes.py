@@ -111,6 +111,9 @@ static void clear_queue(void) {
     memset(&httpPar, 0, sizeof httpPar);
     memset(httpLpcPage,0,sizeof httpLpcPage);
     memset(httpLpcChunkOffset,0,sizeof httpLpcChunkOffset);
+    memset(httpRefreshPage,0,sizeof httpRefreshPage);
+    memset(httpRefreshPrepared,0,sizeof httpRefreshPrepared);
+    memset(httpResponseStarted,0,sizeof httpResponseStarted);
     memset(httpPar.que, 0xff, sizeof httpPar.que);
 }
 static int slot_for(unsigned channel) {
@@ -119,6 +122,7 @@ static int slot_for(unsigned channel) {
     return -1;
 }
 static size_t body(unsigned slot, char *out, size_t capacity) {
+    HTTP_PrepareRefresh(slot);
     size_t length = 0;
     for (unsigned i = 1; i < MAX_HTML_WEBs && httpPar.web[slot][i]; ++i) {
         size_t size = httpPar.siz[slot][i];
@@ -135,6 +139,7 @@ static void check_response(unsigned channel, unsigned status, const char *type) 
     char expected[100], content[250000];
     int slot = slot_for(channel);
     assert(slot >= 0);
+    HTTP_PrepareRefresh((unsigned)slot);
     const char *header = httpPar.web[slot][0];
     size_t length = body((unsigned)slot, content, sizeof content);
     snprintf(expected, sizeof expected, "HTTP/1.1 %u ", status);

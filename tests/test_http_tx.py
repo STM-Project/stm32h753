@@ -87,6 +87,7 @@ int main(void) {
     assert(closes==1 && sent==sizeof exact);
     /* Interleave long pages and a live JSON reply on three ESP channels. */
     clear_queue();HTTP_HandleTarget(3,"/nowa",5,NULL);HTTP_HandleTarget(1,"/api/nowa",9,NULL);HTTP_HandleTarget(4,"/nowa",5,NULL);
+    for(unsigned q=0;q<3;q++)HTTP_PrepareRefresh(q);
     total=0;for(unsigned q=0;q<3;q++)for(unsigned p=0;p<MAX_HTML_WEBs && httpPar.web[q][p];p++)total+=httpPar.siz[q][p];
     httpPar.chnl=0xFF;closes=0;sent=0;HTTP_SendCloseChnl(noArch,-1);
     for(unsigned guard=0;guard<2000 && closes<3;guard++){
@@ -129,6 +130,33 @@ int main(void) {
         assert(HTTP_SendPayload(noArch));assert(HTTP_SendAcknowledged(noArch));
     }
     assert(closes==1&&sent==jsonTotal);
+    /* Deferred refresh jobs coalesce, while active responses stay frozen. */
+    clear_queue();strcpy(HttpRefr_sdram,"old");
+    for(unsigned c=0;c<3;c++)HTTP_HandleTarget(c,"/TME.txt",8,NULL);
+    for(unsigned q=0;q<3;q++)assert(!httpRefreshPrepared[q]&&!httpPar.web[q][0]);
+    strcpy(HttpRefr_sdram,"latest");httpPar.chnl=0xFF;HTTP_SendCloseChnl(noArch,-1);
+    assert(httpResponseStarted[0]);
+    for(unsigned q=0;q<3;q++)assert(httpRefreshPrepared[q]&&!strcmp(httpPageBuff[q],"latest"));
+    char frozenHeader[192];memcpy(frozenHeader,httpResponseHeader[0],sizeof frozenHeader);
+    uint32_t frozenLength=httpPar.len[0];char *frozenPointer=httpPar.ptr[0];
+    strcpy(HttpRefr_sdram,"newest");HTTP_HandleTarget(3,"/TME.txt",8,NULL);
+    assert(!httpRefreshPrepared[1]&&!httpRefreshPrepared[2]&&!httpRefreshPrepared[3]);
+    HTTP_PrepareRefresh(1);
+    assert(!strcmp(httpPageBuff[0],"latest"));
+    for(unsigned q=1;q<4;q++)assert(httpRefreshPrepared[q]&&!strcmp(httpPageBuff[q],"newest"));
+    assert(!memcmp(frozenHeader,httpResponseHeader[0],sizeof frozenHeader)&&httpPar.len[0]==frozenLength&&httpPar.ptr[0]==frozenPointer);
+    /* Writes retain their own queue slot and durable save; never coalesced. */
+    assert(HTTP_SensorSettingsInit(load,save,persisted)>=0);
+    static char writeTarget[HTTP_SENSOR_TARGET_MAX];form(writeTarget,5,1);
+    unsigned beforeSave=saves;HTTP_HandleTarget(4,writeTarget,strlen(writeTarget),NULL);
+    assert(saves==beforeSave+1&&httpPar.que[4]==4&&!httpRefreshPage[4]);
+    assert(strstr(httpResponseHeader[4],"200 OK"));
+    HTTP_HandleTarget(4,writeTarget,strlen(writeTarget),NULL);assert(saves==beforeSave+1);
+    assert(!httpRefreshPrepared[1]&&!httpRefreshPrepared[2]);
+    strcpy(HttpRefr_sdram,"after-write");HTTP_PrepareRefresh(1);
+    assert(!strcmp(httpPageBuff[1],"after-write")&&!strcmp(httpPageBuff[0],"latest"));
+    assert(!memcmp(frozenHeader,httpResponseHeader[0],sizeof frozenHeader));
+    puts("PASS: deferred/coalesced latest refresh snapshots; active replies frozen; writes persist once with independent response.");
     puts("PASS: real JSON window fallback preserves serialized content and response length.");
     puts("PASS: interleaved SD streams preserve page/offset; midstream SD failure closes without stale payload.");
     puts("PASS: full 500KB page, exact packet boundaries, empty fragments, duplicate/late prompts and acknowledgements, timeout reset, corrupted cursors and DMA rejection (ASan/UBSan).");
