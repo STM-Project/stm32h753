@@ -87,7 +87,9 @@ CubeMX/generatora należy świadomie zweryfikować i odświeżyć ten manifest.
 - HTTP/HTTPS mają wspólną obsługę żądań; pliki są wysyłane w porcjach 2048 B.
   Nie ma odwołań do `GETVAL_ptr()` ani buforów LCD. Blokada SD nie jest trzymana
   podczas komunikacji sieciowej. Krótkie odczyty/zapisy są obsługiwane.
-- Init sieci ma osobny stos 8 KiB, HTTP 8 KiB, HTTPS 32 KiB. Nie zmieniono
+- Init sieci ma osobny stos 8 KiB, HTTP 8 KiB. HTTPS ma statyczny stos
+  64 KiB i TCB w SDRAM (`xTaskCreateStatic`), więc nie pobiera ich z małej
+  sterty FreeRTOS w RAM_D1. Nie zmieniono
   stosów istniejących zadań. Brak PHY lub zegara RMII nie zatrzymuje LCD/Wi-Fi.
 - Konfiguracja netif i zmiany linku są chronione blokadą rdzenia TCP/IP.
 - Adapter RNG kopiuje pełne słowa losowe i końcówki, zgłasza błędy HAL oraz

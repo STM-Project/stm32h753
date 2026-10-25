@@ -10,6 +10,8 @@
 #include "lwip/sockets.h"
 #include "network_log.h"
 #include "cmsis_os.h"
+#include "FreeRTOS.h"
+#include "task.h"
 #include <string.h>
 static unsigned char tlsMemory[327680] __attribute__((section(".sdram"),aligned(32)));
 static mbedtls_ssl_config config;
@@ -17,6 +19,12 @@ static mbedtls_x509_crt certificate;
 static mbedtls_pk_context key;
 static mbedtls_entropy_context entropy;
 static mbedtls_ctr_drbg_context drbg;
+/* Static HTTPS task storage: no allocation from the 128 KiB RTOS heap.
+ * Like F7's xTaskCreateStatic SMTPS example, but a dedicated owned buffer. */
+enum { HTTPS_STACK_BYTES=65536, HTTPS_STACK_WORDS=HTTPS_STACK_BYTES/sizeof(StackType_t) };
+static StackType_t httpsStack[HTTPS_STACK_WORDS] __attribute__((section(".sdram"),aligned(32)));
+static StaticTask_t httpsTaskControl __attribute__((section(".sdram"),aligned(32)));
+static TaskHandle_t httpsTaskHandle;
 static int tlsReady;
 osMutexId networkRngMutex;
 void MX_MBEDTLS_Init(void)
@@ -70,5 +78,11 @@ static void https_thread(void *arg)
 }
 void https_server_netconn_init(void)
 {
-    if(tlsReady&&!sys_thread_new("HTTPS",https_thread,NULL,32768,osPriorityBelowNormal))DbgDma(1,"\r\nHTTPS: task allocation failed");
+    if(!tlsReady || httpsTaskHandle)return;
+    /* Match sys_thread_new's CMSIS osPriorityBelowNormal -> FreeRTOS mapping.
+     * xTaskCreateStatic expects stack depth in words, not bytes. */
+    UBaseType_t priority=(UBaseType_t)(osPriorityBelowNormal-osPriorityIdle);
+    httpsTaskHandle=xTaskCreateStatic(https_thread,"HTTPS",HTTPS_STACK_WORDS,NULL,
+                                    priority,httpsStack,&httpsTaskControl);
+    if(!httpsTaskHandle)DbgDma(1,"\r\nHTTPS: static task creation failed");
 }
