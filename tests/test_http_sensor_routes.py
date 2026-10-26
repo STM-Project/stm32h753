@@ -8,6 +8,7 @@ Run: python3 tests/test_http_sensor_routes.py
 """
 from pathlib import Path
 import re
+import zipfile
 import shutil
 import subprocess
 import tempfile
@@ -79,8 +80,8 @@ static size_t test_lpc_json(unsigned page,char *out,size_t capacity){
 }
 #define LPC_SettingsJson(...) test_lpc_json(__VA_ARGS__)
 static const char *lpc_test_page,*lpc_test_page2;
-static int lpc_chunk_fail;
-static const char *test_sd_page(unsigned page){return page==2&&lpc_test_page2?lpc_test_page2:lpc_test_page;}
+static int lpc_chunk_fail,lpc_panel_missing;
+static const char *test_sd_page(unsigned page){return page==LPC_PANEL_SD_PAGE?(lpc_panel_missing?NULL:test_panel_page):page==2&&lpc_test_page2?lpc_test_page2:lpc_test_page;}
 const char *LPC_StoragePageError(void){return "brak pliku testowego";}
 size_t LPC_StoragePageSize(unsigned page){const char *p=test_sd_page(page);return p?strlen(p):0;}
 size_t LPC_StorageReadPageChunk(unsigned page,size_t expected,size_t offset,char *out,size_t length){
@@ -327,7 +328,12 @@ def harness_source(tests=TESTS):
     templates = source[source.index("/* Settings page templates."):source.index("const char HttpStructMainReadPanel2")]
     fragments = "\n".join(constant(source, name) for name in
                           ["HttpStyle", "HttpMainMenu", "HttpStructMainReadPanel", "HttpStructMainReadPanel2"])
-    harness = (PREAMBLE + "\n#define ESP_MAX_HTTP_CONN " + channels + "\n" + web_enum + enums +
+    with zipfile.ZipFile(ROOT / "Application/LPC2148/sdcard.zip") as package:
+        panel = package.read("LPC/NOWA.HTM")
+    panel_constant = 'static const char test_panel_page[] =\n' + '\n'.join(
+        '"' + ''.join('\\x%02x' % c for c in panel[start:start+80]) + '"'
+        for start in range(0, len(panel), 80)) + ';\n'
+    harness = (panel_constant + PREAMBLE + "\n#define ESP_MAX_HTTP_CONN " + channels + "\n" + web_enum + enums +
                fragments + read_templates + read_hidden + helpers + templates + queue + buffers + route + tests)
     return harness
 

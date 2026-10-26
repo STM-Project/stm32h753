@@ -1,6 +1,16 @@
 # Strony LPC z SD bez pełnych kopii w SDRAM
 
 HTTP przez ESP32 odczytuje `/nowaN` z `0:/LPC/Pnnnnn.HTM` porcjami.
+Panel `/nowa` z trzema termometrami jest odczytywany tak samo z
+`0:/LPC/NOWA.HTM`. W `http_lpc_assets.c` zostaje tylko mały opis trasy;
+HTML, JavaScript, CSS i grafika nie są już osadzone we FLASH.
+
+Po aktualizacji firmware rozpakuj `Application/LPC2148/sdcard.zip` i skopiuj
+folder `LPC` do katalogu głównego karty. Dla samego panelu wystarczy skopiować
+`LPC/NOWA.HTM`. Adres `/nowa` oraz JSON `/api/nowa` pozostają bez zmian.
+Brak pliku daje odpowiedź 503 z instrukcją skopiowania pakietu.
+`generate_assets.py` generuje tylko metadane trasy, a `build_pages.py` tworzy
+pakiet SD (w tym kompletną stronę `NOWA.HTM` z zasobów `web/`).
 Usunięto `httpLpcSdBuff[5][768 KiB]`. Zastępuje go pięć buforów po 2048 B;
 pojedynczy pakiet UART/ESP pozostaje ograniczony do dotychczasowych 2039 B.
 

@@ -52,6 +52,8 @@ size_t LPC_CatalogRender ( char *out, size_t capacity );
 int LPC_StorageInit ( void );
 const char *LPC_StoragePageError ( void );
 size_t LPC_StorageReadPage ( unsigned page, char *out, size_t capacity );
+/* Reserved SD stream ID for /nowa, stored as LPC/NOWA.HTM. */
+#define LPC_PANEL_SD_PAGE 65535u
 size_t LPC_StoragePageSize ( unsigned page );
 size_t LPC_StorageReadPageChunk ( unsigned page, size_t expected, size_t offset, char *out, size_t length );
 #endif

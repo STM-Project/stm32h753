@@ -13,11 +13,12 @@ C=r'''
 static int held,locked,missing,read_error,short_read,close_error;
 static size_t length=636799,position,reads;
 static unsigned opens,closes;
+static const char *expected_path="0:/LPC/P00012.HTM";
 unsigned TakeMutex(int id,unsigned timeout){(void)id;(void)timeout;assert(!held);if(locked)return 0;held=1;return 1;}
 void GiveMutex(int id){(void)id;assert(held);held=0;}
 int LPC_ValidateSettings(const void *p,size_t n){(void)p;(void)n;return 1;}
 int LPC_SettingsInit(LpcLoad a,LpcSave b,void*c){(void)a;(void)b;(void)c;return 0;}
-FRESULT f_open(FIL*f,const char*path,unsigned flags){assert(held);assert(flags==FA_READ);assert(!strcmp(path,"0:/LPC/P00012.HTM"));if(missing)return FR_NO_FILE;opens++;f->size=length;position=0;reads=0;return FR_OK;}
+FRESULT f_open(FIL*f,const char*path,unsigned flags){assert(held);assert(flags==FA_READ);assert(!strcmp(path,expected_path));if(missing)return FR_NO_FILE;opens++;f->size=length;position=0;reads=0;return FR_OK;}
 FRESULT f_read(FIL*f,void*out,UINT size,UINT*got){(void)f;assert(held);assert(size<=4096);assert(!((size_t)out%32));reads++;if(read_error&&(reads==2||read_error==2))return FR_DISK_ERR;*got=short_read?size-1:size;for(UINT i=0;i<*got;i++)((unsigned char*)out)[i]=(unsigned char)((position+i)%251+1);position+=*got;return FR_OK;}
 FRESULT f_close(FIL*f){(void)f;assert(held);closes++;return close_error?FR_DISK_ERR:FR_OK;}
 FRESULT f_lseek(FIL*f,size_t offset){(void)f;assert(held);position=offset;return FR_OK;}
@@ -52,6 +53,18 @@ int main(void){
  assert(!LPC_StorageReadPageChunk(12,length+1,0,buffer,100)&&opens==closes);
  assert(!LPC_StorageReadPageChunk(12,length,length-1,buffer,2)&&!held);
  assert(!LPC_StorageReadPageChunk(12,length,0,buffer,4097)&&!held);
+ expected_path="0:/LPC/NOWA.HTM";length=505214;
+ assert(LPC_StoragePageSize(LPC_PANEL_SD_PAGE)==length);
+ for(size_t offset=0;offset<length;){
+  size_t n=length-offset;if(n>2039)n=2039;
+  assert(LPC_StorageReadPageChunk(LPC_PANEL_SD_PAGE,length,offset,buffer,n)==n);
+  for(size_t i=0;i<n;i++)assert((unsigned char)buffer[i]==(offset+i)%251+1);
+  assert(!held&&opens==closes);offset+=n;
+ }
+ missing=1;assert(!LPC_StoragePageSize(LPC_PANEL_SD_PAGE));missing=0;
+ assert(strstr(LPC_StoragePageError(),"NOWA.HTM"));
+ assert(!LPC_StoragePageSize(LPC_PAGE_COUNT+1));
+ puts("PASS: /nowa SD path and complete chunked panel; missing file and invalid page.");
  puts("PASS: stream packet offsets/content, changed size, short read, read/close failures; no open handles or retained SD mutex.");
  puts("PASS: SD page 636799 bytes, aligned 4KiB DMA staging, exact content, missing/oversized files, lock/short-read/read/close failures.");
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Optional Chromium/Playwright test of the offline LPC panel and real C data model."""
 from pathlib import Path
-import subprocess,ctypes as c,json,tempfile,sys
+import subprocess,ctypes as c,json,tempfile,sys,zipfile
 work=tempfile.TemporaryDirectory(prefix="lpc-browser-")
 library=str(Path(work.name)/"live.so")
 from urllib.parse import urlsplit,urlencode
@@ -9,7 +9,9 @@ from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1];app=root/'Application'
 sys.path.insert(0,str(root/'Application/LPC2148'))
 from generate_assets import build_html
-html=build_html()
+with zipfile.ZipFile(app / "LPC2148/sdcard.zip") as package:
+ html=package.read("LPC/NOWA.HTM").decode("utf-8")
+assert html==build_html()
 subprocess.run(['gcc','-shared','-fPIC','-std=c11','-I'+str(app),'-I'+str(app/'HTTP'),*[str(app/n) for n in ['LPC2148/lpc_manifest.c','LPC2148/lpc_settings.c','LPC2148/lpc_bridge.c','LPC2148/http_lpc_panel.c','HTTP/http_sensor_settings.c','HTTP/http_settings_model.c','HTTP/http_settings_catalog.c','relay_states.c']],'-o',library],check=True)
 l=c.CDLL(library);l.HTTP_LpcPanelJsonFromRefresh.argtypes=[c.c_char_p,c.c_size_t,c.c_char_p,c.c_size_t];l.HTTP_LpcPanelJsonFromRefresh.restype=c.c_size_t
 refresh=c.create_string_buffer(b" "*120)

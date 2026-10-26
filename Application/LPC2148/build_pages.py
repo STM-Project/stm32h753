@@ -89,7 +89,8 @@ def build():
   InlineResources().feed(html)
   items.append((f'LPC/P{p["number"]:05d}.HTM',html.encode()))
   rows.append({'address':p['path'],'source':p['source'],'title':p['title'],'forms':len(p['forms'])})
- readme='Kopiuj folder LPC do katalogu głównego karty SD (FAT/FAT32).\n/nowa pozostaje we Flash; /nowa1.. wymagają tego pakietu.\nLista stron: /lpc lub STRONY.csv.\n'
+ items.append(('LPC/NOWA.HTM',build_html().encode('utf-8')))
+ readme='Kopiuj folder LPC do katalogu głównego karty SD (FAT/FAT32).\n/nowa (LPC/NOWA.HTM) i /nowa1.. wymagają tego pakietu.\nLista stron: /lpc lub STRONY.csv.\n'
  items += [('CZYTAJ.txt',readme.encode()),('STRONY.csv',('adres;plik źródłowy;tytuł\n'+'\n'.join(';'.join([r['address'],r['source'],r['title'].replace(';',',')]) for r in rows)).encode('utf-8-sig'))]
  out=io.BytesIO()
  with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:

@@ -47,7 +47,7 @@ int main(void) {
     for(unsigned guard=0;guard<1000 && !closes;guard++){
         assert(httpTxPhase[0]==1);
         unsigned part=httpPar.nrWeb[0];uint32_t offset=httpTxOffset[0];
-        expected=httpPar.web[0][part]+offset;
+        expected=(part==1?test_sd_page(httpLpcPage[0]):httpPar.web[0][part])+offset;
         assert(!HTTP_SendAcknowledged(noArch)); /* premature SEND OK */
         assert(HTTP_SendPayload(noArch));
         uint32_t advanced=httpTxOffset[0];
@@ -93,7 +93,8 @@ int main(void) {
     for(unsigned guard=0;guard<2000 && closes<3;guard++){
         int slot=SearchChnl(httpPar.chnl);assert(slot>=0);
         if(httpTxPhase[slot]==3){httpPar.que[slot]=0xFF;httpPar.ptr[slot]=NULL;httpTxPhase[slot]=0;httpPar.chnl=0xFF;HTTP_SendCloseChnl(noArch,-1);continue;}
-        expected=httpPar.web[slot][httpPar.nrWeb[slot]]+httpTxOffset[slot];
+        unsigned part=httpPar.nrWeb[slot];
+        expected=(httpLpcPage[slot]&&part==1?test_sd_page(httpLpcPage[slot]):httpPar.web[slot][part])+httpTxOffset[slot];
         assert(HTTP_SendPayload(noArch));assert(HTTP_SendAcknowledged(noArch));
     }
     assert(closes==3 && sent==total);

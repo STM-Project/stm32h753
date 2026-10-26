@@ -92,16 +92,27 @@ const char *LPC_StoragePageError ( void )
 {
 	return pageError;
 }
+static int page_path ( unsigned page, char *path, size_t capacity )
+{
+	if ( page == LPC_PANEL_SD_PAGE )
+		snprintf ( path, capacity, "0:/LPC/NOWA.HTM" );
+	else if ( page && page <= LPC_PAGE_COUNT )
+		snprintf ( path, capacity, "0:/LPC/P%05u.HTM", page );
+	else
+		return 0;
+	return 1;
+}
 size_t LPC_StorageReadPage ( unsigned page, char *out, size_t capacity )
 {
 	pageError[0] = 0;
-	if ( !page || page > LPC_PAGE_COUNT || !out || capacity < 2 )
+	if ( ( page != LPC_PANEL_SD_PAGE && ( !page || page > LPC_PAGE_COUNT ) ) || !out || capacity < 2 )
 		return 0;
 	if ( !settings_ready )
 		LPC_StorageInit ();
 	out[0] = 0;
 	char path[32];
-	snprintf ( path, sizeof path, "0:/LPC/P%05u.HTM", page );
+	if ( !page_path ( page, path, sizeof path ) )
+		return 0;
 	if ( !TakeMutex ( Semphr_cardSD, 1000 ) )
 	{
 		snprintf ( pageError, sizeof pageError, "SD zajeta: nie uzyskano mutexu." );
@@ -153,12 +164,13 @@ size_t LPC_StorageReadPage ( unsigned page, char *out, size_t capacity )
 size_t LPC_StoragePageSize ( unsigned page )
 {
 	pageError[0] = 0;
-	if ( !page || page > LPC_PAGE_COUNT )
+	if ( ( page != LPC_PANEL_SD_PAGE && ( !page || page > LPC_PAGE_COUNT ) ) )
 		return 0;
 	if ( !settings_ready )
 		LPC_StorageInit ();
 	char path[32];
-	snprintf ( path, sizeof path, "0:/LPC/P%05u.HTM", page );
+	if ( !page_path ( page, path, sizeof path ) )
+		return 0;
 	if ( !TakeMutex ( Semphr_cardSD, 1000 ) )
 	{
 		snprintf ( pageError, sizeof pageError, "SD zajeta." );
@@ -181,10 +193,11 @@ size_t LPC_StoragePageSize ( unsigned page )
 
 size_t LPC_StorageReadPageChunk ( unsigned page, size_t expected, size_t offset, char *out, size_t length )
 {
-	if ( !page || page > LPC_PAGE_COUNT || !out || !length || length > sizeof pageReadBuffer || offset > expected || length > expected - offset )
+	if ( ( page != LPC_PANEL_SD_PAGE && ( !page || page > LPC_PAGE_COUNT ) ) || !out || !length || length > sizeof pageReadBuffer || offset > expected || length > expected - offset )
 		return 0;
 	char path[32];
-	snprintf ( path, sizeof path, "0:/LPC/P%05u.HTM", page );
+	if ( !page_path ( page, path, sizeof path ) )
+		return 0;
 	if ( !TakeMutex ( Semphr_cardSD, 1000 ) )
 		return 0;
 	UINT got = 0;

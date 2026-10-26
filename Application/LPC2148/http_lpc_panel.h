@@ -40,8 +40,8 @@ size_t HTTP_LpcLegacyJson ( char *out, size_t capacity, const char *refresh, siz
 
 typedef struct
 {
-	const char *path, *data, *content_type;
-	size_t length;
+	const char *path, *content_type;
+	unsigned storage_page;
 } HTTP_LpcAsset;
 const HTTP_LpcAsset *HTTP_LpcFindAsset ( const char *path, size_t length );
 #endif

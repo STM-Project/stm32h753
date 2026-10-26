@@ -786,6 +786,10 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	char *ptr = httpBuff;
 	httpLpcPage[channel] = 0;
 	switch(nrWWW){
+	case WWW_LPC_ASSET:
+		httpSensorPort[channel] = httpLpcAsset[channel]->storage_page;
+		/* /nowa uses the same bounded SD stream as /nowaN. */
+		/* fall through */
 	case WWW_LPC_SD:
 		DbgVarDma ( 1, 120, "\r\nHTTP LPC: TCP=%u /nowa%u odczyt SD...\r\n", (unsigned) httpPar.que[channel] + 1u, httpSensorPort[channel] );
 		httpPar.web[channel][nrPartWWW] = httpLpcChunk[channel];
@@ -793,7 +797,7 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		if ( !httpPar.siz[channel][0] )
 		{
 			httpResponseStatus[channel] = 503;
-			snprintf ( httpBuff, sizeof httpPageBuff[channel], "<!doctype html><meta charset='UTF-8'><p>Nie wczytano strony z karty SD.</p><p>%s</p><p>Rozpakuj sdcard.zip i skopiuj folder LPC do katalogu glownego karty.</p><a href='/lpc'>Lista stron</a> | <a href='/nowa'>Panel we Flash</a>", LPC_StoragePageError () );
+			snprintf ( httpBuff, sizeof httpPageBuff[channel], "<!doctype html><meta charset='UTF-8'><p>Nie wczytano strony z karty SD.</p><p>%s</p><p>Rozpakuj sdcard.zip i skopiuj folder LPC do katalogu glownego karty.</p><a href='/lpc'>Lista stron</a> | <a href='/nowa'>Panel z SD</a>", LPC_StoragePageError () );
 			DbgVarDma ( 1, 200, "\r\nHTTP LPC: /nowa%u BLAD: %s\r\n", httpSensorPort[channel], LPC_StoragePageError () );
 			httpPar.web[channel][0] = httpBuff;
 			httpPar.siz[channel][0] = (u32) strlen ( httpBuff );
@@ -836,10 +840,6 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	case WWW_LPC_LIVE:
 		httpPar.web[channel][nrPartWWW] = httpBuff;
 		httpPar.siz[channel][nrPartWWW++] = (u32) HTTP_LpcLegacyJson ( httpBuff, sizeof ( httpPageBuff[channel] ), HttpRefr_sdram, strlen ( HttpRefr_sdram ) );
-		break;
-	case WWW_LPC_ASSET:
-		httpPar.web[channel][nrPartWWW] = (char *) httpLpcAsset[channel]->data;
-		httpPar.siz[channel][nrPartWWW++] = (u32) httpLpcAsset[channel]->length;
 		break;
 	case WWW_LPC_DATA:
 		httpPar.web[channel][nrPartWWW] = httpBuff;
