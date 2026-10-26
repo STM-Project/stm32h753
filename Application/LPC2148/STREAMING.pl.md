@@ -16,7 +16,8 @@ pojedynczy pakiet UART/ESP pozostaje ograniczony do dotychczasowych 2039 B.
 
 Przy kolejkowaniu odpowiedzi sprawdzany jest plik i jego rozmiar, używany jako
 Content-Length. Przed AT+CIPSEND odczytywana jest jedna porcja: otwarcie pliku,
-sprawdzenie rozmiaru, f_lseek, f_read przez istniejący wyrównany bufor DMA,
+sprawdzenie rozmiaru, f_lseek do granicy sektora 512 B i f_read pełnych
+sektorów przez istniejący wyrównany bufor DMA,
 f_close. Dopiero potem zwalniana jest blokada SD i wysyłany pakiet do ESP.
 Plik ani blokada nie pozostają zajęte pomiędzy porcjami. Każdy slot ma własny
 bufor, identyfikator strony i zapamiętany offset przygotowanego pakietu.
@@ -43,3 +44,31 @@ Weryfikacja:
   przeplatane na kanałach, błąd w trakcie, JSON z serializerem okienkowym.
 - `tests/test_http_sensor_routes.py`: routing, nagłówki, kolejka i CGI.
 - `tests/test_lpc_pages.py`: strony/formularze i zgodność JSON/okien serializera.
+
+## Odczyt sektorowy i cache H7
+
+Nie wolno utożsamiać wyrównania początku bufora z wyrównaniem wszystkich
+odczytów DMA wewnątrz FatFs. Przy offsetach HTTP co 2039 B f_read może najpierw
+skopiować końcówkę sektora przez CPU, a dalsze sektory czytać DMA bezpośrednio
+za tą końcówką. Wygenerowany SD_read wybiera szybki DMA już przy wyrównaniu
+4 B; unieważnienie cache dla takiego odczytu może objąć brudny koniec prefiksu
+skopiowanego przez CPU. Skutkiem są podmienione bajty HTML przy zachowanej
+długości całej odpowiedzi, a następnie błędy składni JavaScript/CSS.
+
+Przesłana odpowiedź /nowa miała 505213 B, tak jak oryginał, lecz 823 bajty
+różniły się; pierwsze uszkodzenie było na pozycji 8188..8191. Układ większości
+błędów odpowiada końcówkom linii cache przed granicami sektorów przy pakietach
+2039 B. To problem danych, nie brak bibliotek w paczce SD.
+
+LPC_StorageReadPageChunk wyrównuje offset odczytu w dół do 512 B i długość
+w górę do pełnych sektorów (ostatni odczyt jest ograniczony końcem pliku).
+Dopiero z gotowego bufora kopiuje żądane okno HTTP. Większe okno przecinające
+4 KiB stagingu obsługiwane jest w pętli, bez dodatkowego bufora. Do FatFs nie
+trafiają już niepełne początki sektorów, więc nie ma mieszanego prefiksu CPU
+przed kolejnym DMA w tej samej linii. Nie zmieniono sd_diskio.c, konfiguracji
+CubeMX, USART6, rozmiaru pakietów ESP ani rezerwacji pełnych stron w SDRAM.
+
+Test SD wymusza wyrównanie każdego f_lseek/f_read i sprawdza wszystkie 512
+przesunięć sektora dla okna 4096 B, całą stronę /nowa, przypadki EOF, błędy
+odczytu/zamknięcia i zwalnianie blokady. Poprawność rzeczywistej transmisji
+po zmianie wymaga ponownego sprawdzenia odpowiedzi pobranej z płytki.

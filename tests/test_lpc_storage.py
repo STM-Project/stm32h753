@@ -19,7 +19,9 @@ void GiveMutex(int id){(void)id;assert(held);held=0;}
 int LPC_ValidateSettings(const void *p,size_t n){(void)p;(void)n;return 1;}
 int LPC_SettingsInit(LpcLoad a,LpcSave b,void*c){(void)a;(void)b;(void)c;return 0;}
 FRESULT f_open(FIL*f,const char*path,unsigned flags){assert(held);assert(flags==FA_READ);assert(!strcmp(path,expected_path));if(missing)return FR_NO_FILE;opens++;f->size=length;position=0;reads=0;return FR_OK;}
-FRESULT f_read(FIL*f,void*out,UINT size,UINT*got){(void)f;assert(held);assert(size<=4096);assert(!((size_t)out%32));reads++;if(read_error&&(reads==2||read_error==2))return FR_DISK_ERR;*got=short_read?size-1:size;for(UINT i=0;i<*got;i++)((unsigned char*)out)[i]=(unsigned char)((position+i)%251+1);position+=*got;return FR_OK;}
+FRESULT f_read(FIL*f,void*out,UINT size,UINT*got){(void)f;assert(held);assert(size<=4096);assert(!((size_t)out%32));
+/* Regression: unaligned HTTP offsets must never enter FatFs mixed CPU/DMA path. */
+assert(position%512==0);assert(size%512==0||position+size==length);reads++;if(read_error&&(reads==2||read_error==2))return FR_DISK_ERR;*got=short_read?size-1:size;for(UINT i=0;i<*got;i++)((unsigned char*)out)[i]=(unsigned char)((position+i)%251+1);position+=*got;return FR_OK;}
 FRESULT f_close(FIL*f){(void)f;assert(held);closes++;return close_error?FR_DISK_ERR:FR_OK;}
 FRESULT f_lseek(FIL*f,size_t offset){(void)f;assert(held);position=offset;return FR_OK;}
 FRESULT f_write(FIL*f,const void*p,UINT n,UINT*r){(void)f;(void)p;(void)n;(void)r;return FR_DISK_ERR;}
@@ -46,6 +48,11 @@ int main(void){
   assert(LPC_StorageReadPageChunk(12,length,offset,buffer,n)==n&&!held&&opens==closes);
   for(size_t i=0;i<n;i++)assert((unsigned char)buffer[i]==(offset+i)%251+1);
   offset+=n;
+ }
+ for(size_t offset=0;offset<512;offset++){
+  assert(LPC_StorageReadPageChunk(12,length,offset,buffer,4096)==4096);
+  for(size_t i=0;i<4096;i++)assert((unsigned char)buffer[i]==(offset+i)%251+1);
+  assert(!held&&opens==closes);
  }
  short_read=1;assert(!LPC_StorageReadPageChunk(12,length,0,buffer,100)&&opens==closes);short_read=0;
  read_error=2;assert(!LPC_StorageReadPageChunk(12,length,0,buffer,100)&&opens==closes);read_error=0;

@@ -200,27 +200,46 @@ size_t LPC_StorageReadPageChunk ( unsigned page, size_t expected, size_t offset,
 		return 0;
 	if ( !TakeMutex ( Semphr_cardSD, 1000 ) )
 		return 0;
-	UINT got = 0;
+	size_t copied = 0;
 	FRESULT result = f_open ( &file, path, FA_READ );
 	if ( result == FR_OK )
 	{
 		if ( f_size ( &file ) != expected )
 			result = FR_INVALID_OBJECT;
-		if ( result == FR_OK )
-			result = f_lseek ( &file, offset );
-		if ( result == FR_OK )
-			result = f_read ( &file, pageReadBuffer, (UINT) length, &got );
+		while ( result == FR_OK && copied < length )
+		{
+			/* FatFs copies a partial first sector with the CPU. A subsequent
+			 * direct DMA read at a 4-byte-but-not-32-byte-aligned destination
+			 * invalidates dirty prefix bytes in the same cache line. Avoid
+			 * that mixed path: seek/read whole sectors into aligned staging.
+			 * Only the final EOF sector can be partial; no DMA follows it. */
+			size_t position = offset + copied;
+			size_t aligned = position & ~(size_t) 511U;
+			size_t skip = position - aligned;
+			size_t take = length - copied;
+			if ( take > sizeof pageReadBuffer - skip )
+				take = sizeof pageReadBuffer - skip;
+			size_t read_size = ( skip + take + 511U ) & ~(size_t) 511U;
+			if ( read_size > expected - aligned )
+				read_size = expected - aligned;
+			UINT got = 0;
+			result = f_lseek ( &file, aligned );
+			if ( result == FR_OK )
+				result = f_read ( &file, pageReadBuffer, (UINT) read_size, &got );
+			if ( result != FR_OK || got != read_size )
+				break;
+			memcpy ( out + copied, pageReadBuffer + skip, take );
+			copied += take;
+		}
 		FRESULT closed = f_close ( &file );
 		if ( result == FR_OK )
 			result = closed;
 	}
-	if ( result == FR_OK && got == length )
-		memcpy ( out, pageReadBuffer, length );
-	else
+	if ( result != FR_OK || copied != length )
 	{
-		got = 0;
+		copied = 0;
 		snprintf ( pageError, sizeof pageError, "Blad strumienia %s po %u bajtach (FatFs=%u).", path, (unsigned) offset, (unsigned) result );
 	}
 	GiveMutex ( Semphr_cardSD );
-	return got;
+	return copied;
 }
