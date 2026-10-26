@@ -10,7 +10,15 @@ for file,digest in manifest.items():
  assert hashlib.sha256(stripped.encode()).hexdigest()==digest,file+' edited outside USER CODE'
 eth=(root/'LWIP/Target/ethernetif.c').read_text()
 assert '#if 0' in pattern.search(eth,eth.index('/* USER CODE BEGIN 0 */')).group(0)
-assert '#include "network_ethernetif.inc"' in eth
+assert 'network_ethernetif.inc' not in eth
+assert not (root/'Application/NETWORK/network_ethernetif.inc').exists()
+adapter=next(m.group(0) for m in pattern.finditer(eth) if m[2]=='8')
+assert 'static int low_level_init' in adapter
+assert 'HAL_ETH_RxLinkCallback' in adapter
+assert 'SCB_InvalidateDCache_by_Addr' in adapter
+# No nested markers: CubeMX must preserve the complete implementation.
+assert adapter.count('/* USER CODE BEGIN')==1
+assert adapter.count('/* USER CODE END')==1
 assert eth.count('#if 0')==1
 assert '#define MX_MBEDTLS_Init NetworkCubeMX_TLS_Placeholder' in (root/'MBEDTLS/App/mbedtls.c').read_text()
 assert 'if ( !osKernelRunning () || tlsReady )\n\t\treturn;' in (root/'Application/NETWORK/network_tls.c').read_text()

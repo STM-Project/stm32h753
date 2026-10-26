@@ -54,11 +54,13 @@ obszarów i utratę wyrównania.
 ## Regeneracja CubeMX
 
 W plikach generowanych zmiany znajdują się wyłącznie w sekcjach `USER CODE`.
-Kod utrzymywany przez aplikację jest w `Application/NETWORK`:
+Adapter Ethernet jest bezpośrednio w `LWIP/Target/ethernetif.c`,
+a pozostały kod sieciowy w `Application/NETWORK`:
 
-- `network_ethernetif.inc`: adapter DMA/cache H7; plik generowany
-  `LWIP/Target/ethernetif.c` wybiera go przez dyrektywy w `USER CODE 0/8`.
-  Szablon CubeMX pozostaje w pliku, ale nie tworzy drugiego adaptera.
+- `LWIP/Target/ethernetif.c / USER CODE 8`: cała implementacja adaptera DMA/cache H7.
+  Nie ma dodatkowego pliku `.inc`. Dyrektywy w `USER CODE 0/8` wyłączają
+  szablon CubeMX, aby nie tworzył drugiego adaptera. Kod adaptera nie zawiera
+  zagnieżdżonych znaczników `USER CODE`, więc regeneracja zachowuje cały blok.
 - `network_eth_hardware.c`: uchwyt ETH, deskryptory, GPIO RMII i IRQ.
   CubeMX usuwa samodzielne `Core/Src/eth.c`, kiedy włączony jest lwIP.
 - `network_tls.c`: serwer i konfiguracja TLS. Wygenerowany placeholder

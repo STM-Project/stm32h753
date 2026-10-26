@@ -47,7 +47,7 @@ for conf in ET.parse(root/'.cproject').findall('.//configuration'):
  for inc in ['../LWIP/App','../LWIP/Target','../MBEDTLS/App','../Application/NETWORK']:
   assert inc in values
  assert 'MBEDTLS_CONFIG_FILE=<mbedtls_config.h>' in values
-eth=(root/'Application/NETWORK/network_ethernetif.inc').read_text()
+eth=(root/'LWIP/Target/ethernetif.c').read_text().split('/* USER CODE BEGIN 8 */',1)[1]
 assert not re.search(r'^ETH_HandleTypeDef\s+heth\s*;',eth,re.M)
 assert not re.search(r'^void HAL_ETH_MspInit\(',eth,re.M)
 irq=(root/'Core/Src/stm32h7xx_it.c').read_text()
