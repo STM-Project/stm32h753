@@ -4,6 +4,7 @@
 /* FreeRTOS trace hooks run inside the kernel's task-list critical section. */
 void MemoryDebugTaskCreate ( void *handle, size_t stack_bytes );
 void MemoryDebugTaskDelete ( void *handle );
+void MemoryDebugTaskSwitch ( void *handle, const void *stack_pointer );
 /* Task context only; outputs through the existing queued debug logger. */
 void MemoryDebugPrint ( void );
 #endif

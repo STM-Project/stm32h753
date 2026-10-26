@@ -19,6 +19,8 @@ typedef uint32_t StackType_t; typedef unsigned UBaseType_t;
 typedef struct {void *xHandle; const char *pcTaskName; StackType_t *pxStackBase;unsigned usStackHighWaterMark;} TaskStatus_t;
 void vTaskSuspendAll(void);int xTaskResumeAll(void);
 unsigned uxTaskGetSystemState(TaskStatus_t*,unsigned,void*);
+void *xTaskGetCurrentTaskHandle(void);
+uint32_t __get_PSP(void);
 ''',
 'portable.h':'''#include <stddef.h>
 typedef struct {size_t xAvailableHeapSpaceInBytes,xMinimumEverFreeBytesRemaining,xSizeOfLargestFreeBlockInBytes,xNumberOfFreeBlocks;} HeapStats_t;
@@ -30,6 +32,9 @@ C=r'''
 #include <assert.h>
 static unsigned count,suspended,chunks;
 static int mutate;
+static uint32_t active_sp=0x60010000+12096;
+void *xTaskGetCurrentTaskHandle(void){return (void*)1;}
+uint32_t __get_PSP(void){return active_sp;}
 static char names[64][16];
 static TaskStatus_t tasks[64];
 static char text[20000];
@@ -45,16 +50,24 @@ int main(void){
  StackType_t stack[32];struct {StackType_t *pxStack,*pxEndOfStack;} tcb={stack,stack+30};
  traceTASK_CREATE(&tcb);assert(stacks[0].stack_bytes==124);traceTASK_DELETE(&tcb);assert(!stacks[0].handle);
  setup(0,"LCD",16096,1000,0x60010000);setup(1,"IDLE",512,64,0x24000000);setup(2,"HTTPS",65536,4000,0x60b00000);
+ MemoryDebugTaskSwitch(tasks[1].xHandle,(void*)(0x24000000U+384));
+ MemoryDebugTaskSwitch(tasks[2].xHandle,(void*)(0x60b00000U+32768));
  count=3;mutate=1;MemoryDebugPrint();
  assert(strstr(text,"rezerwa=2097152, wolne=1000000, zajete/rezerwa=1097152"));
  assert(strstr(text,"min. wolne=900000, najwiekszy wolny blok=800000, wolnych blokow=3"));
- assert(strstr(text,"| LCD             |    16096 |      12096 |       4000 |  75% | SDRAM"));
- assert(strstr(text,"| IDLE            |      512 |        256 |        256 |  50% | RAM_D1"));
- assert(strstr(text,"| HTTPS           |    65536 |      49536 |      16000 |  75% | SDRAM"));
+ assert(strstr(text,"| LCD             |    16096 |      12096 |       4000 |  75% |    24% | SDRAM"));
+ assert(strstr(text,"| IDLE            |      512 |        256 |        256 |  50% |    25% | RAM_D1"));
+ assert(strstr(text,"| HTTPS           |    65536 |      49536 |      16000 |  75% |    50% | SDRAM"));
+ active_sp=0x60010000+8000;
+ MemoryDebugTaskSwitch(tasks[1].xHandle,(void*)(0x24000000U+256));
+ mutate=0;snprintf(names[0],16,"LCD");snprintf(names[1],16,"IDLE");snprintf(names[2],16,"HTTPS");
+ text[0]=0;MemoryDebugPrint();
+ assert(strstr(text,"75% |    50% | SDRAM")); /* current rises, peak unchanged */
+ assert(strstr(text,"50% |    50% | RAM_D1"));
  assert(!strstr(text,"XXXXX")); /* no dangling name pointer after resume */
  MemoryDebugTaskDelete(tasks[0].xHandle);MemoryDebugTaskCreate(tasks[0].xHandle,8192);
  assert(stacks[0].stack_bytes==8192);MemoryDebugTaskDelete(tasks[0].xHandle);
- mutate=0;setup(0,"recreated",4096,0,0x30010000);text[0]=0;MemoryDebugPrint();assert(strstr(text,"100% | RAM_D2"));
+ mutate=0;setup(0,"recreated",4096,0,0x30010000);text[0]=0;MemoryDebugPrint();assert(strstr(text,"100% |    n/d | RAM_D2"));
  for(unsigned i=0;i<64;i++)setup(i,"worker",1024,128,0x60020000);
  count=64;text[0]=0;chunks=0;MemoryDebugPrint();assert(chunks>1);unsigned n=0;
  for(char*p=text;(p=strstr(p,"| worker"));p++)n++;

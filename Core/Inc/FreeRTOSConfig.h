@@ -158,8 +158,10 @@ standard names. */
 
 /* Stack limits are recorded through public trace hooks; no kernel edits. */
 #define configRECORD_STACK_HIGH_ADDRESS 1
+#define INCLUDE_xTaskGetCurrentTaskHandle 1
 extern void MemoryDebugTaskCreate ( void *handle, size_t stack_bytes );
 extern void MemoryDebugTaskDelete ( void *handle );
+extern void MemoryDebugTaskSwitch ( void *handle, const void *stack_pointer );
 #define traceTASK_CREATE( tcb ) MemoryDebugTaskCreate ( (void *) (tcb), (size_t) ( (tcb)->pxEndOfStack - (tcb)->pxStack + 1 ) * sizeof ( StackType_t ) )
 #define traceTASK_DELETE( tcb ) MemoryDebugTaskDelete ( (void *) (tcb) )
 
@@ -180,6 +182,7 @@ extern void MyTraceFree ( void *pvAddress, size_t xSize );
 	do                                       \
 	{                                        \
 		extern void EndIdleMonitor ( void ); \
+		MemoryDebugTaskSwitch ( (void *) pxCurrentTCB, (const void *) pxCurrentTCB->pxTopOfStack ); \
 		EndIdleMonitor ();                   \
 	} while ( 0 )
 /* USER CODE END Defines */

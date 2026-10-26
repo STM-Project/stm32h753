@@ -8,13 +8,13 @@
 #include <string.h>
 
 #define MEMORY_DEBUG_TASKS 64U
-static struct { void *handle; size_t stack_bytes; } stacks[MEMORY_DEBUG_TASKS];
+static struct { void *handle; size_t stack_bytes; uintptr_t pointer; } stacks[MEMORY_DEBUG_TASKS];
 static TaskStatus_t statuses[MEMORY_DEBUG_TASKS];
 static struct
 {
 	char name[configMAX_TASK_NAME_LEN];
 	uintptr_t base;
-	size_t total, minimum;
+	size_t total, minimum, current;
 } rows[MEMORY_DEBUG_TASKS];
 static char output[960];
 static size_t output_size;
@@ -26,6 +26,7 @@ void MemoryDebugTaskCreate ( void *handle, size_t stack_bytes )
 		{
 			stacks[i].handle = handle;
 			stacks[i].stack_bytes = stack_bytes;
+			stacks[i].pointer = 0;
 			return;
 		}
 }
@@ -36,6 +37,18 @@ void MemoryDebugTaskDelete ( void *handle )
 		{
 			stacks[i].handle = NULL;
 			stacks[i].stack_bytes = 0;
+			stacks[i].pointer = 0;
+			return;
+		}
+}
+/* PendSV has saved pxTopOfStack before traceTASK_SWITCHED_OUT executes.
+ * Read only the saved pointer, never walk memory from this scheduler hook. */
+void MemoryDebugTaskSwitch ( void *handle, const void *stack_pointer )
+{
+	for ( unsigned i = 0; i < MEMORY_DEBUG_TASKS; ++i )
+		if ( stacks[i].handle == handle )
+		{
+			stacks[i].pointer = (uintptr_t) stack_pointer;
 			return;
 		}
 }
@@ -66,6 +79,8 @@ void MemoryDebugPrint ( void )
 {
 	/* WiFi's global debug dispatcher is the only caller. No allocations or
 	 * UART output while tasks are suspended; copy names before tasks can die. */
+	void *caller = xTaskGetCurrentTaskHandle ();
+	uintptr_t caller_sp = (uintptr_t) __get_PSP ();
 	vTaskSuspendAll ();
 	UBaseType_t count = uxTaskGetSystemState ( statuses, MEMORY_DEBUG_TASKS, NULL );
 	for ( UBaseType_t i = 0; i < count; ++i )
@@ -75,8 +90,15 @@ void MemoryDebugPrint ( void )
 		rows[i].base = (uintptr_t) statuses[i].pxStackBase;
 		rows[i].minimum = (size_t) statuses[i].usStackHighWaterMark * sizeof ( StackType_t );
 		rows[i].total = 0;
+		rows[i].current = SIZE_MAX;
 		for ( unsigned j = 0; j < MEMORY_DEBUG_TASKS; ++j )
-			if ( stacks[j].handle == statuses[i].xHandle ) rows[i].total = stacks[j].stack_bytes;
+			if ( stacks[j].handle == statuses[i].xHandle )
+			{
+				rows[i].total = stacks[j].stack_bytes;
+				uintptr_t sp = statuses[i].xHandle == caller ? caller_sp : stacks[j].pointer;
+				if ( sp >= rows[i].base && sp <= rows[i].base + rows[i].total )
+					rows[i].current = rows[i].base + rows[i].total - sp;
+			}
 	}
 	(void) xTaskResumeAll ();
 	HeapStats_t heap;
@@ -92,25 +114,31 @@ void MemoryDebugPrint ( void )
 		(unsigned long) heap.xMinimumEverFreeBytesRemaining, (unsigned long) heap.xSizeOfLargestFreeBlockInBytes,
 		(unsigned long) heap.xNumberOfFreeBlocks );
 	Line ( line );
-	Line ( "+-----------------+----------+------------+------------+------+--------+\r\n" );
-	Line ( "| Watek           | Limit B  | Max zaj. B | Min wol. B | Max% | Pamiec |\r\n" );
-	Line ( "+-----------------+----------+------------+------------+------+--------+\r\n" );
+	Line ( "+-----------------+----------+------------+------------+------+--------+--------+\r\n" );
+	Line ( "| Watek           | Limit B  | Max zaj. B | Min wol. B | Max% | Teraz% | Pamiec |\r\n" );
+	Line ( "+-----------------+----------+------------+------------+------+--------+--------+\r\n" );
 	for ( UBaseType_t i = 0; i < count; ++i )
 	{
 		if ( rows[i].total && rows[i].minimum <= rows[i].total )
 		{
 			size_t used = rows[i].total - rows[i].minimum;
-			snprintf ( line, sizeof line, "| %-15s | %8lu | %10lu | %10lu | %3lu%% | %-6s |\r\n",
+			char current[12];
+			if ( rows[i].current != SIZE_MAX )
+				snprintf ( current, sizeof current, "%lu%%", (unsigned long) ( rows[i].current * 100U / rows[i].total ) );
+			else
+				snprintf ( current, sizeof current, "n/d" );
+			snprintf ( line, sizeof line, "| %-15s | %8lu | %10lu | %10lu | %3lu%% | %6s | %-6s |\r\n",
 				rows[i].name, (unsigned long) rows[i].total, (unsigned long) used, (unsigned long) rows[i].minimum,
-				(unsigned long) ( used * 100U / rows[i].total ), Region ( rows[i].base ) );
+				(unsigned long) ( used * 100U / rows[i].total ), current, Region ( rows[i].base ) );
 		}
 		else
-			snprintf ( line, sizeof line, "| %-15s |      n/d |        n/d | %10lu |  n/d | %-6s |\r\n",
+			snprintf ( line, sizeof line, "| %-15s |      n/d |        n/d | %10lu |  n/d |    n/d | %-6s |\r\n",
 				rows[i].name, (unsigned long) rows[i].minimum, Region ( rows[i].base ) );
 		Line ( line );
 	}
-	Line ( "+-----------------+----------+------------+------------+------+--------+\r\n" );
+	Line ( "+-----------------+----------+------------+------------+------+--------+--------+\r\n" );
 	if ( !count ) Line ( "Nie pobrano listy watkow (limit 64).\r\n" );
+	Line ( "Teraz%: SP aktywnego watku, zapisany SP pozostalych (z kontekstem procesora).\r\n" );
 	Line ( "Max zaj./Min wol.: historia od utworzenia watku, nie chwilowy wskaznik SP.\r\n" );
 	Line ( "Limit B: granica stosu zapisana przez kernel; koncowka wyrownania moze byc pominieta.\r\n" );
 	Line ( "Sterta obejmuje tez kolejki, semafory, TCB i narzut alokatora.\r\n" );

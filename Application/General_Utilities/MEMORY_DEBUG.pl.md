@@ -1,6 +1,7 @@
 # Raport pamięci pod znakiem |
 
-Wyślij znak `|` na istniejącą konsolę debug UART. Komenda jest sprawdzana
+Wyślij znak `|` na istniejącą konsolę debug UART. Każde wpisanie daje jeden
+raport — nie ma timera ani automatycznego odświeżania. Komenda jest sprawdzana
 przez globalny dispatcher debug w zadaniu WiFi, przed komendami Google/ESP.
 Nie jest przypisana do konkretnego panelu LCD i działa również w Gauge,
 edytorze progów i podczas połączenia Google. Nie zmienia konfiguracji USART.
@@ -18,7 +19,12 @@ Tabela obejmuje wszystkie aktywne wątki, w tym Idle, Timer i statyczny HTTPS:
   spoza tej potwierdzonej granicy.
 - Max zaj. B: limit minus minimalny wolny obszar stosu.
 - Min wol. B: high-water mark przeliczony ze słów StackType_t na bajty.
-- Max%: maksymalne historyczne zajęcie zakresu, nie bieżący wskaźnik SP.
+- Max%: maksymalne historyczne zajęcie zakresu.
+- Teraz%: bieżące zajęcie stosu według SP. Dla zadania wykonującego raport
+  odczytywany jest PSP procesora; dla pozostałych używany jest SP zapisany
+  przez FreeRTOS przy ostatnim przełączeniu (obejmuje zapisany kontekst CPU).
+  Nie jest to procent użycia procesora. Przy każdym ręcznym wywołaniu może
+  wzrosnąć lub zmaleć. Brak wiarygodnego zapisanego SP pokazuje n/d.
 - Pamiec: fizyczne położenie stosu (SDRAM, RAM_D1, RAM_D2 albo DTCM).
 
 Nie należy dodawać stosów statycznych do zajęcia sterty FreeRTOS. Są pokazane
@@ -28,6 +34,9 @@ bezpieczeństwa dowolnego przyszłego wywołania.
 
 USER CODE w FreeRTOSConfig.h włącza zapis granicy i traceTASK_CREATE/DELETE.
 Hooki utrzymują statyczny rejestr 64 wątków, bez alokacji i logowania w jądrze.
+traceTASK_SWITCHED_OUT zachowuje również zapisany SP; istniejące hooki
+pomiaru CPU pozostają aktywne. Nie ma odczytywania prywatnych struktur TCB
+z kodu raportu ani skanowania stosów podczas przełączeń.
 Biblioteki FreeRTOS są niezmienione. Jednorazowa migawka używa
 uxTaskGetSystemState (skanowanie stosów chwilowo zawiesza scheduler).
 Nazwy i pomiary są kopiowane przed wznowieniem zadań. Całe formatowanie
