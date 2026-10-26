@@ -596,8 +596,8 @@ void FILE_NAME(setTouch)(void)
 			break;
 
 		/*	----- Touch parameter text and go to action ----- */
-	case Touch_NextScreen: SCREEN_SetNr(0); break;
-	case Touch_PrevScreen: SCREEN_SetNr(0); break;
+	case Touch_NextScreen: SCREEN_Change ( 1 ); break;
+	case Touch_PrevScreen: SCREEN_Change ( -1 ); break;
 
 	case Touch_FieldRoll:
 		if(LCDTOUCH_IsScrollPress(ROLL_1, screenTouchState, &screenTouchPos, TIMER_Scroll)){	KEYBOARD_TYPE( KEYBOARD_Param_2, KEY_Select_one); 	 }
@@ -648,8 +648,6 @@ void FILE_NAME(main)(int argNmb, char **argVal)
 		LoadFonts(FONT_ID_Title, FONT_ID_Param_3);
 		DisplayFontsStructState();
 
-		LCDTOUCH_Set( LCD_X-30, LCD_Y/2-30,  30,60,  ID_TOUCH_POINT,Touch_NextScreen,release);
-		LCDTOUCH_Set( 0, 			LCD_Y/2-30,  30,60,  ID_TOUCH_POINT,Touch_PrevScreen,release);
 	}
 	/*FILE_NAME(printInfo)();*/
 

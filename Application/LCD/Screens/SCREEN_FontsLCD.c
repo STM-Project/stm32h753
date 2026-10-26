@@ -1611,8 +1611,8 @@ void FILE_NAME(setTouch)(void)
 			FILE_NAME(main)(LoadPartScreen,(char**)ppMain);
 			break;
 
-		case Touch_NextScreen: SCREEN_SetNr(8); break;
-		case Touch_PrevScreen: SCREEN_SetNr(10); break;
+		case Touch_NextScreen: SCREEN_Change ( 1 ); break;
+		case Touch_PrevScreen: SCREEN_Change ( -1 ); break;
 
 
 		default:		 /* ----- Service release specific Keys for Keyboard ----- */
@@ -2251,8 +2251,6 @@ void FILE_NAME(main)(int argNmb, char **argVal)   //Dla Zmiana typu czcionki Tou
 						 	 	 FV(GetVal,0,NoUse),\
 								 FV(GetVal,1,NoUse), ID_TOUCH_POINT,Touch_MainFramesType,press);
 
-		LCDTOUCH_Set( LCD_X-30, LCD_Y/2-30,  30,60,  ID_TOUCH_POINT,Touch_NextScreen,release);
-		LCDTOUCH_Set( 0, 			LCD_Y/2-30,  30,60,  ID_TOUCH_POINT,Touch_PrevScreen,release);
 
 		LCD_Ymiddle(ID_MIDDLE_TXT,SetPos, SetPosAndWidth(Test.yFontsField,240) );
 		LCD_Xmiddle(ID_MIDDLE_TXT,SetPos, SetPosAndWidth(Test.xFontsField,LCD_GetXSize()),NULL,0,NoConstWidth);

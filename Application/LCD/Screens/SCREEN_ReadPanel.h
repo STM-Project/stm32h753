@@ -20,6 +20,7 @@ extern char **argVal;
 void SCREEN_ReadPanel (void);
 int  SCREEN_GetNr		 (void);
 void SCREEN_SetNr		 (int nr);
+void SCREEN_Change ( int direction );
 
 int FRAME_bold2Space(uint8_t bold, uint8_t space);
 void LCD_DrawMainFrame(figureShape shape, int directDisplay, uint8_t bold, uint16_t x,uint16_t y, uint16_t w,uint16_t h, int frameColor,int fillColor,int bkColor);

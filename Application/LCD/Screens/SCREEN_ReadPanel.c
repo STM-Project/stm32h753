@@ -6,6 +6,7 @@
  */
 
 #include "SCREEN_ReadPanel.h"
+#include "SCREEN_Navigation.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "LCD_BasicGraphics.h"
@@ -43,6 +44,9 @@ StructTxtPxlLen lenStr;
 
 void SCREEN_SetNr (int nr)
 {
+    if ( nr < 0 || nr > 10 )
+        return;
+    SCREEN_NavigationRestore ();
     if (SCREEN_number == 7)
         LCD_TemperaturePkPanel(LCD_TEMP_EXIT, NULL, NULL);
     if (SCREEN_number == 8)
@@ -56,6 +60,11 @@ void SCREEN_SetNr (int nr)
     SCREEN_number = nr;
 }
 int  SCREEN_GetNr (void)  { return startScreen; }
+
+void SCREEN_Change ( int direction )
+{
+	SCREEN_SetNr ( SCREEN_NavigationNext ( SCREEN_number, direction ) );
+}
 
 int FRAME_bold2Space(uint8_t bold, uint8_t space){	 return ((uint32_t)bold&0x000000FF)|(uint32_t)space<<8;  }
 
@@ -593,6 +602,22 @@ static void DBG_SCREEN_Test_Circle(void)
 
 void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 {
+	SCREEN_NavigationRestore ();
+	if ( startScreen )
+	{
+		int direction;
+		XY_Touch_Struct position = LCD_TOUCH_GetPos ();
+		if ( SCREEN_NavigationInput ( LCD_TOUCH_isPress () == press, position.x, position.y, &direction ) )
+		{
+			/* Do not replay a navigation gesture into a panel/keyboard. */
+			(void) LCD_TOUCH_GetTypeAndPosition ( &position );
+			if ( direction )
+				SCREEN_Change ( direction );
+			else
+				SCREEN_NavigationDraw ( HAL_GetTick () );
+			return;
+		}
+	}
 	DEBUG_InvalidateDCache (); // Same RX path as esp32wroom.c.
 	if(startScreen==0)
 	{
@@ -653,6 +678,7 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 			break;
 		}
 		SCREEN_number_prev = SCREEN_number;
+		SCREEN_NavigationEnter ( HAL_GetTick (), LCD_TOUCH_isPress () == press );
 	}
 	else
 	{
@@ -783,11 +809,12 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 
 	if ( DEBUG_IsTxtReceive ( "=" ) )
 	{
-		startScreen = 0;
-		INCR_WRAP ( SCREEN_number, 1, 0, 5 );
+		SCREEN_Change ( 1 );
 	}
 	if ( DEBUG_IsTxtReceive ( "?" ) )
 		LCD_DisplayStrMovBuffState ();
+	if ( startScreen )
+		SCREEN_NavigationDraw ( HAL_GetTick () );
 }
 
 /*
