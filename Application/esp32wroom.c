@@ -1,3 +1,4 @@
+#include "memory_debug.h"
 /*
  * wifi.c
  *
@@ -2942,7 +2943,11 @@ void vtaskWifi(void *argument)
 		{
 			DEBUG_InvalidateDCache();
 
-			if ( DEBUG_IsTxtReceive ( "cloud" ) )
+			if ( DEBUG_IsTxtReceive ( "|" ) )
+			{
+				MemoryDebugPrint ();
+			}
+			else if ( DEBUG_IsTxtReceive ( "cloud" ) )
 			{
 				DbgVarDma ( 1, 220, "Google: configured=%d ready=%d error=%d OK=%u FAIL=%u temp10=%d DEMO=%d\r\n",
 							googleCloudStatus.configured, googleCloudStatus.ready, googleCloudStatus.last_error,

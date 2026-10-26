@@ -156,6 +156,13 @@ standard names. */
   #define configTOTAL_HEAP_SIZE                 ((size_t)2097152)
 
 
+/* Stack limits are recorded through public trace hooks; no kernel edits. */
+#define configRECORD_STACK_HIGH_ADDRESS 1
+extern void MemoryDebugTaskCreate ( void *handle, size_t stack_bytes );
+extern void MemoryDebugTaskDelete ( void *handle );
+#define traceTASK_CREATE( tcb ) MemoryDebugTaskCreate ( (void *) (tcb), (size_t) ( (tcb)->pxEndOfStack - (tcb)->pxStack + 1 ) * sizeof ( StackType_t ) )
+#define traceTASK_DELETE( tcb ) MemoryDebugTaskDelete ( (void *) (tcb) )
+
 extern void MyTraceMalloc ( void *pvAddress, size_t xSize );
 extern void MyTraceFree ( void *pvAddress, size_t xSize );
 
