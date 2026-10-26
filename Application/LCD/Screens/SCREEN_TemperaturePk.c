@@ -752,16 +752,19 @@ int LCD_TemperaturePkPanel2 ( uint8_t mode, int ( *readTemperature10 ) ( void ),
 static struct
 {
 	int active, wasDown, captured, font[2], previous[3];
-	int backgroundValid[3], backgroundSelected[3];
+	int backgroundValid[3];
+	struct { int x, y, width, height, offset; } rotated[3][3];
 	struct
 	{
 		int width, height, offset;
 	} label[6];
 	uint8_t mask[3 * GAUGE_MASK_LARGE + 3 * GAUGE_MASK_SMALL];
 } gauges;
-/* Cached static arcs and labels: 504x297 + 2x240x147 pixels.
+/* Cached complete static arcs: 504x297 + 2x240x147 pixels.
  * The pointer/shadow are never stored in this bitmap. */
 static uint32_t gaugeBackground[504 * 297 + 2 * 240 * 147] __attribute__ ( ( section ( ".sdram" ), aligned ( 32 ) ) );
+/* Pre-rotated AA coverage: the same mask serves both label colours. */
+static uint8_t gaugeLabelCoverage[3 * 200 * 200 + 6 * 100 * 100] __attribute__ ( ( section ( ".sdram" ), aligned ( 32 ) ) );
 uint16_t lcdGaugePositions[3] = { 500, 180, 820 };
 volatile int lcdPanel3Result;
 static const struct
@@ -808,7 +811,7 @@ static float GaugeMask ( int id, int x, int y )
 		return 0;
 	return gauges.mask[gauges.label[id].offset + y * gauges.label[id].width + x];
 }
-static void GaugeLabel ( int index, int word, int selected )
+static int GaugePrepareRotatedLabel ( int index, int word )
 {
 	int id = ( index ? 3 : 0 ) + word;
 	float theta = ( word == 0 ? 136.0f : word == 1 ? 90.0f
@@ -823,7 +826,16 @@ static void GaugeLabel ( int index, int word, int selected )
      * the one-pixel bilinear fringe on all four sides. */
 	int extentX = (int) ceilf ( fabsf ( cs ) * ( hw + 1 ) + fabsf ( sn ) * ( hh + 1 ) ) + 2;
 	int extentY = (int) ceilf ( fabsf ( sn ) * ( hw + 1 ) + fabsf ( cs ) * ( hh + 1 ) ) + 2;
-	uint32_t color = word == selected ? 0xFF444442U : 0xFFADADABU;
+	int width = 2 * extentX + 1, height = 2 * extentY + 1;
+	int capacity = index ? 100 * 100 : 200 * 200;
+	if ( width * height > capacity )
+		return -3;
+	int offset = index ? 3 * 200 * 200 + ( ( index - 1 ) * 3 + word ) * 100 * 100 : word * 200 * 200;
+	gauges.rotated[index][word].x = (int) cx - extentX;
+	gauges.rotated[index][word].y = (int) cy - extentY;
+	gauges.rotated[index][word].width = width;
+	gauges.rotated[index][word].height = height;
+	gauges.rotated[index][word].offset = offset;
 	/* Inverse mapping and bilinear coverage preserve the native SD font's AA
      * while rotating the text tangentially along the grey arc.
      */
@@ -836,8 +848,22 @@ static void GaugeLabel ( int index, int word, int selected )
 			float fx = u - ix, fy = v - iy;
 			float alpha = ( 1 - fy ) * ( ( 1 - fx ) * GaugeMask ( id, ix, iy ) + fx * GaugeMask ( id, ix + 1, iy ) ) +
 						  fy * ( ( 1 - fx ) * GaugeMask ( id, ix, iy + 1 ) + fx * GaugeMask ( id, ix + 1, iy + 1 ) );
-			if ( alpha > 0 )
-				PanelPixel ( x, y, color, (unsigned) ( alpha + 0.5f ) );
+			gaugeLabelCoverage[offset + ( y - gauges.rotated[index][word].y ) * width + x - gauges.rotated[index][word].x] = alpha > 0 ? (uint8_t) ( alpha + 0.5f ) : 0;
+		}
+	return 0;
+}
+static void GaugeLabel ( int index, int word, int selected )
+{
+	int x = gauges.rotated[index][word].x, y = gauges.rotated[index][word].y;
+	int w = gauges.rotated[index][word].width, h = gauges.rotated[index][word].height;
+	const uint8_t *mask = gaugeLabelCoverage + gauges.rotated[index][word].offset;
+	uint32_t color = word == selected ? 0xFF444442U : 0xFFADADABU;
+	for ( int row = 0; row < h; ++row )
+		for ( int column = 0; column < w; ++column )
+		{
+			unsigned alpha = mask[row * w + column];
+			if ( alpha )
+				PanelPixel ( x + column, y + row, color, alpha );
 		}
 }
 static void GaugeNeedle ( int index, int shadow )
@@ -942,10 +968,7 @@ static void GaugeDrawBackground ( int index )
 			}
 			LCD_Buffer ( 800, xx, yy, color );
 		}
-	int selected = lcdGaugePositions[index] < 357 ? 0 : lcdGaugePositions[index] > 643 ? 2
-																					   : 1;
-	for ( int word = 0; word < 3; word++ )
-		GaugeLabel ( index, word, selected );
+
 }
 static void GaugeDraw ( int index )
 {
@@ -953,12 +976,11 @@ static void GaugeDraw ( int index )
 	GaugeRect ( index, &x, &y, &w, &h );
 	int selected = lcdGaugePositions[index] < 357 ? 0 : lcdGaugePositions[index] > 643 ? 2 : 1;
 	uint32_t *bitmap = gaugeBackground + ( index ? 504 * 297 + ( index - 1 ) * 240 * 147 : 0 );
-	if ( !gauges.backgroundValid[index] || gauges.backgroundSelected[index] != selected )
+	if ( !gauges.backgroundValid[index] )
 	{
 		GaugeDrawBackground ( index );
 		for ( int row = 0; row < h; ++row )
 			memcpy ( bitmap + row * w, pLcd + ( y + row ) * 800 + x, (size_t) w * sizeof *bitmap );
-		gauges.backgroundSelected[index] = selected;
 		gauges.backgroundValid[index] = 1;
 	}
 	else
@@ -966,6 +988,8 @@ static void GaugeDraw ( int index )
 		for ( int row = 0; row < h; ++row )
 			memcpy ( pLcd + ( y + row ) * 800 + x, bitmap + row * w, (size_t) w * sizeof *bitmap );
 	}
+	for ( int word = 0; word < 3; ++word )
+		GaugeLabel ( index, word, selected );
 	GaugeNeedle ( index, 1 );
 	GaugeNeedle ( index, 0 );
 }
@@ -1014,6 +1038,9 @@ int LCD_TemperaturePkPanel3 ( uint8_t mode )
 					LCD_TOUCH_DeleteSelectTouch ( (uint16_t) ( 61004 + j ) );
 				return -4;
 			}
+			for ( int word = 0; word < 3; ++word )
+				if ( GaugePrepareRotatedLabel ( i, word ) < 0 )
+					return -3;
 			gauges.previous[i] = -1;
 			gauges.backgroundValid[i] = 0;
 		}

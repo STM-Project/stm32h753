@@ -33,6 +33,7 @@ int main(void){
  assert(LCD_TemperaturePkPanel3(1)==0);
  /* Nonempty antialiased masks also exercise rotated bilinear fringes. */
  for(unsigned i=0;i<sizeof gauges.mask;i++)gauges.mask[i]=(uint8_t)(i*73U);
+ for(int i=0;i<3;i++)for(int word=0;word<3;word++)assert(GaugePrepareRotatedLabel(i,word)==0);
  unsigned long oldRoots=0,newRoots=0,oldAngles=0,newAngles=0;
  for(int value=0;value<=1000;value+=25)for(int index=0;index<3;index++){
   lcdGaugePositions[index]=value;
@@ -44,9 +45,17 @@ int main(void){
   roots=angles=0;GaugeDraw(index);newRoots+=roots;newAngles+=angles;
   assert(!memcmp(expected,pLcd,sizeof expected));
  }
- lcdGaugePositions[0]=500;GaugeDraw(0);
- roots=angles=0;lcdGaugePositions[0]=510;GaugeDraw(0);
- assert(angles==0); /* warm bitmap: no per-pixel arc atan2 calls */
+ const int edges[]={356,357,643,644,100,900,500,100};
+ for(int index=0;index<3;index++)for(unsigned e=0;e<sizeof edges/sizeof edges[0];e++){
+  lcdGaugePositions[index]=edges[e];
+  for(int i=0;i<800*480;i++)pLcd[i]=0xFF123456U;
+  GaugeDrawReference(index);memcpy(expected,pLcd,sizeof expected);
+  for(int i=0;i<800*480;i++)pLcd[i]=0xFF123456U;
+  roots=angles=0;GaugeDraw(index);
+  assert(angles==0); /* sector crossing never rebuilds the static arc */
+  assert(!memcmp(expected,pLcd,sizeof expected));
+ }
+ puts("Gauge: 24 additional pixel-identical sector-boundary/jump renders, zero arc atan2 calls on all three gauges: PASS");
  assert(newRoots<oldRoots&&newAngles<oldAngles);
  printf("Gauge: 123 pixel-identical renders; sqrt calls %lu -> %lu; atan2 calls %lu -> %lu\n",oldRoots,newRoots,oldAngles,newAngles);
 }
