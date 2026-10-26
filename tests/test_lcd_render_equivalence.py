@@ -2,11 +2,15 @@
 Host operation counts demonstrate avoided work, not STM32 elapsed time.
 """
 from pathlib import Path
-import ast, subprocess, tempfile, shutil
+import ast, subprocess, tempfile, shutil, re
 root=Path(__file__).resolve().parents[1]
 def resources(script):
  tree=ast.parse((root/'tests'/script).read_text())
- return next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='resources' for t in n.targets))
+ data=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='resources' for t in n.targets))
+ if script=='lcd_temperature_gauges_test.py':
+  data['test_support.h'] += '\nvoid LCD_DisplayBuffStride(uint32_t,uint32_t,uint32_t,uint32_t,uint32_t*,uint32_t);\n'
+  data['test.c'] = data['test.c'].replace('int main(void)', 'void LCD_DisplayBuffStride(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *s,uint32_t stride){assert(s==pLcd+y*800+x&&stride==800);LCD_DisplayPart(0,x,y,w,h); }\nint main(void)',1)
+ return data
 
 def run(gauge):
  data=resources('lcd_temperature_gauges_test.py' if gauge else 'lcd_sensor_thresholds_test.py')
@@ -21,7 +25,7 @@ static float CountAtan(float y,float x){angles++;return atan2f(y,x);}
 '''
  # Count both versions through identical math wrappers.
  test=test.replace('#include "'+source+'.c"', '#include <math.h>\n'+counter+'\n#include "'+source+'.c"')
- reference=(root/'tests/fixtures'/fixture).read_text().replace('sqrtf(','CountSqrt(').replace('atan2f(','CountAtan(')
+ reference=re.sub(r'\batan2f\s*\(', 'CountAtan(', re.sub(r'\bsqrtf\s*\(', 'CountSqrt(', (root/'tests/fixtures'/fixture).read_text()))
  test+='\n'+reference+'\nstatic uint32_t expected[800*480];\n'
  if gauge:
   test+=r'''
@@ -32,6 +36,7 @@ int main(void){
  unsigned long oldRoots=0,newRoots=0,oldAngles=0,newAngles=0;
  for(int value=0;value<=1000;value+=25)for(int index=0;index<3;index++){
   lcdGaugePositions[index]=value;
+  if(value==0)gauges.backgroundValid[index]=0;
   for(int i=0;i<800*480;i++)pLcd[i]=0xFF123456U;
   roots=angles=0;GaugeDrawReference(index);oldRoots+=roots;oldAngles+=angles;
   memcpy(expected,pLcd,sizeof expected);
@@ -39,6 +44,9 @@ int main(void){
   roots=angles=0;GaugeDraw(index);newRoots+=roots;newAngles+=angles;
   assert(!memcmp(expected,pLcd,sizeof expected));
  }
+ lcdGaugePositions[0]=500;GaugeDraw(0);
+ roots=angles=0;lcdGaugePositions[0]=510;GaugeDraw(0);
+ assert(angles==0); /* warm bitmap: no per-pixel arc atan2 calls */
  assert(newRoots<oldRoots&&newAngles<oldAngles);
  printf("Gauge: 123 pixel-identical renders; sqrt calls %lu -> %lu; atan2 calls %lu -> %lu\n",oldRoots,newRoots,oldAngles,newAngles);
 }
@@ -62,7 +70,7 @@ int main(void){
   for name,content in data.items():(work/name).write_text(content)
   for name in ('SCREEN_ReadPanel.h','LCD_BasicGraphics.h','LCD_fonts_images.h','LCD_Hardware.h','touch.h'):(work/name).write_text('#include "test_support.h"\n')
   for ext in ('.c','.h'):shutil.copyfile(root/'Application/LCD'/folder/(source+ext),work/(source+ext))
-  p=work/(source+'.c');p.write_text(p.read_text().replace('sqrtf(','CountSqrt(').replace('atan2f(','CountAtan('))
+  p=work/(source+'.c');p.write_text(re.sub(r'\batan2f\s*\(', 'CountAtan(', re.sub(r'\bsqrtf\s*\(', 'CountSqrt(', p.read_text())))
   (work/'test.c').write_text(test)
   args=['gcc','-std=c11','-O2','-ffunction-sections','-fdata-sections','-Wl,--gc-sections','-I'+str(work),'-I'+str(root/'Application/HTTP'),str(work/'test.c')]
   subprocess.run(args+['-lm','-o',str(work/'test')],check=True)

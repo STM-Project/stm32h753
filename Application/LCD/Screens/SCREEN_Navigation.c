@@ -4,8 +4,8 @@
 #include "timer.h"
 #include <string.h>
 
-#define NAV_W 30U
-#define NAV_H 60U
+#define NAV_W SCREEN_NAV_WIDTH
+#define NAV_H SCREEN_NAV_HEIGHT
 #define NAV_Y ( ( LCD_H7_HEIGHT - NAV_H ) / 2U )
 #define NAV_PIXELS ( NAV_W * NAV_H )
 #define NAV_TIME_MS 5000U
@@ -59,9 +59,36 @@ void SCREEN_NavigationRestore ( void )
 {
 	if ( !navigation.painted )
 		return;
+	navigation.painted = 0;
 	for ( unsigned side = 0; side < 2; ++side )
 		LCD_DisplayBuff ( side ? LCD_H7_WIDTH - NAV_W : 0, NAV_Y, NAV_W, NAV_H, background[side] );
 	navigation.painted = 0;
+}
+
+/* Called before a panel transfer. Keep the arrow pixels continuously visible,
+ * but retain the newest underlying pixels for the single restore at expiry. */
+int SCREEN_NavigationUpdate ( unsigned x, unsigned y, unsigned width, unsigned height, const uint32_t *source, unsigned stride )
+{
+	if ( !navigation.painted || !source || !width || !height )
+		return 0;
+	unsigned top = y > NAV_Y ? y : NAV_Y;
+	unsigned bottom = y + height < NAV_Y + NAV_H ? y + height : NAV_Y + NAV_H;
+	if ( top >= bottom )
+		return 0;
+	int overlap = 0;
+	for ( unsigned side = 0; side < 2; ++side )
+	{
+		unsigned edge = side ? LCD_H7_WIDTH - NAV_W : 0;
+		unsigned left = x > edge ? x : edge;
+		unsigned right = x + width < edge + NAV_W ? x + width : edge + NAV_W;
+		if ( left >= right )
+			continue;
+		overlap = 1;
+		for ( unsigned row = top; row < bottom; ++row )
+			memcpy ( &background[side][( row - NAV_Y ) * NAV_W + left - edge],
+					 &source[( row - y ) * stride + left - x], ( right - left ) * sizeof *source );
+	}
+	return overlap;
 }
 
 static int Capture ( unsigned side )
@@ -111,6 +138,11 @@ static void Label ( unsigned side )
 void SCREEN_NavigationDraw ( uint32_t now )
 {
 	if ( (uint32_t) ( now - navigation.entered ) >= NAV_TIME_MS )
+	{
+		SCREEN_NavigationRestore ();
+		return;
+	}
+	if ( navigation.painted )
 		return;
 	if ( !lcdH7Status.initialized || LCD_GetXSize () != LCD_H7_WIDTH || LCD_GetYSize () != LCD_H7_HEIGHT )
 		return;

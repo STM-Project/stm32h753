@@ -4,6 +4,7 @@
 #include "stm32h7xx_hal.h"
 #include "LCD_Hardware.h"
 #include "LCD_PortH7.h"
+#include "SCREEN_Navigation.h"
 #include "ltdc.h"
 #include "timer.h"
 #include <stddef.h>
@@ -37,7 +38,7 @@ void HAL_LTDC_LineEventCallback ( LTDC_HandleTypeDef *handle )
 		osSemaphoreRelease ( LcdUpdateSemaphoreId );
 	HAL_LTDC_ProgramLineEvent ( handle, handle->Init.AccumulatedActiveH + 1U );
 }
-void LCD_DisplayBuff ( uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t *source )
+static void LCD_DisplayRect ( uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t *source, uint32_t stride )
 {
 	if ( !lcdH7Status.initialized || !source || !width || !height || x >= 800 || y >= 480 || width > 800 - x || height > 480 - y )
 	{
@@ -59,13 +60,13 @@ void LCD_DisplayBuff ( uint32_t x, uint32_t y, uint32_t width, uint32_t height, 
 	{
 	}
 	uintptr_t start = (uintptr_t) source, aligned = start & ~(uintptr_t) 31U;
-	size_t length = ( ( start - aligned ) + width * height * 4U + 31U ) & ~(size_t) 31U;
+	size_t length = ( ( start - aligned ) + ( ( height - 1U ) * stride + width ) * 4U + 31U ) & ~(size_t) 31U;
 	SCB_CleanDCache_by_Addr ( (uint32_t *) aligned, (int32_t) length );
 	__DSB ();
 	DMA2D->CR = 0;
 	DMA2D->IFCR = 0x3FU;
 	DMA2D->FGMAR = (uint32_t) source;
-	DMA2D->FGOR = 0;
+	DMA2D->FGOR = stride - width;
 	DMA2D->FGPFCCR = 0; /* foreground ARGB8888 */
 	DMA2D->OPFCCR = 1;	/* output RGB888: unchanged H7 LTDC pixel format */
 	DMA2D->OMAR = LCD_H7_SDRAM_BASE + 3U * ( y * 800U + x );
@@ -95,4 +96,35 @@ void LCD_DisplayBuff ( uint32_t x, uint32_t y, uint32_t width, uint32_t height, 
 	}
 	GiveMutex ( Semphr_sdram );
 	osMutexRelease ( osDeviceMutex );
+}
+
+/* Leave the visible navigation rectangles untouched by panel redraws.
+ * At most three DMA rectangles are needed; the caller's source is never edited. */
+void LCD_DisplayBuffStride ( uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t *source, uint32_t stride )
+{
+	if ( !lcdH7Status.initialized || !source || !width || !height || stride < width || x >= 800 || y >= 480 || width > 800 - x || height > 480 - y )
+	{
+		lcdH7Status.last_error = -10;
+		return;
+	}
+	if ( !SCREEN_NavigationUpdate ( x, y, width, height, source, stride ) )
+	{
+		LCD_DisplayRect ( x, y, width, height, source, stride );
+		return;
+	}
+	uint32_t top = y > SCREEN_NAV_TOP ? y : SCREEN_NAV_TOP;
+	uint32_t bottom = y + height < SCREEN_NAV_TOP + SCREEN_NAV_HEIGHT ? y + height : SCREEN_NAV_TOP + SCREEN_NAV_HEIGHT;
+	if ( y < top )
+		LCD_DisplayRect ( x, y, width, top - y, source, stride );
+	uint32_t left = x > SCREEN_NAV_WIDTH ? x : SCREEN_NAV_WIDTH;
+	uint32_t right = x + width < LCD_H7_WIDTH - SCREEN_NAV_WIDTH ? x + width : LCD_H7_WIDTH - SCREEN_NAV_WIDTH;
+	if ( left < right )
+		LCD_DisplayRect ( left, top, right - left, bottom - top, source + ( top - y ) * stride + left - x, stride );
+	if ( bottom < y + height )
+		LCD_DisplayRect ( x, bottom, width, y + height - bottom, source + ( bottom - y ) * stride, stride );
+}
+
+void LCD_DisplayBuff ( uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t *source )
+{
+	LCD_DisplayBuffStride ( x, y, width, height, source, width );
 }

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* The existing SDRAM drawing buffer, presented by the existing LCD_Show(). */
 extern uint32_t pLcd[];
@@ -661,8 +662,8 @@ int LCD_TemperaturePkPanel2 ( uint8_t mode, int ( *readTemperature10 ) ( void ),
 		dashboard.active = 1;
 		DashStatic ();
 	}
-	screenTouchState = LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
 	XY_Touch_Struct position = LCD_TOUCH_GetPos ();
+	screenTouchState = LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
 	int down = LCD_TOUCH_isPress () == press, hit = DashHit ( position );
 	int inGraph = position.x >= 115 && position.x <= 735 && position.y >= 331 && position.y <= 400;
 	if ( down && !dashboard.wasDown )
@@ -751,12 +752,16 @@ int LCD_TemperaturePkPanel2 ( uint8_t mode, int ( *readTemperature10 ) ( void ),
 static struct
 {
 	int active, wasDown, captured, font[2], previous[3];
+	int backgroundValid[3], backgroundSelected[3];
 	struct
 	{
 		int width, height, offset;
 	} label[6];
 	uint8_t mask[3 * GAUGE_MASK_LARGE + 3 * GAUGE_MASK_SMALL];
 } gauges;
+/* Cached static arcs and labels: 504x297 + 2x240x147 pixels.
+ * The pointer/shadow are never stored in this bitmap. */
+static uint32_t gaugeBackground[504 * 297 + 2 * 240 * 147] __attribute__ ( ( section ( ".sdram" ), aligned ( 32 ) ) );
 uint16_t lcdGaugePositions[3] = { 500, 180, 820 };
 volatile int lcdPanel3Result;
 static const struct
@@ -882,7 +887,7 @@ static void GaugeNeedle ( int index, int shadow )
 			PanelPixel ( xx, yy, shadow ? 0xFF000000U : color, shadow ? alpha * 38 / 255 : alpha );
 		}
 }
-static void GaugeDraw ( int index )
+static void GaugeDrawBackground ( int index )
 {
 	int x, y, w, h;
 	GaugeRect ( index, &x, &y, &w, &h );
@@ -941,6 +946,26 @@ static void GaugeDraw ( int index )
 																					   : 1;
 	for ( int word = 0; word < 3; word++ )
 		GaugeLabel ( index, word, selected );
+}
+static void GaugeDraw ( int index )
+{
+	int x, y, w, h;
+	GaugeRect ( index, &x, &y, &w, &h );
+	int selected = lcdGaugePositions[index] < 357 ? 0 : lcdGaugePositions[index] > 643 ? 2 : 1;
+	uint32_t *bitmap = gaugeBackground + ( index ? 504 * 297 + ( index - 1 ) * 240 * 147 : 0 );
+	if ( !gauges.backgroundValid[index] || gauges.backgroundSelected[index] != selected )
+	{
+		GaugeDrawBackground ( index );
+		for ( int row = 0; row < h; ++row )
+			memcpy ( bitmap + row * w, pLcd + ( y + row ) * 800 + x, (size_t) w * sizeof *bitmap );
+		gauges.backgroundSelected[index] = selected;
+		gauges.backgroundValid[index] = 1;
+	}
+	else
+	{
+		for ( int row = 0; row < h; ++row )
+			memcpy ( pLcd + ( y + row ) * 800 + x, bitmap + row * w, (size_t) w * sizeof *bitmap );
+	}
 	GaugeNeedle ( index, 1 );
 	GaugeNeedle ( index, 0 );
 }
@@ -990,6 +1015,7 @@ int LCD_TemperaturePkPanel3 ( uint8_t mode )
 				return -4;
 			}
 			gauges.previous[i] = -1;
+			gauges.backgroundValid[i] = 0;
 		}
 		for ( int y = 0; y < 480; y++ )
 			for ( int x = 0; x < 800; x++ )
@@ -998,8 +1024,8 @@ int LCD_TemperaturePkPanel3 ( uint8_t mode )
 		gauges.captured = -1;
 		gauges.active = 1;
 	}
-	screenTouchState = LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
 	XY_Touch_Struct position = LCD_TOUCH_GetPos ();
+	screenTouchState = LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
 	int down = LCD_TOUCH_isPress () == press;
 	if ( down && !gauges.wasDown )
 		gauges.captured = GaugeHit ( position );
@@ -1039,7 +1065,7 @@ int LCD_TemperaturePkPanel3 ( uint8_t mode )
 			{
 				int x, y, w, h;
 				GaugeRect ( i, &x, &y, &w, &h );
-				LCD_DisplayPart ( 0, x, y, w, h );
+				LCD_DisplayBuffStride ( (uint32_t) x, (uint32_t) y, (uint32_t) w, (uint32_t) h, pLcd + y * 800 + x, 800 );
 			}
 		}
 	}

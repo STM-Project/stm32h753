@@ -44,7 +44,9 @@ void SCB_InvalidateDCache_by_Addr(uint32_t *p,int32_t n){assert(memory&&mutex);a
 uint32_t LCD_GetXSize(void){return 800;} uint32_t LCD_GetYSize(void){return 480;}
 void LCD_DisplayBuff(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *pixels){
  assert(!mutex&&!memory&&x+w<=800&&y+h<=480);displays++;
+ int masked=SCREEN_NavigationUpdate(x,y,w,h,pixels,w);
  for(unsigned j=0;j<h;j++)for(unsigned i=0;i<w;i++){
+  if(masked&&y+j>=210&&y+j<270&&(x+i<30||x+i>=770))continue;
   uint32_t c=pixels[j*w+i];unsigned o=3*((y+j)*800+x+i);
   frame[o]=(unsigned char)c;frame[o+1]=(unsigned char)(c>>8);frame[o+2]=(unsigned char)(c>>16);
  }
@@ -79,19 +81,25 @@ int main(void){
   unsigned o=3*(y*800+x);
   if(y<210||y>=270||(x>=30&&x<770))assert(!memcmp(frame+o,original+o,3));
  }
- SCREEN_NavigationRestore();assert(displays==4&&!memcmp(frame,original,sizeof original));
- /* A panel redraw below the arrows must survive expiry, not restore an old snapshot. */
- frame[3*(240*800+5)]=23;memcpy(original,frame,sizeof original);
- SCREEN_NavigationDraw(5099);assert(displays==6);
- SCREEN_NavigationRestore();assert(!memcmp(frame,original,sizeof original));
- SCREEN_NavigationDraw(5100);assert(displays==8);
- SCREEN_NavigationDraw(7000);assert(displays==8);
+ unsigned char arrows[2][30*60*3];
+ for(unsigned side=0;side<2;side++)for(unsigned row=0;row<60;row++)
+  memcpy(arrows[side]+row*90,frame+3*((210+row)*800+(side?770:0)),90);
+ for(unsigned t=101;t<5100;t+=20)SCREEN_NavigationDraw(t);
+ assert(displays==2); /* no erase/repaint every LCD cycle */
+ static uint32_t update[800*480];
+ for(unsigned i=0;i<800*480;i++)update[i]=0xff123456;
+ LCD_DisplayBuff(0,0,800,480,update);assert(displays==3);
+ for(unsigned side=0;side<2;side++)for(unsigned row=0;row<60;row++)
+  assert(!memcmp(arrows[side]+row*90,frame+3*((210+row)*800+(side?770:0)),90));
+ assert(update[240*800+5]==0xff123456); /* source never overwritten */
+ for(unsigned i=0;i<800*480;i++){original[3*i]=0x56;original[3*i+1]=0x34;original[3*i+2]=0x12;}
+ SCREEN_NavigationDraw(5100);assert(displays==5&&!memcmp(frame,original,sizeof original));
+ SCREEN_NavigationDraw(7000);assert(displays==5);
  assert(SCREEN_NavigationInput(1,790,240,&dir));
- assert(SCREEN_NavigationInput(0,790,240,&dir)&&dir==1); /* hidden hotspot */
- SCREEN_NavigationEnter(0xfffffff0U,0);SCREEN_NavigationDraw(0x10U);assert(displays==10);
- SCREEN_NavigationRestore();assert(!memcmp(frame,original,sizeof original));
- SCREEN_NavigationDraw(0xfffffff0U+5000U);assert(displays==12);
- puts("PASS: prev/next wrap, held touch, release, canceled drags, normal panel input, hidden hotspots, ENTER guard, 5s expiry/tick wrap and exact RGB888 background restoration.");
+ assert(SCREEN_NavigationInput(0,790,240,&dir)&&dir==1);
+ SCREEN_NavigationEnter(0xfffffff0U,0);SCREEN_NavigationDraw(0x10U);assert(displays==7);
+ SCREEN_NavigationDraw(0xfffffff0U+5000U);assert(displays==9&&!memcmp(frame,original,sizeof original));
+ puts("PASS: prev/next wrap, held touch, release, canceled drags, normal panel input, hidden hotspots, ENTER guard, steady arrows over 250 idle cycles/full redraw, unmodified source, 5s expiry/tick wrap and latest RGB888 background restoration.");
 }
 '''
 with tempfile.TemporaryDirectory() as d:

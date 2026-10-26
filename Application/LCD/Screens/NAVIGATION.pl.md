@@ -30,12 +30,14 @@ Zmiana ekranu przechodzi przez istniejące funkcje EXIT, w tym zamykanie edytora
 progów. Samo przewijanie nie zatwierdza niezapisanej edycji.
 
 Nakładka nie korzysta z czcionek SD ani z roboczego pLcd. Ma oddzielne małe
-bufory w SDRAM (łącznie 21600 B). Przed aktualizacją panelu odtwarza tylko dwa
-fragmenty 30x60, a po aktualizacji pobiera ich aktualną zawartość z fizycznego
-framebuffera RGB888 i ponownie rysuje strzałki. Dzięki temu po zniknięciu
-nakładki nie zostaje stary fragment wykresu lub tekstu. Używa istniejącego
-LCD_DisplayBuff oraz tej samej kolejności blokad pamięci i DMA2D. Nie zmienia
-konfiguracji CubeMX ani sterowników LCD/dotyku.
+bufory w SDRAM (łącznie 21600 B). Strzałki rysowane są raz przy wejściu na ekran.
+Przez 5 sekund DMA2D pomija ich dwa prostokąty podczas aktualizacji panelu,
+a nowe piksele spod nich trafiają do zapamiętanego tła. Nie ma cyklicznego
+zdejmowania i ponownego rysowania nakładki. Po upływie czasu najnowsze tło
+jest odtwarzane jeden raz. Źródłowy bufor panelu pozostaje niezmieniony.
+Transfer z przesunięciem wierszy (stride) pozwala wysłać pozostałą część
+obrazu maksymalnie trzema prostokątami, bez osobnego DMA dla każdego wiersza.
+Nie zmienia konfiguracji CubeMX ani bibliotek HAL.
 
 Test `tests/test_lcd_navigation.py` wykonuje rzeczywisty kontroler i renderer
 na modelu framebuffera RGB888, sprawdzając przewijanie, granice pól, zwolnienie

@@ -602,7 +602,6 @@ static void DBG_SCREEN_Test_Circle(void)
 
 void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 {
-	SCREEN_NavigationRestore ();
 	if ( startScreen )
 	{
 		int direction;

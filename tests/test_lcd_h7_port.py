@@ -48,12 +48,16 @@ volatile struct LCD_H7_Status lcdH7Status={.initialized=1};
 void *osDma2dSemph=(void*)1,*osDeviceMutex=(void*)2,*LcdUpdateSemaphoreId=(void*)3;
 static int token,mode,deviceHeld,memoryHeld,waits,locksAllowed=1;
 static uint32_t programmedLine;
+static int navVisible;
+static DMA_Type records[8];static unsigned recordCount;
+int SCREEN_NavigationUpdate(unsigned x,unsigned y,unsigned w,unsigned h,const uint32_t *s,unsigned stride){(void)s;(void)stride;return navVisible&&y<270&&y+h>210&&(x<30||x+w>770);}
 static uintptr_t cleaned;static int32_t cleanedLength;
 static uint32_t source[800*480] __attribute__((aligned(32)));
 int32_t osSemaphoreWait(void *s,uint32_t ms){
- assert(s==osDma2dSemph);assert(++waits<8);
+ assert(s==osDma2dSemph);assert(++waits<20);
  if(ms){assert(ms==1000&&deviceHeld&&memoryHeld);
   assert(dma.CR&DMA2D_CR_START);
+  if(navVisible){assert(recordCount<8);records[recordCount++]=dma;}
   if(mode==1)return osErrorOS;
   dma.ISR=mode==2?DMA2D_ISR_TEIF:DMA2D_ISR_TCIF;DMA2D_IRQHandler();
  }
@@ -80,6 +84,24 @@ int main(void){
  mode=2;transfer(0,0,2,2);assert(lcdH7Status.dma_errors==1&&lcdH7Status.last_error==-14);
  mode=0;transfer(0,0,2,2);assert(lcdH7Status.last_error==0&&lcdH7Status.transfers==before+1);
  locksAllowed=0;transfer(0,0,2,2);assert(lcdH7Status.last_error==-12);
+ locksAllowed=1;navVisible=1;recordCount=0;
+ transfer(0,0,800,480);assert(recordCount==3);
+ assert(records[0].OMAR==0x60000000&&records[0].NLR==((800U<<16)|210));
+ assert(records[1].OMAR==0x60000000+3*(210*800+30));
+ assert(records[1].NLR==((740U<<16)|60)&&records[1].FGOR==60);
+ assert(records[1].FGMAR==(uint32_t)(uintptr_t)(source+210*800+30));
+ assert(records[2].OMAR==0x60000000+3*(270*800));
+ assert(records[2].NLR==((800U<<16)|210));
+ recordCount=0;transfer(0,210,30,60);assert(!recordCount);
+ transfer(775,220,10,20);assert(!recordCount);
+ transfer(28,230,10,5);assert(recordCount==1&&records[0].FGOR==2&&records[0].NLR==((8U<<16)|5));
+ navVisible=0;
+ waits=0;LCD_DisplayBuffStride(100,100,25,10,source+100*800+100,800);
+ assert(dma.FGOR==775&&dma.NLR==((25U<<16)|10));
+ assert(dma.FGMAR==(uint32_t)(uintptr_t)(source+100*800+100));
+ assert(cleanedLength>=(9*800+25)*4);
+ before=lcdH7Status.transfers;waits=0;LCD_DisplayBuffStride(0,0,30,10,source,29);
+ assert(lcdH7Status.last_error==-10&&lcdH7Status.transfers==before);
  HAL_LTDC_LineEventCallback(&hltdc);assert(programmedLine==485);
  puts("H7 LCD DMA adapter: RGB888 addresses, source cache alignment, CMSIS osOK semantics, IRQ, timeout/error and bounds: PASS");
 }
@@ -88,6 +110,7 @@ with tempfile.TemporaryDirectory(prefix='h7-lcd-port-') as folder:
     work=Path(folder)
     for name in ('stm32h7xx_hal.h','ltdc.h','timer.h'): (work/name).write_text(hal if name=='stm32h7xx_hal.h' else '#include "stm32h7xx_hal.h"\n')
     for name in ('LCD_Hardware.c','LCD_Hardware.h','LCD_PortH7.h'):shutil.copy(root/'Application/LCD'/name,work/name)
+    shutil.copy(root/'Application/LCD/Screens/SCREEN_Navigation.h',work/'SCREEN_Navigation.h')
     (work/'test.c').write_text(test)
     subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Wno-pointer-to-int-cast','-fsanitize=address,undefined',str(work/'test.c'),'-o',str(work/'test')],check=True)
     subprocess.run([str(work/'test')],check=True)

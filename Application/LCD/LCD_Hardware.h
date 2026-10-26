@@ -13,4 +13,6 @@ uint32_t LCD_GetXSize ( void );
 uint32_t LCD_GetYSize ( void );
 void LCD_DisplayBuff ( uint32_t Xpos, uint32_t Ypos, uint32_t width, uint32_t height, uint32_t *pbmp );
 
+void LCD_DisplayBuffStride ( uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t *source, uint32_t stride );
+
 #endif /* LCD_LCD_HARDWARE_H_ */
