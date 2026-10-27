@@ -738,10 +738,11 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		}
 		ui.modePressed = -1;
 		ui.outputPressed = -1;
+		_Static_assert ( fontID_13 + 4 <= fontID_17, "HTTP panels exceed available font IDs" );
 		const int sizes[5] = { FONT_12, FONT_16, FONT_20, FONT_18, FONT_28 };
 		for ( int i = 0; i < 5; ++i )
 		{
-			ui.font[i] = LCD_LoadFont_ChangeColor ( sizes[i], Arial, fontID_14 + i );
+			ui.font[i] = LCD_LoadFont_ChangeColor ( sizes[i], Arial, fontID_13 + i );
 			if ( ui.font[i] < 0 )
 				return -3;
 		}

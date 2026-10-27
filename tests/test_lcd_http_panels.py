@@ -13,7 +13,7 @@ SUPPORT=r'''
 #include <stddef.h>
 typedef struct {uint16_t x,y;} XY_Touch_Struct;
 extern XY_Touch_Struct screenTouchPos;
-enum {press=1,release=0,FONT_12=12,FONT_16=16,FONT_20=20,FONT_18=18,FONT_28=28,Arial=0,fontID_14=14,fullHight=-3,NoConstWidth=0};
+enum {press=1,release=0,FONT_12=12,FONT_16=16,FONT_20=20,FONT_18=18,FONT_28=28,Arial=0,fontID_13=12,fontID_17=16,fullHight=-3,NoConstWidth=0};
 void SCREEN_ResetAllParameters(void);void LCD_TOUCH_DeleteAllSetTouch(void);
 int LCD_LoadFont_ChangeColor(int,int,uint32_t);int LCD_GetFontHeight(int);int LCD_GetFontHalfHeight(int);
 int LCD_GetWholeStrPxlWidth(int,char*,int,int);
@@ -52,7 +52,7 @@ static void complete_save(int ok){
  LCD_HttpPanel(0,1);
 }
 int HTTP_LCDPanelToggle(unsigned p){assert(p>=21&&p<=33);toggle_calls++;return 1;}
-int LCD_LoadFont_ChangeColor(int size,int style,uint32_t id){(void)style;(void)id;return size;}
+int LCD_LoadFont_ChangeColor(int size,int style,uint32_t id){(void)style;if(id>fontID_17)return -1;return size;}
 int LCD_GetFontHeight(int font){return font==28?35:font==20?27:font==18?24:font==16?21:16;}
 int LCD_GetFontHalfHeight(int font){return LCD_GetFontHeight(font)-(font>=20?7:4);}
 int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==28?4:f==20?2:f==18?3:f==16?1:0][(unsigned char)*t];return n;}
@@ -96,6 +96,7 @@ static void live_update(void){
  strcpy(model.ports[0].value[0],"25.6 C");tick+=250;LCD_HttpPanel(0,ui.settings);
 }
 static void preview(const char*name){char path[256];snprintf(path,sizeof path,"%s/%s.ppm",getenv("PREVIEW_DIR"),name);FILE*f=fopen(path,"wb");assert(f);fprintf(f,"P6\n800 480\n255\n");for(unsigned i=0;i<800*480;i++){fputc(shown[i]>>16,f);fputc(shown[i]>>8,f);fputc(shown[i],f);}fclose(f);}
+int SCREEN_NavigationNext(int,int);
 int main(void){
  for(unsigned i=0;i<33;i++){
   HTTP_LCDPort*p=&model.ports[i];p->port=i+1;p->mode=i<4?HTTP_MODE_TEMP:i<8?HTTP_MODE_TEMP_RHU:i<14?HTTP_MODE_INPUT:i<16?HTTP_MODE_ADC:i<20?HTTP_MODE_COUNTER:i<23?HTTP_MODE_PWM:i<29?HTTP_MODE_RELAY:HTTP_MODE_TIMER;
@@ -199,9 +200,18 @@ int main(void){
  old_pwm=pwm_calls;touch(1,x+600,y);touch(0,x+600,y);assert(pwm_calls==old_pwm);
 
  assert(LCD_HttpPanel(2,1)==0&&!active);
+ for(int dir=-1;dir<=1;dir+=2){
+  int current=0,entered=0;
+  for(int i=0;i<26;i++){
+   current=SCREEN_NavigationNext(current,dir);
+   if(current==11||current==12){assert(LCD_HttpPanel(1,current==12)==0&&ui.active);assert(LCD_HttpPanel(2,current==12)==0);entered++;}
+  }
+  assert(current==0&&entered==4);
+ }
  puts("PASS: two 33-port screens, native clipped text, scrollbar/content drag, endpoints, no idle redraw, PWM 0/100 to port 21, settings press/release/cancel without writes/navigation; preview frames.");
 }
 '''
+C += '\n' + re.search(r'int SCREEN_NavigationNext\s*\(.*?\n}', (ROOT/'Application/LCD/Screens/SCREEN_Navigation.c').read_text(), re.S)[0] + '\n'
 def glyph_header():
  widths=[];offsets=[];heights=[];pixels=bytearray()
  for size in [16,21,27,24,35]:

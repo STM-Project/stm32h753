@@ -126,3 +126,8 @@ części dziesiętnej (surowe dane HTTP nie są zmieniane). Jednostki na obu ekr
 używają Arial 12 i LCD_GetFontHalfHeight do wyrównania linii bazowej, zamiast
 pełnej wysokości uwzględniającej dolne wydłużenia y/j. Przed C rysujemy puste
 kółko stopnia 5x5 px, niezależne od znaków dostępnych w czcionce na SD.
+
+Pięć czcionek panelu zajmuje identyfikatory fontID_13..fontID_17 (indeksy
+12..16). Rozpoczęcie od fontID_14 przekraczało 17 dostępnych slotów przy
+piątej czcionce i przerywało wejście na panel. Test pilnuje limitu identyfikatorów
+i przechodzi dwa pełne cykle next/prev, w tym 0 → 12 → 11.
