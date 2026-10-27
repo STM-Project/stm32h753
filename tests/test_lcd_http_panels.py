@@ -13,9 +13,9 @@ SUPPORT=r'''
 #include <stddef.h>
 typedef struct {uint16_t x,y;} XY_Touch_Struct;
 extern XY_Touch_Struct screenTouchPos;
-enum {press=1,release=0,FONT_12=12,FONT_16=16,FONT_20=20,FONT_18=18,Arial=0,fontID_14=14,fullHight=-3,NoConstWidth=0};
+enum {press=1,release=0,FONT_12=12,FONT_16=16,FONT_20=20,FONT_18=18,FONT_28=28,Arial=0,fontID_14=14,fullHight=-3,NoConstWidth=0};
 void SCREEN_ResetAllParameters(void);void LCD_TOUCH_DeleteAllSetTouch(void);
-int LCD_LoadFont_ChangeColor(int,int,uint32_t);int LCD_GetFontHeight(int);
+int LCD_LoadFont_ChangeColor(int,int,uint32_t);int LCD_GetFontHeight(int);int LCD_GetFontHalfHeight(int);
 int LCD_GetWholeStrPxlWidth(int,char*,int,int);
 void LCD_StrChangeColorWindow(uint32_t,uint32_t,uint32_t,int,int,int,char*,int,int,uint32_t,uint32_t,uint8_t,int);
 uint32_t LCD_GetXSize(void);uint32_t LCD_GetYSize(void);uint32_t HAL_GetTick(void);
@@ -53,13 +53,14 @@ static void complete_save(int ok){
 }
 int HTTP_LCDPanelToggle(unsigned p){assert(p>=21&&p<=33);toggle_calls++;return 1;}
 int LCD_LoadFont_ChangeColor(int size,int style,uint32_t id){(void)style;(void)id;return size;}
-int LCD_GetFontHeight(int font){return font==20?27:font==18?24:font==16?21:16;}
-int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==20?2:f==18?3:f==16?1:0][(unsigned char)*t];return n;}
+int LCD_GetFontHeight(int font){return font==28?35:font==20?27:font==18?24:font==16?21:16;}
+int LCD_GetFontHalfHeight(int font){return LCD_GetFontHeight(font)-(font>=20?7:4);}
+int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==28?4:f==20?2:f==18?3:f==16?1:0][(unsigned char)*t];return n;}
 void LCD_StrChangeColorWindow(uint32_t offset,uint32_t w,uint32_t h,int font,int x,int y,char*t,int only,int space,uint32_t bg,uint32_t color,uint8_t a,int fixed){
  if(check_description){assert(font==12&&y==104+description_lines*18);description_lines++;}
- if(check_measurement){if(!strcmp(t,"C")||!strcmp(t,"%")){assert(font==12);unit_count++;}else{assert(font==20&&y==43);number_count++;}}
+ if(check_measurement){if(!strcmp(t,"C")||!strcmp(t,"%")){assert(font==12&&y==43+LCD_GetFontHalfHeight(20)-LCD_GetFontHalfHeight(12));unit_count++;}else{assert(font==20&&y==43);if(number_count==1)assert(!strcmp(t,"65"));number_count++;}}
  (void)only;(void)space;(void)bg;(void)a;(void)fixed;assert(offset==SCRATCH&&offset+w*h<=800*480&&x>=0&&y>=0);
- int f=font==20?2:font==18?3:font==16?1:0;
+ int f=font==28?4:font==20?2:font==18?3:font==16?1:0;
  for(;*t;t++){
   unsigned c=(unsigned char)*t;assert(x+glyph_width[f][c]<=(int)w);
   for(int row=0;row<glyph_height[f];row++)for(int col=0;col<glyph_width[f][c];col++){
@@ -105,7 +106,9 @@ int main(void){
  assert(LCD_HttpPanel(1,0)==0&&active&&ui.count==33&&Maximum()>0);preview("lcd-http-read-top");
  live_update();
  check_description=1;Description(216,166,104,"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");check_description=0;assert(description_lines==3);
- check_measurement=1;Measurement(216,166,14,43,92,"25.6 C",WHITE);Measurement(216,166,113,43,89,"65.0 %",WHITE);check_measurement=0;assert(number_count==2&&unit_count==2);
+ check_measurement=1;Measurement(216,166,14,43,92,"25.6 C",WHITE,ui.font[2],0);Measurement(216,166,113,43,89,"65.0 %",WHITE,ui.font[2],2);check_measurement=0;assert(number_count==2&&unit_count==2);
+ Rect(216,0,0,216,166,CARD);Degree(216,10,10,WHITE);
+ assert(pLcd[SCRATCH+10*216+12]==WHITE&&pLcd[SCRATCH+12*216+12]==CARD);
  int before=draws;tick+=500;LCD_HttpPanel(0,0);assert(draws==before); /* no redraw without changes */
  touch(1,746,100);touch(1,746,435);touch(0,746,435);assert(ui.scroll==Maximum());preview("lcd-http-read-bottom");
  /* Every scroll offset clips native text safely, including partial first/last cards. */
@@ -201,7 +204,7 @@ int main(void){
 '''
 def glyph_header():
  widths=[];offsets=[];heights=[];pixels=bytearray()
- for size in [16,21,27,24]:
+ for size in [16,21,27,24,35]:
   font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/'+'DejaVuSans.ttf',size-3)
   ws=[];offs=[];heights.append(size)
   for c in range(256):
@@ -209,7 +212,7 @@ def glyph_header():
    ImageDraw.Draw(im).text((0,-2),chr(c),font=font,fill=255);pixels.extend(im.tobytes())
   widths.append(ws);offsets.append(offs)
  def arr(a):return '{'+','.join(map(str,a))+'}'
- return 'static const unsigned char glyphs[]='+arr(pixels)+';\nstatic const int glyph_height[]='+arr(heights)+';\nstatic const int glyph_width[4][256]={' + ','.join(arr(a) for a in widths)+'};\nstatic const unsigned glyph_offset[4][256]={' + ','.join(arr(a) for a in offsets)+'};\n'
+ return 'static const unsigned char glyphs[]='+arr(pixels)+';\nstatic const int glyph_height[]='+arr(heights)+';\nstatic const int glyph_width[5][256]={' + ','.join(arr(a) for a in widths)+'};\nstatic const unsigned glyph_offset[5][256]={' + ','.join(arr(a) for a in offsets)+'};\n'
 with tempfile.TemporaryDirectory() as d:
  p=Path(d)
  for n in ['SCREEN_HttpPanels.c','SCREEN_HttpPanels.h']:shutil.copy(ROOT/'Application/LCD/Screens'/n,p/n)

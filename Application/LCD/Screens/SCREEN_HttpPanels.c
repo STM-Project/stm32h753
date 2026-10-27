@@ -34,7 +34,7 @@ _Static_assert ( SCRATCH + ROW_W * 72 <= W * H, "LCD tile scratch exceeds pLcd" 
 _Static_assert ( SCRATCH + COL_W * 210 <= W * H, "LCD read scratch exceeds pLcd" );
 static struct
 {
-	int active, settings, font[4], scroll, extent, count, wasDown, capture, startY, startScroll, armed, pressed, moved, dirty, full;
+	int active, settings, font[5], scroll, extent, count, wasDown, capture, startY, startScroll, armed, pressed, moved, dirty, full;
 	uint8_t changed[HTTP_LCD_PORTS];
 	unsigned pwmPort, pwmValue;
 	int pwmSent;
@@ -325,24 +325,56 @@ static void Description ( int w, int h, int y, const char *name )
 		y += LCD_GetFontHeight ( font ) + 2;
 	}
 }
-/* Numeric values share one font; units are smaller and baseline aligned. */
-static void Measurement ( int w, int h, int x, int y, int width, const char *value, uint32_t color )
+/* Draw the degree ring directly: independent of SD font character sets. */
+static void Degree ( int stride, int x, int y, uint32_t color )
 {
-	char number[32];
+	for ( int row = 0; row < 5; ++row )
+		for ( int col = 0; col < 5; ++col )
+		{
+			int dx = col - 2, dy = row - 2, square = dx * dx + dy * dy;
+			if ( square >= 2 && square <= 5 )
+				Rect ( stride, x + col, y + row, 1, 1, color );
+		}
+}
+/* Native half-height is measured at the dot/baseline, excluding descenders
+ * (the same metric used by LCD's Right_down text positioning). */
+static void Measurement ( int w, int h, int x, int y, int width, const char *value, uint32_t color, int font, int align )
+{
+	char number[32], unit[12] = "";
 	snprintf ( number, sizeof number, "%s", value );
-	char *unit = strrchr ( number, ' ' );
-	if ( !unit )
+	char *split = strrchr ( number, ' ' );
+	if ( split )
 	{
-		Text ( w, h, ui.font[2], x, y, width, number, color );
-		return;
+		*split++ = 0;
+		snprintf ( unit, sizeof unit, "%s", split );
 	}
-	*unit++ = 0;
-	int unit_width = LCD_GetWholeStrPxlWidth ( ui.font[0], unit, 0, NoConstWidth );
-	int available = width - unit_width - 3;
-	int number_width = LCD_GetWholeStrPxlWidth ( ui.font[2], number, 0, NoConstWidth );
-	Text ( w, h, ui.font[2], x, y, available, number, color );
-	Text ( w, h, ui.font[0], x + ( number_width < available ? number_width : available ) + 3,
-		   y + LCD_GetFontHeight ( ui.font[2] ) - LCD_GetFontHeight ( ui.font[0] ), unit_width, unit, color );
+	/* Humidity is displayed as whole percent; retain the shared raw value. */
+	if ( strcmp ( unit, "%" ) == 0 )
+	{
+		char *dot = strchr ( number, '.' );
+		if ( dot )
+			*dot = 0;
+	}
+	int degree = strcmp ( unit, "C" ) == 0 ? 7 : 0;
+	int unit_width = LCD_GetWholeStrPxlWidth ( ui.font[0], unit, 0, NoConstWidth ) + degree;
+	int gap = unit[0] ? 4 : 0;
+	int available = width - unit_width - gap;
+	int number_width = LCD_GetWholeStrPxlWidth ( font, number, 0, NoConstWidth );
+	int drawn = number_width < available ? number_width : available;
+	int spare = width - drawn - gap - unit_width;
+	if ( align == 1 )
+		x += spare / 2;
+	else if ( align == 2 )
+		x += spare;
+	Text ( w, h, font, x, y, drawn, number, color );
+	if ( unit[0] )
+	{
+		int unit_y = y + LCD_GetFontHalfHeight ( font ) - LCD_GetFontHalfHeight ( ui.font[0] );
+		int unit_x = x + drawn + gap;
+		if ( degree && unit_y >= 0 && unit_y + 8 <= h )
+			Degree ( w, unit_x, unit_y + 3, color );
+		Text ( w, h, ui.font[0], unit_x + degree, unit_y, unit_width - degree, unit, color );
+	}
 }
 static void CopyTile ( int index )
 {
@@ -387,7 +419,7 @@ static void Tile ( int index )
 			unsigned value = ui.capture == 3 && ui.pwmPort == (unsigned) port ? ui.pwmValue : same ? p->pwm
 																								   : 0;
 			snprintf ( line, sizeof line, "%u %%", value );
-			Text ( w, h, ui.font[3], 442, 22, 74, line, WHITE );
+			Measurement ( w, h, 442, 22, 74, line, WHITE, ui.font[3], 0 );
 			TileRound ( w, 522, 29, 144, 10, 4, 0xFF333333U, 0xFF222222U );
 			if ( value )
 				TileRound ( w, 522, 29, (int) value * 144 / 100, 10, 3, GREEN, 0xFF88B80CU );
@@ -399,7 +431,7 @@ static void Tile ( int index )
 			{
 				int x = 442 + column * 120;
 				TileRound ( w, x, 16, 112, 36, 4, WHITE, WHITE );
-				Text ( w, h, ui.font[3], x + 6, 22, 100, same ? p->value[column] : "---", VALUE_BLACK );
+				Measurement ( w, h, x + 6, 22, 100, same ? p->value[column] : "---", VALUE_BLACK, ui.font[3], 0 );
 			}
 		}
 		else
@@ -410,7 +442,10 @@ static void Tile ( int index )
 			const char *value = shown == HTTP_MODE_DISABLED ? "---" : same ? p->value[0]
 																		   : "---";
 			uint32_t color = output ? WHITE : VALUE_BLACK;
-			Text ( w, h, ui.font[3], 454, ui.outputPressed == port ? 25 : 22, 208, value, color );
+			if ( shown == HTTP_MODE_TEMP || shown == HTTP_MODE_PT1000 || shown == HTTP_MODE_ADC || shown == HTTP_MODE_COUNTER )
+				Measurement ( w, h, 454, 22, 208, value, color, ui.font[3], 0 );
+			else
+				Text ( w, h, ui.font[3], 454, ui.outputPressed == port ? 25 : 22, 208, value, color );
 		}
 	}
 	else
@@ -430,7 +465,7 @@ static void Tile ( int index )
 		{
 			unsigned value = ui.capture == 3 && ui.pwmPort == (unsigned) port ? ui.pwmValue : p->pwm;
 			snprintf ( line, sizeof line, "%u %%", value );
-			Text ( w, h, ui.font[2], 14, 38, w - 28, line, WHITE );
+			Measurement ( w, h, 14, 38, w - 28, line, WHITE, ui.font[2], 0 );
 			TileRound ( w, 18, 88, 180, 12, 5, 0xFF444444U, 0xFF333333U );
 			if ( value )
 				TileRound ( w, 18, 88, (int) value * 180 / 100, 12, 4, GREEN, 0xFF88B80CU );
@@ -444,11 +479,11 @@ static void Tile ( int index )
 				TileRound ( w, 14, 40, w - 28, 43, 5, ui.pressed == port ? 0xFF7BB6EBU : 0xFF468CCFU, 0xFF3579B9U );
 			if ( p->mode == HTTP_MODE_TEMP_RHU )
 			{
-				Measurement ( w, h, 14, 43, 92, p->value[0], p->color[0] );
-				Measurement ( w, h, 113, 43, 89, p->value[1], p->color[1] );
+				Measurement ( w, h, 14, 18, w - 28, p->value[0], p->color[0], ui.font[2], 0 );
+				Measurement ( w, h, 14, 62, w - 28, p->value[1], p->color[1], ui.font[2], 2 );
 			}
 			else if ( p->mode == HTTP_MODE_TEMP || p->mode == HTTP_MODE_PT1000 || p->mode == HTTP_MODE_ADC )
-				Measurement ( w, h, 18, 43, w - 36, p->value[0], p->color[0] );
+				Measurement ( w, h, 14, 30, w - 28, p->value[0], p->color[0], p->mode == HTTP_MODE_ADC ? ui.font[2] : ui.font[4], 1 );
 			else
 				CenterText ( w, h, ui.font[2], 45, p->value[0], p->mode == HTTP_MODE_RELAY || p->mode == HTTP_MODE_IR ? WHITE : p->color[0] );
 			Description ( w, h, 104, p->name );
@@ -703,8 +738,8 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		}
 		ui.modePressed = -1;
 		ui.outputPressed = -1;
-		const int sizes[4] = { FONT_12, FONT_16, FONT_20, FONT_18 };
-		for ( int i = 0; i < 4; ++i )
+		const int sizes[5] = { FONT_12, FONT_16, FONT_20, FONT_18, FONT_28 };
+		for ( int i = 0; i < 5; ++i )
 		{
 			ui.font[i] = LCD_LoadFont_ChangeColor ( sizes[i], Arial, fontID_14 + i );
 			if ( ui.font[i] < 0 )

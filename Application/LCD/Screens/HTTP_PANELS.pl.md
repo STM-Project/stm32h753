@@ -119,3 +119,10 @@ czcionką Arial 20, a jednostki Arial 12. Pozostałe odczyty także używają
 zwykłej czcionki. W ustawieniach białe pola mają czarne wartości Arial 18
 bez pogrubienia. Napisy stanów przekaźników na niebieskich przyciskach są
 białe bez pogrubienia na obu ekranach.
+
+Układ pomiarów: pojedyncza temperatura Arial 28, wyśrodkowana; temp/RH
+Arial 20, temperatura u góry po lewej, RH niżej po prawej. RH pokazujemy bez
+części dziesiętnej (surowe dane HTTP nie są zmieniane). Jednostki na obu ekranach
+używają Arial 12 i LCD_GetFontHalfHeight do wyrównania linii bazowej, zamiast
+pełnej wysokości uwzględniającej dolne wydłużenia y/j. Przed C rysujemy puste
+kółko stopnia 5x5 px, niezależne od znaków dostępnych w czcionce na SD.
