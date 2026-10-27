@@ -483,11 +483,11 @@ static void Tile ( int index )
 				TileRound ( w, 14, 40, w - 28, 43, 5, ui.pressed == port ? 0xFF7BB6EBU : 0xFF468CCFU, 0xFF3579B9U );
 			if ( p->mode == HTTP_MODE_TEMP_RHU )
 			{
-				Measurement ( w, h, 32, 18, w - 64, p->value[0], p->color[0], ui.font[2], 0 );
-				Measurement ( w, h, 32, 62, w - 64, p->value[1], p->color[1], ui.font[2], 2 );
+				Measurement ( w, h, 44, 18, w - 88, p->value[0], p->color[0], ui.font[4], 0 );
+				Measurement ( w, h, 44, 62, w - 88, p->value[1], p->color[1], ui.font[4], 2 );
 			}
 			else if ( p->mode == HTTP_MODE_TEMP || p->mode == HTTP_MODE_PT1000 || p->mode == HTTP_MODE_ADC )
-				Measurement ( w, h, 14, 30, w - 28, p->value[0], p->color[0], p->mode == HTTP_MODE_ADC ? ui.font[2] : ui.font[4], 1 );
+				Measurement ( w, h, 14, 30, w - 28, p->value[0], p->color[0], ui.font[4], 1 );
 			else
 				CenterText ( w, h, ui.font[2], 45, p->value[0], p->mode == HTTP_MODE_RELAY || p->mode == HTTP_MODE_IR ? RelayTextColor ( p->value[0] ) : p->color[0] );
 			Description ( w, h, 104, p->name );
