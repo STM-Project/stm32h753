@@ -7,6 +7,7 @@
 
 #include "SCREEN_ReadPanel.h"
 #include "SCREEN_Navigation.h"
+#include "SCREEN_HttpPanels.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "LCD_BasicGraphics.h"
@@ -40,13 +41,16 @@ int argNmb = 0;
 char **argVal = NULL;
 
 static int SCREEN_number=0, SCREEN_number_prev=-1;  //LOAD IMAGE !!!!!
+static int lcdHttpResult;
 StructTxtPxlLen lenStr;
 
 void SCREEN_SetNr (int nr)
 {
-    if ( nr < 0 || nr > 10 )
+    if ( nr < 0 || nr > 12 )
         return;
     SCREEN_NavigationRestore ();
+    if ( SCREEN_number == 11 || SCREEN_number == 12 )
+        LCD_HttpPanel ( LCD_TEMP_EXIT, SCREEN_number == 12 );
     if (SCREEN_number == 7)
         LCD_TemperaturePkPanel(LCD_TEMP_EXIT, NULL, NULL);
     if (SCREEN_number == 8)
@@ -622,6 +626,11 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 	{
 		switch(SCREEN_number)
 		{
+		case 11:
+		case 12:
+			lcdHttpResult = LCD_HttpPanel ( LCD_TEMP_ENTER, SCREEN_number == 12 );
+			startScreen = 1;
+			break;
 		case 10:
 			lcdThresholdResult = LCD_SensorThresholds(LCD_THRESH_ENTER);
 			startScreen = 1;
@@ -683,6 +692,11 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 	{
 		switch(SCREEN_number)
 		{
+		case 11:
+		case 12:
+			if ( lcdHttpResult >= 0 )
+				lcdHttpResult = LCD_HttpPanel ( LCD_TEMP_UPDATE, SCREEN_number == 12 );
+			break;
 		case 10:
 			if (lcdThresholdResult >= 0)
 				lcdThresholdResult = LCD_SensorThresholds(LCD_THRESH_UPDATE);

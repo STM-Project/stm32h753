@@ -23,9 +23,9 @@ int SCREEN_NavigationNext ( int current, int direction )
 {
 	/* All implemented screens, including the temperature dashboards, gauges
 	 * and shared HTTP/LCD threshold editor. Debug '=' uses this same order. */
-	if ( current < 0 || current > 10 )
+	if ( current < 0 || current > 12 )
 		return 0;
-	return direction < 0 ? ( current == 0 ? 10 : current - 1 ) : ( current == 10 ? 0 : current + 1 );
+	return direction < 0 ? ( current == 0 ? 12 : current - 1 ) : ( current == 12 ? 0 : current + 1 );
 }
 
 void SCREEN_NavigationEnter ( uint32_t now, int down )

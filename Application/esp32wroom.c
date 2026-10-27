@@ -1,3 +1,4 @@
+#include "http_lcd_panels.h"
 #include "memory_debug.h"
 /*
  * wifi.c
@@ -1949,6 +1950,7 @@ void vtaskWifi(void *argument)
 	while(1)
 	{
 		HTTP_SensorLCDService ();
+		HTTP_LCDPanelService ( HttpRefr_sdram, strlen ( HttpRefr_sdram ), HAL_GetTick () );
 		/* Apply a timeout reset in the WiFi task before copying more data. */
 		if ( httpResetRequested )
 		{
@@ -1960,7 +1962,9 @@ void vtaskWifi(void *argument)
 		}
 		/* FreeRTOS copies and clears pending bits atomically before returning.
        * Notifications arriving during processing remain pending for next time. */
-		if ( xTaskNotifyWait ( 0, UINT32_MAX, &ulNotifiedValue, CLOUD_WaitTicks () ) == pdPASS )
+		TickType_t wait = CLOUD_WaitTicks ();
+		if ( HTTP_LCDPanelWanted () && wait > pdMS_TO_TICKS ( 250 ) ) wait = pdMS_TO_TICKS ( 250 );
+		if ( xTaskNotifyWait ( 0, UINT32_MAX, &ulNotifiedValue, wait ) == pdPASS )
 		{
 			/*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */ /* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
 			if ( ulNotifiedValue & BIT_ESP_SRV )
