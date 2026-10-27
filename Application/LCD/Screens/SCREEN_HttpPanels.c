@@ -28,7 +28,7 @@ extern uint32_t pLcd[];
 #define GREEN 0xFF9EDF0FU
 #define WHITE 0xFFEEEEEEU
 #define MUTED 0xFFBBBBBBU
-#define VALUE_GRAY 0xFF606060U
+#define VALUE_BLACK 0xFF000000U
 
 _Static_assert ( SCRATCH + ROW_W * 72 <= W * H, "LCD tile scratch exceeds pLcd" );
 _Static_assert ( SCRATCH + COL_W * 210 <= W * H, "LCD read scratch exceeds pLcd" );
@@ -284,6 +284,66 @@ static void CenterText ( int w, int h, int font, int y, const char *text, uint32
 		width = w - 28;
 	Text ( w, h, font, ( w - width ) / 2, y, w - ( w - width ) / 2 - 14, text, color );
 }
+/* Wrap port descriptions at word boundaries, with a UTF-8-safe fallback
+ * for long words. The third line uses the existing ellipsis clipping. */
+static void Description ( int w, int h, int y, const char *name )
+{
+	char remaining[96], line[96];
+	snprintf ( remaining, sizeof remaining, "%s", name );
+	int font = ui.font[0], width = w - 28;
+	for ( int row = 0; row < 3 && remaining[0]; ++row )
+	{
+		if ( row == 2 || LCD_GetWholeStrPxlWidth ( font, remaining, 0, NoConstWidth ) <= width )
+		{
+			CenterText ( w, h, font, y, remaining, GREEN );
+			break;
+		}
+		size_t fit = 0, space = 0;
+		for ( size_t next = 0; remaining[next]; )
+		{
+			++next;
+			while ( ( (unsigned char) remaining[next] & 0xC0 ) == 0x80 )
+				++next;
+			memcpy ( line, remaining, next );
+			line[next] = 0;
+			if ( LCD_GetWholeStrPxlWidth ( font, line, 0, NoConstWidth ) > width )
+				break;
+			fit = next;
+			if ( remaining[next] == ' ' )
+				space = next;
+		}
+		if ( space )
+			fit = space;
+		if ( !fit )
+			break;
+		memcpy ( line, remaining, fit );
+		line[fit] = 0;
+		CenterText ( w, h, font, y, line, GREEN );
+		while ( remaining[fit] == ' ' )
+			++fit;
+		memmove ( remaining, remaining + fit, strlen ( remaining + fit ) + 1 );
+		y += LCD_GetFontHeight ( font ) + 2;
+	}
+}
+/* Numeric values share one font; units are smaller and baseline aligned. */
+static void Measurement ( int w, int h, int x, int y, int width, const char *value, uint32_t color )
+{
+	char number[32];
+	snprintf ( number, sizeof number, "%s", value );
+	char *unit = strrchr ( number, ' ' );
+	if ( !unit )
+	{
+		Text ( w, h, ui.font[2], x, y, width, number, color );
+		return;
+	}
+	*unit++ = 0;
+	int unit_width = LCD_GetWholeStrPxlWidth ( ui.font[0], unit, 0, NoConstWidth );
+	int available = width - unit_width - 3;
+	int number_width = LCD_GetWholeStrPxlWidth ( ui.font[2], number, 0, NoConstWidth );
+	Text ( w, h, ui.font[2], x, y, available, number, color );
+	Text ( w, h, ui.font[0], x + ( number_width < available ? number_width : available ) + 3,
+		   y + LCD_GetFontHeight ( ui.font[2] ) - LCD_GetFontHeight ( ui.font[0] ), unit_width, unit, color );
+}
 static void CopyTile ( int index )
 {
 	int y = ui.tiles[index].y - ui.scroll;
@@ -339,7 +399,7 @@ static void Tile ( int index )
 			{
 				int x = 442 + column * 120;
 				TileRound ( w, x, 16, 112, 36, 4, WHITE, WHITE );
-				Text ( w, h, ui.font[3], x + 6, 22, 100, same ? p->value[column] : "---", VALUE_GRAY );
+				Text ( w, h, ui.font[3], x + 6, 22, 100, same ? p->value[column] : "---", VALUE_BLACK );
 			}
 		}
 		else
@@ -349,26 +409,22 @@ static void Tile ( int index )
 			TileRound ( w, 442, ui.outputPressed == port ? 19 : 16, 232, 36, 4, fill, fill );
 			const char *value = shown == HTTP_MODE_DISABLED ? "---" : same ? p->value[0]
 																		   : "---";
-			uint32_t color = p->color[0] == 0xFFFF8888U ? 0xFFB82B2BU : p->color[0] == 0xFF88CCFFU ? 0xFF236CA8U
-																	: output					   ? 0xFF202020U
-																								   : VALUE_GRAY;
+			uint32_t color = output ? WHITE : VALUE_BLACK;
 			Text ( w, h, ui.font[3], 454, ui.outputPressed == port ? 25 : 22, 208, value, color );
 		}
 	}
 	else
 	{
-		snprintf ( line, sizeof line, "%s  %02d", ModeName ( p->mode ), port );
-		Text ( w, h, ui.font[0], 14, 12, w - 28, line, MUTED );
 		if ( p->mode == HTTP_MODE_COUNTER )
 		{
 			static const char *labels[4] = { "godzinny", "dobowy", "tygodniowy", "miesieczny" };
-			Text ( w, h, ui.font[1], 14, 38, w - 28, p->value[0], p->color[0] );
+			Text ( w, h, ui.font[1], 14, 18, w - 28, p->value[0], p->color[0] );
 			for ( int row = 1; row < 5; ++row )
 			{
-				Text ( w, h, ui.font[0], 14, 39 + row * 27, 118, p->value[row], p->color[row] );
-				Text ( w, h, ui.font[0], 137, 39 + row * 27, 65, labels[row - 1], MUTED );
+				Text ( w, h, ui.font[0], 14, 23 + row * 25, 118, p->value[row], p->color[row] );
+				Text ( w, h, ui.font[0], 137, 23 + row * 25, 65, labels[row - 1], MUTED );
 			}
-			Text ( w, h, ui.font[0], 14, 185, w - 28, p->name, GREEN );
+			Description ( w, h, 151, p->name );
 		}
 		else if ( p->mode == HTTP_MODE_PWM )
 		{
@@ -380,16 +436,22 @@ static void Tile ( int index )
 				TileRound ( w, 18, 88, (int) value * 180 / 100, 12, 4, GREEN, 0xFF88B80CU );
 			int knob = 18 + (int) value * 180 / 100;
 			TileRound ( w, knob - 8, 81, 16, 26, 6, WHITE, 0xFFBBBBBBU );
-			CenterText ( w, h, ui.font[1], 121, p->name, GREEN );
+			Description ( w, h, 108, p->name );
 		}
 		else
 		{
 			if ( p->mode == HTTP_MODE_RELAY || p->mode == HTTP_MODE_IR )
 				TileRound ( w, 14, 40, w - 28, 43, 5, ui.pressed == port ? 0xFF7BB6EBU : 0xFF468CCFU, 0xFF3579B9U );
-			CenterText ( w, h, ui.font[2], 42, p->value[0], p->mode == HTTP_MODE_RELAY || p->mode == HTTP_MODE_IR ? 0xFF111111U : p->color[0] );
 			if ( p->mode == HTTP_MODE_TEMP_RHU )
-				Text ( w, h, ui.font[1], 18, 85, w - 36, p->value[1], p->color[1] );
-			CenterText ( w, h, ui.font[1], 122, p->name, GREEN );
+			{
+				Measurement ( w, h, 14, 43, 92, p->value[0], p->color[0] );
+				Measurement ( w, h, 113, 43, 89, p->value[1], p->color[1] );
+			}
+			else if ( p->mode == HTTP_MODE_TEMP || p->mode == HTTP_MODE_PT1000 || p->mode == HTTP_MODE_ADC )
+				Measurement ( w, h, 18, 43, w - 36, p->value[0], p->color[0] );
+			else
+				CenterText ( w, h, ui.font[2], 45, p->value[0], p->mode == HTTP_MODE_RELAY || p->mode == HTTP_MODE_IR ? WHITE : p->color[0] );
+			Description ( w, h, 104, p->name );
 		}
 	}
 	CopyTile ( index );
@@ -641,7 +703,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		}
 		ui.modePressed = -1;
 		ui.outputPressed = -1;
-		const int sizes[4] = { FONT_12, FONT_16, FONT_28_bold, FONT_18_bold };
+		const int sizes[4] = { FONT_12, FONT_16, FONT_20, FONT_18 };
 		for ( int i = 0; i < 4; ++i )
 		{
 			ui.font[i] = LCD_LoadFont_ChangeColor ( sizes[i], Arial, fontID_14 + i );

@@ -111,3 +111,11 @@ gradientu i promień rogów 4 px. Zapis pokazuje bursztynowe „Zapisywanie...�
 i komunikat pod ekranem, a po potwierdzonym zapisie SD zielone „Zapisano”.
 Potwierdzenie pozostaje do następnej lokalnej zmiany typu lub kolejnego zapisu;
 błąd zamiast potwierdzenia wyświetla czerwone „Blad zapisu”.
+
+Ekran odczytu nie pokazuje już typu i numeru portu nad wartością kafelka.
+Opis portu jest zawijany czcionką Arial 12 do trzech wierszy, również dla
+długich słów (z zachowaniem granic UTF-8). Temperatura i RH są obok siebie
+czcionką Arial 20, a jednostki Arial 12. Pozostałe odczyty także używają
+zwykłej czcionki. W ustawieniach białe pola mają czarne wartości Arial 18
+bez pogrubienia. Napisy stanów przekaźników na niebieskich przyciskach są
+białe bez pogrubienia na obu ekranach.
