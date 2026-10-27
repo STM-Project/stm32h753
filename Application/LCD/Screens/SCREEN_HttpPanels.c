@@ -50,7 +50,7 @@ static struct
 /* Local edits survive next/prev navigation, but not a power cycle. */
 static struct
 {
-	int initialized, saveError;
+	int initialized, saveError, saved;
 	int8_t draftMode[HTTP_LCD_PORTS];
 	uint8_t draftBase[HTTP_LCD_PORTS];
 	uint32_t saving;
@@ -61,6 +61,7 @@ static void SaveCompleted ( const HTTP_LCDPanelData *data )
 	{
 		edit.saving = 0;
 		edit.saveError = data->mode_result != 1;
+		edit.saved = !edit.saveError;
 		if ( !edit.saveError )
 		{
 			memset ( edit.draftMode, -1, sizeof edit.draftMode );
@@ -308,7 +309,7 @@ static void Tile ( int index )
 		Text ( w, h, ui.font[1], 14, 10, 198, p->name, WHITE );
 		Text ( w, h, ui.font[0], 14, 36, 198, "Nazwa portu", MUTED );
 		int selected = ui.modePressed == port || ui.menuPort == port;
-		TileRound ( w, 224, 16, 160, 36, 4, selected ? 0xFFCFED93U : 0xFFBBBBBBU, selected ? 0xFFAAC765U : 0xFF999999U );
+		TileRound ( w, 224, 16, 160, 36, 2, selected ? 0xFFAAC765U : 0xFFBBBBBBU, selected ? 0xFFAAC765U : 0xFFBBBBBBU );
 		Text ( w, h, ui.font[0], 234, 25, 122, ModeName ( shown ), 0xFF111111U );
 		for ( int row = 0; row < 5; ++row )
 		{
@@ -316,7 +317,7 @@ static void Tile ( int index )
 			Rect ( w, 368 - half, 31 + row, 2 * half + 1, 1, 0xFF222222U );
 		}
 		snprintf ( line, sizeof line, "%d", port );
-		TileRound ( w, 394, ui.pressed == port ? 19 : 16, 36, 36, 5, ui.pressed == port ? 0xFF99CCFFU : 0xFF6FA7D5U, 0xFF468CCFU );
+		TileRound ( w, 394, ui.pressed == port ? 19 : 16, 36, 36, 2, ui.pressed == port ? 0xFF99CCFFU : 0xFF468CCFU, ui.pressed == port ? 0xFF99CCFFU : 0xFF468CCFU );
 		Text ( w, h, ui.font[1], port < 10 ? 407 : 401, ui.pressed == port ? 26 : 23, port < 10 ? 14 : 26, line, 0xFF172000U );
 		if ( shown == HTTP_MODE_PWM )
 		{
@@ -334,14 +335,15 @@ static void Tile ( int index )
 			for ( int column = 0; column < 2; ++column )
 			{
 				int x = 442 + column * 120;
-				TileRound ( w, x, 16, 112, 36, 5, 0xFFE0E0E0U, 0xFFCCCCCCU );
+				TileRound ( w, x, 16, 112, 36, 2, WHITE, WHITE );
 				Text ( w, h, ui.font[3], x + 6, 22, 100, same ? p->value[column] : "---", 0xFF202020U );
 			}
 		}
 		else
 		{
 			int output = shown == HTTP_MODE_RELAY || shown == HTTP_MODE_IR;
-			TileRound ( w, 442, ui.outputPressed == port ? 19 : 16, 232, 36, 5, output ? ( ui.outputPressed == port ? 0xFF90C0ECU : 0xFF468CCFU ) : 0xFFE0E0E0U, output ? 0xFF3579B9U : 0xFFCCCCCCU );
+			uint32_t fill = output ? ( ui.outputPressed == port ? 0xFF90C0ECU : 0xFF468CCFU ) : WHITE;
+			TileRound ( w, 442, ui.outputPressed == port ? 19 : 16, 232, 36, 2, fill, fill );
 			const char *value = shown == HTTP_MODE_DISABLED ? "---" : same ? p->value[0]
 																		   : "---";
 			uint32_t color = p->color[0] == 0xFFFF8888U ? 0xFFB82B2BU : p->color[0] == 0xFF88CCFFU ? 0xFF236CA8U
@@ -402,16 +404,42 @@ static void Header ( void )
 	Text ( W, 64, ui.font[1], 52, 20, ui.settings ? 410 : 480, ui.settings ? "H7 . Ustawienia portow /set" : "H7 . Panel odczytowy /main", WHITE );
 	if ( ui.settings )
 	{
-		TileRound ( W, 590, 14, 122, 34, 5, FRAME, ui.savePressed ? 0xFF285F90U : 0xFF468CCFU );
-		Text ( W, 64, ui.font[0], 606, 23, 100, edit.saving ? "Zapis..." : "Zapisz", WHITE );
+		uint32_t fill = edit.saving ? 0xFF9A6600U : edit.saveError ? 0xFFAD3333U
+												: edit.saved	   ? 0xFF347B3CU
+												: ui.savePressed   ? 0xFF285F90U
+																   : 0xFF468CCFU;
+		TileRound ( W, 538, 14, 174, 34, 2, fill, fill );
+		Text ( W, 64, ui.font[1], 550, 21, 150, edit.saving ? "Zapisywanie..." : edit.saveError ? "Blad zapisu"
+																			 : edit.saved		? "Zapisano"
+																								: "Zapisz",
+			   WHITE );
 	}
 	else
 		Text ( W, 64, ui.font[0], 602, 24, 108, ui.data.time, GREEN );
 	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
 	Rect ( W, 0, 0, W, 40, BG );
-	Text ( W, 40, ui.font[0], 36, 12, 690, ui.settings && edit.saveError ? "Nie zapisano typu portu. Sprawdz SD lub ponow wybor." : ui.settings ? "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie"
-																																				: "Pomiar i stany HTTP . przewijaj palcem lub suwakiem",
-		   MUTED );
+	const char *notice = "Pomiar i stany HTTP . przewijaj palcem lub suwakiem";
+	uint32_t notice_color = MUTED;
+	if ( ui.settings )
+	{
+		notice = "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie";
+		if ( edit.saving )
+		{
+			notice = "Zapisywanie ustawien na karcie SD...";
+			notice_color = 0xFFFFCC55U;
+		}
+		else if ( edit.saveError )
+		{
+			notice = "Nie zapisano ustawien. Sprawdz SD lub ponow wybor.";
+			notice_color = 0xFFFF8888U;
+		}
+		else if ( edit.saved )
+		{
+			notice = "Zapisano na SD. Ustawienia sa dostepne w HTTP.";
+			notice_color = GREEN;
+		}
+	}
+	Text ( W, 40, ui.font[0], 36, 12, 690, notice, notice_color );
 	LCD_DisplayBuff ( 0, 440, W, 40, pLcd + SCRATCH );
 }
 #define MENU_W 240
@@ -554,6 +582,7 @@ static void MenuTouch ( int down, XY_Touch_Struct position )
 			edit.draftBase[port] = ui.data.ports[port].mode;
 			edit.draftMode[port] = ui.menuModes[hit] == ui.data.ports[port].mode ? -1 : (int8_t) ui.menuModes[hit];
 			edit.saveError = 0;
+			edit.saved = 0;
 			Header ();
 		}
 		ui.menuPort = 0;
@@ -664,7 +693,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 			Draw ();
 		return 0;
 	}
-	int save_hit = ui.settings && position.x >= 590 && position.x < 712 && position.y >= 14 && position.y < 48;
+	int save_hit = ui.settings && position.x >= 538 && position.x < 712 && position.y >= 14 && position.y < 48;
 	if ( ( down && !ui.wasDown && save_hit ) || ui.capture == 6 )
 	{
 		if ( down && !ui.wasDown )
@@ -691,6 +720,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 				{
 					edit.saving = HTTP_LCDPanelSaveModes ( changed, modes, edit.draftBase );
 					edit.saveError = !edit.saving;
+					edit.saved = 0;
 				}
 				Header ();
 			}

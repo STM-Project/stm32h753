@@ -80,6 +80,17 @@ void LCD_DisplayBuffStride(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t 
  for(unsigned row=0;row<h;row++)memcpy(shown+(y+row)*800+x,s+row*stride,w*4);
 }
 static void touch(int d,int x,int y){down=d;pos=(XY_Touch_Struct){(uint16_t)x,(uint16_t)y};tick+=20;assert(LCD_HttpPanel(0,ui.settings)==0);}
+/* Live updates without touch, HTTP request, or screen re-entry. */
+static void live_update(void){
+ int d=draws,full=viewport_draws;uint32_t hash=0;
+ for(unsigned i=0;i<800*480;i++)hash=hash*33+shown[i];
+ strcpy(model.ports[0].value[0],"31.8 C");tick+=250;
+ assert(LCD_HttpPanel(0,ui.settings)==0);
+ assert(!strcmp(ui.data.ports[0].value[0],"31.8 C")&&draws>d&&viewport_draws==full);
+ uint32_t after=0;for(unsigned i=0;i<800*480;i++)after=after*33+shown[i];assert(after!=hash);
+ d=draws;tick+=250;LCD_HttpPanel(0,ui.settings);assert(draws==d);
+ strcpy(model.ports[0].value[0],"25.6 C");tick+=250;LCD_HttpPanel(0,ui.settings);
+}
 static void preview(const char*name){char path[256];snprintf(path,sizeof path,"%s/%s.ppm",getenv("PREVIEW_DIR"),name);FILE*f=fopen(path,"wb");assert(f);fprintf(f,"P6\n800 480\n255\n");for(unsigned i=0;i<800*480;i++){fputc(shown[i]>>16,f);fputc(shown[i]>>8,f);fputc(shown[i],f);}fclose(f);}
 int main(void){
  for(unsigned i=0;i<33;i++){
@@ -89,6 +100,7 @@ int main(void){
  }
  strcpy(model.time,"12:34:56");model.revision=1;
  assert(LCD_HttpPanel(1,0)==0&&active&&ui.count==33&&Maximum()>0);preview("lcd-http-read-top");
+ live_update();
  int before=draws;tick+=500;LCD_HttpPanel(0,0);assert(draws==before); /* no redraw without changes */
  touch(1,746,100);touch(1,746,435);touch(0,746,435);assert(ui.scroll==Maximum());preview("lcd-http-read-bottom");
  /* Every scroll offset clips native text safely, including partial first/last cards. */
@@ -105,6 +117,10 @@ int main(void){
  touch(1,x+90,y);touch(1,x+90,y-20);touch(0,x+90,y-20);assert(toggle_calls==1);
  assert(LCD_HttpPanel(2,0)==0&&!active);
  assert(LCD_HttpPanel(1,1)==0&&active&&ui.count==33);preview("lcd-http-settings-top");
+ assert(shown[20*800+705]==shown[42*800+705]); /* solid save fill */
+ assert(shown[92*800+410]==shown[116*800+410]); /* solid dropdown */
+ assert(shown[92*800+700]==0xffeeeeee&&shown[120*800+700]==0xffeeeeee); /* white value field */
+ live_update();
  int old_pwm=pwm_calls,old_toggle=toggle_calls;
  uint8_t options[6];assert(ModeOptions(1,options)==6&&options[0]==HTTP_MODE_TEMP&&options[4]==HTTP_MODE_EOL);
  assert(ModeOptions(15,options)==2&&options[0]==HTTP_MODE_ADC);
@@ -144,13 +160,13 @@ int main(void){
  ui.scroll=old_scroll;ui.full=ui.dirty=1;LCD_HttpPanel(0,1);
  /* Save is on release, drag outside cancels, both drafts commit in one batch. */
  touch(1,630,30);assert(ui.savePressed&&save_calls==0);preview("lcd-http-settings-save-pressed");
- touch(1,550,30);touch(0,550,30);assert(save_calls==0);
- touch(1,630,30);touch(0,630,30);assert(save_calls==1&&edit.saving);
+ touch(1,500,30);touch(0,500,30);assert(save_calls==0);
+ touch(1,630,30);touch(0,630,30);assert(save_calls==1&&edit.saving&&!edit.saved);preview("lcd-http-settings-saving");
  assert(model.ports[0].mode==HTTP_MODE_TEMP&&saved_changed[0]&&saved_changed[32]);
- complete_save(0);assert(edit.saveError&&edit.draftMode[0]>=0&&ShownMode(1)==HTTP_MODE_PT1000);
+ complete_save(0);assert(edit.saveError&&!edit.saved&&edit.draftMode[0]>=0&&ShownMode(1)==HTTP_MODE_PT1000);
  touch(1,630,30);touch(0,630,30);assert(save_calls==2);
- complete_save(1);assert(!edit.saving&&!edit.saveError&&edit.draftMode[0]==-1&&edit.draftMode[32]==-1);
- assert(model.ports[0].mode==HTTP_MODE_PT1000&&model.ports[32].mode==HTTP_MODE_DISABLED);
+ complete_save(1);assert(!edit.saving&&!edit.saveError&&edit.saved&&edit.draftMode[0]==-1&&edit.draftMode[32]==-1);
+ assert(model.ports[0].mode==HTTP_MODE_PT1000&&model.ports[32].mode==HTTP_MODE_DISABLED);preview("lcd-http-settings-saved");
  touch(1,630,30);touch(0,630,30);assert(save_calls==2); /* no edits, no SD writes */
  assert(ui.tiles[32].y-ui.scroll+ui.tiles[32].h<=VIEW);
  index=20;ui.scroll=Clamp(ui.tiles[index].y,0,Maximum());ui.full=1;ui.dirty=1;LCD_HttpPanel(0,1);
