@@ -398,7 +398,7 @@ static void Tile ( int index )
 	int w = ui.tiles[index].w, h = ui.tiles[index].h;
 	Rect ( w, 0, 0, w, h, BG );
 	TileRound ( w, 0, 0, w, h, 18, FRAME, FRAME );
-	int border = ui.settings ? 2 : 5;
+	int border = 2;
 	TileRound ( w, border, border, w - 2 * border, h - 2 * border, 18 - border, CARD, CARD );
 	char line[80];
 	if ( ui.settings )
