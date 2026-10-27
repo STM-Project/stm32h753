@@ -33,12 +33,13 @@ _Static_assert ( SCRATCH + ROW_W * 72 <= W * H, "LCD tile scratch exceeds pLcd" 
 _Static_assert ( SCRATCH + COL_W * 210 <= W * H, "LCD read scratch exceeds pLcd" );
 static struct
 {
-	int active, settings, font[3], scroll, extent, count, wasDown, capture, startY, startScroll, armed, pressed, moved, dirty, full;
+	int active, settings, font[4], scroll, extent, count, wasDown, capture, startY, startScroll, armed, pressed, moved, dirty, full;
 	uint8_t changed[HTTP_LCD_PORTS];
 	unsigned pwmPort, pwmValue;
 	int pwmSent;
 	int outputPressed, modePressed, menuPort, menuY, menuX, menuCount, menuArmed, menuPressed, menuUp;
 	uint8_t menuModes[6];
+	int savePressed;
 	uint32_t sample;
 	struct
 	{
@@ -46,6 +47,27 @@ static struct
 	} tiles[HTTP_LCD_PORTS];
 	HTTP_LCDPanelData data, latest;
 } ui;
+/* Local edits survive next/prev navigation, but not a power cycle. */
+static struct
+{
+	int initialized, saveError;
+	int8_t draftMode[HTTP_LCD_PORTS];
+	uint8_t draftBase[HTTP_LCD_PORTS];
+	uint32_t saving;
+} edit;
+static void SaveCompleted ( const HTTP_LCDPanelData *data )
+{
+	if ( edit.saving && data->mode_serial == edit.saving )
+	{
+		edit.saving = 0;
+		edit.saveError = data->mode_result != 1;
+		if ( !edit.saveError )
+		{
+			memset ( edit.draftMode, -1, sizeof edit.draftMode );
+			ui.full = ui.dirty = 1;
+		}
+	}
+}
 
 static const char *ModeName ( unsigned mode )
 {
@@ -81,7 +103,7 @@ static const char *ModeName ( unsigned mode )
 }
 static unsigned ShownMode ( unsigned port )
 {
-	return ui.data.ports[port - 1].mode;
+	return ui.settings && edit.draftMode[port - 1] >= 0 ? (unsigned) edit.draftMode[port - 1] : ui.data.ports[port - 1].mode;
 }
 /* The exact option sets and ordering used by HTTP_TEMPLATE_ModeInput/Output2. */
 static int ModeOptions ( unsigned port, uint8_t out[6] )
@@ -301,7 +323,7 @@ static void Tile ( int index )
 			unsigned value = ui.capture == 3 && ui.pwmPort == (unsigned) port ? ui.pwmValue : same ? p->pwm
 																								   : 0;
 			snprintf ( line, sizeof line, "%u %%", value );
-			Text ( w, h, ui.font[0], 446, 25, 68, line, WHITE );
+			Text ( w, h, ui.font[3], 442, 22, 74, line, WHITE );
 			TileRound ( w, 522, 29, 144, 10, 4, 0xFF333333U, 0xFF222222U );
 			if ( value )
 				TileRound ( w, 522, 29, (int) value * 144 / 100, 10, 3, GREEN, 0xFF88B80CU );
@@ -313,7 +335,7 @@ static void Tile ( int index )
 			{
 				int x = 442 + column * 120;
 				TileRound ( w, x, 16, 112, 36, 5, 0xFFE0E0E0U, 0xFFCCCCCCU );
-				Text ( w, h, ui.font[0], x + 8, 25, 96, same ? p->value[column] : "---", 0xFF202020U );
+				Text ( w, h, ui.font[3], x + 6, 22, 100, same ? p->value[column] : "---", 0xFF202020U );
 			}
 		}
 		else
@@ -324,7 +346,7 @@ static void Tile ( int index )
 																		   : "---";
 			uint32_t color = p->color[0] == 0xFFFF8888U ? 0xFFB82B2BU : p->color[0] == 0xFF88CCFFU ? 0xFF236CA8U
 																								   : 0xFF202020U;
-			Text ( w, h, ui.font[0], 454, ui.outputPressed == port ? 28 : 25, 208, value, color );
+			Text ( w, h, ui.font[3], 454, ui.outputPressed == port ? 25 : 22, 208, value, color );
 		}
 	}
 	else
@@ -377,12 +399,18 @@ static void Header ( void )
 {
 	Rect ( W, 0, 0, W, TOP, BG );
 	TileRound ( W, 36, 8, 690, 46, 7, FRAME, 0xFF333333U );
-	Text ( W, 64, ui.font[1], 52, 20, 480, ui.settings ? "H7 . Ustawienia portow /set" : "H7 . Panel odczytowy /main", WHITE );
-	Text ( W, 64, ui.font[0], 602, 24, 108, ui.data.time, GREEN );
+	Text ( W, 64, ui.font[1], 52, 20, ui.settings ? 410 : 480, ui.settings ? "H7 . Ustawienia portow /set" : "H7 . Panel odczytowy /main", WHITE );
+	if ( ui.settings )
+	{
+		TileRound ( W, 590, 14, 122, 34, 5, FRAME, ui.savePressed ? 0xFF285F90U : 0xFF468CCFU );
+		Text ( W, 64, ui.font[0], 606, 23, 100, edit.saving ? "Zapis..." : "Zapisz", WHITE );
+	}
+	else
+		Text ( W, 64, ui.font[0], 602, 24, 108, ui.data.time, GREEN );
 	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
 	Rect ( W, 0, 0, W, 40, BG );
-	Text ( W, 40, ui.font[0], 36, 12, 690, ui.settings && ui.data.mode_result < 0 ? "Nie zapisano typu portu. Sprawdz SD lub ponow wybor." : ui.settings ? "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie"
-																																						 : "Pomiar i stany HTTP . przewijaj palcem lub suwakiem",
+	Text ( W, 40, ui.font[0], 36, 12, 690, ui.settings && edit.saveError ? "Nie zapisano typu portu. Sprawdz SD lub ponow wybor." : ui.settings ? "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie"
+																																				: "Pomiar i stany HTTP . przewijaj palcem lub suwakiem",
 		   MUTED );
 	LCD_DisplayBuff ( 0, 440, W, 40, pLcd + SCRATCH );
 }
@@ -522,11 +550,11 @@ static void MenuTouch ( int down, XY_Touch_Struct position )
 	{
 		if ( hit >= 0 && hit == ui.menuArmed )
 		{
-			if ( !HTTP_LCDPanelMode ( (unsigned) ui.menuPort, ui.menuModes[hit], ui.data.ports[ui.menuPort - 1].mode ) )
-			{
-				ui.data.mode_result = -3;
-				Header ();
-			}
+			unsigned port = (unsigned) ui.menuPort - 1;
+			edit.draftBase[port] = ui.data.ports[port].mode;
+			edit.draftMode[port] = ui.menuModes[hit] == ui.data.ports[port].mode ? -1 : (int8_t) ui.menuModes[hit];
+			edit.saveError = 0;
+			Header ();
 		}
 		ui.menuPort = 0;
 		ui.menuPressed = ui.menuArmed = -1;
@@ -573,10 +601,15 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		LCD_TOUCH_DeleteAllSetTouch ();
 		memset ( &ui, 0, sizeof ui );
 		ui.settings = settings;
+		if ( !edit.initialized )
+		{
+			memset ( edit.draftMode, -1, sizeof edit.draftMode );
+			edit.initialized = 1;
+		}
 		ui.modePressed = -1;
 		ui.outputPressed = -1;
-		const int sizes[3] = { FONT_12, FONT_16, FONT_28_bold };
-		for ( int i = 0; i < 3; ++i )
+		const int sizes[4] = { FONT_12, FONT_16, FONT_28_bold, FONT_18_bold };
+		for ( int i = 0; i < 4; ++i )
 		{
 			ui.font[i] = LCD_LoadFont_ChangeColor ( sizes[i], Arial, fontID_14 + i );
 			if ( ui.font[i] < 0 )
@@ -586,6 +619,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
 			ui.data.ports[i].mode = HTTP_MODE_DISABLED;
 		(void) HTTP_LCDPanelRead ( &ui.data );
+		SaveCompleted ( &ui.data );
 		Layout ();
 		ui.active = 1;
 		ui.wasDown = LCD_TOUCH_isPress () == press;
@@ -610,6 +644,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 				if ( memcmp ( &ui.data.ports[port], &ui.latest.ports[port], sizeof ui.data.ports[port] ) )
 					ui.changed[port] = 1;
 			}
+			SaveCompleted ( &ui.latest );
 			ui.data = ui.latest;
 			if ( ports_changed )
 			{
@@ -625,6 +660,43 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 	if ( ui.menuPort )
 	{
 		MenuTouch ( down, position );
+		if ( ui.dirty )
+			Draw ();
+		return 0;
+	}
+	int save_hit = ui.settings && position.x >= 590 && position.x < 712 && position.y >= 14 && position.y < 48;
+	if ( ( down && !ui.wasDown && save_hit ) || ui.capture == 6 )
+	{
+		if ( down && !ui.wasDown )
+			ui.capture = 6;
+		int pressed = down && save_hit && !edit.saving;
+		if ( ui.savePressed != pressed )
+		{
+			ui.savePressed = pressed;
+			Header ();
+		}
+		if ( !down && ui.wasDown )
+		{
+			if ( save_hit && !edit.saving )
+			{
+				uint8_t changed[HTTP_LCD_PORTS], modes[HTTP_LCD_PORTS];
+				unsigned count = 0;
+				for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
+				{
+					changed[i] = edit.draftMode[i] >= 0;
+					modes[i] = changed[i] ? (uint8_t) edit.draftMode[i] : ui.data.ports[i].mode;
+					count += changed[i];
+				}
+				if ( count )
+				{
+					edit.saving = HTTP_LCDPanelSaveModes ( changed, modes, edit.draftBase );
+					edit.saveError = !edit.saving;
+				}
+				Header ();
+			}
+			ui.capture = 0;
+		}
+		ui.wasDown = down;
 		if ( ui.dirty )
 			Draw ();
 		return 0;
@@ -655,7 +727,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 			ui.capture = 5;
 			ui.armed = SettingsOutputHit ( position.x, position.y );
 		}
-		else if ( ModeHit ( position.x, position.y ) >= 0 )
+		else if ( !edit.saving && ModeHit ( position.x, position.y ) >= 0 )
 		{
 			ui.capture = 4;
 			ui.armed = ModeHit ( position.x, position.y );

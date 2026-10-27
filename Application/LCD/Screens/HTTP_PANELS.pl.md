@@ -79,18 +79,28 @@ te same zestawy opcji co HTTP dla portów 1..14, 15..16, 17..20, 21..23,
 24..27 oraz 28..33. Aktualny wybór jest oznaczony, dotyk daje podświetlenie,
 a dotknięcie poza listą ją zamyka, bez przekazania kliknięcia do przycisku pod nią.
 
-Wybór typu trafia do kolejki właścicielskiego zadania HTTP/WiFi. Właściciel
-buduje formularz typów z bieżących wartości wszystkich portów i używa
-HTTP_SettingsApplyTarget oraz HTTP_SettingsBindingsCommitted, identycznie jak HTTP.
-Zapis na SD musi się udać, zanim nowy typ pojawi się na LCD. Nazwy i pozostałe
-porty pozostają bez zmian. Kolejka FIFO mieści osiem wyborów; pełna kolejka,
-błąd SD albo zmieniony w międzyczasie typ powoduje odmowę i komunikat na LCD.
-Operacje zapisu nie są wykonywane w zadaniu rysującym LCD. Przyjęte polecenia
-są obsługiwane również po wyjściu z ekranu.
+Wybór typu w dropdownie zmienia wyłącznie lokalny szkic LCD. Szkic przetrwa
+przewijanie i przejście next/prev do innego ekranu; restart go usuwa.
+Przycisk „Zapisz” w stałym nagłówku zatwierdza wszystkie zmienione typy jednym
+formularzem HTTP i jednym zapisem na SD. Wciśnięcie daje efekt wizualny,
+a zapis następuje dopiero po puszczeniu palca wewnątrz przycisku.
+Podczas zapisu przycisk pokazuje „Zapis...”, a dropdowny są zablokowane.
+Bez zmian przycisk nie wykonuje zapisu SD.
 
-LCD nie ma lokalnego nadpisania typu. Zapis HTTP automatycznie aktualizuje
-migawkę i aktywny ekran LCD przy kolejnym odczycie (odświeżanie do 4 Hz).
-HTTP pokazuje zapis LCD przy kolejnym pobraniu strony /set.
+HTTP_LCDPanelSaveModes przekazuje niezmienną paczkę do właścicielskiego
+zadania HTTP/WiFi. HTTP_SettingsApplyTarget i HTTP_SettingsBindingsCommitted
+zapewniają tę samą walidację i trwały zapis co HTTP. Wszystkie zmienione porty
+zapisują się razem albo żaden. Pozostałe porty korzystają z najnowszych wartości
+HTTP, a nazwy nie są modyfikowane. Równoczesna zmiana przez HTTP tego samego
+edytowanego portu powoduje odmowę: wybierz typ ponownie i naciśnij „Zapisz”.
+Przy błędzie SD szkic pozostaje na LCD i można ponowić zapis.
+Udany zapis usuwa szkic; HTTP pokazuje go przy kolejnym pobraniu /set.
+
+Zmiany zapisane przez HTTP automatycznie odświeżają LCD (do 4 Hz), o ile
+port nie ma niezapisanego lokalnego wyboru. Wartości dla lokalnego typu innego
+niż zapisany pokazują „---”; taki szkic nie pozwala sterować wyjściem
+niezgodnie z jego faktycznym typem. Odczyty w ustawieniach używają większej
+czcionki Arial 18 bold zamiast Arial 12.
 
 Popup używa tego samego obszaru scratch w pLcd, bez dodatkowej bitmapy SDRAM.
 Test ekranu generuje podglądy dropdown/dropup i sprawdza dobór opcji, krawędzie,

@@ -18,46 +18,55 @@ static uint32_t last_update;
 /* Slider samples coalesce per PWM channel; toggles are counted, never replaced. */
 static uint8_t pwm_dirty[3], pwm_value[3], toggles[13];
 
-/* FIFO: accepted selections survive screen exit and are never coalesced. */
-static struct
+/* Single immutable batch: all edited ports commit together or none do. */
+typedef struct
 {
-	unsigned port, mode, expected;
-} mode_queue[8];
-static unsigned mode_head, mode_count;
-static int mode_result;
-static unsigned mode_port;
+	uint8_t changed[HTTP_LCD_PORTS], modes[HTTP_LCD_PORTS], expected[HTTP_LCD_PORTS];
+	uint32_t serial;
+} ModeBatch;
+static ModeBatch mode_batch;
+static int mode_busy, mode_result;
+static uint32_t mode_serial, next_serial;
 
-int HTTP_LCDPanelMode ( unsigned port, unsigned mode, unsigned expected_mode )
+uint32_t HTTP_LCDPanelSaveModes ( const uint8_t changed[HTTP_LCD_PORTS], const uint8_t modes[HTTP_LCD_PORTS], const uint8_t expected[HTTP_LCD_PORTS] )
 {
-	if ( port < 1 || port > HTTP_LCD_PORTS || mode > 255 )
+	if ( !changed || !modes || !expected )
+		return 0;
+	unsigned count = 0;
+	for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
+		count += changed[i] != 0;
+	if ( !count )
 		return 0;
 	taskENTER_CRITICAL ();
-	int accepted = mode_count < 8;
-	if ( accepted )
+	uint32_t serial = 0;
+	if ( !mode_busy )
 	{
-		unsigned slot = ( mode_head + mode_count++ ) % 8;
-		mode_queue[slot].port = port;
-		mode_queue[slot].mode = mode;
-		mode_queue[slot].expected = expected_mode;
+		if ( !++next_serial )
+			++next_serial;
+		serial = mode_batch.serial = next_serial;
+		memcpy ( mode_batch.changed, changed, HTTP_LCD_PORTS );
+		memcpy ( mode_batch.modes, modes, HTTP_LCD_PORTS );
+		memcpy ( mode_batch.expected, expected, HTTP_LCD_PORTS );
+		mode_busy = 1;
 	}
 	taskEXIT_CRITICAL ();
-	if ( accepted )
+	if ( serial )
 		HTTP_SensorLCDWake ();
-	return accepted;
+	return serial;
 }
-/* Build the complete mode form from current owner-task values, preserving all
- * other ports and names. The HTTP validator and durable SD callback are shared. */
-static int SaveMode ( unsigned port, unsigned mode, unsigned expected )
+/* Preserve current unedited ports; reject concurrent HTTP changes to edited
+ * ports. The full HTTP validator and durable SD callback are shared. */
+static int SaveModes ( const ModeBatch *batch )
 {
-	if ( HTTP_SettingsPortMode ( port ) != expected )
-		return HTTP_SETTINGS_INVALID;
-	if ( mode == expected )
-		return HTTP_SETTINGS_SAVED;
+	for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
+		if ( batch->changed[i] && HTTP_SettingsPortMode ( i + 1 ) != batch->expected[i] )
+			return HTTP_SETTINGS_INVALID;
 	char target[1024];
 	size_t used = (size_t) snprintf ( target, sizeof target, "/set?h7_page=/set&h7_form=1&n_109_zapisz=1" );
-	for ( unsigned i = 1; i <= HTTP_LCD_PORTS; ++i )
+	for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
 	{
-		int n = snprintf ( target + used, sizeof target - used, "&n_GPIO_val_%03u=%02u", i, i == port ? mode : HTTP_SettingsPortMode ( i ) );
+		unsigned mode = batch->changed[i] ? batch->modes[i] : HTTP_SettingsPortMode ( i + 1 );
+		int n = snprintf ( target + used, sizeof target - used, "&n_GPIO_val_%03u=%02u", i + 1, mode );
 		if ( n < 0 || (size_t) n >= sizeof target - used )
 			return HTTP_SETTINGS_CAPACITY_ERROR;
 		used += (size_t) n;
@@ -81,7 +90,7 @@ void HTTP_LCDPanelActive ( int enabled )
 int HTTP_LCDPanelWanted ( void )
 {
 	taskENTER_CRITICAL ();
-	int wanted = active || mode_count;
+	int wanted = active || mode_busy;
 	taskEXIT_CRITICAL ();
 	return wanted;
 }
@@ -153,22 +162,17 @@ static void Value ( HTTP_LCDPort *p, unsigned row, const char *data, size_t leng
 void HTTP_LCDPanelService ( const char *data, size_t length, uint32_t now )
 {
 	int command = 0;
-	/* At most one SD commit per service call; no SD operation in the LCD task. */
+	/* Keep the batch locked until the durable owner-task commit completes. */
 	taskENTER_CRITICAL ();
-	unsigned queued = mode_count;
-	unsigned port = queued ? mode_queue[mode_head].port : 0;
-	unsigned mode = queued ? mode_queue[mode_head].mode : 0;
-	unsigned expected = queued ? mode_queue[mode_head].expected : 0;
-	if ( queued )
-	{
-		mode_head = ( mode_head + 1 ) % 8;
-		--mode_count;
-	}
+	int queued = mode_busy;
 	taskEXIT_CRITICAL ();
 	if ( queued )
 	{
-		mode_result = SaveMode ( port, mode, expected );
-		mode_port = port;
+		mode_result = SaveModes ( &mode_batch );
+		mode_serial = mode_batch.serial;
+		taskENTER_CRITICAL ();
+		mode_busy = 0;
+		taskEXIT_CRITICAL ();
 		command = 1;
 	}
 	for ( unsigned i = 0; i < 13; ++i )
@@ -216,7 +220,7 @@ void HTTP_LCDPanelService ( const char *data, size_t length, uint32_t now )
 	last_update = now;
 	memset ( &pending, 0, sizeof pending );
 	pending.mode_result = mode_result;
-	pending.mode_port = mode_port;
+	pending.mode_serial = mode_serial;
 	Field ( pending.time, sizeof pending.time, data, length, 0, 8 );
 	for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
 	{

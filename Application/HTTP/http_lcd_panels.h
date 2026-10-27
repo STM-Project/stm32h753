@@ -16,7 +16,7 @@ typedef struct
 {
 	uint32_t revision;
 	int mode_result;
-	unsigned mode_port;
+	uint32_t mode_serial;
 	char time[25];
 	HTTP_LCDPort ports[HTTP_LCD_PORTS];
 } HTTP_LCDPanelData;
@@ -25,8 +25,9 @@ int HTTP_LCDPanelWanted ( void );
 int HTTP_LCDPanelRead ( HTTP_LCDPanelData *out );
 int HTTP_LCDPanelPwm ( unsigned port, unsigned percent );
 int HTTP_LCDPanelToggle ( unsigned port );
-/* Queued, durable settings change; expected_mode rejects a stale LCD selection. */
-int HTTP_LCDPanelMode ( unsigned port, unsigned mode, unsigned expected_mode );
+/* One atomic form commit. Unchanged ports use the latest HTTP values.
+ * Returns request id, or zero when another save is pending / arguments invalid. */
+uint32_t HTTP_LCDPanelSaveModes ( const uint8_t changed[HTTP_LCD_PORTS], const uint8_t modes[HTTP_LCD_PORTS], const uint8_t expected[HTTP_LCD_PORTS] );
 /* Only call from WiFi, after HTTP model init and before its notification wait. */
 void HTTP_LCDPanelService ( const char *refresh, size_t length, uint32_t now );
 #endif

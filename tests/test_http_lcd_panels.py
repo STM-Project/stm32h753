@@ -56,32 +56,37 @@ int main(void){
  assert(HTTP_SettingsModelInit(NULL,save,NULL)>=0);
  uint16_t instance=0;const HTTP_SettingPage*page=HTTP_SettingsCatalogFind("/set",&instance);
  HTTP_SettingsBindingsCommitted(page,0);committed=0;
+ uint8_t changed[33]={0},values[33]={0},expected[33]={0};
+ changed[0]=changed[14]=1;values[0]=HTTP_MODE_PT1000;values[14]=HTTP_MODE_ADC;
+ expected[0]=modes[0];expected[14]=modes[14];
  unsigned untouched=modes[1];
- assert(HTTP_LCDPanelMode(1,HTTP_MODE_PT1000,modes[0]));
- assert(modes[0]==HTTP_MODE_TEMP); /* queued, no LCD-task mutation */
+ uint32_t serial=HTTP_LCDPanelSaveModes(changed,values,expected);assert(serial);
+ assert(!HTTP_LCDPanelSaveModes(changed,values,expected)&&HTTP_LCDPanelWanted());
+ assert(modes[0]==HTTP_MODE_TEMP&&modes[14]==HTTP_MODE_DISABLED);
  HTTP_LCDPanelService(data,sizeof data,1600);HTTP_LCDPanelRead(&out);
- assert(modes[0]==HTTP_MODE_PT1000&&modes[1]==untouched&&committed==1);
- assert(out.ports[0].mode==HTTP_MODE_PT1000&&out.mode_result==HTTP_SETTINGS_SAVED);
- fail_save=1;assert(HTTP_LCDPanelMode(1,HTTP_MODE_INPUT,HTTP_MODE_PT1000));
+ assert(modes[0]==HTTP_MODE_PT1000&&modes[14]==HTTP_MODE_ADC&&modes[1]==untouched&&committed==1);
+ assert(out.mode_result==HTTP_SETTINGS_SAVED&&out.mode_serial==serial);
+ expected[0]=modes[0];expected[14]=modes[14];values[0]=HTTP_MODE_INPUT;values[14]=HTTP_MODE_DISABLED;
+ fail_save=1;assert(HTTP_LCDPanelSaveModes(changed,values,expected));
  HTTP_LCDPanelService(data,sizeof data,1700);HTTP_LCDPanelRead(&out);
- assert(modes[0]==HTTP_MODE_PT1000&&out.mode_result==HTTP_SETTINGS_STORAGE_ERROR&&committed==1);
- fail_save=0;assert(HTTP_LCDPanelMode(1,HTTP_MODE_INPUT,HTTP_MODE_TEMP));
+ assert(modes[0]==HTTP_MODE_PT1000&&modes[14]==HTTP_MODE_ADC&&out.mode_result==HTTP_SETTINGS_STORAGE_ERROR&&committed==1);
+ fail_save=0;expected[0]=HTTP_MODE_TEMP;assert(HTTP_LCDPanelSaveModes(changed,values,expected));
  HTTP_LCDPanelService(data,sizeof data,1800);HTTP_LCDPanelRead(&out);
- assert(modes[0]==HTTP_MODE_PT1000&&out.mode_result==HTTP_SETTINGS_INVALID);
- assert(HTTP_LCDPanelMode(15,HTTP_MODE_RELAY,modes[14]));
+ assert(modes[0]==HTTP_MODE_PT1000&&modes[14]==HTTP_MODE_ADC&&out.mode_result==HTTP_SETTINGS_INVALID);
+ expected[0]=modes[0];values[14]=HTTP_MODE_RELAY;assert(HTTP_LCDPanelSaveModes(changed,values,expected));
  HTTP_LCDPanelService(data,sizeof data,1900);HTTP_LCDPanelRead(&out);
- assert(out.mode_result==HTTP_SETTINGS_INVALID&&committed==1);
- assert(!HTTP_LCDPanelMode(0,0,0)&&!HTTP_LCDPanelMode(34,0,0));
- for(unsigned i=0;i<8;i++)assert(HTTP_LCDPanelMode(1,HTTP_MODE_INPUT,HTTP_MODE_PT1000));
- assert(!HTTP_LCDPanelMode(1,HTTP_MODE_TEMP,HTTP_MODE_PT1000));assert(HTTP_LCDPanelWanted());
- for(unsigned i=0;i<8;i++)HTTP_LCDPanelService(data,sizeof data,2000+i);
- assert(modes[0]==HTTP_MODE_INPUT&&committed==2&&!mode_count);
- /* A later HTTP commit is published without re-entering the LCD panel. */
- HTTP_LCDPanelActive(1);assert(SaveMode(1,HTTP_MODE_TEMP,HTTP_MODE_INPUT)==HTTP_SETTINGS_SAVED);
+ assert(out.mode_result==HTTP_SETTINGS_INVALID&&committed==1&&modes[0]==HTTP_MODE_PT1000);
+ values[14]=HTTP_MODE_DISABLED;assert(HTTP_LCDPanelSaveModes(changed,values,expected));
+ HTTP_LCDPanelService(data,sizeof data,2000);assert(modes[0]==HTTP_MODE_INPUT&&modes[14]==HTTP_MODE_DISABLED&&committed==2);
+ /* Later HTTP commit is published without re-entering the LCD panel. */
+ ModeBatch web={0};web.changed[0]=1;web.modes[0]=HTTP_MODE_TEMP;web.expected[0]=HTTP_MODE_INPUT;
+ HTTP_LCDPanelActive(1);assert(SaveModes(&web)==HTTP_SETTINGS_SAVED);
  HTTP_LCDPanelService(data,sizeof data,2500);HTTP_LCDPanelRead(&out);assert(out.ports[0].mode==HTTP_MODE_TEMP);
  assert(HTTP_SettingsModelInit(load,save,NULL)==1);
  assert(!strcmp(HTTP_SettingsGetByName(page,0,"n_GPIO_val_001"),"02"));
  assert(!strcmp(HTTP_SettingsGetByName(page,0,"n_s_Port_nazwa1_001"),"Nazwa portu nr 1"));
+ memset(changed,0,sizeof changed);assert(!HTTP_LCDPanelSaveModes(changed,values,expected));
+ assert(!HTTP_LCDPanelSaveModes(NULL,values,expected));
  assert(!critical);puts("PASS: shared settings/refresh values, bounded snapshots, latest PWM per channel, mode validation, relay toggle against HTTP feedback, no changes when inactive, commands survive EXIT.");
 }
 '''

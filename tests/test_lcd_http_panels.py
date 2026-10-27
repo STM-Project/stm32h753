@@ -13,7 +13,7 @@ SUPPORT=r'''
 #include <stddef.h>
 typedef struct {uint16_t x,y;} XY_Touch_Struct;
 extern XY_Touch_Struct screenTouchPos;
-enum {press=1,release=0,FONT_12=12,FONT_16=16,FONT_28_bold=28,Arial=0,fontID_14=14,fullHight=-3,NoConstWidth=0};
+enum {press=1,release=0,FONT_12=12,FONT_16=16,FONT_28_bold=28,FONT_18_bold=18,Arial=0,fontID_14=14,fullHight=-3,NoConstWidth=0};
 void SCREEN_ResetAllParameters(void);void LCD_TOUCH_DeleteAllSetTouch(void);
 int LCD_LoadFont_ChangeColor(int,int,uint32_t);int LCD_GetFontHeight(int);
 int LCD_GetWholeStrPxlWidth(int,char*,int,int);
@@ -30,7 +30,7 @@ C=r'''
 #include <stdlib.h>
 uint32_t pLcd[800*480];static uint32_t shown[800*480];
 static HTTP_LCDPanelData model;
-static int down,active,pwm_calls,toggle_calls,draws,viewport_draws;
+static int down,active,pwm_calls,toggle_calls,save_calls,draws,viewport_draws;
 static unsigned pwm_port,pwm_percent;
 static uint32_t tick;
 static XY_Touch_Struct pos;
@@ -39,14 +39,24 @@ void SCREEN_ResetAllParameters(void){}void LCD_TOUCH_DeleteAllSetTouch(void){}
 void HTTP_LCDPanelActive(int a){active=a;}
 int HTTP_LCDPanelRead(HTTP_LCDPanelData*out){*out=model;return 1;}
 int HTTP_LCDPanelPwm(unsigned p,unsigned v){assert(p>=21&&p<=23&&v<=100);pwm_calls++;pwm_port=p;pwm_percent=v;model.ports[p-1].pwm=v;return 1;}
-int HTTP_LCDPanelMode(unsigned p,unsigned m,unsigned expected){assert(model.ports[p-1].mode==expected);model.ports[p-1].mode=m;return 1;}
+static uint8_t saved_modes[33],saved_changed[33];
+static uint32_t save_serial;
+uint32_t HTTP_LCDPanelSaveModes(const uint8_t c[33],const uint8_t m[33],const uint8_t e[33]){
+ save_calls++;for(unsigned i=0;i<33;i++)if(c[i])assert(model.ports[i].mode==e[i]);
+ memcpy(saved_modes,m,33);memcpy(saved_changed,c,33);return ++save_serial;
+}
+static void complete_save(int ok){
+ for(unsigned i=0;i<33;i++)if(ok&&saved_changed[i])model.ports[i].mode=saved_modes[i];
+ model.mode_result=ok?1:-2;model.mode_serial=save_serial;tick+=250;
+ LCD_HttpPanel(0,1);
+}
 int HTTP_LCDPanelToggle(unsigned p){assert(p>=21&&p<=33);toggle_calls++;return 1;}
 int LCD_LoadFont_ChangeColor(int size,int style,uint32_t id){(void)style;(void)id;return size;}
-int LCD_GetFontHeight(int font){return font==28?35:font==16?21:16;}
-int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==28?2:f==16?1:0][(unsigned char)*t];return n;}
+int LCD_GetFontHeight(int font){return font==28?35:font==18?24:font==16?21:16;}
+int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==28?2:f==18?3:f==16?1:0][(unsigned char)*t];return n;}
 void LCD_StrChangeColorWindow(uint32_t offset,uint32_t w,uint32_t h,int font,int x,int y,char*t,int only,int space,uint32_t bg,uint32_t color,uint8_t a,int fixed){
  (void)only;(void)space;(void)bg;(void)a;(void)fixed;assert(offset==SCRATCH&&offset+w*h<=800*480&&x>=0&&y>=0);
- int f=font==28?2:font==16?1:0;
+ int f=font==28?2:font==18?3:font==16?1:0;
  for(;*t;t++){
   unsigned c=(unsigned char)*t;assert(x+glyph_width[f][c]<=(int)w);
   for(int row=0;row<glyph_height[f];row++)for(int col=0;col<glyph_width[f][c];col++){
@@ -107,7 +117,7 @@ int main(void){
  assert(ui.menuPort==1&&!ui.menuUp&&ui.menuY>=TOP&&ui.menuY+ui.menuCount*MENU_ITEM+4<=TOP+VIEW);
  preview("lcd-http-settings-dropdown");
  int mx=ui.menuX+50,my=ui.menuY+2+MENU_ITEM+16;
- touch(1,mx,my);touch(0,mx,my);tick+=250;LCD_HttpPanel(0,1);assert(!ui.menuPort&&ShownMode(1)==HTTP_MODE_PT1000&&model.ports[0].mode==HTTP_MODE_PT1000);
+ touch(1,mx,my);touch(0,mx,my);tick+=250;LCD_HttpPanel(0,1);assert(!ui.menuPort&&ShownMode(1)==HTTP_MODE_PT1000&&model.ports[0].mode==HTTP_MODE_TEMP&&save_calls==0);
  assert(pwm_calls==old_pwm&&toggle_calls==old_toggle);
  touch(1,CONTENT_X+300,TOP+30);touch(0,CONTENT_X+300,TOP+30);
  touch(1,50,TOP+30);touch(0,50,TOP+30);assert(!ui.menuPort&&ShownMode(1)==HTTP_MODE_PT1000);
@@ -125,8 +135,23 @@ int main(void){
  preview("lcd-http-settings-dropup");
  mx=ui.menuX+50;my=ui.menuY+2+3*MENU_ITEM+16;
  touch(1,mx,my);touch(0,mx,my);tick+=250;LCD_HttpPanel(0,1);
- assert(ShownMode(33)==HTTP_MODE_DISABLED&&model.ports[32].mode==HTTP_MODE_DISABLED);
- assert(pwm_calls==old_pwm&&toggle_calls==old_toggle); /* settings never writes or navigates */
+ assert(ShownMode(33)==HTTP_MODE_DISABLED&&model.ports[32].mode==HTTP_MODE_TIMER&&save_calls==0);
+ assert(pwm_calls==old_pwm&&toggle_calls==old_toggle);
+ /* Drafts remain local across screen navigation. */
+ int old_scroll=ui.scroll;assert(LCD_HttpPanel(2,1)==0);assert(LCD_HttpPanel(1,0)==0);
+ assert(LCD_HttpPanel(2,0)==0);assert(LCD_HttpPanel(1,1)==0);
+ assert(ShownMode(1)==HTTP_MODE_PT1000&&ShownMode(33)==HTTP_MODE_DISABLED&&save_calls==0);
+ ui.scroll=old_scroll;ui.full=ui.dirty=1;LCD_HttpPanel(0,1);
+ /* Save is on release, drag outside cancels, both drafts commit in one batch. */
+ touch(1,630,30);assert(ui.savePressed&&save_calls==0);preview("lcd-http-settings-save-pressed");
+ touch(1,550,30);touch(0,550,30);assert(save_calls==0);
+ touch(1,630,30);touch(0,630,30);assert(save_calls==1&&edit.saving);
+ assert(model.ports[0].mode==HTTP_MODE_TEMP&&saved_changed[0]&&saved_changed[32]);
+ complete_save(0);assert(edit.saveError&&edit.draftMode[0]>=0&&ShownMode(1)==HTTP_MODE_PT1000);
+ touch(1,630,30);touch(0,630,30);assert(save_calls==2);
+ complete_save(1);assert(!edit.saving&&!edit.saveError&&edit.draftMode[0]==-1&&edit.draftMode[32]==-1);
+ assert(model.ports[0].mode==HTTP_MODE_PT1000&&model.ports[32].mode==HTTP_MODE_DISABLED);
+ touch(1,630,30);touch(0,630,30);assert(save_calls==2); /* no edits, no SD writes */
  assert(ui.tiles[32].y-ui.scroll+ui.tiles[32].h<=VIEW);
  index=20;ui.scroll=Clamp(ui.tiles[index].y,0,Maximum());ui.full=1;ui.dirty=1;LCD_HttpPanel(0,1);
  y=TOP+ui.tiles[index].y-ui.scroll+34;x=CONTENT_X;
@@ -147,15 +172,15 @@ int main(void){
 '''
 def glyph_header():
  widths=[];offsets=[];heights=[];pixels=bytearray()
- for size in [16,21,35]:
-  font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',size-3)
+ for size in [16,21,35,24]:
+  font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/'+('DejaVuSans-Bold.ttf' if size in (24,35) else 'DejaVuSans.ttf'),size-3)
   ws=[];offs=[];heights.append(size)
   for c in range(256):
    w=max(1,int(font.getlength(chr(c))+.5));ws.append(w);offs.append(len(pixels));im=Image.new('L',(w,size));from PIL import ImageDraw
    ImageDraw.Draw(im).text((0,-2),chr(c),font=font,fill=255);pixels.extend(im.tobytes())
   widths.append(ws);offsets.append(offs)
  def arr(a):return '{'+','.join(map(str,a))+'}'
- return 'static const unsigned char glyphs[]='+arr(pixels)+';\nstatic const int glyph_height[]='+arr(heights)+';\nstatic const int glyph_width[3][256]={' + ','.join(arr(a) for a in widths)+'};\nstatic const unsigned glyph_offset[3][256]={' + ','.join(arr(a) for a in offsets)+'};\n'
+ return 'static const unsigned char glyphs[]='+arr(pixels)+';\nstatic const int glyph_height[]='+arr(heights)+';\nstatic const int glyph_width[4][256]={' + ','.join(arr(a) for a in widths)+'};\nstatic const unsigned glyph_offset[4][256]={' + ','.join(arr(a) for a in offsets)+'};\n'
 with tempfile.TemporaryDirectory() as d:
  p=Path(d)
  for n in ['SCREEN_HttpPanels.c','SCREEN_HttpPanels.h']:shutil.copy(ROOT/'Application/LCD/Screens'/n,p/n)
