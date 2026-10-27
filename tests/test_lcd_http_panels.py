@@ -39,6 +39,7 @@ void SCREEN_ResetAllParameters(void){}void LCD_TOUCH_DeleteAllSetTouch(void){}
 void HTTP_LCDPanelActive(int a){active=a;}
 int HTTP_LCDPanelRead(HTTP_LCDPanelData*out){*out=model;return 1;}
 int HTTP_LCDPanelPwm(unsigned p,unsigned v){assert(p>=21&&p<=23&&v<=100);pwm_calls++;pwm_port=p;pwm_percent=v;model.ports[p-1].pwm=v;return 1;}
+int HTTP_LCDPanelMode(unsigned p,unsigned m,unsigned expected){assert(model.ports[p-1].mode==expected);model.ports[p-1].mode=m;return 1;}
 int HTTP_LCDPanelToggle(unsigned p){assert(p>=21&&p<=33);toggle_calls++;return 1;}
 int LCD_LoadFont_ChangeColor(int size,int style,uint32_t id){(void)style;(void)id;return size;}
 int LCD_GetFontHeight(int font){return font==28?35:font==16?21:16;}
@@ -106,7 +107,7 @@ int main(void){
  assert(ui.menuPort==1&&!ui.menuUp&&ui.menuY>=TOP&&ui.menuY+ui.menuCount*MENU_ITEM+4<=TOP+VIEW);
  preview("lcd-http-settings-dropdown");
  int mx=ui.menuX+50,my=ui.menuY+2+MENU_ITEM+16;
- touch(1,mx,my);touch(0,mx,my);assert(!ui.menuPort&&ShownMode(1)==HTTP_MODE_PT1000&&model.ports[0].mode==HTTP_MODE_TEMP);
+ touch(1,mx,my);touch(0,mx,my);tick+=250;LCD_HttpPanel(0,1);assert(!ui.menuPort&&ShownMode(1)==HTTP_MODE_PT1000&&model.ports[0].mode==HTTP_MODE_PT1000);
  assert(pwm_calls==old_pwm&&toggle_calls==old_toggle);
  touch(1,CONTENT_X+300,TOP+30);touch(0,CONTENT_X+300,TOP+30);
  touch(1,50,TOP+30);touch(0,50,TOP+30);assert(!ui.menuPort&&ShownMode(1)==HTTP_MODE_PT1000);
@@ -123,8 +124,8 @@ int main(void){
  assert(ui.menuPort==33&&ui.menuUp&&ui.menuY>=TOP&&ui.menuY+ui.menuCount*MENU_ITEM+4<=TOP+VIEW);
  preview("lcd-http-settings-dropup");
  mx=ui.menuX+50;my=ui.menuY+2+3*MENU_ITEM+16;
- touch(1,mx,my);touch(0,mx,my);
- assert(ShownMode(33)==HTTP_MODE_DISABLED&&model.ports[32].mode==HTTP_MODE_TIMER);
+ touch(1,mx,my);touch(0,mx,my);tick+=250;LCD_HttpPanel(0,1);
+ assert(ShownMode(33)==HTTP_MODE_DISABLED&&model.ports[32].mode==HTTP_MODE_DISABLED);
  assert(pwm_calls==old_pwm&&toggle_calls==old_toggle); /* settings never writes or navigates */
  assert(ui.tiles[32].y-ui.scroll+ui.tiles[32].h<=VIEW);
  index=20;ui.scroll=Clamp(ui.tiles[index].y,0,Maximum());ui.full=1;ui.dirty=1;LCD_HttpPanel(0,1);
@@ -136,8 +137,8 @@ int main(void){
  y=TOP+ui.tiles[index].y-ui.scroll+34;
  old_toggle=toggle_calls;touch(1,x+570,y);assert(ui.outputPressed==28);touch(0,x+570,y);assert(toggle_calls==old_toggle+1);
  preview("lcd-http-settings-relays");
- /* A preview mode is never allowed to operate hardware of a different actual mode. */
- ui.draftMode[27]=HTTP_MODE_PWM;ui.full=1;ui.dirty=1;LCD_HttpPanel(0,1);
+ /* A saved HTTP mode change updates LCD and disables the old relay/PWM controls. */
+ model.ports[27].mode=HTTP_MODE_TIMER;tick+=250;ui.full=1;ui.dirty=1;LCD_HttpPanel(0,1);
  old_pwm=pwm_calls;touch(1,x+600,y);touch(0,x+600,y);assert(pwm_calls==old_pwm);
 
  assert(LCD_HttpPanel(2,1)==0&&!active);

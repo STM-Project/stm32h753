@@ -79,13 +79,19 @@ te same zestawy opcji co HTTP dla portów 1..14, 15..16, 17..20, 21..23,
 24..27 oraz 28..33. Aktualny wybór jest oznaczony, dotyk daje podświetlenie,
 a dotknięcie poza listą ją zamyka, bez przekazania kliknięcia do przycisku pod nią.
 
-Zgodnie z ustaleniem wybór jest tylko lokalnym podglądem LCD: nie zmienia
-modelu HTTP, karty SD ani faktycznej konfiguracji portu. Po ponownym wejściu
-na ekran wracają wartości wspólnego modelu. Dla trybu podglądu różnego od
-faktycznego pokazujemy brak odczytu i nie wykonujemy poleceń niezgodnych z
-aktualnym trybem. Zwykłe sterowanie PWM/przekaźnikiem w zgodnym trybie działa
-na wspólnym modelu również na ekranie /set, analogicznie do HTTP.
+Wybór typu trafia do kolejki właścicielskiego zadania HTTP/WiFi. Właściciel
+buduje formularz typów z bieżących wartości wszystkich portów i używa
+HTTP_SettingsApplyTarget oraz HTTP_SettingsBindingsCommitted, identycznie jak HTTP.
+Zapis na SD musi się udać, zanim nowy typ pojawi się na LCD. Nazwy i pozostałe
+porty pozostają bez zmian. Kolejka FIFO mieści osiem wyborów; pełna kolejka,
+błąd SD albo zmieniony w międzyczasie typ powoduje odmowę i komunikat na LCD.
+Operacje zapisu nie są wykonywane w zadaniu rysującym LCD. Przyjęte polecenia
+są obsługiwane również po wyjściu z ekranu.
+
+LCD nie ma lokalnego nadpisania typu. Zapis HTTP automatycznie aktualizuje
+migawkę i aktywny ekran LCD przy kolejnym odczycie (odświeżanie do 4 Hz).
+HTTP pokazuje zapis LCD przy kolejnym pobraniu strony /set.
 
 Popup używa tego samego obszaru scratch w pLcd, bez dodatkowej bitmapy SDRAM.
 Test ekranu generuje podglądy dropdown/dropup i sprawdza dobór opcji, krawędzie,
-wybór lokalny, zamknięcie bez akcji pod popupem oraz sterowanie obok numeru portu.
+wybór wspólny z HTTP, zamknięcie bez akcji pod popupem oraz sterowanie obok numeru portu.

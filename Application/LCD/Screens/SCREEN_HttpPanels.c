@@ -39,7 +39,6 @@ static struct
 	int pwmSent;
 	int outputPressed, modePressed, menuPort, menuY, menuX, menuCount, menuArmed, menuPressed, menuUp;
 	uint8_t menuModes[6];
-	int8_t draftMode[HTTP_LCD_PORTS];
 	uint32_t sample;
 	struct
 	{
@@ -82,7 +81,7 @@ static const char *ModeName ( unsigned mode )
 }
 static unsigned ShownMode ( unsigned port )
 {
-	return ui.draftMode[port - 1] >= 0 ? (unsigned) ui.draftMode[port - 1] : ui.data.ports[port - 1].mode;
+	return ui.data.ports[port - 1].mode;
 }
 /* The exact option sets and ordering used by HTTP_TEMPLATE_ModeInput/Output2. */
 static int ModeOptions ( unsigned port, uint8_t out[6] )
@@ -382,7 +381,9 @@ static void Header ( void )
 	Text ( W, 64, ui.font[0], 602, 24, 108, ui.data.time, GREEN );
 	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
 	Rect ( W, 0, 0, W, 40, BG );
-	Text ( W, 40, ui.font[0], 36, 12, 690, ui.settings ? "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie" : "Pomiar i stany HTTP . przewijaj palcem lub suwakiem", MUTED );
+	Text ( W, 40, ui.font[0], 36, 12, 690, ui.settings && ui.data.mode_result < 0 ? "Nie zapisano typu portu. Sprawdz SD lub ponow wybor." : ui.settings ? "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie"
+																																						 : "Pomiar i stany HTTP . przewijaj palcem lub suwakiem",
+		   MUTED );
 	LCD_DisplayBuff ( 0, 440, W, 40, pLcd + SCRATCH );
 }
 #define MENU_W 240
@@ -520,7 +521,13 @@ static void MenuTouch ( int down, XY_Touch_Struct position )
 	if ( !down && ui.wasDown )
 	{
 		if ( hit >= 0 && hit == ui.menuArmed )
-			ui.draftMode[ui.menuPort - 1] = (int8_t) ui.menuModes[hit];
+		{
+			if ( !HTTP_LCDPanelMode ( (unsigned) ui.menuPort, ui.menuModes[hit], ui.data.ports[ui.menuPort - 1].mode ) )
+			{
+				ui.data.mode_result = -3;
+				Header ();
+			}
+		}
 		ui.menuPort = 0;
 		ui.menuPressed = ui.menuArmed = -1;
 		ui.full = ui.dirty = 1;
@@ -566,7 +573,6 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		LCD_TOUCH_DeleteAllSetTouch ();
 		memset ( &ui, 0, sizeof ui );
 		ui.settings = settings;
-		memset ( ui.draftMode, -1, sizeof ui.draftMode );
 		ui.modePressed = -1;
 		ui.outputPressed = -1;
 		const int sizes[3] = { FONT_12, FONT_16, FONT_28_bold };

@@ -6,7 +6,16 @@ mode=re.search(r'typedef enum\s*\{\s*HTTP_MODE_RELAY.*?\} HTTP_PORT_MODE;',(ROOT
 C=r'''
 #include "http_lcd_panels.c"
 #include <assert.h>
+#include <stdlib.h>
 static unsigned modes[33],wake,critical;
+static int fail_save, committed;
+static unsigned char disk[HTTP_SETTINGS_BLOB_SIZE];
+static int load(void*b,size_t n,void*c){(void)c;memcpy(b,disk,n);return 1;}
+static int save(const void*b,size_t n,void*c){(void)c;assert(!critical);if(fail_save)return -1;memcpy(disk,b,n);return 1;}
+void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage*p,uint16_t instance){
+ assert(!critical&&instance==0);committed++;
+ for(unsigned i=0;i<33;i++){char name[32];snprintf(name,sizeof name,"n_GPIO_val_%03u",i+1);modes[i]=(unsigned)atoi(HTTP_SettingsGetByName(p,0,name));}
+}
 static char names[33][31];
 void enter(void){critical++;} void leave(void){assert(critical);critical--;}
 void HTTP_SensorLCDWake(void){wake++;}
@@ -43,17 +52,47 @@ int main(void){
  assert(!strcmp(out.ports[0].name,"Zmiana z WWW")&&!strcmp(out.ports[0].value[0],"--- C"));
  HTTP_LCDPanelActive(0);assert(!HTTP_LCDPanelWanted());revision=out.revision;HTTP_LCDPanelService(data,sizeof data,1500);HTTP_LCDPanelRead(&out);assert(out.revision==revision);
  assert(HTTP_LCDPanelPwm(21,0));HTTP_LCDPanelService(data,sizeof data,1501);assert(RELAY_GetState(21)->pwm_percent==0);
+ /* Real HTTP schema/model and save callback, including transaction failure. */
+ assert(HTTP_SettingsModelInit(NULL,save,NULL)>=0);
+ uint16_t instance=0;const HTTP_SettingPage*page=HTTP_SettingsCatalogFind("/set",&instance);
+ HTTP_SettingsBindingsCommitted(page,0);committed=0;
+ unsigned untouched=modes[1];
+ assert(HTTP_LCDPanelMode(1,HTTP_MODE_PT1000,modes[0]));
+ assert(modes[0]==HTTP_MODE_TEMP); /* queued, no LCD-task mutation */
+ HTTP_LCDPanelService(data,sizeof data,1600);HTTP_LCDPanelRead(&out);
+ assert(modes[0]==HTTP_MODE_PT1000&&modes[1]==untouched&&committed==1);
+ assert(out.ports[0].mode==HTTP_MODE_PT1000&&out.mode_result==HTTP_SETTINGS_SAVED);
+ fail_save=1;assert(HTTP_LCDPanelMode(1,HTTP_MODE_INPUT,HTTP_MODE_PT1000));
+ HTTP_LCDPanelService(data,sizeof data,1700);HTTP_LCDPanelRead(&out);
+ assert(modes[0]==HTTP_MODE_PT1000&&out.mode_result==HTTP_SETTINGS_STORAGE_ERROR&&committed==1);
+ fail_save=0;assert(HTTP_LCDPanelMode(1,HTTP_MODE_INPUT,HTTP_MODE_TEMP));
+ HTTP_LCDPanelService(data,sizeof data,1800);HTTP_LCDPanelRead(&out);
+ assert(modes[0]==HTTP_MODE_PT1000&&out.mode_result==HTTP_SETTINGS_INVALID);
+ assert(HTTP_LCDPanelMode(15,HTTP_MODE_RELAY,modes[14]));
+ HTTP_LCDPanelService(data,sizeof data,1900);HTTP_LCDPanelRead(&out);
+ assert(out.mode_result==HTTP_SETTINGS_INVALID&&committed==1);
+ assert(!HTTP_LCDPanelMode(0,0,0)&&!HTTP_LCDPanelMode(34,0,0));
+ for(unsigned i=0;i<8;i++)assert(HTTP_LCDPanelMode(1,HTTP_MODE_INPUT,HTTP_MODE_PT1000));
+ assert(!HTTP_LCDPanelMode(1,HTTP_MODE_TEMP,HTTP_MODE_PT1000));assert(HTTP_LCDPanelWanted());
+ for(unsigned i=0;i<8;i++)HTTP_LCDPanelService(data,sizeof data,2000+i);
+ assert(modes[0]==HTTP_MODE_INPUT&&committed==2&&!mode_count);
+ /* A later HTTP commit is published without re-entering the LCD panel. */
+ HTTP_LCDPanelActive(1);assert(SaveMode(1,HTTP_MODE_TEMP,HTTP_MODE_INPUT)==HTTP_SETTINGS_SAVED);
+ HTTP_LCDPanelService(data,sizeof data,2500);HTTP_LCDPanelRead(&out);assert(out.ports[0].mode==HTTP_MODE_TEMP);
+ assert(HTTP_SettingsModelInit(load,save,NULL)==1);
+ assert(!strcmp(HTTP_SettingsGetByName(page,0,"n_GPIO_val_001"),"02"));
+ assert(!strcmp(HTTP_SettingsGetByName(page,0,"n_s_Port_nazwa1_001"),"Nazwa portu nr 1"));
  assert(!critical);puts("PASS: shared settings/refresh values, bounded snapshots, latest PWM per channel, mode validation, relay toggle against HTTP feedback, no changes when inactive, commands survive EXIT.");
 }
 '''
 with tempfile.TemporaryDirectory() as d:
  p=Path(d)
- for name in ['http_lcd_panels.c','http_lcd_panels.h']:shutil.copy(ROOT/'Application/HTTP'/name,p/name)
+ for name in ['http_lcd_panels.c','http_lcd_panels.h','http_settings_model.c','http_settings_model.h','http_settings_catalog.c','http_settings_catalog.h','http_settings_bindings.h']:shutil.copy(ROOT/'Application/HTTP'/name,p/name)
  for name in ['relay_states.c','relay_states.h']:shutil.copy(ROOT/'Application'/name,p/name)
  (p/'wwwPages.h').write_text(mode+'\nunsigned HTTP_SettingsPortMode(unsigned);\nconst char*HTTP_SettingsPortName(unsigned,const char*);\n')
  (p/'http_sensor_lcd.h').write_text('void HTTP_SensorLCDWake(void);\n')
  (p/'FreeRTOS.h').write_text('void enter(void);void leave(void);\n#define taskENTER_CRITICAL() enter()\n#define taskEXIT_CRITICAL() leave()\n')
  (p/'task.h').write_text('')
  (p/'test.c').write_text(C)
- subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+d,str(p/'test.c'),str(p/'relay_states.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+d,'-I'+str(ROOT/'Application/HTTP'),'-I'+str(ROOT/'Application'),str(p/'test.c'),str(p/'relay_states.c'),str(p/'http_settings_model.c'),str(p/'http_settings_catalog.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)
