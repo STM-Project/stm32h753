@@ -387,6 +387,10 @@ static void CopyTile ( int index )
 		memcpy ( pLcd + ( y + row ) * W + ui.tiles[index].x,
 				 pLcd + SCRATCH + row * ui.tiles[index].w, (size_t) ui.tiles[index].w * sizeof *pLcd );
 }
+static uint32_t RelayTextColor ( const char *state )
+{
+	return strcmp ( state, "Stan OFF" ) == 0 ? VALUE_BLACK : WHITE;
+}
 static void Tile ( int index )
 {
 	int port = ui.tiles[index].port;
@@ -441,7 +445,7 @@ static void Tile ( int index )
 			TileRound ( w, 442, ui.outputPressed == port ? 19 : 16, 232, 36, 4, fill, fill );
 			const char *value = shown == HTTP_MODE_DISABLED ? "---" : same ? p->value[0]
 																		   : "---";
-			uint32_t color = output ? WHITE : VALUE_BLACK;
+			uint32_t color = output ? RelayTextColor ( value ) : VALUE_BLACK;
 			if ( shown == HTTP_MODE_TEMP || shown == HTTP_MODE_PT1000 || shown == HTTP_MODE_ADC || shown == HTTP_MODE_COUNTER )
 				Measurement ( w, h, 454, 22, 208, value, color, ui.font[3], 0 );
 			else
@@ -465,7 +469,7 @@ static void Tile ( int index )
 		{
 			unsigned value = ui.capture == 3 && ui.pwmPort == (unsigned) port ? ui.pwmValue : p->pwm;
 			snprintf ( line, sizeof line, "%u %%", value );
-			Measurement ( w, h, 14, 38, w - 28, line, WHITE, ui.font[2], 0 );
+			Measurement ( w, h, 14, 30, w - 28, line, WHITE, ui.font[4], 1 );
 			TileRound ( w, 18, 88, 180, 12, 5, 0xFF444444U, 0xFF333333U );
 			if ( value )
 				TileRound ( w, 18, 88, (int) value * 180 / 100, 12, 4, GREEN, 0xFF88B80CU );
@@ -479,13 +483,13 @@ static void Tile ( int index )
 				TileRound ( w, 14, 40, w - 28, 43, 5, ui.pressed == port ? 0xFF7BB6EBU : 0xFF468CCFU, 0xFF3579B9U );
 			if ( p->mode == HTTP_MODE_TEMP_RHU )
 			{
-				Measurement ( w, h, 14, 18, w - 28, p->value[0], p->color[0], ui.font[2], 0 );
-				Measurement ( w, h, 14, 62, w - 28, p->value[1], p->color[1], ui.font[2], 2 );
+				Measurement ( w, h, 32, 18, w - 64, p->value[0], p->color[0], ui.font[2], 0 );
+				Measurement ( w, h, 32, 62, w - 64, p->value[1], p->color[1], ui.font[2], 2 );
 			}
 			else if ( p->mode == HTTP_MODE_TEMP || p->mode == HTTP_MODE_PT1000 || p->mode == HTTP_MODE_ADC )
 				Measurement ( w, h, 14, 30, w - 28, p->value[0], p->color[0], p->mode == HTTP_MODE_ADC ? ui.font[2] : ui.font[4], 1 );
 			else
-				CenterText ( w, h, ui.font[2], 45, p->value[0], p->mode == HTTP_MODE_RELAY || p->mode == HTTP_MODE_IR ? WHITE : p->color[0] );
+				CenterText ( w, h, ui.font[2], 45, p->value[0], p->mode == HTTP_MODE_RELAY || p->mode == HTTP_MODE_IR ? RelayTextColor ( p->value[0] ) : p->color[0] );
 			Description ( w, h, 104, p->name );
 		}
 	}

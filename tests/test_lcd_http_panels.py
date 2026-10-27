@@ -98,6 +98,7 @@ static void live_update(void){
 static void preview(const char*name){char path[256];snprintf(path,sizeof path,"%s/%s.ppm",getenv("PREVIEW_DIR"),name);FILE*f=fopen(path,"wb");assert(f);fprintf(f,"P6\n800 480\n255\n");for(unsigned i=0;i<800*480;i++){fputc(shown[i]>>16,f);fputc(shown[i]>>8,f);fputc(shown[i],f);}fclose(f);}
 int SCREEN_NavigationNext(int,int);
 int main(void){
+ assert(RelayTextColor("Stan OFF")==0xff000000&&RelayTextColor("Stan ON")==WHITE);
  for(unsigned i=0;i<33;i++){
   HTTP_LCDPort*p=&model.ports[i];p->port=i+1;p->mode=i<4?HTTP_MODE_TEMP:i<8?HTTP_MODE_TEMP_RHU:i<14?HTTP_MODE_INPUT:i<16?HTTP_MODE_ADC:i<20?HTTP_MODE_COUNTER:i<23?HTTP_MODE_PWM:i<29?HTTP_MODE_RELAY:HTTP_MODE_TIMER;
   snprintf(p->name,31,"Nazwa portu nr %u",i+1);snprintf(p->value[0],32,"%s",i<8?"25.6 C":i<14?"Stan OFF":i<16?"5.125 V":i<20?"1234.50 Wh":"Stan ON");
