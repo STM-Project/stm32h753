@@ -37,6 +37,9 @@ static struct
 	uint8_t changed[HTTP_LCD_PORTS];
 	unsigned pwmPort, pwmValue;
 	int pwmSent;
+	int outputPressed, modePressed, menuPort, menuY, menuX, menuCount, menuArmed, menuPressed, menuUp;
+	uint8_t menuModes[6];
+	int8_t draftMode[HTTP_LCD_PORTS];
 	uint32_t sample;
 	struct
 	{
@@ -76,6 +79,56 @@ static const char *ModeName ( unsigned mode )
 	default:
 		return "Wylaczony";
 	}
+}
+static unsigned ShownMode ( unsigned port )
+{
+	return ui.draftMode[port - 1] >= 0 ? (unsigned) ui.draftMode[port - 1] : ui.data.ports[port - 1].mode;
+}
+/* The exact option sets and ordering used by HTTP_TEMPLATE_ModeInput/Output2. */
+static int ModeOptions ( unsigned port, uint8_t out[6] )
+{
+	static const uint8_t sensor[] = { HTTP_MODE_TEMP, HTTP_MODE_PT1000, HTTP_MODE_TEMP_RHU, HTTP_MODE_INPUT, HTTP_MODE_EOL, HTTP_MODE_DISABLED };
+	static const uint8_t adc[] = { HTTP_MODE_ADC, HTTP_MODE_DISABLED };
+	static const uint8_t counter[] = { HTTP_MODE_TEMP, HTTP_MODE_TEMP_RHU, HTTP_MODE_INPUT, HTTP_MODE_COUNTER, HTTP_MODE_DISABLED };
+	static const uint8_t pwm[] = { HTTP_MODE_RELAY, HTTP_MODE_TIMER, HTTP_MODE_THERMOSTAT, HTTP_MODE_PWM, HTTP_MODE_IR, HTTP_MODE_DISABLED };
+	static const uint8_t ir[] = { HTTP_MODE_RELAY, HTTP_MODE_TIMER, HTTP_MODE_THERMOSTAT, HTTP_MODE_IR, HTTP_MODE_DISABLED };
+	static const uint8_t relay[] = { HTTP_MODE_RELAY, HTTP_MODE_TIMER, HTTP_MODE_THERMOSTAT, HTTP_MODE_DISABLED };
+	const uint8_t *options;
+	size_t count;
+	if ( port < 1 || port > HTTP_LCD_PORTS )
+		return 0;
+	if ( port <= 14 )
+	{
+		options = sensor;
+		count = sizeof sensor;
+	}
+	else if ( port <= 16 )
+	{
+		options = adc;
+		count = sizeof adc;
+	}
+	else if ( port <= 20 )
+	{
+		options = counter;
+		count = sizeof counter;
+	}
+	else if ( port <= 23 )
+	{
+		options = pwm;
+		count = sizeof pwm;
+	}
+	else if ( port <= 27 )
+	{
+		options = ir;
+		count = sizeof ir;
+	}
+	else
+	{
+		options = relay;
+		count = sizeof relay;
+	}
+	memcpy ( out, options, count );
+	return (int) count;
 }
 static int Group ( unsigned mode )
 {
@@ -224,20 +277,56 @@ static void Tile ( int index )
 	int w = ui.tiles[index].w, h = ui.tiles[index].h;
 	Rect ( w, 0, 0, w, h, BG );
 	TileRound ( w, 0, 0, w, h, 18, FRAME, FRAME );
-	TileRound ( w, 5, 5, w - 10, h - 10, 14, CARD, CARD );
+	int border = ui.settings ? 2 : 5;
+	TileRound ( w, border, border, w - 2 * border, h - 2 * border, 18 - border, CARD, CARD );
 	char line[80];
 	if ( ui.settings )
 	{
-		snprintf ( line, sizeof line, "%02d", port );
-		TileRound ( w, 12, 15, 38, 38, 5, 0xFFBBBBBBU, 0xFF999999U );
-		Text ( w, h, ui.font[1], 17, 21, 30, line, 0xFF111111U );
-		Text ( w, h, ui.font[1], 62, 10, 252, p->name, WHITE );
-		Text ( w, h, ui.font[0], 62, 36, 252, "Nazwa portu", 0xFFDDDDDDU );
-		TileRound ( w, 328, 16, 176, 36, 4, 0xFFBBBBBBU, 0xFF999999U );
-		Text ( w, h, ui.font[0], 338, 25, 156, ModeName ( p->mode ), 0xFF111111U );
-		uint32_t color = ui.pressed == port ? 0xFFCAFF4CU : GREEN;
-		TileRound ( w, 520, ui.pressed == port ? 19 : 16, 154, 36, 5, color, ui.pressed == port ? 0xFF81BA04U : 0xFF8ABB0CU );
-		Text ( w, h, ui.font[1], 532, ui.pressed == port ? 26 : 23, 130, "Ustawienia", 0xFF172000U );
+		unsigned shown = ShownMode ( (unsigned) port );
+		int same = shown == p->mode;
+		Text ( w, h, ui.font[1], 14, 10, 198, p->name, WHITE );
+		Text ( w, h, ui.font[0], 14, 36, 198, "Nazwa portu", MUTED );
+		int selected = ui.modePressed == port || ui.menuPort == port;
+		TileRound ( w, 224, 16, 160, 36, 4, selected ? 0xFFCFED93U : 0xFFBBBBBBU, selected ? 0xFFAAC765U : 0xFF999999U );
+		Text ( w, h, ui.font[0], 234, 25, 122, ModeName ( shown ), 0xFF111111U );
+		for ( int row = 0; row < 5; ++row )
+		{
+			int half = selected && ui.menuUp ? row : 4 - row;
+			Rect ( w, 368 - half, 31 + row, 2 * half + 1, 1, 0xFF222222U );
+		}
+		snprintf ( line, sizeof line, "%d", port );
+		TileRound ( w, 394, ui.pressed == port ? 19 : 16, 36, 36, 5, ui.pressed == port ? 0xFF99CCFFU : 0xFF6FA7D5U, 0xFF468CCFU );
+		Text ( w, h, ui.font[1], port < 10 ? 407 : 401, ui.pressed == port ? 26 : 23, port < 10 ? 14 : 26, line, 0xFF172000U );
+		if ( shown == HTTP_MODE_PWM )
+		{
+			unsigned value = ui.capture == 3 && ui.pwmPort == (unsigned) port ? ui.pwmValue : same ? p->pwm
+																								   : 0;
+			snprintf ( line, sizeof line, "%u %%", value );
+			Text ( w, h, ui.font[0], 446, 25, 68, line, WHITE );
+			TileRound ( w, 522, 29, 144, 10, 4, 0xFF333333U, 0xFF222222U );
+			if ( value )
+				TileRound ( w, 522, 29, (int) value * 144 / 100, 10, 3, GREEN, 0xFF88B80CU );
+			TileRound ( w, 515 + (int) value * 144 / 100, 21, 14, 26, 5, WHITE, 0xFFBBBBBBU );
+		}
+		else if ( shown == HTTP_MODE_TEMP_RHU )
+		{
+			for ( int column = 0; column < 2; ++column )
+			{
+				int x = 442 + column * 120;
+				TileRound ( w, x, 16, 112, 36, 5, 0xFFE0E0E0U, 0xFFCCCCCCU );
+				Text ( w, h, ui.font[0], x + 8, 25, 96, same ? p->value[column] : "---", 0xFF202020U );
+			}
+		}
+		else
+		{
+			int output = shown == HTTP_MODE_RELAY || shown == HTTP_MODE_IR;
+			TileRound ( w, 442, ui.outputPressed == port ? 19 : 16, 232, 36, 5, output ? ( ui.outputPressed == port ? 0xFF90C0ECU : 0xFF468CCFU ) : 0xFFE0E0E0U, output ? 0xFF3579B9U : 0xFFCCCCCCU );
+			const char *value = shown == HTTP_MODE_DISABLED ? "---" : same ? p->value[0]
+																		   : "---";
+			uint32_t color = p->color[0] == 0xFFFF8888U ? 0xFFB82B2BU : p->color[0] == 0xFF88CCFFU ? 0xFF236CA8U
+																								   : 0xFF202020U;
+			Text ( w, h, ui.font[0], 454, ui.outputPressed == port ? 28 : 25, 208, value, color );
+		}
 	}
 	else
 	{
@@ -293,11 +382,35 @@ static void Header ( void )
 	Text ( W, 64, ui.font[0], 602, 24, 108, ui.data.time, GREEN );
 	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
 	Rect ( W, 0, 0, W, 40, BG );
-	Text ( W, 40, ui.font[0], 36, 12, 690, ui.settings ? "Nazwa portu                         Tryb                         Ustawienia" : "Pomiar i stany HTTP . przewijaj palcem lub suwakiem", MUTED );
+	Text ( W, 40, ui.font[0], 36, 12, 690, ui.settings ? "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie" : "Pomiar i stany HTTP . przewijaj palcem lub suwakiem", MUTED );
 	LCD_DisplayBuff ( 0, 440, W, 40, pLcd + SCRATCH );
+}
+#define MENU_W 240
+#define MENU_ITEM 32
+_Static_assert ( SCRATCH + MENU_W * ( 6 * MENU_ITEM + 4 ) <= W * H, "LCD mode dropdown exceeds pLcd scratch" );
+static void DrawMenu ( void )
+{
+	int h = ui.menuCount * MENU_ITEM + 4;
+	Rect ( MENU_W, 0, 0, MENU_W, h, 0xFFB7B7B7U );
+	for ( int i = 0; i < ui.menuCount; ++i )
+	{
+		int y = 2 + i * MENU_ITEM;
+		int selected = ui.menuModes[i] == ShownMode ( (unsigned) ui.menuPort );
+		uint32_t color = ui.menuPressed == i ? 0xFFD9F5ADU : selected ? 0xFFA1C966U
+																	  : 0xFFE0E0E0U;
+		Rect ( MENU_W, 2, y, MENU_W - 4, MENU_ITEM - 1, color );
+		Text ( MENU_W, h, ui.font[0], 12, y + 8, MENU_W - 42, ModeName ( ui.menuModes[i] ), 0xFF202020U );
+		if ( selected )
+			Text ( MENU_W, h, ui.font[0], MENU_W - 25, y + 8, 16, "*", 0xFF202020U );
+	}
+	int y = ui.menuY - TOP;
+	for ( int row = 0; row < h; ++row )
+		memcpy ( pLcd + ( y + row ) * W + ui.menuX, pLcd + SCRATCH + row * MENU_W, MENU_W * sizeof *pLcd );
 }
 static void Draw ( void )
 {
+	if ( ui.menuPort )
+		ui.full = 1;
 	if ( ui.full )
 		for ( int i = 0; i < W * VIEW; ++i )
 			pLcd[i] = BG;
@@ -311,6 +424,8 @@ static void Draw ( void )
 		for ( int y = 0; y < VIEW; ++y )
 			for ( int x = 0; x < SCROLL_W; ++x )
 				pLcd[y * W + SCROLL_X + x] = y >= thumb_y && y < thumb_y + thumb_h ? GREEN : 0xFF333333U;
+		if ( ui.menuPort )
+			DrawMenu ();
 		LCD_DisplayBuff ( 0, TOP, W, VIEW, pLcd );
 	}
 	else
@@ -346,17 +461,79 @@ static int ButtonHit ( int x, int y )
 		return -1;
 	int lx = x - ui.tiles[hit].x, ly = y - TOP + ui.scroll - ui.tiles[hit].y;
 	if ( ui.settings )
-		return lx >= 520 && lx < 674 && ly >= 16 && ly < 55 ? hit : -1;
+		return lx >= 394 && lx < 430 && ly >= 16 && ly < 55 ? hit : -1;
 	unsigned mode = ui.data.ports[ui.tiles[hit].port - 1].mode;
 	return ( mode == HTTP_MODE_RELAY || mode == HTTP_MODE_IR ) && lx >= 14 && lx < COL_W - 14 && ly >= 40 && ly < 83 ? hit : -1;
+}
+static int SettingsOutputHit ( int x, int y )
+{
+	if ( !ui.settings )
+		return -1;
+	int hit = Hit ( x, y );
+	if ( hit < 0 )
+		return -1;
+	unsigned port = (unsigned) ui.tiles[hit].port, mode = ShownMode ( port );
+	if ( mode != ui.data.ports[port - 1].mode || ( mode != HTTP_MODE_RELAY && mode != HTTP_MODE_IR ) )
+		return -1;
+	int lx = x - ui.tiles[hit].x, ly = y - TOP + ui.scroll - ui.tiles[hit].y;
+	return lx >= 442 && lx < 674 && ly >= 16 && ly < 55 ? hit : -1;
+}
+static int ModeHit ( int x, int y )
+{
+	if ( !ui.settings )
+		return -1;
+	int hit = Hit ( x, y );
+	if ( hit < 0 )
+		return -1;
+	int lx = x - ui.tiles[hit].x, ly = y - TOP + ui.scroll - ui.tiles[hit].y;
+	return lx >= 224 && lx < 384 && ly >= 16 && ly < 52 ? hit : -1;
+}
+static void OpenMenu ( int index )
+{
+	ui.menuPort = ui.tiles[index].port;
+	ui.menuCount = ModeOptions ( (unsigned) ui.menuPort, ui.menuModes );
+	int y = TOP + ui.tiles[index].y - ui.scroll + 16;
+	int h = ui.menuCount * MENU_ITEM + 4;
+	int below = TOP + VIEW - ( y + 36 ), above = y - TOP;
+	ui.menuUp = below < h && above > below;
+	ui.menuY = Clamp ( ui.menuUp ? y - h : y + 36, TOP, TOP + VIEW - h );
+	ui.menuX = ui.tiles[index].x + 224;
+	ui.menuArmed = ui.menuPressed = -1;
+	ui.full = ui.dirty = 1;
+}
+static int MenuHit ( int x, int y )
+{
+	int row = ( y - ui.menuY - 2 ) / MENU_ITEM;
+	return x >= ui.menuX + 2 && x < ui.menuX + MENU_W - 2 && y >= ui.menuY + 2 && y < ui.menuY + 2 + ui.menuCount * MENU_ITEM ? row : -1;
+}
+static void MenuTouch ( int down, XY_Touch_Struct position )
+{
+	int hit = MenuHit ( position.x, position.y );
+	if ( down && !ui.wasDown )
+		ui.menuArmed = hit;
+	int pressed = down && ui.menuArmed >= 0 && hit == ui.menuArmed ? hit : -1;
+	if ( ui.menuPressed != pressed )
+	{
+		ui.menuPressed = pressed;
+		ui.dirty = 1;
+	}
+	if ( !down && ui.wasDown )
+	{
+		if ( hit >= 0 && hit == ui.menuArmed )
+			ui.draftMode[ui.menuPort - 1] = (int8_t) ui.menuModes[hit];
+		ui.menuPort = 0;
+		ui.menuPressed = ui.menuArmed = -1;
+		ui.full = ui.dirty = 1;
+	}
+	ui.wasDown = down;
 }
 static void Pwm ( int x )
 {
 	int left = 0;
 	for ( int i = 0; i < ui.count; ++i )
 		if ( ui.tiles[i].port == (int) ui.pwmPort )
-			left = ui.tiles[i].x + 18;
-	unsigned value = (unsigned) Clamp ( ( x - left ) * 100 / 180, 0, 100 );
+			left = ui.tiles[i].x + ( ui.settings ? 522 : 18 );
+	unsigned value = (unsigned) Clamp ( ( x - left ) * 100 / ( ui.settings ? 144 : 180 ), 0, 100 );
 	if ( ui.pwmSent < 0 || value != ui.pwmValue )
 	{
 		ui.pwmValue = value;
@@ -389,6 +566,9 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		LCD_TOUCH_DeleteAllSetTouch ();
 		memset ( &ui, 0, sizeof ui );
 		ui.settings = settings;
+		memset ( ui.draftMode, -1, sizeof ui.draftMode );
+		ui.modePressed = -1;
+		ui.outputPressed = -1;
 		const int sizes[3] = { FONT_12, FONT_16, FONT_28_bold };
 		for ( int i = 0; i < 3; ++i )
 		{
@@ -436,6 +616,13 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 	XY_Touch_Struct position = LCD_TOUCH_GetPos ();
 	(void) LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
 	int down = LCD_TOUCH_isPress () == press;
+	if ( ui.menuPort )
+	{
+		MenuTouch ( down, position );
+		if ( ui.dirty )
+			Draw ();
+		return 0;
+	}
 	int hit = Hit ( position.x, position.y );
 	if ( down && !ui.wasDown )
 	{
@@ -457,10 +644,20 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 				ui.dirty = 1;
 			}
 		}
-		else if ( !ui.settings && hit >= 0 && ui.data.ports[ui.tiles[hit].port - 1].mode == HTTP_MODE_PWM )
+		else if ( SettingsOutputHit ( position.x, position.y ) >= 0 )
+		{
+			ui.capture = 5;
+			ui.armed = SettingsOutputHit ( position.x, position.y );
+		}
+		else if ( ModeHit ( position.x, position.y ) >= 0 )
+		{
+			ui.capture = 4;
+			ui.armed = ModeHit ( position.x, position.y );
+		}
+		else if ( hit >= 0 && ui.data.ports[ui.tiles[hit].port - 1].mode == HTTP_MODE_PWM && ( !ui.settings || ShownMode ( (unsigned) ui.tiles[hit].port ) == HTTP_MODE_PWM ) )
 		{
 			int local_y = position.y - TOP + ui.scroll - ui.tiles[hit].y;
-			if ( local_y >= 72 && local_y < 113 )
+			if ( ui.settings ? local_y >= 16 && local_y < 55 && position.x >= ui.tiles[hit].x + 514 && position.x < ui.tiles[hit].x + 674 : local_y >= 72 && local_y < 113 )
 			{
 				ui.capture = 3;
 				ui.pwmPort = (unsigned) ui.tiles[hit].port;
@@ -494,6 +691,28 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 			ui.dirty = 1;
 		}
 	}
+	int output_hit = SettingsOutputHit ( position.x, position.y );
+	int output_pressed = down && !ui.moved && ui.capture == 5 && output_hit == ui.armed && output_hit >= 0 ? ui.tiles[output_hit].port : -1;
+	if ( ui.outputPressed != output_pressed )
+	{
+		if ( ui.outputPressed >= 1 )
+			ui.changed[ui.outputPressed - 1] = 1;
+		if ( output_pressed >= 1 )
+			ui.changed[output_pressed - 1] = 1;
+		ui.outputPressed = output_pressed;
+		ui.dirty = 1;
+	}
+	int mode_hit = ModeHit ( position.x, position.y );
+	int mode_pressed = down && !ui.moved && ui.capture == 4 && mode_hit == ui.armed && mode_hit >= 0 ? ui.tiles[mode_hit].port : -1;
+	if ( ui.modePressed != mode_pressed )
+	{
+		if ( ui.modePressed >= 1 )
+			ui.changed[ui.modePressed - 1] = 1;
+		if ( mode_pressed >= 1 )
+			ui.changed[mode_pressed - 1] = 1;
+		ui.modePressed = mode_pressed;
+		ui.dirty = 1;
+	}
 	int button = ButtonHit ( position.x, position.y );
 	int pressed = down && !ui.moved && ui.capture == 1 && button == ui.armed && button >= 0 ? ui.tiles[button].port : -1;
 	if ( ui.pressed != pressed )
@@ -507,6 +726,10 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 	}
 	if ( !down && ui.wasDown )
 	{
+		if ( ui.capture == 5 && !ui.moved && output_hit >= 0 && output_hit == ui.armed )
+			(void) HTTP_LCDPanelToggle ( (unsigned) ui.tiles[output_hit].port );
+		if ( ui.capture == 4 && !ui.moved && mode_hit >= 0 && mode_hit == ui.armed )
+			OpenMenu ( mode_hit );
 		if ( !ui.settings && ui.capture == 1 && !ui.moved && button == ui.armed && button >= 0 )
 		{
 			unsigned port = (unsigned) ui.tiles[button].port;

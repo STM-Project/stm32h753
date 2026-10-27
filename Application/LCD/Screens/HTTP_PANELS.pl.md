@@ -6,9 +6,11 @@ przekaźników. Aktywne porty i ich kolejność pochodzą z tego samego zestawu
 trybów co HTTP: czujniki, liczniki, wejścia, EOL, ADC/PT1000, PWM, przekaźniki/IR,
 timery i termostaty. Wyłączone porty są pomijane. Liczniki mają wyższe kafelki.
 
-12 — ustawienia `/set`: wszystkie 33 porty, nazwa, aktualny tryb i przycisk
-Ustawienia. Przycisk zmienia wygląd przy wciśnięciu i wraca po puszczeniu.
-Nie uruchamia dalszego ekranu i nie zapisuje ustawień. Przeciągnięcie pionowe
+12 — ustawienia `/set`: wszystkie 33 porty, nazwa, wybór trybu, krótki
+przycisk konfiguracji z numerem portu i aktualne odczyty. Temperatura/RH mają
+dwa pola wartości; PWM ma procent i suwak, a przekaźnik stan ON/OFF. Przycisk zmienia wygląd przy wciśnięciu i wraca po puszczeniu.
+Nie uruchamia dalszego ekranu i nie zapisuje ustawień.
+Obrys wiersza ma 2 px; obrysy panelu odczytowego pozostają bez zmian. Przeciągnięcie pionowe
 anuluje kliknięcie, aby przewijanie nie wykonywało przypadkowej akcji.
 
 Oba ekrany są w tej samej pętli next/prev oraz debug `=` (teraz 0..12).
@@ -68,3 +70,22 @@ Nie zmieniono CubeMX, sterowników HAL ani zawartości SD.
 - Podglądy generowane przez ten sam kod rysowania, z czcionką komputerową
   zbliżoną do Arial, są w Debug/cloud/http-lcd-previews/*.png (800x480).
   Podgląd nie jest pomiarem wydajności ani testem fizycznego dotyku na H7.
+
+## Rozwijany wybór trybu
+
+Dotknij pola trybu w ustawieniach. Lista wybiera dropdown albo dropup według
+miejsca nad/pod polem i zawsze mieści się w obszarze widoku. Zawiera dokładnie
+te same zestawy opcji co HTTP dla portów 1..14, 15..16, 17..20, 21..23,
+24..27 oraz 28..33. Aktualny wybór jest oznaczony, dotyk daje podświetlenie,
+a dotknięcie poza listą ją zamyka, bez przekazania kliknięcia do przycisku pod nią.
+
+Zgodnie z ustaleniem wybór jest tylko lokalnym podglądem LCD: nie zmienia
+modelu HTTP, karty SD ani faktycznej konfiguracji portu. Po ponownym wejściu
+na ekran wracają wartości wspólnego modelu. Dla trybu podglądu różnego od
+faktycznego pokazujemy brak odczytu i nie wykonujemy poleceń niezgodnych z
+aktualnym trybem. Zwykłe sterowanie PWM/przekaźnikiem w zgodnym trybie działa
+na wspólnym modelu również na ekranie /set, analogicznie do HTTP.
+
+Popup używa tego samego obszaru scratch w pLcd, bez dodatkowej bitmapy SDRAM.
+Test ekranu generuje podglądy dropdown/dropup i sprawdza dobór opcji, krawędzie,
+wybór lokalny, zamknięcie bez akcji pod popupem oraz sterowanie obok numeru portu.
