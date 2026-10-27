@@ -28,6 +28,7 @@ extern uint32_t pLcd[];
 #define GREEN 0xFF9EDF0FU
 #define WHITE 0xFFEEEEEEU
 #define MUTED 0xFFBBBBBBU
+#define VALUE_GRAY 0xFF606060U
 
 _Static_assert ( SCRATCH + ROW_W * 72 <= W * H, "LCD tile scratch exceeds pLcd" );
 _Static_assert ( SCRATCH + COL_W * 210 <= W * H, "LCD read scratch exceeds pLcd" );
@@ -237,11 +238,13 @@ static void TileRound ( int stride, int x, int y, int w, int h, int radius, uint
 			color |= ( ( ( ( top >> shift ) & 255U ) * ( 255 - t ) + ( ( bottom >> shift ) & 255U ) * t ) / 255U ) << shift;
 		for ( int col = 0; col < w; ++col )
 		{
-			int dx = col < radius ? radius - col - 1 : col >= w - radius ? col - ( w - radius )
-																		 : 0;
-			int dy = row < radius ? radius - row - 1 : row >= h - radius ? row - ( h - radius )
-																		 : 0;
-			if ( dx * dx + dy * dy <= radius * radius )
+			/* Pixel centres in doubled coordinates: even small radii must
+			 * remove corner pixels, symmetrically on all four sides. */
+			int dx = col < radius ? 2 * ( radius - col ) - 1 : col >= w - radius ? 2 * ( col - ( w - radius ) ) + 1
+																				 : 0;
+			int dy = row < radius ? 2 * ( radius - row ) - 1 : row >= h - radius ? 2 * ( row - ( h - radius ) ) + 1
+																				 : 0;
+			if ( dx * dx + dy * dy <= 4 * radius * radius )
 				pLcd[SCRATCH + ( y + row ) * stride + x + col] = color;
 		}
 	}
@@ -309,7 +312,7 @@ static void Tile ( int index )
 		Text ( w, h, ui.font[1], 14, 10, 198, p->name, WHITE );
 		Text ( w, h, ui.font[0], 14, 36, 198, "Nazwa portu", MUTED );
 		int selected = ui.modePressed == port || ui.menuPort == port;
-		TileRound ( w, 224, 16, 160, 36, 2, selected ? 0xFFAAC765U : 0xFFBBBBBBU, selected ? 0xFFAAC765U : 0xFFBBBBBBU );
+		TileRound ( w, 224, 16, 160, 36, 4, selected ? 0xFFAAC765U : 0xFFBBBBBBU, selected ? 0xFFAAC765U : 0xFFBBBBBBU );
 		Text ( w, h, ui.font[0], 234, 25, 122, ModeName ( shown ), 0xFF111111U );
 		for ( int row = 0; row < 5; ++row )
 		{
@@ -317,7 +320,7 @@ static void Tile ( int index )
 			Rect ( w, 368 - half, 31 + row, 2 * half + 1, 1, 0xFF222222U );
 		}
 		snprintf ( line, sizeof line, "%d", port );
-		TileRound ( w, 394, ui.pressed == port ? 19 : 16, 36, 36, 2, ui.pressed == port ? 0xFF99CCFFU : 0xFF468CCFU, ui.pressed == port ? 0xFF99CCFFU : 0xFF468CCFU );
+		TileRound ( w, 394, ui.pressed == port ? 19 : 16, 36, 36, 4, ui.pressed == port ? 0xFF99CCFFU : 0xFF468CCFU, ui.pressed == port ? 0xFF99CCFFU : 0xFF468CCFU );
 		Text ( w, h, ui.font[1], port < 10 ? 407 : 401, ui.pressed == port ? 26 : 23, port < 10 ? 14 : 26, line, 0xFF172000U );
 		if ( shown == HTTP_MODE_PWM )
 		{
@@ -335,19 +338,20 @@ static void Tile ( int index )
 			for ( int column = 0; column < 2; ++column )
 			{
 				int x = 442 + column * 120;
-				TileRound ( w, x, 16, 112, 36, 2, WHITE, WHITE );
-				Text ( w, h, ui.font[3], x + 6, 22, 100, same ? p->value[column] : "---", 0xFF202020U );
+				TileRound ( w, x, 16, 112, 36, 4, WHITE, WHITE );
+				Text ( w, h, ui.font[3], x + 6, 22, 100, same ? p->value[column] : "---", VALUE_GRAY );
 			}
 		}
 		else
 		{
 			int output = shown == HTTP_MODE_RELAY || shown == HTTP_MODE_IR;
 			uint32_t fill = output ? ( ui.outputPressed == port ? 0xFF90C0ECU : 0xFF468CCFU ) : WHITE;
-			TileRound ( w, 442, ui.outputPressed == port ? 19 : 16, 232, 36, 2, fill, fill );
+			TileRound ( w, 442, ui.outputPressed == port ? 19 : 16, 232, 36, 4, fill, fill );
 			const char *value = shown == HTTP_MODE_DISABLED ? "---" : same ? p->value[0]
 																		   : "---";
 			uint32_t color = p->color[0] == 0xFFFF8888U ? 0xFFB82B2BU : p->color[0] == 0xFF88CCFFU ? 0xFF236CA8U
-																								   : 0xFF202020U;
+																	: output					   ? 0xFF202020U
+																								   : VALUE_GRAY;
 			Text ( w, h, ui.font[3], 454, ui.outputPressed == port ? 25 : 22, 208, value, color );
 		}
 	}
@@ -408,7 +412,7 @@ static void Header ( void )
 												: edit.saved	   ? 0xFF347B3CU
 												: ui.savePressed   ? 0xFF285F90U
 																   : 0xFF468CCFU;
-		TileRound ( W, 538, 14, 174, 34, 2, fill, fill );
+		TileRound ( W, 538, 14, 174, 34, 4, fill, fill );
 		Text ( W, 64, ui.font[1], 550, 21, 150, edit.saving ? "Zapisywanie..." : edit.saveError ? "Blad zapisu"
 																			 : edit.saved		? "Zapisano"
 																								: "Zapisz",

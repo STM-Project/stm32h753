@@ -107,7 +107,7 @@ Test ekranu generuje podglądy dropdown/dropup i sprawdza dobór opcji, krawędz
 wybór wspólny z HTTP, zamknięcie bez akcji pod popupem oraz sterowanie obok numeru portu.
 
 Pola wartości, dropdowny i przyciski w ustawieniach mają jednolite kolory bez
-gradientu i promień rogów 2 px. Zapis pokazuje bursztynowe „Zapisywanie...”
+gradientu i promień rogów 4 px. Zapis pokazuje bursztynowe „Zapisywanie...”
 i komunikat pod ekranem, a po potwierdzonym zapisie SD zielone „Zapisano”.
 Potwierdzenie pozostaje do następnej lokalnej zmiany typu lub kolejnego zapisu;
 błąd zamiast potwierdzenia wyświetla czerwone „Blad zapisu”.

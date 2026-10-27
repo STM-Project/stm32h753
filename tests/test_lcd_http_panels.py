@@ -120,6 +120,14 @@ int main(void){
  assert(shown[20*800+705]==shown[42*800+705]); /* solid save fill */
  assert(shown[92*800+410]==shown[116*800+410]); /* solid dropdown */
  assert(shown[92*800+700]==0xffeeeeee&&shown[120*800+700]==0xffeeeeee); /* white value field */
+ /* All four field corners expose the card background, unlike a rectangle. */
+ const int fx=CONTENT_X+442,fy=TOP+16;
+ assert(shown[fy*800+fx]==CARD&&shown[fy*800+fx+231]==CARD);
+ assert(shown[(fy+35)*800+fx]==CARD&&shown[(fy+35)*800+fx+231]==CARD);
+ assert(shown[fy*800+fx+4]==WHITE&&shown[(fy+4)*800+fx]==WHITE);
+ assert(shown[(TOP+16)*800+CONTENT_X+224]==CARD); /* dropdown corner */
+ assert(shown[(TOP+16)*800+CONTENT_X+228]==0xffbbbbbb);
+ assert(shown[14*800+538]!=0xff468ccf&&shown[14*800+542]==0xff468ccf); /* save corner */
  live_update();
  int old_pwm=pwm_calls,old_toggle=toggle_calls;
  uint8_t options[6];assert(ModeOptions(1,options)==6&&options[0]==HTTP_MODE_TEMP&&options[4]==HTTP_MODE_EOL);
