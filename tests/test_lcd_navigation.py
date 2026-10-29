@@ -56,9 +56,9 @@ int main(void){
  assert(frame==(void*)LCD_H7_SDRAM_BASE);
  for(unsigned i=0;i<sizeof original;i++)original[i]=(unsigned char)(i*17);
  memcpy(frame,original,sizeof original);
- for(int i=0;i<=12;i++){
-  assert(SCREEN_NavigationNext(i,1)==(i==12?0:i+1));
-  assert(SCREEN_NavigationNext(i,-1)==(i==0?12:i-1));
+ for(int i=0;i<=13;i++){
+  assert(SCREEN_NavigationNext(i,1)==(i==13?0:i+1));
+  assert(SCREEN_NavigationNext(i,-1)==(i==0?13:i-1));
  }
  SCREEN_NavigationEnter(100,0);int dir;
  assert(SCREEN_NavigationInput(1,790,240,&dir)&&!dir);

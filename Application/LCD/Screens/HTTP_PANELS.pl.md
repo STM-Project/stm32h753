@@ -131,3 +131,26 @@ Pięć czcionek panelu zajmuje identyfikatory fontID_13..fontID_17 (indeksy
 12..16). Rozpoczęcie od fontID_14 przekraczało 17 dostępnych slotów przy
 piątej czcionce i przerywało wejście na panel. Test pilnuje limitu identyfikatorów
 i przechodzi dwa pełne cykle next/prev, w tym 0 → 12 → 11.
+
+### Ekran 13 — LPC /nowa
+
+Nowy panel jest następnym ekranem po /set w cyklu 0..13, zarówno next/prev,
+jak i debug „=”. Białe tło, trzy duże szklane termometry oraz cztery przyciski
+przekaźników portów 28..31. Temperatury i zakresy min1/max1 oraz nazwy
+pochodzą ze wspólnego snapshotu właściciela HTTP; nie są przykładami demo.
+Nazwy /nowa pobierane są z tych samych n_txtval001..003 i ustawień czujników.
+Brak pomiaru pokazuje --- i rozjaśniony, szary termometr. Zakres niepoprawny
+używa -10..50 C, tak samo jak panel.js. Przyciski działają tylko dla trybu
+przekaźnik/IR, przez istniejący mailbox HTTP_LCDPanelToggle, z efektem dotyku.
+Nie ma dodatkowego odpytywania HTTP ani zależności od otwartej przeglądarki.
+
+Grafika jest generowana z niezmienionego web/svg/thermo-bottom.svg, wraz z
+gradientami i refleksami. tools/generate_lcd_thermometers.py odtwarza geometrię
+i rampę RGB z panel.js/jquery.thermometer.js, tworząc 101 poziomów 0..100%.
+Kolor rampy: R=round(255*p), G=round(128*(1-p)), B=round(255*(1-p)).
+Bitmapy RGB565 są spakowane blokami LZ4 z klatką kluczową co 10 poziomów;
+mały lokalny dekoder nie dodaje biblioteki do firmware. Kwantyzacja grafiki
+wynosi 1% zakresu, wartość liczbowa zachowuje 0.1 C. Nie trzeba zmieniać SD.
+Generator wymaga tylko na komputerze cairosvg, lz4, Pillow i lxml.
+Trzy bufory bitmap w SDRAM mają łącznie 188160 B, brak nowego framebufferu;
+reszta rysowania używa istniejącego pLcd. Spakowane dane we FLASH: 339889 B.

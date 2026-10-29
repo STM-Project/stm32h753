@@ -201,13 +201,36 @@ int main(void){
  old_pwm=pwm_calls;touch(1,x+600,y);touch(0,x+600,y);assert(pwm_calls==old_pwm);
 
  assert(LCD_HttpPanel(2,1)==0&&!active);
+ for(unsigned i=0;i<3;i++){
+  snprintf(model.thermometers[i].name,31,"Temperatura %u",i+1);model.thermometers[i].minimum=-100;model.thermometers[i].maximum=500;
+  model.thermometers[i].tenths=(int)(i*250)-100;model.thermometers[i].valid=1;
+ }
+ model.ports[27].mode=HTTP_MODE_RELAY;
+ assert(LCD_HttpPanel(1,2)==0&&ui.active);preview("lcd-lpc-thermometers");
+ int idle=draws;tick+=250;LCD_HttpPanel(0,2);assert(draws==idle);
+ old_toggle=toggle_calls;touch(1,90,TOP+340);assert(ui.pressed==28);touch(0,90,TOP+340);assert(toggle_calls==old_toggle+1);
+ touch(1,90,TOP+340);touch(0,790,TOP+340);assert(toggle_calls==old_toggle+1);
+ int previous_level=thermometerLevel[0];model.thermometers[0].tenths=200;tick+=250;LCD_HttpPanel(0,2);assert(thermometerLevel[0]!=previous_level);
+ model.thermometers[0].valid=0;tick+=250;LCD_HttpPanel(0,2);assert(thermometerLevel[0]==0);preview("lcd-lpc-thermometers-missing");
+ assert(LCD_HttpPanel(2,2)==0);
+ for(unsigned level=0;level<=100;level++){
+  assert(ThermometerImage(0,level));uint32_t hash=2166136261u;
+  for(unsigned n=0;n<THERMO_BYTES;n++)hash=(hash^thermometerCache[0][n])*16777619u;
+  if(level==0)assert(hash==3877059142u);
+  if(level==1)assert(hash==4043508583u);
+  if(level==49)assert(hash==2267617559u);
+  if(level==50)assert(hash==954081680u);
+  if(level==99)assert(hash==666009612u);
+  if(level==100)assert(hash==3846970080u);
+ }
+ assert(ThermometerImage(0,0)&&ThermometerImage(0,100));
  for(int dir=-1;dir<=1;dir+=2){
   int current=0,entered=0;
-  for(int i=0;i<26;i++){
+  for(int i=0;i<28;i++){
    current=SCREEN_NavigationNext(current,dir);
-   if(current==11||current==12){assert(LCD_HttpPanel(1,current==12)==0&&ui.active);assert(LCD_HttpPanel(2,current==12)==0);entered++;}
+   if(current>=11&&current<=13){assert(LCD_HttpPanel(1,current-11)==0&&ui.active);assert(LCD_HttpPanel(2,current-11)==0);entered++;}
   }
-  assert(current==0&&entered==4);
+  assert(current==0&&entered==6);
  }
  puts("PASS: two 33-port screens, native clipped text, scrollbar/content drag, endpoints, no idle redraw, PWM 0/100 to port 21, settings press/release/cancel without writes/navigation; preview frames.");
 }
@@ -226,8 +249,9 @@ def glyph_header():
  return 'static const unsigned char glyphs[]='+arr(pixels)+';\nstatic const int glyph_height[]='+arr(heights)+';\nstatic const int glyph_width[5][256]={' + ','.join(arr(a) for a in widths)+'};\nstatic const unsigned glyph_offset[5][256]={' + ','.join(arr(a) for a in offsets)+'};\n'
 with tempfile.TemporaryDirectory() as d:
  p=Path(d)
- for n in ['SCREEN_HttpPanels.c','SCREEN_HttpPanels.h']:shutil.copy(ROOT/'Application/LCD/Screens'/n,p/n)
+ for n in ['SCREEN_HttpPanels.c','SCREEN_HttpPanels.h','lpc_thermometer_panel.inc','lpc_thermometer_frames.inc']:shutil.copy(ROOT/'Application/LCD/Screens'/n,p/n)
  shutil.copy(ROOT/'Application/HTTP/http_lcd_panels.h',p/'http_lcd_panels.h')
+ shutil.copy(ROOT/'Application/LPC2148/http_lpc_panel.h',p/'http_lpc_panel.h')
  (p/'support.h').write_text(SUPPORT)
  for n in ['SCREEN_ReadPanel.h','LCD_BasicGraphics.h','LCD_fonts_images.h','LCD_Hardware.h','touch.h']:(p/n).write_text('#include "support.h"\n')
  (p/'SCREEN_TemperaturePk.h').write_text('enum{LCD_TEMP_UPDATE=0,LCD_TEMP_ENTER=1,LCD_TEMP_EXIT=2};\n')

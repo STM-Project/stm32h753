@@ -46,11 +46,11 @@ StructTxtPxlLen lenStr;
 
 void SCREEN_SetNr (int nr)
 {
-    if ( nr < 0 || nr > 12 )
+    if ( nr < 0 || nr > 13 )
         return;
     SCREEN_NavigationRestore ();
-    if ( SCREEN_number == 11 || SCREEN_number == 12 )
-        LCD_HttpPanel ( LCD_TEMP_EXIT, SCREEN_number == 12 );
+    if ( SCREEN_number >= 11 && SCREEN_number <= 13 )
+        LCD_HttpPanel ( LCD_TEMP_EXIT, SCREEN_number - 11 );
     if (SCREEN_number == 7)
         LCD_TemperaturePkPanel(LCD_TEMP_EXIT, NULL, NULL);
     if (SCREEN_number == 8)
@@ -628,7 +628,8 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 		{
 		case 11:
 		case 12:
-			lcdHttpResult = LCD_HttpPanel ( LCD_TEMP_ENTER, SCREEN_number == 12 );
+		case 13:
+			lcdHttpResult = LCD_HttpPanel ( LCD_TEMP_ENTER, SCREEN_number - 11 );
 			startScreen = 1;
 			break;
 		case 10:
@@ -694,8 +695,9 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 		{
 		case 11:
 		case 12:
+		case 13:
 			if ( lcdHttpResult >= 0 )
-				lcdHttpResult = LCD_HttpPanel ( LCD_TEMP_UPDATE, SCREEN_number == 12 );
+				lcdHttpResult = LCD_HttpPanel ( LCD_TEMP_UPDATE, SCREEN_number - 11 );
 			break;
 		case 10:
 			if (lcdThresholdResult >= 0)

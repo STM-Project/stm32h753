@@ -391,6 +391,7 @@ static uint32_t RelayTextColor ( const char *state )
 {
 	return strcmp ( state, "Stan OFF" ) == 0 ? VALUE_BLACK : WHITE;
 }
+#include "lpc_thermometer_panel.inc"
 static void Tile ( int index )
 {
 	int port = ui.tiles[index].port;
@@ -504,6 +505,11 @@ static void Thumb ( int *y, int *h )
 }
 static void Header ( void )
 {
+	if ( ui.settings == 2 )
+	{
+		NowaHeader ();
+		return;
+	}
 	Rect ( W, 0, 0, W, TOP, BG );
 	TileRound ( W, 36, 8, 690, 46, 7, FRAME, 0xFF333333U );
 	Text ( W, 64, ui.font[1], 52, 20, ui.settings ? 410 : 480, ui.settings ? "H7 . Ustawienia portow /set" : "H7 . Panel odczytowy /main", WHITE );
@@ -725,7 +731,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		HTTP_LCDPanelActive ( 0 );
 		return 0;
 	}
-	if ( mode > LCD_TEMP_EXIT || settings < 0 || settings > 1 )
+	if ( mode > LCD_TEMP_EXIT || settings < 0 || settings > 2 )
 		return -1;
 	if ( LCD_GetXSize () != W || LCD_GetYSize () != H )
 		return -2;
@@ -772,6 +778,8 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		if ( HTTP_LCDPanelRead ( &ui.latest ) && memcmp ( &ui.data, &ui.latest, sizeof ui.data ) )
 		{
 			int ports_changed = memcmp ( ui.data.ports, ui.latest.ports, sizeof ui.data.ports );
+			if ( ui.settings == 2 && memcmp ( ui.data.thermometers, ui.latest.thermometers, sizeof ui.data.thermometers ) )
+				ui.dirty = 1;
 			for ( unsigned port = 0; port < HTTP_LCD_PORTS; ++port )
 			{
 				if ( ui.data.ports[port].mode != ui.latest.ports[port].mode )
@@ -792,6 +800,11 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 	XY_Touch_Struct position = LCD_TOUCH_GetPos ();
 	(void) LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
 	int down = LCD_TOUCH_isPress () == press;
+	if ( ui.settings == 2 )
+	{
+		NowaTouch ( down, position );
+		return 0;
+	}
 	if ( ui.menuPort )
 	{
 		MenuTouch ( down, position );

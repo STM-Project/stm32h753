@@ -43,7 +43,10 @@ int main(void) {
     memset(HttpRefr_sdram,' ',120);HttpRefr_sdram[120]=0;
     memcpy(HttpRefr_sdram+25,"0123",4);
     memcpy(HttpRefr_sdram+39,"111023101111111111",18);
-    memcpy(HttpRefr_sdram+73," 25.1",5);memcpy(HttpRefr_sdram+85,"-12.3",5);memcpy(HttpRefr_sdram+97," 40.5",5);
+    memcpy(HttpRefr_sdram+73," 25.1",5);
+    { HTTP_LpcThermometer lcd[3];HTTP_LpcReadThermometers(lcd,HttpRefr_sdram,strlen(HttpRefr_sdram));
+    assert(lcd[0].valid&&lcd[0].tenths==251&&lcd[0].port==1);
+    HTTP_LpcReadThermometers(lcd,NULL,0);assert(!lcd[0].valid&&!lcd[1].valid&&!lcd[2].valid); }memcpy(HttpRefr_sdram+85,"-12.3",5);memcpy(HttpRefr_sdram+97," 40.5",5);
     request(0,"/api/nowa");body(0,data,sizeof data);
     assert(strstr(data,"\"tenths\":251") && strstr(data,"\"tenths\":-123") && strstr(data,"\"tenths\":405"));
     /* Active-low: input port 4 has code 0 (ON), port 5 code 2 (ON). */
@@ -56,6 +59,9 @@ int main(void) {
     assert(strstr(data,"\"tenths\":-783") && strstr(data,"\"tenths\":-560"));
     memcpy(HttpRefr_sdram+73," --.-",5);request(0,"/api/nowa");body(0,data,sizeof data);assert(strstr(data,"\"tenths\":null"));
     memcpy(HttpRefr_sdram+73," 25.1",5);
+    { HTTP_LpcThermometer lcd[3];HTTP_LpcReadThermometers(lcd,HttpRefr_sdram,strlen(HttpRefr_sdram));
+    assert(lcd[0].valid&&lcd[0].tenths==251&&lcd[0].port==1);
+    HTTP_LpcReadThermometers(lcd,NULL,0);assert(!lcd[0].valid&&!lcd[1].valid&&!lcd[2].valid); }
     clear_queue();HTTP_HandleTarget(2,"/api/nowa",9,NULL);body(0,snapshot,sizeof snapshot);
     memcpy(HttpRefr_sdram+73,"-05.5",5);HTTP_HandleTarget(1,"/api/nowa",9,NULL);
     body(0,data,sizeof data);assert(strcmp(data,snapshot));assert(strstr(data,"\"tenths\":-55"));

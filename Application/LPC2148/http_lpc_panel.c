@@ -131,6 +131,26 @@ static int refresh_temperature ( const char *data, size_t length, unsigned port,
 	*value = number;
 	return 1;
 }
+void HTTP_LpcReadThermometers ( HTTP_LpcThermometer out[3], const char *refresh, size_t length )
+{
+	memset ( out, 0, 3 * sizeof *out );
+	for ( unsigned i = 0; i < 3; ++i )
+	{
+		unsigned port = HTTP_LpcTemperaturePorts[i];
+		const HttpSensorSettings *settings = HTTP_SensorSettingsGet ( port, 0 );
+		char key[48];
+		snprintf ( key, sizeof key, "n_txtval%03u", port );
+		const char *name = LPC_GetSavedSetting ( key );
+		snprintf ( out[i].name, sizeof out[i].name, "%s", name ? name : settings ? settings->name
+																				 : "Temperatura" );
+		out[i].port = port;
+		out[i].minimum = settings ? settings->min1 : -100;
+		out[i].maximum = settings ? settings->max1 : 500;
+		int measured = 0;
+		out[i].valid = (uint8_t) refresh_temperature ( refresh, length, port, &measured );
+		out[i].tenths = (int16_t) measured;
+	}
+}
 static size_t panel_json ( char *out, size_t capacity, const char *refresh, size_t length, int all )
 {
 	if ( !out || !capacity )

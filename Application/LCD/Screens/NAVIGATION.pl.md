@@ -45,3 +45,5 @@ Test `tests/test_lcd_navigation.py` wykonuje rzeczywisty kontroler i renderer
 na modelu framebuffera RGB888, sprawdzając przewijanie, granice pól, zwolnienie
 palca, anulowanie gestu, przepełnienie zegara, ukryte pola i dokładne
 odtworzenie zawartości ekranu przy wygaśnięciu nakładki.
+
+13. Biały panel /nowa: trzy termometry z HTTP SVG i cztery przekaźniki 28..31.

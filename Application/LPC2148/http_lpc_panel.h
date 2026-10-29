@@ -14,6 +14,15 @@ extern const uint8_t HTTP_LpcOutputPorts[HTTP_LPC_OUTPUT_COUNT];
 
 typedef struct
 {
+	char name[31];
+	int16_t tenths, minimum, maximum;
+	uint8_t port, valid;
+} HTTP_LpcThermometer;
+/* Owner-task snapshot shared with the LCD /nowa panel. */
+void HTTP_LpcReadThermometers ( HTTP_LpcThermometer out[3], const char *refresh, size_t length );
+
+typedef struct
+{
 	int16_t temperature_tenths[HTTP_LPC_TEMPERATURE_COUNT];
 	uint8_t temperature_valid[HTTP_LPC_TEMPERATURE_COUNT];
 	uint8_t input_on[HTTP_LPC_INPUT_COUNT];

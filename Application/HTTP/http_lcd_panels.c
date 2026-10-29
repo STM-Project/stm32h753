@@ -312,6 +312,7 @@ void HTTP_LCDPanelService ( const char *data, size_t length, uint32_t now )
 																				  : "Stan OFF" );
 		}
 	}
+	HTTP_LpcReadThermometers ( pending.thermometers, data, length );
 	/* Revision changes only when display content changes, not each polling tick. */
 	taskENTER_CRITICAL ();
 	if ( !ready || memcmp ( &pending.mode_result, &published.mode_result, sizeof pending - offsetof ( HTTP_LCDPanelData, mode_result ) ) )

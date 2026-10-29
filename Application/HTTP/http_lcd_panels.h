@@ -2,6 +2,7 @@
 #define HTTP_LCD_PANELS_H
 #include <stddef.h>
 #include <stdint.h>
+#include "http_lpc_panel.h"
 #define HTTP_LCD_PORTS 33u
 #define HTTP_LCD_ROWS 5u
 /* Immutable GUI snapshot, published only by the HTTP/WiFi owner task. */
@@ -19,6 +20,7 @@ typedef struct
 	uint32_t mode_serial;
 	char time[25];
 	HTTP_LCDPort ports[HTTP_LCD_PORTS];
+	HTTP_LpcThermometer thermometers[3];
 } HTTP_LCDPanelData;
 void HTTP_LCDPanelActive ( int active );
 int HTTP_LCDPanelWanted ( void );

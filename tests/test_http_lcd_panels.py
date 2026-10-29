@@ -19,6 +19,7 @@ void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage*p,uint16_t instance){
 static char names[33][31];
 void enter(void){critical++;} void leave(void){assert(critical);critical--;}
 void HTTP_SensorLCDWake(void){wake++;}
+void HTTP_LpcReadThermometers(HTTP_LpcThermometer out[3],const char*d,size_t n){(void)d;(void)n;memset(out,0,3*sizeof *out);}
 unsigned HTTP_SettingsPortMode(unsigned p){assert(!critical&&p>=1&&p<=33);return modes[p-1];}
 const char *HTTP_SettingsPortName(unsigned p,const char*f){(void)f;assert(!critical&&p>=1&&p<=33);return names[p-1];}
 int main(void){
@@ -93,6 +94,7 @@ int main(void){
 with tempfile.TemporaryDirectory() as d:
  p=Path(d)
  for name in ['http_lcd_panels.c','http_lcd_panels.h','http_settings_model.c','http_settings_model.h','http_settings_catalog.c','http_settings_catalog.h','http_settings_bindings.h']:shutil.copy(ROOT/'Application/HTTP'/name,p/name)
+ shutil.copy(ROOT/'Application/LPC2148/http_lpc_panel.h',p/'http_lpc_panel.h')
  for name in ['relay_states.c','relay_states.h']:shutil.copy(ROOT/'Application'/name,p/name)
  (p/'wwwPages.h').write_text(mode+'\nunsigned HTTP_SettingsPortMode(unsigned);\nconst char*HTTP_SettingsPortName(unsigned,const char*);\n')
  (p/'http_sensor_lcd.h').write_text('void HTTP_SensorLCDWake(void);\n')
