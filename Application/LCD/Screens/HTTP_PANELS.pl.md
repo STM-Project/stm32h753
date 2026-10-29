@@ -144,13 +144,14 @@ używa -10..50 C, tak samo jak panel.js. Przyciski działają tylko dla trybu
 przekaźnik/IR, przez istniejący mailbox HTTP_LCDPanelToggle, z efektem dotyku.
 Nie ma dodatkowego odpytywania HTTP ani zależności od otwartej przeglądarki.
 
-Grafika jest generowana z niezmienionego web/svg/thermo-bottom.svg, wraz z
-gradientami i refleksami. tools/generate_lcd_thermometers.py odtwarza geometrię
-i rampę RGB z panel.js/jquery.thermometer.js, tworząc 101 poziomów 0..100%.
-Kolor rampy: R=round(255*p), G=round(128*(1-p)), B=round(255*(1-p)).
-Bitmapy RGB565 są spakowane blokami LZ4 z klatką kluczową co 10 poziomów;
-mały lokalny dekoder nie dodaje biblioteki do firmware. Kwantyzacja grafiki
-wynosi 1% zakresu, wartość liczbowa zachowuje 0.1 C. Nie trzeba zmieniać SD.
-Generator wymaga tylko na komputerze cairosvg, lz4, Pillow i lxml.
-Trzy bufory bitmap w SDRAM mają łącznie 188160 B, brak nowego framebufferu;
-reszta rysowania używa istniejącego pLcd. Spakowane dane we FLASH: 339889 B.
+Termometry są rysowane funkcjami ThermometerDraw, ThermometerBlend i
+ThermometerLiquid w lpc_thermometer_panel.inc. Nie ma tablic bitmap, dekodera
+LZ4 ani buforów klatek. Geometria nawiązuje do SVG HTTP; rampa RGB jest
+identyczna z panel.js: R=round(255*p), G=round(128*(1-p)), B=round(255*(1-p)).
+Warstwy szkła, refleksy i radialne cieniowanie są obliczane podczas rysowania.
+To odwzorowanie proceduralne, a nie rasteryzacja SVG piksel w piksel. Poziom
+cieczy jest obliczany do 0.1% zakresu, odczyt pozostaje z dokładnością 0.1 C.
+Rysowanie korzysta wyłącznie z istniejącego scratch w pLcd. Nie trzeba zmieniać SD.
+Usunięto lpc_thermometer_frames.inc oraz generator klatek. Pomiar linkera:
+FLASH mniej o 339484 B, SDRAM mniej o 188160 B w porównaniu z wersją bitmapową.
+Obrys kafelków odczytu ma 3 px, ustawień pozostaje 2 px.

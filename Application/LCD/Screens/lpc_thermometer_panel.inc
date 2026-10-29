@@ -1,92 +1,94 @@
-/* LCD /nowa: original HTTP SVG frames, shared live snapshot and relay mailbox. */
-#include "lpc_thermometer_frames.inc"
+/* Procedural LCD /nowa thermometer: no stored frames or bitmap caches. */
+#include <math.h>
 #define THERMO_W 112
 #define THERMO_H 280
-#define THERMO_BYTES ( THERMO_W * THERMO_H * 2 )
-static uint8_t thermometerCache[3][THERMO_BYTES] __attribute__ ( ( section ( ".sdram" ), aligned ( 32 ) ) );
-static int thermometerLevel[3] = { -1, -1, -1 };
-_Static_assert ( THERMO_BYTES <= ( W * H - SCRATCH ) * 4, "Thermometer decode scratch overflow" );
-/* Bounded LZ4 block reader. Generated assets only; no heap or external decoder. */
-static int ThermometerBlock ( unsigned level, uint8_t *out )
+static float ThermometerClamp ( float value )
 {
-	const uint8_t *p = thermoFrames + thermoOffsets[level], *end = thermoFrames + thermoOffsets[level + 1];
-	size_t used = 0;
-	while ( p < end )
-	{
-		unsigned token = *p++;
-		size_t literal = token >> 4;
-		if ( literal == 15 )
-		{
-			unsigned n;
-			do
-			{
-				if ( p == end )
-					return 0;
-				n = *p++;
-				literal += n;
-			} while ( n == 255 );
-		}
-		if ( literal > (size_t) ( end - p ) || literal > THERMO_BYTES - used )
-			return 0;
-		memcpy ( out + used, p, literal );
-		used += literal;
-		p += literal;
-		if ( p == end )
-			break;
-		if ( end - p < 2 )
-			return 0;
-		unsigned offset = p[0] | (unsigned) p[1] << 8;
-		p += 2;
-		if ( !offset || offset > used )
-			return 0;
-		size_t match = ( token & 15 ) + 4;
-		if ( ( token & 15 ) == 15 )
-		{
-			unsigned n;
-			do
-			{
-				if ( p == end )
-					return 0;
-				n = *p++;
-				match += n;
-			} while ( n == 255 );
-		}
-		if ( match > THERMO_BYTES - used )
-			return 0;
-		while ( match-- )
-		{
-			out[used] = out[used - offset];
-			++used;
-		}
-	}
-	return used == THERMO_BYTES;
+	return value < 0 ? 0 : value > 1 ? 1
+									 : value;
 }
-static int ThermometerImage ( unsigned slot, unsigned level )
+static uint32_t ThermometerBlend ( uint32_t background, uint32_t foreground, float alpha )
 {
-	if ( slot >= 3 || level > 100 )
-		return 0;
-	uint8_t *delta = (uint8_t *) ( pLcd + SCRATCH );
-	int current = thermometerLevel[slot];
-	if ( current < 0 || level < (unsigned) current || level - (unsigned) current > 10 )
-	{
-		unsigned key = level / 10 * 10;
-		if ( !ThermometerBlock ( key, thermometerCache[slot] ) )
-			return 0;
-		current = (int) key;
-	}
-	while ( current < (int) level )
-	{
-		++current;
-		if ( !ThermometerBlock ( (unsigned) current, delta ) )
-			return 0;
-		if ( current % 10 == 0 )
-			memcpy ( thermometerCache[slot], delta, THERMO_BYTES );
-		else
-			for ( unsigned i = 0; i < THERMO_BYTES; ++i )
-				thermometerCache[slot][i] += delta[i];
-	}
-	thermometerLevel[slot] = current;
-	return 1;
+	unsigned a = (unsigned) ( ThermometerClamp ( alpha ) * 255 + 0.5f );
+	uint32_t color = 0xFF000000U;
+	for ( unsigned shift = 0; shift <= 16; shift += 8 )
+		color |= ( ( ( ( background >> shift ) & 255U ) * ( 255 - a ) + ( ( foreground >> shift ) & 255U ) * a + 127 ) / 255 ) << shift;
+	return color;
+}
+/* The same blue -> violet -> red ramp as HTTP panel.js. */
+static uint32_t ThermometerLiquid ( unsigned permille )
+{
+	if ( permille > 1000 )
+		permille = 1000;
+	unsigned red = ( 255 * permille + 500 ) / 1000;
+	unsigned green = ( 128 * ( 1000 - permille ) + 500 ) / 1000;
+	unsigned blue = ( 255 * ( 1000 - permille ) + 500 ) / 1000;
+	return 0xFF000000U | red << 16 | green << 8 | blue;
+}
+/* Geometry follows the original SVG at 112x280. Coverage, radial highlights
+ * and glass layers are evaluated directly into the existing tile scratch. */
+static void ThermometerDraw ( int stride, int left, int top, unsigned permille, int valid )
+{
+	if ( permille > 1000 )
+		permille = 1000;
+	uint32_t liquid = ThermometerLiquid ( permille );
+	float level_y = 185.2f - 149.8f * permille / 1000;
+	for ( int y = 0; y < THERMO_H; ++y )
+		for ( int x = 0; x < THERMO_W; ++x )
+		{
+			float fx = x + 0.5f, fy = y + 0.5f, dx = fx - 56;
+			uint32_t color = 0xFFFFFFFFU;
+			/* Rounded glass stem: radius 16, top 5, joins the bowl. */
+			if ( fx >= 39 && fx <= 73 && fy >= 4 && fy <= 237 )
+			{
+				float dy = fy < 21 ? fy - 21 : fy > 216 ? fy - 216
+														: 0;
+				float distance = sqrtf ( dx * dx + dy * dy );
+				float coverage = ThermometerClamp ( 16.5f - distance );
+				color = ThermometerBlend ( color, 0xFFE3F8FCU, coverage * 0.6f );
+				if ( fy >= level_y )
+					color = ThermometerBlend ( color, liquid, coverage * 0.75f );
+				float cap_y = ( fy - level_y ) / 4.8f;
+				if ( dx * dx / 256 + cap_y * cap_y < 1 )
+					color = ThermometerBlend ( color, 0xFF111820U, coverage * 0.82f );
+				float stripe = ThermometerClamp ( 1 - fabsf ( fx - 51 ) / 7 );
+				if ( fy > 16 && fy < 215 )
+					color = ThermometerBlend ( color, 0xFFFFFFFFU, stripe * 0.36f * coverage );
+				float rim = coverage * ThermometerClamp ( distance - 14.5f );
+				color = ThermometerBlend ( color, 0xFF92B6BFU, rim * 0.6f );
+			}
+			/* Liquid bulb with radial light, darkened edge and glass glints. */
+			float by = fy - 235.1f;
+			if ( dx * dx + by * by < 42 * 42 )
+			{
+				float distance = sqrtf ( dx * dx + by * by );
+				float coverage = ThermometerClamp ( 40.5f - distance );
+				uint32_t bulb = ThermometerBlend ( 0xFFFFFFFFU, liquid, 0.75f );
+				float radial = ThermometerClamp ( 1 - ( ( dx + 12 ) * ( dx + 12 ) + ( by + 15 ) * ( by + 15 ) ) / 1900 );
+				bulb = ThermometerBlend ( bulb, 0xFFFFFFFFU, radial * 0.42f );
+				float shadow = ThermometerClamp ( ( distance - 26 ) / 14 );
+				bulb = ThermometerBlend ( bulb, liquid, shadow * 0.45f );
+				float glint = ThermometerClamp ( 1 - ( ( dx + 15 ) * ( dx + 15 ) / 145 + ( by + 20 ) * ( by + 20 ) / 75 ) );
+				bulb = ThermometerBlend ( bulb, 0xFFFFFFFFU, glint * 0.52f );
+				float rim = ThermometerClamp ( distance - 38 );
+				bulb = ThermometerBlend ( bulb, liquid, rim * 0.5f );
+				color = ThermometerBlend ( color, bulb, coverage );
+			}
+			/* Scale marks use the SVG's faint grey and original spacing. */
+			for ( int mark = 0; mark < 9; ++mark )
+			{
+				int tick_y = 34 + mark * 18, length = mark % 4 == 0 ? 32 : 18;
+				if ( y >= tick_y && y < tick_y + 4 && x >= 79 && x < 79 + length )
+					color = 0xFFDDDDDDU;
+			}
+			if ( !valid )
+			{
+				unsigned grey = ( ( ( color >> 16 ) & 255 ) + ( ( color >> 8 ) & 255 ) + ( color & 255 ) ) / 3;
+				grey = ( grey + 510 ) / 3;
+				color = 0xFF000000U | grey * 0x010101U;
+			}
+			pLcd[SCRATCH + ( top + y ) * stride + left + x] = color;
+		}
 }
 static void NowaHeader ( void )
 {
@@ -116,26 +118,10 @@ static void NowaDraw ( void )
 			lo = -100;
 			hi = 500;
 		}
-		unsigned level = t->valid ? (unsigned) Clamp ( ( t->tenths - lo ) * 100 / ( hi - lo ), 0, 100 ) : 0;
-		int loaded = ThermometerImage ( i, level );
+		unsigned permille = t->valid ? (unsigned) Clamp ( ( t->tenths - lo ) * 1000 / ( hi - lo ), 0, 1000 ) : 0;
 		const int stride = 236, height = 310, origin = 36 + (int) i * 244;
 		Rect ( stride, 0, 0, stride, height, 0xFFFFFFFFU );
-		if ( loaded )
-			for ( unsigned y = 0; y < THERMO_H; ++y )
-				for ( unsigned x = 0; x < THERMO_W; ++x )
-				{
-					unsigned n = 2 * ( y * THERMO_W + x );
-					uint16_t c = (uint16_t) ( thermometerCache[i][n] | thermometerCache[i][n + 1] << 8 );
-					unsigned r = c >> 11, g = ( c >> 5 ) & 63, b = c & 31;
-					uint32_t rgb = 0xFF000000U | ( ( r * 255 / 31 ) << 16 ) | ( ( g * 255 / 63 ) << 8 ) | b * 255 / 31;
-					if ( !t->valid )
-					{
-						unsigned grey = ( ( ( rgb >> 16 ) & 255 ) + ( ( rgb >> 8 ) & 255 ) + ( rgb & 255 ) ) / 3;
-						grey = ( grey + 510 ) / 3;
-						rgb = 0xFF000000U | grey * 0x010101U;
-					}
-					pLcd[SCRATCH + ( y + 28 ) * stride + x + 8] = rgb;
-				}
+		ThermometerDraw ( stride, 8, 28, permille, t->valid );
 		Text ( stride, height, ui.font[1], 4, 0, 228, t->name, VALUE_BLACK );
 		char text[40];
 		ThermometerValue ( text, sizeof text, hi );

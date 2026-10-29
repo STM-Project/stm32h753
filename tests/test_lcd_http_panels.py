@@ -210,20 +210,14 @@ int main(void){
  int idle=draws;tick+=250;LCD_HttpPanel(0,2);assert(draws==idle);
  old_toggle=toggle_calls;touch(1,90,TOP+340);assert(ui.pressed==28);touch(0,90,TOP+340);assert(toggle_calls==old_toggle+1);
  touch(1,90,TOP+340);touch(0,790,TOP+340);assert(toggle_calls==old_toggle+1);
- int previous_level=thermometerLevel[0];model.thermometers[0].tenths=200;tick+=250;LCD_HttpPanel(0,2);assert(thermometerLevel[0]!=previous_level);
- model.thermometers[0].valid=0;tick+=250;LCD_HttpPanel(0,2);assert(thermometerLevel[0]==0);preview("lcd-lpc-thermometers-missing");
+ int before_value=draws;model.thermometers[0].tenths=200;tick+=250;LCD_HttpPanel(0,2);assert(draws>before_value);
+ model.thermometers[0].valid=0;tick+=250;LCD_HttpPanel(0,2);preview("lcd-lpc-thermometers-missing");
  assert(LCD_HttpPanel(2,2)==0);
- for(unsigned level=0;level<=100;level++){
-  assert(ThermometerImage(0,level));uint32_t hash=2166136261u;
-  for(unsigned n=0;n<THERMO_BYTES;n++)hash=(hash^thermometerCache[0][n])*16777619u;
-  if(level==0)assert(hash==3877059142u);
-  if(level==1)assert(hash==4043508583u);
-  if(level==49)assert(hash==2267617559u);
-  if(level==50)assert(hash==954081680u);
-  if(level==99)assert(hash==666009612u);
-  if(level==100)assert(hash==3846970080u);
- }
- assert(ThermometerImage(0,0)&&ThermometerImage(0,100));
+ assert(ThermometerLiquid(0)==0xff0080ff&&ThermometerLiquid(1000)==0xffff0000);
+ for(unsigned level=0;level<=1000;level+=10){ThermometerDraw(236,8,28,level,1);}
+ ThermometerDraw(236,8,28,0,1);uint32_t blue=pLcd[SCRATCH+(28+250)*236+64];
+ ThermometerDraw(236,8,28,1000,1);uint32_t red=pLcd[SCRATCH+(28+250)*236+64];
+ assert((blue&255)>((blue>>16)&255)&&((red>>16)&255)>(red&255));
  for(int dir=-1;dir<=1;dir+=2){
   int current=0,entered=0;
   for(int i=0;i<28;i++){
@@ -249,7 +243,7 @@ def glyph_header():
  return 'static const unsigned char glyphs[]='+arr(pixels)+';\nstatic const int glyph_height[]='+arr(heights)+';\nstatic const int glyph_width[5][256]={' + ','.join(arr(a) for a in widths)+'};\nstatic const unsigned glyph_offset[5][256]={' + ','.join(arr(a) for a in offsets)+'};\n'
 with tempfile.TemporaryDirectory() as d:
  p=Path(d)
- for n in ['SCREEN_HttpPanels.c','SCREEN_HttpPanels.h','lpc_thermometer_panel.inc','lpc_thermometer_frames.inc']:shutil.copy(ROOT/'Application/LCD/Screens'/n,p/n)
+ for n in ['SCREEN_HttpPanels.c','SCREEN_HttpPanels.h','lpc_thermometer_panel.inc']:shutil.copy(ROOT/'Application/LCD/Screens'/n,p/n)
  shutil.copy(ROOT/'Application/HTTP/http_lcd_panels.h',p/'http_lcd_panels.h')
  shutil.copy(ROOT/'Application/LPC2148/http_lpc_panel.h',p/'http_lpc_panel.h')
  (p/'support.h').write_text(SUPPORT)
@@ -257,7 +251,7 @@ with tempfile.TemporaryDirectory() as d:
  (p/'SCREEN_TemperaturePk.h').write_text('enum{LCD_TEMP_UPDATE=0,LCD_TEMP_ENTER=1,LCD_TEMP_EXIT=2};\n')
  (p/'wwwPages.h').write_text(mode)
  (p/'test.c').write_text(glyph_header()+'\n'+C)
- subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+d,str(p/'test.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+d,str(p/'test.c'),'-lm','-o',str(p/'test')],check=True)
  target=ROOT/'Debug/cloud/http-lcd-previews';target.mkdir(parents=True,exist_ok=True)
  env=dict(os.environ,PREVIEW_DIR=str(target));subprocess.run([str(p/'test')],env=env,check=True)
  for ppm in target.glob('*.ppm'):
