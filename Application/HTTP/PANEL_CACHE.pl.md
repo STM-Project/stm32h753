@@ -47,3 +47,12 @@ przekazując rzeczywiste HTTP przez produkcyjny dekoder i routing C. Sprawdza
 cache przy ponownych wejściach, nazwy UTF-8/HTML, zapisy formularzy, zdalną
 zmianę trybu, ochronę szkicu, PWM i przekaźnik. Testy routingu, ustawień
 oraz transmisji nadal obejmują walidację, błędy SD i izolację kolejek.
+
+Wpisy `httpPar` mają osobny czas ostatniej aktywności. Po 20 sekundach bez
+nowego żądania lub postępu odpowiedzi właściciel kolejki czyści nieaktywny
+wpis: wszystkie wskaźniki, rozmiary fragmentów, liczniki i metadane. Wartość
+`que = 0xFF` oznacza wolne miejsce; `0` jest prawidłowym numerem klienta.
+Oczekiwanie na surowe dane AT / SEND OK pozostaje pod 20-sekundowym watchdogiem
+transmisji. Ruch innego klienta nie wyłącza już tego watchdoga. Czyszczenie
+odbywa się w zadaniu WiFi, poza aktywnym DMA. Aktywne odpytywanie strony jest
+ruchem HTTP, więc nie oznacza 20 sekund bezczynności.

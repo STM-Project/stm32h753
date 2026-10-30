@@ -197,3 +197,11 @@ typu portu blokuja nadpisanie rownoleglego zapisu HTTP. Checkboxy sa zapisywane
 w zakresie formularza, nazwa pojedynczego portu nie kasuje innych nazw.
 Odczyt HTTP wraca automatycznie do czystego edytora, szkic wymaga Zapisz lub
 Odrzuc. GUI nie wywoluje bezposrednio funkcji modelu ani FatFs.
+
+Sprawdzone wejście do ustawień portu: na ekranie LCD `/set` wybierz typ,
+zapisz go przyciskiem `Zapisz` w nagłówku, następnie dotknij przycisku
+z numerem portu obok listy typu. Przekaźnik i IR otwierają opisy/nazwy,
+timer dodatkowo cztery pary godzin i dni tygodnia, a termostat wybór czujnika,
+próg, histerezę i czas reakcji. Długie formularze mają przewijanie.
+Testy obejmują dotknięcie tych przycisków dla wszystkich fizycznych wyjść
+oraz zapis pól przez rzeczywisty wspólny model HTTP i callback zapisu SD.

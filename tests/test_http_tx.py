@@ -11,6 +11,7 @@ typedef int ARCHIVING_TYPE;
 #define ETH_PACKET_LEN 2039
 #define DbgVarDma(...) ((void)0)
 static char sendBuff[2048];
+static int RcvTimeoutTimerStop(void) { return 1; }
 static unsigned commands,payloads,closes,command_fail,payload_fail;
 static size_t sent;
 static const char *expected;
@@ -157,6 +158,34 @@ int main(void) {
     strcpy(HttpRefr_sdram,"after-write");HTTP_PrepareRefresh(1);
     assert(!strcmp(httpPageBuff[1],"after-write")&&!strcmp(httpPageBuff[0],"latest"));
     assert(!memcmp(frozenHeader,httpResponseHeader[0],sizeof frozenHeader));
+    /* Idle slots expire independently, including wraparound at 2^32 ms. */
+    clear_queue();test_tick=100;
+    HTTP_HandleTarget(4,"/main",5,NULL);assert(httpLastActivity[0]==100);
+    test_tick=15100;HTTP_HandleTarget(1,"/set",4,NULL);assert(httpLastActivity[1]==15100);
+    httpPar.nr[0]=123;httpTxOffset[0]=42;httpLpcPage[0]=3;
+    assert(!HTTP_ExpireIdleSlots(20099));assert(HTTP_ExpireIdleSlots(20100)==1);
+    assert(httpPar.que[0]==0xFF&&!httpPar.ptr[0]&&!httpPar.nr[0]&&!httpTxOffset[0]&&!httpLpcPage[0]);
+    for(unsigned part=0;part<MAX_HTML_WEBs;part++)assert(!httpPar.web[0][part]&&!httpPar.siz[0][part]);
+    assert(httpPar.que[1]==1&&httpPar.ptr[1]);
+    assert(!HTTP_ExpireIdleSlots(35099));assert(HTTP_ExpireIdleSlots(35100)==1);
+    clear_queue();test_tick=UINT32_MAX-9999u;HTTP_HandleTarget(0,"/main",5,NULL);
+    assert(!HTTP_ExpireIdleSlots(9999));assert(HTTP_ExpireIdleSlots(10000)==1);
+    /* Transfers longer than 20 seconds survive while making real progress. */
+    clear_queue();test_tick=100;HTTP_HandleTarget(0,"/main",5,NULL);httpPar.chnl=0xFF;
+    HTTP_SendCloseChnl(noArch,-1);
+    test_tick=10100;expected=httpPar.ptr[0];assert(HTTP_SendPayload(noArch));
+    assert(httpLastActivity[0]==10100);
+    test_tick=20100;assert(HTTP_SendAcknowledged(noArch));assert(httpLastActivity[0]==20100);
+    assert(!HTTP_ExpireIdleSlots(20101)&&httpPar.que[0]==0);
+    /* A raw CIPSEND prompt or SEND OK wait is reset only by the existing
+       * owner-task watchdog, never by reusing its channel mid-command. */
+    assert(!HTTP_ExpireIdleSlots(40100));InitStructRqstToSendChnl();
+    assert(httpPar.que[0]==0xFF&&httpPar.chnl==0xFF&&!HTTP_SendPayload(noArch));
+    /* Closed/idle metadata and pending refresh flags are all reset. */
+    clear_queue();test_tick=0;HTTP_HandleTarget(0,"/TME.txt",8,NULL);
+    assert(HTTP_ExpireIdleSlots(20000)==1&&!httpRefreshPage[0]&&!httpRefreshPrepared[0]&&!httpResponseStarted[0]);
+    assert(!httpSensorNotice[0]&&!httpSettingsPage[0]&&!httpLpcAsset[0]);
+    puts("PASS: per-slot idle expiry at 20 seconds, progress renewal, complete cleanup, tick wrap and pending AT protection.");
     puts("PASS: deferred/coalesced latest refresh snapshots; active replies frozen; writes persist once with independent response.");
     puts("PASS: real JSON window fallback preserves serialized content and response length.");
     puts("PASS: interleaved SD streams preserve page/offset; midstream SD failure closes without stale payload.");
@@ -166,7 +195,7 @@ int main(void) {
 '''
 def main():
     source=(ROOT/'Application/esp32wroom.c').read_text()
-    init=source[source.index('static void InitStructRqstToSendChnl('):source.index('static int IsActiveAnyRqstToSendChnl(')]
+    init=source[source.index('static void InitStructRqstToSendChnl ('):source.index('static int IsActiveAnyRqstToSendChnl(')]
     tx=source[source.index('int CheckReadyToSendChnl ('):source.index('static int HTTP_GetClosedChannel(')]
     # Guard against reintroducing a timer-task mutation of the HTTP queue.
     callback=source[source.index('static void vWaitOnSendTimeoutTimerCallback('):source.index('static int RcvTimeoutTimerInit(')]

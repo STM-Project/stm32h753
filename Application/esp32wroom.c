@@ -234,6 +234,57 @@ static uint8_t httpRefreshPage[ESP_MAX_HTTP_CONN];
 static uint8_t httpRefreshPrepared[ESP_MAX_HTTP_CONN];
 static uint8_t httpResponseStarted[ESP_MAX_HTTP_CONN];
 static uint32_t httpTxOffset[ESP_MAX_HTTP_CONN];
+/* Milliseconds of actual request/TX progress, independently per queue slot.
+ * Only the WiFi owner reads/writes these fields, never the timer callback. */
+#define HTTP_SLOT_IDLE_MS 20000u
+static uint32_t httpLastActivity[ESP_MAX_HTTP_CONN];
+
+static inline void HTTP_ClearSlot ( unsigned slot )
+{
+	if ( slot >= ESP_MAX_HTTP_CONN )
+		return;
+	if ( httpPar.que[slot] != 0xFF && httpPar.chnl == httpPar.que[slot] )
+		httpPar.chnl = 0xFF;
+	memset ( httpPar.web[slot], 0, sizeof httpPar.web[slot] );
+	memset ( httpPar.siz[slot], 0, sizeof httpPar.siz[slot] );
+	httpPar.que[slot] = 0xFF;
+	httpPar.nrWeb[slot] = 0;
+	httpPar.ptr[slot] = NULL;
+	httpPar.nr[slot] = 0;
+	httpPar.len[slot] = 0;
+	httpTxPhase[slot] = 0;
+	httpTxOffset[slot] = 0;
+	httpLpcPage[slot] = 0;
+	httpLpcJsonHash[slot] = 0;
+	httpLpcChunkOffset[slot] = 0;
+	httpRefreshPage[slot] = 0;
+	httpRefreshPrepared[slot] = 0;
+	httpResponseStarted[slot] = 0;
+	httpSensorPort[slot] = 0;
+	httpSensorNotice[slot] = NULL;
+	httpResponseStatus[slot] = 0;
+	httpSettingsPage[slot] = NULL;
+	httpSettingsInstance[slot] = 0;
+	httpLpcAsset[slot] = NULL;
+	httpLastActivity[slot] = 0;
+}
+
+static inline unsigned HTTP_ExpireIdleSlots ( uint32_t now )
+{
+	unsigned expired = 0;
+	for ( unsigned slot = 0; slot < ESP_MAX_HTTP_CONN; ++slot )
+		if ( httpPar.que[slot] != 0xFF && (uint32_t) ( now - httpLastActivity[slot] ) >= HTTP_SLOT_IDLE_MS )
+		{
+			/* A pending raw AT payload/acknowledgement belongs to the existing
+			 * 20-second send watchdog. Do not reuse its channel underneath it. */
+			if ( httpPar.chnl == httpPar.que[slot] && ( httpTxPhase[slot] == 1 || httpTxPhase[slot] == 2 ) )
+				continue;
+			HTTP_ClearSlot ( slot );
+			++expired;
+		}
+	return expired;
+}
+
 static char* pMem=NULL;
 static int DBG = 1;
 static uint8_t connectionType = INIT_CONNECTION;
@@ -457,27 +508,11 @@ static int IsTimeoutForReloadHttp(void){
 	return CONDITION( xTaskGetTickCount()-tickCnt > TIME_AFTER_RELOAD_HTTP_MS, 1, 0 );
 }
 
-static void InitStructRqstToSendChnl(void){
+static void InitStructRqstToSendChnl ( void )
+{
 	httpPar.chnl = 0xFF;
-	LOOP_FOR ( i, ESP_MAX_HTTP_CONN )
-	{
-		httpTxPhase[i] = 0;
-		httpTxOffset[i] = 0;
-		httpLpcPage[i] = 0;
-		httpRefreshPage[i] = 0;
-		httpRefreshPrepared[i] = 0;
-		httpResponseStarted[i] = 0;
-		httpPar.ptr[i] = NULL;
-		httpPar.que[i] = 0xFF;
-		httpPar.nr[i] = 0;
-		httpPar.len[i] = 0;
-		httpPar.nrWeb[i] = 0;
-		LOOP_FOR ( j, MAX_HTML_WEBs )
-		{
-			httpPar.web[i][j] = NULL;
-			httpPar.siz[i][j] = 0;
-		}
-	}
+	for ( unsigned slot = 0; slot < ESP_MAX_HTTP_CONN; ++slot )
+		HTTP_ClearSlot ( slot );
 }
 
 static int IsActiveAnyRqstToSendChnl(void){
@@ -1309,6 +1344,7 @@ static int HTTP_QueueResponse ( unsigned channel, int page, unsigned port,
 		if ( httpPar.que[i] == 0xFF )
 		{
 			httpPar.que[i] = (u8) channel;
+			httpLastActivity[i] = HAL_GetTick ();
 			httpSensorPort[i] = port;
 			httpSensorNotice[i] = notice;
 			httpResponseStatus[i] = status;
@@ -1746,6 +1782,7 @@ static int HTTP_SendPayload ( ARCHIVING_TYPE archType )
 		httpPar.chnl = 0xFF;
 		return 0;
 	}
+	httpLastActivity[slot] = HAL_GetTick ();
 	httpTxOffset[slot] += length;
 	httpPar.ptr[slot] = httpLpcPage[slot] && part == 1 ? httpLpcChunk[slot] : httpPar.web[slot][part] + httpTxOffset[slot];
 	httpPar.len[slot] = 0;
@@ -1760,6 +1797,8 @@ static int HTTP_SendAcknowledged ( ARCHIVING_TYPE archType )
 	if ( slot < 0 || httpTxPhase[slot] != 2 )
 		return 0;
 	int previous = httpPar.chnl;
+	RcvTimeoutTimerStop ();
+	httpLastActivity[slot] = HAL_GetTick ();
 	httpTxPhase[slot] = 0;
 	httpPar.chnl = 0xFF;
 	HTTP_SendCloseChnl ( archType, previous );
@@ -2003,6 +2042,8 @@ void vtaskWifi(void *argument)
 		/* FreeRTOS copies and clears pending bits atomically before returning.
        * Notifications arriving during processing remain pending for next time. */
 		TickType_t wait = CLOUD_WaitTicks ();
+		if ( connectionType == HTTP_CONNECTION && IsActiveAnyRqstToSendChnl () && wait > pdMS_TO_TICKS ( 250 ) )
+			wait = pdMS_TO_TICKS ( 250 );
 		if ( HTTP_LCDPanelWanted () && wait > pdMS_TO_TICKS ( 250 ) ) wait = pdMS_TO_TICKS ( 250 );
 		if ( xTaskNotifyWait ( 0, UINT32_MAX, &ulNotifiedValue, wait ) == pdPASS )
 		{
@@ -2652,7 +2693,7 @@ void vtaskWifi(void *argument)
 
 
 				case HTTP_CONNECTION:
-					RcvTimeoutTimerStop();
+					/* Other clients' GETs must not cancel the active send watchdog. */
 					typeSendArch=noArch;
 					/*DispRecvBuff(++nrHTTPpacket,typeSendArch);*/  ESP32_FreeAnswers(0);  //KASUJ STRUCT PAR HTTP jesli zawisnie na kakis czas !!!!!!! w timer calback !!!!
 
@@ -2671,35 +2712,18 @@ void vtaskWifi(void *argument)
 
 						if(httpPar.chnl == chnlClose)    /* jesli ten Case nastapil po wysylce at+cipsend lub at+cipclose - SYNCHRONICZNY */
 						{
+							RcvTimeoutTimerStop ();
 							int nr = SearchChnl(httpPar.chnl);
-							if(nr>=0){
-								httpTxPhase[nr] = 0;
-								httpTxOffset[nr] = 0;
-								httpPar.que[nr] = 0xFF; // daj jako funkcja zerujaca to szwszystko
-								httpPar.nr[nr]=0;
-								httpPar.ptr[nr]=NULL;
-								httpPar.siz[nr][0]=0;
-								httpPar.len[nr]=0;
-								httpPar.web[nr][0]=NULL;
-								httpPar.nrWeb[nr]=0;
-							}
+							if ( nr >= 0 )
+								HTTP_ClearSlot ( (unsigned) nr );
 							httpPar.chnl=0xFF;		/* zezwol na nastepna wysylke */
 							HTTP_SendCloseChnl(typeSendArch,-1);
 						}
 						else /* if(httpPar.chnl != chnlClose) */       /* jesli ten Case nastapil NIE po wysylce at+cipsend lub at+cipclose - ASYNCHRONICZNY */
 						{
 							int nr = SearchChnl(chnlClose);
-							if(nr>=0){
-								httpTxPhase[nr] = 0;
-								httpTxOffset[nr] = 0;
-								httpPar.que[nr] = 0xFF;
-								httpPar.nr[nr]=0;
-								httpPar.ptr[nr]=NULL;
-								httpPar.siz[nr][0]=0;
-								httpPar.len[nr]=0;
-								httpPar.web[nr][0]=NULL;
-								httpPar.nrWeb[nr]=0;
-							}
+							if ( nr >= 0 )
+								HTTP_ClearSlot ( (unsigned) nr );
 						}
 
 					}
@@ -3111,6 +3135,18 @@ void vtaskWifi(void *argument)
 		*/
 
 		}
+	  }
+	  /* Run even without UART notifications. Do not reset a slot while UART
+	   * DMA still owns sendBuff; parse queued acknowledgements above first. */
+	  if ( connectionType == HTTP_CONNECTION && ESP_UART_HANDLE.gState == HAL_UART_STATE_READY )
+	  {
+		  int active = httpPar.chnl;
+		  if ( HTTP_ExpireIdleSlots ( HAL_GetTick () ) )
+		  {
+			  if ( active != 0xFF && httpPar.chnl == 0xFF )
+				  RcvTimeoutTimerStop ();
+			  HTTP_SendCloseChnl ( noArch, -1 );
+		  }
 	  }
 	  if ( connectionType == INIT_CONNECTION && googleCloudStatus.configured &&
 		   _GET_ACTUAL_CASE_ >= 22 && _GET_ACTUAL_CASE_ <= 27 &&

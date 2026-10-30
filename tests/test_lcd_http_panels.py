@@ -265,6 +265,23 @@ int main(void){
  touch(1,500,TOP+30);touch(0,500,TOP+30);assert(lcdForm.selection==0);preview("lcd-settings-thermostat-options");
  touch(1,100,400);touch(1,100,140);touch(0,100,140);assert(lcdForm.selection>0);
  touch(1,70,30);touch(0,70,30);touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
+ /* Open every output editor by its real /set numeric touch button,
+    including the lower rows after scrolling, rather than calling SettingsOpen. */
+ const unsigned output_modes[]={HTTP_MODE_RELAY,HTTP_MODE_TIMER,HTTP_MODE_THERMOSTAT,HTTP_MODE_IR};
+ for(unsigned port=21;port<=33;port++)for(unsigned mode=0;mode<4;mode++){
+  if(mode==3&&port>27)continue;
+  model.ports[port-1].mode=output_modes[mode];edit.draftMode[port-1]=-1;tick+=250;LCD_HttpPanel(0,1);
+  int tile=-1;for(int i=0;i<ui.count;i++)if((unsigned)ui.tiles[i].port==port)tile=i;assert(tile>=0);
+  ui.scroll=Clamp(ui.tiles[tile].y,0,Maximum());ui.full=ui.dirty=1;LCD_HttpPanel(0,1);
+  int x=ui.tiles[tile].x+410,y=TOP+ui.tiles[tile].y-ui.scroll+30;
+  assert(y>=TOP&&y<TOP+VIEW);touch(1,x,y);touch(0,x,y);assert(LCD_HttpPanelModal());LCD_HttpPanel(0,1);
+  assert(lcdFormDraft.port==port&&lcdFormDraft.count==(mode==1?19:mode==2?7:3));
+  assert(!strcmp(lcdFormDraft.page->route,mode==1?"/tim":mode==2?"/term":"/wypk"));
+  if(port==28&&mode==0)preview("lcd-settings-relay");
+  if(port==28&&mode==2)preview("lcd-settings-thermostat");
+  touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
+ }
+ puts("PASS: relay/IR, timer and thermostat editors open by touch for every physical output, with scrolling and Back.");
  assert(LCD_HttpPanel(2,1)==0);
  for(int dir=-1;dir<=1;dir+=2){
   int current=0,entered=0;

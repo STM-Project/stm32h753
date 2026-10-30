@@ -130,6 +130,22 @@ int main(void){
  assert(SaveModes(&pwm_mode)==HTTP_SETTINGS_SAVED);RELAY_RequestPwm(21,35);assert(HTTP_LCDFormOpen(21,0));HTTP_LCDFormService(5300);HTTP_LCDFormRead(&base_form);draft_form=base_form;
  strcpy(draft_form.values[0],"Nazwa PWM");RELAY_RequestPwm(21,60);assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5301);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_SAVED&&RELAY_GetState(21)->pwm_percent==60); /* name-only does not restore stale PWM */
  base_form=read_form;draft_form=base_form;draft_form.pwm=75;assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5302);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_SAVED&&RELAY_GetState(21)->pwm_percent==75);HTTP_LCDFormClose();
+ /* Every output editor saves the canonical HTTP fields, for all physical
+    outputs and all three settings pages; no separate LCD-only values. */
+ const unsigned kinds[]={HTTP_MODE_RELAY,HTTP_MODE_TIMER,HTTP_MODE_THERMOSTAT,HTTP_MODE_IR};
+ for(unsigned port=21;port<=33;port++)for(unsigned k=0;k<4;k++){
+  if(k==3&&port>27)continue;
+  modes[port-1]=kinds[k];assert(HTTP_LCDFormOpen(port,0));HTTP_LCDFormService(6000+port*10+k);assert(HTTP_LCDFormRead(&base_form));draft_form=base_form;
+  unsigned name_index=k==1?16:k==2?4:0;
+  snprintf(draft_form.values[name_index],HTTP_LCD_FORM_VALUE,"LCD port %u mode %u",port,kinds[k]);
+  strcpy(draft_form.values[name_index+1],"Wlaczone");strcpy(draft_form.values[name_index+2],"Wylaczone");
+  if(k==1){strcpy(draft_form.values[0],"07:15:30");strcpy(draft_form.values[4],"22:45:00");strcpy(draft_form.values[8],"1");strcpy(draft_form.values[15],"tak");}
+  if(k==2){strcpy(draft_form.values[0],"W05");strcpy(draft_form.values[1],"+65.0");strcpy(draft_form.values[2],"+02.5");strcpy(draft_form.values[3],"01:30");}
+  assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(7000+port*10+k);assert(HTTP_LCDFormRead(&read_form)&&read_form.status==LCD_FORM_SAVED);
+  for(unsigned field=0;field<read_form.count;field++)assert(!strcmp(read_form.values[field],draft_form.values[field]));
+  HTTP_LCDFormClose();
+ }
+ puts("PASS: relay/IR names, timer schedule/days and thermostat sensor/threshold/hysteresis/delay save through the shared HTTP model for every output.");
  assert(HTTP_SettingsModelInit(load,save,NULL)==1);
  uint16_t saved_instance=0;const HTTP_SettingPage*saved_adc=HTTP_SettingsCatalogFind("/nap001",&saved_instance);
  assert(saved_adc&&saved_instance==1&&!strcmp(HTTP_SettingsGet(saved_adc,1,&saved_adc->fields[300]),"Volt"));

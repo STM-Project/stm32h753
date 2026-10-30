@@ -44,6 +44,8 @@ PREAMBLE = r'''
 #include "relay_states.h"
 typedef uint8_t u8;
 typedef uint32_t u32;
+static uint32_t test_tick;
+static uint32_t HAL_GetTick(void) { return test_tick; }
 #define SDRAM
 static char last_debug[256];
 static void DbgVarDma(int on,unsigned size,const char *format,...) {
