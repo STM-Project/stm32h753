@@ -2,6 +2,7 @@
 #define LCD_SENSOR_THRESHOLDS_H
 #include <stdint.h>
 #define LCD_THRESHOLD_PORTS 20
+#define LCD_THRESH_BACK 2 /* Return to the parent /set panel (not a save). */
 #include "http_sensor_settings.h"
 /* Same type and units as the shared HTTP/SD model. */
 typedef HttpSensorSettings LCD_SensorThreshold;

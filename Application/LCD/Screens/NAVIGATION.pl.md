@@ -23,9 +23,9 @@ Strzałki i debug `=` używają `SCREEN_Change()` oraz wspólnej kolejności:
 7. Jasny panel temperatury / PK.
 8. Panel temperatury z wykresem.
 9. Trzy wskaźniki Gauge.
-10. Ustawienia progów temperatury / wilgotności i nazw, wspólne z HTTP.
+10. Numer zarezerwowany dla progow; pomijany przez next/prev. Wejscie z konfiguracji portu w /set.
 11. Panel odczytowy HTTP /main, przewijanie i wspólne PWM/przekaźniki.
-12. Ustawienia portów HTTP /set, przewijanie i wizualna obsługa przycisków.
+12. Ustawienia portow HTTP /set, przewijanie, edycja nazw i formularze wartosci.
 
 Po ostatnim ekranie `next` wraca do pierwszego, a `prev` działa odwrotnie.
 Zmiana ekranu przechodzi przez istniejące funkcje EXIT, w tym zamykanie edytora
@@ -47,3 +47,6 @@ palca, anulowanie gestu, przepełnienie zegara, ukryte pola i dokładne
 odtworzenie zawartości ekranu przy wygaśnięciu nakładki.
 
 13. Biały panel /nowa: trzy termometry z HTTP SVG i cztery przekaźniki 28..31.
+
+W edytorach podrzednych strzalki sa schowane i nie przechwytuja klawiatury.
+Powrot do /set odbywa sie przyciskiem Wroc. Kolejnosc pomija 10: 9 → 11.

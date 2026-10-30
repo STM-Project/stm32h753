@@ -268,6 +268,13 @@ static void PressPaint ( int id, int pressed )
 		w = 176;
 		strcpy ( text, "Odrzuc" );
 	}
+	else if ( id == 22 )
+	{
+		x = 404;
+		y = 9;
+		w = 120;
+		strcpy ( text, "Wroc" );
+	}
 	else
 	{
 		x = id == 20 ? 550 : 668;
@@ -312,6 +319,9 @@ static int Draw ( void )
 	LCD_TOUCH_DeleteAllSetTouch ();
 	Fill ( BG );
 	Text ( 1, 24, 16, "Ustawienia czujnikow", WHITE_TEXT );
+	Button ( 404, 9, 120, "Wroc" );
+	if ( !TouchRect ( 404, 9, 120, 40, TOUCH_FIRST + 22 ) )
+		return -4;
 	Button ( 552, 9, 44, "<" );
 	Button ( 732, 9, 44, ">" );
 	char text[64];
@@ -582,6 +592,8 @@ int LCD_SensorThresholds ( uint8_t mode )
 		}
 	if ( p.y >= 9 && p.y < 49 )
 	{
+		if ( p.x >= 404 && p.x < 524 )
+			hit = 22;
 		if ( p.x >= 552 && p.x < 596 )
 			hit = 16;
 		if ( p.x >= 732 && p.x < 776 )
@@ -618,6 +630,8 @@ int LCD_SensorThresholds ( uint8_t mode )
 		snprintf ( ui.notice, sizeof ( ui.notice ), "Najpierw Zapisz lub Odrzuc." );
 		return Draw ();
 	}
+	if ( action == 22 )
+		return LCD_THRESH_BACK;
 	if ( action == 16 && ui.port > 1 )
 		ui.port--;
 	if ( action == 17 && ui.port < 20 )

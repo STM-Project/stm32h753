@@ -36,6 +36,21 @@ static uint32_t tick;
 static int check_description,description_lines,check_measurement,number_count,unit_count;
 static XY_Touch_Struct pos;
 XY_Touch_Struct screenTouchPos;
+unsigned lcdThresholdPort;static int threshold_active,threshold_back,form_save_calls;
+void SCREEN_NavigationRestore(void){}void SCREEN_NavigationEnter(uint32_t now,int d){(void)now;(void)d;}
+int LCD_SensorThresholds(uint8_t m){if(m==1)threshold_active=1;if(m==2)threshold_active=0;if(m==0&&threshold_back){threshold_back=0;return LCD_THRESH_BACK;}return 0;}
+static HTTP_LCDFormData formModel;
+unsigned HTTP_LCDFormFieldIndex(const HTTP_LCDFormData*d,unsigned row){return d->names_only?d->port-1:row;}
+uint32_t HTTP_LCDFormOpen(unsigned port,int names){
+ static unsigned serial;memset(&formModel,0,sizeof formModel);formModel.serial=++serial;formModel.port=port;formModel.mode=model.ports[port-1].mode;
+ formModel.page=HTTP_LCDFormRoute(port,formModel.mode,names,&formModel.instance);assert(formModel.page);
+ formModel.names_only=names||!strcmp(formModel.page->route,"/set");formModel.count=formModel.names_only?1:formModel.page->field_count;formModel.status=LCD_FORM_READY;formModel.hash=1;
+ for(unsigned i=0;i<formModel.count;i++)snprintf(formModel.values[i],HTTP_LCD_FORM_VALUE,"%s",formModel.page->fields[HTTP_LCDFormFieldIndex(&formModel,i)].default_value);
+ return formModel.serial;
+}
+void HTTP_LCDFormClose(void){}
+int HTTP_LCDFormRead(HTTP_LCDFormData*out){if(!formModel.serial)return 0;*out=formModel;return 1;}
+int HTTP_LCDFormSave(const HTTP_LCDFormData*base,const HTTP_LCDFormData*draft){assert(base->serial==formModel.serial);form_save_calls++;formModel=*draft;formModel.status=LCD_FORM_SAVED;formModel.hash++;return 1;}
 void SCREEN_ResetAllParameters(void){}void LCD_TOUCH_DeleteAllSetTouch(void){}
 void HTTP_LCDPanelActive(int a){active=a;}
 int HTTP_LCDPanelRead(HTTP_LCDPanelData*out){*out=model;return 1;}
@@ -218,10 +233,43 @@ int main(void){
  ThermometerDraw(236,8,28,0,1);uint32_t blue=pLcd[SCRATCH+(28+250)*236+64];
  ThermometerDraw(236,8,28,1000,1);uint32_t red=pLcd[SCRATCH+(28+250)*236+64];
  assert((blue&255)>((blue>>16)&255)&&((red>>16)&255)>(red&255));
+ /* Configuration buttons open child editors, and return to the same /set scroll. */
+ assert(LCD_HttpPanel(1,1)==0);
+ touch(1,CONTENT_X+410,TOP+30);touch(0,CONTENT_X+410,TOP+30);assert(LCD_HttpPanelModal()&&threshold_active&&lcdThresholdPort==1);
+ threshold_back=1;LCD_HttpPanel(0,1);assert(!LCD_HttpPanelModal()&&!threshold_active&&ui.settings==1);
+ model.ports[14].mode=HTTP_MODE_ADC;tick+=250;LCD_HttpPanel(0,1);
+ ui.scroll=Clamp(ui.tiles[14].y,0,Maximum());ui.full=ui.dirty=1;LCD_HttpPanel(0,1);
+ touch(1,CONTENT_X+410,TOP+30);touch(0,CONTENT_X+410,TOP+30);assert(LCD_HttpPanelModal());LCD_HttpPanel(0,1);
+ assert(lcdFormDraft.count==301&&FormRows()==101&&FormMaximum()>0);preview("lcd-settings-adc-top");
+ touch(1,420,TOP+30);touch(0,420,TOP+30);assert(lcdForm.editing==0&&lcdForm.selection==0);
+ touch(1,100,TOP+78);touch(0,100,TOP+78);assert(!strcmp(lcdFormDraft.values[0],"-"));
+ touch(1,500,TOP+30);touch(0,500,TOP+30);assert(lcdForm.editing==1&&lcdForm.selection<0);
+ touch(1,500,30);touch(0,500,30);assert(!lcdForm.text[0]);
+ touch(1,55,TOP+92);touch(0,55,TOP+92);touch(1,132,TOP+92);touch(0,132,TOP+92);assert(!strcmp(lcdForm.text,"12"));
+ preview("lcd-settings-keyboard");touch(1,630,30);touch(0,630,30);assert(lcdForm.editing==-1&&!strcmp(lcdFormDraft.values[1],"12"));
+ touch(1,746,100);touch(1,746,400);touch(0,746,400);assert(lcdForm.scroll>0);
+ lcdForm.scroll=FormMaximum();FormDraw();preview("lcd-settings-adc-bottom");
+ touch(1,630,30);touch(0,630,30);LCD_HttpPanel(0,1);assert(form_save_calls==1&&!lcdForm.dirty&&!lcdForm.pending);
+ assert(!strcmp(formModel.values[1],"12"));
+ strcpy(formModel.values[1],"99");formModel.hash++;tick+=250;LCD_HttpPanel(0,1);assert(!strcmp(lcdFormDraft.values[1],"99"));
+ touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal()&&ui.settings==1);
+ touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);LCD_HttpPanel(0,1);assert(lcdFormDraft.names_only&&lcdFormDraft.count==1);preview("lcd-settings-name");
+ touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
+ model.ports[27].mode=HTTP_MODE_TIMER;tick+=250;LCD_HttpPanel(0,1);
+ assert(SettingsOpen(28,0));LCD_HttpPanel(0,1);assert(lcdFormDraft.count==19);preview("lcd-settings-timer");
+ lcdForm.scroll=8*64;FormDraw();touch(1,500,TOP+30);touch(0,500,TOP+30);assert(!strcmp(lcdFormDraft.values[8],"1"));
+ touch(1,500,30);touch(0,500,30);assert(!lcdForm.dirty);touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
+ model.ports[27].mode=HTTP_MODE_THERMOSTAT;tick+=250;LCD_HttpPanel(0,1);
+ assert(SettingsOpen(28,0));LCD_HttpPanel(0,1);assert(lcdFormDraft.count==7);
+ char option_label[64];FormOptionLabel(FormField(0),"T01",option_label,sizeof option_label);assert(!strcmp(option_label,"Temp. port 1"));
+ touch(1,500,TOP+30);touch(0,500,TOP+30);assert(lcdForm.selection==0);preview("lcd-settings-thermostat-options");
+ touch(1,100,400);touch(1,100,140);touch(0,100,140);assert(lcdForm.selection>0);
+ touch(1,70,30);touch(0,70,30);touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
+ assert(LCD_HttpPanel(2,1)==0);
  for(int dir=-1;dir<=1;dir+=2){
   int current=0,entered=0;
-  for(int i=0;i<28;i++){
-   current=SCREEN_NavigationNext(current,dir);
+  for(int i=0;i<26;i++){
+   current=SCREEN_NavigationNext(current,dir);assert(current!=10);
    if(current>=11&&current<=13){assert(LCD_HttpPanel(1,current-11)==0&&ui.active);assert(LCD_HttpPanel(2,current-11)==0);entered++;}
   }
   assert(current==0&&entered==6);
@@ -229,6 +277,7 @@ int main(void){
  puts("PASS: two 33-port screens, native clipped text, scrollbar/content drag, endpoints, no idle redraw, PWM 0/100 to port 21, settings press/release/cancel without writes/navigation; preview frames.");
 }
 '''
+C += '\n' + re.search(r'const HTTP_SettingPage \*HTTP_LCDFormRoute.*?\n}', (ROOT/'Application/HTTP/http_lcd_forms.inc').read_text(), re.S)[0] + '\n'
 C += '\n' + re.search(r'int SCREEN_NavigationNext\s*\(.*?\n}', (ROOT/'Application/LCD/Screens/SCREEN_Navigation.c').read_text(), re.S)[0] + '\n'
 def glyph_header():
  widths=[];offsets=[];heights=[];pixels=bytearray()
@@ -243,15 +292,18 @@ def glyph_header():
  return 'static const unsigned char glyphs[]='+arr(pixels)+';\nstatic const int glyph_height[]='+arr(heights)+';\nstatic const int glyph_width[5][256]={' + ','.join(arr(a) for a in widths)+'};\nstatic const unsigned glyph_offset[5][256]={' + ','.join(arr(a) for a in offsets)+'};\n'
 with tempfile.TemporaryDirectory() as d:
  p=Path(d)
- for n in ['SCREEN_HttpPanels.c','SCREEN_HttpPanels.h','lpc_thermometer_panel.inc']:shutil.copy(ROOT/'Application/LCD/Screens'/n,p/n)
+ for n in ['SCREEN_HttpPanels.c','SCREEN_HttpPanels.h','lpc_thermometer_panel.inc','lcd_port_forms.inc']:shutil.copy(ROOT/'Application/LCD/Screens'/n,p/n)
  shutil.copy(ROOT/'Application/HTTP/http_lcd_panels.h',p/'http_lcd_panels.h')
  shutil.copy(ROOT/'Application/LPC2148/http_lpc_panel.h',p/'http_lpc_panel.h')
+ for n in ['http_lcd_forms.h','http_settings_model.h','http_settings_catalog.h']:shutil.copy(ROOT/'Application/HTTP'/n,p/n)
+ (p/'LCD_SensorThresholds.h').write_text('enum{LCD_THRESH_UPDATE=0,LCD_THRESH_ENTER=1,LCD_THRESH_EXIT=2,LCD_THRESH_BACK=2};extern unsigned lcdThresholdPort;int LCD_SensorThresholds(uint8_t);')
+ (p/'SCREEN_Navigation.h').write_text('void SCREEN_NavigationRestore(void);void SCREEN_NavigationEnter(uint32_t,int);')
  (p/'support.h').write_text(SUPPORT)
  for n in ['SCREEN_ReadPanel.h','LCD_BasicGraphics.h','LCD_fonts_images.h','LCD_Hardware.h','touch.h']:(p/n).write_text('#include "support.h"\n')
  (p/'SCREEN_TemperaturePk.h').write_text('enum{LCD_TEMP_UPDATE=0,LCD_TEMP_ENTER=1,LCD_TEMP_EXIT=2};\n')
  (p/'wwwPages.h').write_text(mode)
  (p/'test.c').write_text(glyph_header()+'\n'+C)
- subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+d,str(p/'test.c'),'-lm','-o',str(p/'test')],check=True)
+ subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+d,str(p/'test.c'),str(ROOT/'Application/HTTP/http_settings_catalog.c'),'-lm','-o',str(p/'test')],check=True)
  target=ROOT/'Debug/cloud/http-lcd-previews';target.mkdir(parents=True,exist_ok=True)
  env=dict(os.environ,PREVIEW_DIR=str(target));subprocess.run([str(p/'test')],env=env,check=True)
  for ppm in target.glob('*.ppm'):

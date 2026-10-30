@@ -186,6 +186,7 @@ int main(void){
  assert(HTTP_SensorSettingsGet(1,1)->max1==755);
  assert(HTTP_SensorSettingsInit(load,save,NULL)==1);HTTP_SensorLCDService();
  assert(HTTP_SensorSettingsGet(1,1)->max1==755&&HTTP_SensorSettingsGet(1,0)->max1==500);
+ assert(click(450,25)==LCD_THRESH_BACK);
  puts("Threshold page: field validation, keyboard routing, save/cancel, port selection, shared HTTP/LCD commits, SD errors/reload, conflict protection and display bounds: PASS");
 }
 """,

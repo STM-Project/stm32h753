@@ -606,7 +606,7 @@ static void DBG_SCREEN_Test_Circle(void)
 
 void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 {
-	if ( startScreen )
+	if ( startScreen && !LCD_HttpPanelModal () )
 	{
 		int direction;
 		XY_Touch_Struct position = LCD_TOUCH_GetPos ();
@@ -701,7 +701,10 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 			break;
 		case 10:
 			if (lcdThresholdResult >= 0)
+				{
 				lcdThresholdResult = LCD_SensorThresholds(LCD_THRESH_UPDATE);
+				if ( lcdThresholdResult == LCD_THRESH_BACK ) SCREEN_SetNr ( 12 );
+			}
 			break;
 		case 9:
 			if (lcdPanel3Result >= 0)
@@ -822,13 +825,13 @@ void SCREEN_ReadPanel(void)  // przeniesc do Task.c !!!!!!!!!!!!!!!!!!
 	//if(IsRefreshScreenTimeout(refresh_7,40)) LCD_StrMovHIndirect_TEST(STR_ID_MovFonts_7,1);
 	//if(IsRefreshScreenTimeout(refresh_8,50)) LCD_StrMovVI]]]]]]]\ndirect_TEST(STR_ID_MovFonts_8,1);
 
-	if ( DEBUG_IsTxtReceive ( "=" ) )
+	if ( DEBUG_IsTxtReceive ( "=" ) && !LCD_HttpPanelModal () )
 	{
 		SCREEN_Change ( 1 );
 	}
 	if ( DEBUG_IsTxtReceive ( "?" ) )
 		LCD_DisplayStrMovBuffState ();
-	if ( startScreen )
+	if ( startScreen && !LCD_HttpPanelModal () )
 		SCREEN_NavigationDraw ( HAL_GetTick () );
 }
 

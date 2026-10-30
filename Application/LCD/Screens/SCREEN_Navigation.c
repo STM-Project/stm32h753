@@ -25,7 +25,11 @@ int SCREEN_NavigationNext ( int current, int direction )
 	 * and shared HTTP/LCD threshold editor. Debug '=' uses this same order. */
 	if ( current < 0 || current > 13 )
 		return 0;
-	return direction < 0 ? ( current == 0 ? 13 : current - 1 ) : ( current == 13 ? 0 : current + 1 );
+	if ( direction < 0 )
+		return current == 0 ? 13 : current == 11 ? 9
+												 : current - 1;
+	return current == 13 ? 0 : current == 9 ? 11
+											: current + 1;
 }
 
 void SCREEN_NavigationEnter ( uint32_t now, int down )

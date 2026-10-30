@@ -9,11 +9,11 @@ timery i termostaty. Wyłączone porty są pomijane. Liczniki mają wyższe kafe
 12 — ustawienia `/set`: wszystkie 33 porty, nazwa, wybór trybu, krótki
 przycisk konfiguracji z numerem portu i aktualne odczyty. Temperatura/RH mają
 dwa pola wartości; PWM ma procent i suwak, a przekaźnik stan ON/OFF. Przycisk zmienia wygląd przy wciśnięciu i wraca po puszczeniu.
-Nie uruchamia dalszego ekranu i nie zapisuje ustawień.
-Obrys wiersza ma 2 px; obrysy panelu odczytowego pozostają bez zmian. Przeciągnięcie pionowe
+Po puszczeniu otwiera formularz danego portu. Dotkniecie nazwy po lewej otwiera edytor nazwy wspolnej z HTTP /set.
+Obrys wiersza ma 2 px; obrys panelu odczytowego ma 3 px. Przeciągnięcie pionowe
 anuluje kliknięcie, aby przewijanie nie wykonywało przypadkowej akcji.
 
-Oba ekrany są w tej samej pętli next/prev oraz debug `=` (teraz 0..12).
+Oba ekrany są w tej samej pętli next/prev oraz debug `=` (0..13 z pominieciem 10).
 Można je również wybrać w kodzie przez SCREEN_SetNr(11) / SCREEN_SetNr(12).
 Pasek przewijania jest po prawej, x=738..759, niezależnie od pola next
 x=770..799. Kafelki/listę można przewijać palcem. Góra, środek i dół treści
@@ -66,7 +66,7 @@ Nie zmieniono CubeMX, sterowników HAL ani zawartości SD.
   liczenie kliknięć, aktualny tryb i przetrwanie polecenia po EXIT.
 - tests/test_lcd_http_panels.py: rzeczywiste dwa ekrany, 33 porty, obcinanie
   tekstu, skrajne położenia suwaka i treści, PWM 0/100, klik/drag przekaźnika,
-  naciśnięcie/puszczenie przycisku ustawień bez zapisu/nawigacji.
+  wejscie do edytorow, powrot, klawiatura, listy wyboru, scroll i zapis.
 - Podglądy generowane przez ten sam kod rysowania, z czcionką komputerową
   zbliżoną do Arial, są w Debug/cloud/http-lcd-previews/*.png (800x480).
   Podgląd nie jest pomiarem wydajności ani testem fizycznego dotyku na H7.
@@ -155,3 +155,45 @@ Rysowanie korzysta wyłącznie z istniejącego scratch w pLcd. Nie trzeba zmieni
 Usunięto lpc_thermometer_frames.inc oraz generator klatek. Pomiar linkera:
 FLASH mniej o 339484 B, SDRAM mniej o 188160 B w porównaniu z wersją bitmapową.
 Obrys kafelków odczytu ma 3 px, ustawień pozostaje 2 px.
+
+## Edytory portow pod panelem /set
+
+Przycisk z numerem portu otwiera konfiguracje dla zapisanego typu. Najpierw
+nalezy zatwierdzic zmiane typu przyciskiem Zapisz w /set. Po wejsciu i powrocie
+pozostaje poprzednie polozenie listy. Strzalki next/prev sa w edytorze wylaczone.
+Ekran 10 progow nie jest w petli next/prev: 9 → 11 oraz 11 → 9.
+Progi temperatury/RH/PT1000 otwieraja istniejacy LCD_SensorThresholds dla
+wskazanego portu, z przyciskiem Wroc. Zapis i Odrzuc dzialaja jak dotychczas.
+Wroc nie opusci edytora z niezatwierdzonymi zmianami: najpierw Zapisz lub Odrzuc.
+
+Pozostale porty uzywaja lcd_port_forms.inc i http_lcd_forms.inc/.h. Formularze
+maja wszystkie pola tego samego katalogu co HTTP, w tym checkboxy, listy wyboru
+z opisami HTML i formaty czasu. Klawiatura obsluguje litery, cyfry, znaki,
+duze litery, polskie znaki, spacje, kasowanie oraz Wyczysc/Gotowe/Anuluj.
+Dlugie strony maja scrollbar po prawej i przewijanie gestem; lista wyboru
+termostatu takze ma przewijanie. Napiecie ma 100 punktow translacji (znak,
+czesc calkowita i setne) plus jednostke, razem 301 pol wspolnych z /nap.
+Przewijana jest tylko widoczna czesc, bez bitmapy calej strony.
+
+Mapowanie fizyczny port → strona/instancja jest identyczne z HTTP /set:
+
+- wejscie: 1..14 → /we001..014, 17..20 → /we015..018;
+- EOL: 1..14 → /eol001..014; napiecie: 15..16 → /nap001..002;
+- licznik: 17..20 → /etr001..004;
+- wyjscia 28..33 → instancje 1..6, 24..27 → 7..10, 21..23 → 11..13;
+- przekaznik/IR → /wypk, timer → /tim, termostat → /term.
+
+Kazda nazwe portu mozna edytowac, dotykajac jej w /set (formularz nazwy /set).
+Dla PWM przycisk numeru otwiera nazwe i wartosc 0..100. PWM uzywa tego samego
+RELAY_RequestPwm co HTTP; zgodnie z HTTP jest stanem runtime, nie zapisem SD.
+Nazwy i pozostale ustawienia sa zapisywane trwale na SD.
+
+Odczyt i zapis wykonuja sie w zadaniu WiFi/HTTP, przez HTTP_LCDFormService
+wywolywany wewnatrz HTTP_LCDPanelService. GUI przekazuje niezmienna paczke.
+HTTP_SettingsApplyTarget i HTTP_SettingsBindingsCommitted zapewniaja wspolny
+model, walidacje, typed HTTP_AllSettings oraz dotychczasowy format SD. Bledny
+formularz lub blad SD nie zmienia modelu. Hash wartosci bazowych i kontrola
+typu portu blokuja nadpisanie rownoleglego zapisu HTTP. Checkboxy sa zapisywane
+w zakresie formularza, nazwa pojedynczego portu nie kasuje innych nazw.
+Odczyt HTTP wraca automatycznie do czystego edytora, szkic wymaga Zapisz lub
+Odrzuc. GUI nie wywoluje bezposrednio funkcji modelu ani FatFs.

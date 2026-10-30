@@ -13,7 +13,7 @@ static unsigned char disk[HTTP_SETTINGS_BLOB_SIZE];
 static int load(void*b,size_t n,void*c){(void)c;memcpy(b,disk,n);return 1;}
 static int save(const void*b,size_t n,void*c){(void)c;assert(!critical);if(fail_save)return -1;memcpy(disk,b,n);return 1;}
 void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage*p,uint16_t instance){
- assert(!critical&&instance==0);committed++;
+ assert(!critical);if(instance||strcmp(p->route,"/set"))return;committed++;
  for(unsigned i=0;i<33;i++){char name[32];snprintf(name,sizeof name,"n_GPIO_val_%03u",i+1);modes[i]=(unsigned)atoi(HTTP_SettingsGetByName(p,0,name));}
 }
 static char names[33][31];
@@ -88,12 +88,57 @@ int main(void){
  assert(!strcmp(HTTP_SettingsGetByName(page,0,"n_s_Port_nazwa1_001"),"Nazwa portu nr 1"));
  memset(changed,0,sizeof changed);assert(!HTTP_LCDPanelSaveModes(changed,values,expected));
  assert(!HTTP_LCDPanelSaveModes(NULL,values,expected));
+ /* Generic owner forms use the actual strict HTTP model, canonical fields and SD callback. */
+ static HTTP_LCDFormData base_form,draft_form,read_form;
+ const struct {unsigned port,mode;const char*route;unsigned instance,count;} routes[]={
+ {1,HTTP_MODE_INPUT,"/we",1,7},{20,HTTP_MODE_INPUT,"/we",18,7},{1,HTTP_MODE_EOL,"/eol",1,6},
+ {15,HTTP_MODE_ADC,"/nap",1,301},{16,HTTP_MODE_ADC,"/nap",2,301},{17,HTTP_MODE_COUNTER,"/etr",1,19},
+ {20,HTTP_MODE_COUNTER,"/etr",4,19},{28,HTTP_MODE_RELAY,"/wypk",1,3},{24,HTTP_MODE_IR,"/wypk",7,3},
+ {21,HTTP_MODE_RELAY,"/wypk",11,3},{33,HTTP_MODE_TIMER,"/tim",6,19},{27,HTTP_MODE_THERMOSTAT,"/term",10,7},
+ {21,HTTP_MODE_PWM,"/set",0,1},{33,HTTP_MODE_DISABLED,"/set",0,1}};
+ for(unsigned i=0;i<sizeof routes/sizeof *routes;i++){
+  modes[routes[i].port-1]=routes[i].mode;
+  uint32_t id=HTTP_LCDFormOpen(routes[i].port,0);assert(id&&HTTP_LCDFormWanted());
+  HTTP_LCDFormService(3000+i);assert(HTTP_LCDFormRead(&read_form));
+  assert(read_form.serial==id&&read_form.instance==routes[i].instance&&read_form.count==routes[i].count&&!strcmp(read_form.page->route,routes[i].route));
+  HTTP_LCDFormClose();assert(!HTTP_LCDFormWanted());
+ }
+ modes[27]=HTTP_MODE_RELAY;assert(HTTP_LCDFormOpen(28,0));HTTP_LCDFormService(4000);assert(HTTP_LCDFormRead(&base_form));draft_form=base_form;
+ strcpy(draft_form.values[0],"LCD Relay & + %");strcpy(draft_form.values[1],"Otwarty");
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));assert(!HTTP_LCDFormSave(&base_form,&draft_form));
+ HTTP_LCDFormService(4001);assert(HTTP_LCDFormRead(&read_form)&&read_form.status==LCD_FORM_SAVED);
+ assert(!strcmp(HTTP_SettingsGetByName(read_form.page,1,"n_s_PK_nazwa_001"),"LCD Relay & + %"));
+ base_form=read_form;draft_form=base_form;strcpy(draft_form.values[0],"Nie zapisuj");fail_save=1;
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(4002);assert(HTTP_LCDFormRead(&read_form)&&read_form.status==LCD_FORM_SD_ERROR);
+ assert(!strcmp(HTTP_SettingsGetByName(read_form.page,1,"n_s_PK_nazwa_001"),"LCD Relay & + %"));fail_save=0;
+ const char*web_target="/set?h7_page=/wypk001&h7_form=0&n_109_zapisz=1&n_s_PK_nazwa_001=WWW&n_s_PK_nazwa_on_001=ON&n_s_PK_nazwa_of_001=OFF";
+ assert(HTTP_SettingsApplyTarget(web_target,strlen(web_target),NULL,NULL)==HTTP_SETTINGS_SAVED);
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(4003);assert(HTTP_LCDFormRead(&read_form)&&read_form.status==LCD_FORM_CONFLICT);
+ assert(!strcmp(HTTP_SettingsGetByName(read_form.page,1,"n_s_PK_nazwa_001"),"WWW"));HTTP_LCDFormClose();
+ modes[14]=HTTP_MODE_ADC;assert(HTTP_LCDFormOpen(15,0));HTTP_LCDFormService(5000);HTTP_LCDFormRead(&base_form);draft_form=base_form;
+ strcpy(draft_form.values[0],"-");strcpy(draft_form.values[1],"1234");strcpy(draft_form.values[300],"Volt");
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5001);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_SAVED&&!strcmp(read_form.values[1],"1234"));
+ base_form=read_form;draft_form=base_form;strcpy(draft_form.values[2],"100");
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5002);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_INVALID&&!strcmp(read_form.values[2],base_form.values[2]));
+ HTTP_LCDFormClose();assert(HTTP_LCDFormOpen(15,1));HTTP_LCDFormService(5100);HTTP_LCDFormRead(&base_form);draft_form=base_form;strcpy(draft_form.values[0],"Napiecie LCD");
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5101);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_SAVED);
+ assert(!strcmp(HTTP_SettingsGetByName(page,0,"n_s_Port_nazwa15_001"),"Napiecie LCD"));HTTP_LCDFormClose();
+ modes[27]=HTTP_MODE_TIMER;assert(HTTP_LCDFormOpen(28,0));HTTP_LCDFormService(5200);HTTP_LCDFormRead(&base_form);draft_form=base_form;
+ strcpy(draft_form.values[8],"1");strcpy(draft_form.values[15],"tak");assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5201);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_SAVED&&!strcmp(read_form.values[8],"1"));
+ base_form=read_form;draft_form=base_form;strcpy(draft_form.values[8],"0");assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5202);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_SAVED&&!strcmp(read_form.values[8],"0"));HTTP_LCDFormClose();
+ modes[20]=HTTP_MODE_PWM;ModeBatch pwm_mode={0};pwm_mode.changed[20]=1;pwm_mode.modes[20]=HTTP_MODE_PWM;pwm_mode.expected[20]=HTTP_MODE_PWM;
+ assert(SaveModes(&pwm_mode)==HTTP_SETTINGS_SAVED);RELAY_RequestPwm(21,35);assert(HTTP_LCDFormOpen(21,0));HTTP_LCDFormService(5300);HTTP_LCDFormRead(&base_form);draft_form=base_form;
+ strcpy(draft_form.values[0],"Nazwa PWM");RELAY_RequestPwm(21,60);assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5301);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_SAVED&&RELAY_GetState(21)->pwm_percent==60); /* name-only does not restore stale PWM */
+ base_form=read_form;draft_form=base_form;draft_form.pwm=75;assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(5302);HTTP_LCDFormRead(&read_form);assert(read_form.status==LCD_FORM_SAVED&&RELAY_GetState(21)->pwm_percent==75);HTTP_LCDFormClose();
+ assert(HTTP_SettingsModelInit(load,save,NULL)==1);
+ uint16_t saved_instance=0;const HTTP_SettingPage*saved_adc=HTTP_SettingsCatalogFind("/nap001",&saved_instance);
+ assert(saved_adc&&saved_instance==1&&!strcmp(HTTP_SettingsGet(saved_adc,1,&saved_adc->fields[300]),"Volt"));
  assert(!critical);puts("PASS: shared settings/refresh values, bounded snapshots, latest PWM per channel, mode validation, relay toggle against HTTP feedback, no changes when inactive, commands survive EXIT.");
 }
 '''
 with tempfile.TemporaryDirectory() as d:
  p=Path(d)
- for name in ['http_lcd_panels.c','http_lcd_panels.h','http_settings_model.c','http_settings_model.h','http_settings_catalog.c','http_settings_catalog.h','http_settings_bindings.h']:shutil.copy(ROOT/'Application/HTTP'/name,p/name)
+ for name in ['http_lcd_panels.c','http_lcd_panels.h','http_settings_model.c','http_settings_model.h','http_settings_catalog.c','http_settings_catalog.h','http_settings_bindings.h','http_lcd_forms.h','http_lcd_forms.inc']:shutil.copy(ROOT/'Application/HTTP'/name,p/name)
  shutil.copy(ROOT/'Application/LPC2148/http_lpc_panel.h',p/'http_lpc_panel.h')
  for name in ['relay_states.c','relay_states.h']:shutil.copy(ROOT/'Application'/name,p/name)
  (p/'wwwPages.h').write_text(mode+'\nunsigned HTTP_SettingsPortMode(unsigned);\nconst char*HTTP_SettingsPortName(unsigned,const char*);\n')

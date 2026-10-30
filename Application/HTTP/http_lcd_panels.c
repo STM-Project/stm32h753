@@ -2,6 +2,7 @@
 #include "http_sensor_lcd.h"
 #include "http_settings_model.h"
 #include "http_settings_bindings.h"
+#include "http_lcd_forms.h"
 #include "wwwPages.h"
 #include "relay_states.h"
 #include "FreeRTOS.h"
@@ -92,7 +93,7 @@ int HTTP_LCDPanelWanted ( void )
 	taskENTER_CRITICAL ();
 	int wanted = active || mode_busy;
 	taskEXIT_CRITICAL ();
-	return wanted;
+	return wanted || HTTP_LCDFormWanted ();
 }
 int HTTP_LCDPanelRead ( HTTP_LCDPanelData *out )
 {
@@ -161,6 +162,7 @@ static void Value ( HTTP_LCDPort *p, unsigned row, const char *data, size_t leng
 }
 void HTTP_LCDPanelService ( const char *data, size_t length, uint32_t now )
 {
+	HTTP_LCDFormService ( now );
 	int command = 0;
 	/* Keep the batch locked until the durable owner-task commit completes. */
 	taskENTER_CRITICAL ();
@@ -323,3 +325,5 @@ void HTTP_LCDPanelService ( const char *data, size_t length, uint32_t now )
 	ready = 1;
 	taskEXIT_CRITICAL ();
 }
+
+#include "http_lcd_forms.inc"

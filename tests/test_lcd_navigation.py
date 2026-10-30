@@ -57,8 +57,8 @@ int main(void){
  for(unsigned i=0;i<sizeof original;i++)original[i]=(unsigned char)(i*17);
  memcpy(frame,original,sizeof original);
  for(int i=0;i<=13;i++){
-  assert(SCREEN_NavigationNext(i,1)==(i==13?0:i+1));
-  assert(SCREEN_NavigationNext(i,-1)==(i==0?13:i-1));
+  assert(SCREEN_NavigationNext(i,1)==(i==13?0:i==9?11:i+1));
+  assert(SCREEN_NavigationNext(i,-1)==(i==0?13:i==11?9:i-1));
  }
  SCREEN_NavigationEnter(100,0);int dir;
  assert(SCREEN_NavigationInput(1,790,240,&dir)&&!dir);

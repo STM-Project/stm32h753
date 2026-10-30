@@ -7,6 +7,9 @@
 #include "http_lcd_panels.h"
 #include "wwwPages.h"
 #include "touch.h"
+#include "SCREEN_Navigation.h"
+#include "LCD_SensorThresholds.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -51,7 +54,7 @@ static struct
 /* Local edits survive next/prev navigation, but not a power cycle. */
 static struct
 {
-	int initialized, saveError, saved;
+	int initialized, saveError, saved, openError;
 	int8_t draftMode[HTTP_LCD_PORTS];
 	uint8_t draftBase[HTTP_LCD_PORTS];
 	uint32_t saving;
@@ -387,6 +390,12 @@ static void CopyTile ( int index )
 		memcpy ( pLcd + ( y + row ) * W + ui.tiles[index].x,
 				 pLcd + SCRATCH + row * ui.tiles[index].w, (size_t) ui.tiles[index].w * sizeof *pLcd );
 }
+#include "lcd_port_forms.inc"
+static int settingsModal, settingsReturnScroll, settingsModalResult;
+int LCD_HttpPanelModal ( void )
+{
+	return settingsModal != 0;
+}
 static uint32_t RelayTextColor ( const char *state )
 {
 	return strcmp ( state, "Stan OFF" ) == 0 ? VALUE_BLACK : WHITE;
@@ -544,6 +553,10 @@ static void Header ( void )
 			notice = "Nie zapisano ustawien. Sprawdz SD lub ponow wybor.";
 			notice_color = 0xFFFF8888U;
 		}
+		else if ( edit.openError )
+		{
+			notice = "Najpierw Zapisz wybrany typ portu, potem otworz ustawienia.";
+		}
 		else if ( edit.saved )
 		{
 			notice = "Zapisano na SD. Ustawienia sa dostepne w HTTP.";
@@ -694,6 +707,7 @@ static void MenuTouch ( int down, XY_Touch_Struct position )
 			edit.draftMode[port] = ui.menuModes[hit] == ui.data.ports[port].mode ? -1 : (int8_t) ui.menuModes[hit];
 			edit.saveError = 0;
 			edit.saved = 0;
+			edit.openError = 0;
 			Header ();
 		}
 		ui.menuPort = 0;
@@ -722,13 +736,73 @@ static void Pwm ( int x )
 		ui.dirty = 1;
 	}
 }
+static int SettingsOpen ( unsigned port, int names )
+{
+	if ( !names && ShownMode ( port ) != ui.data.ports[port - 1].mode )
+	{
+		edit.openError = 1;
+		Header ();
+		return 0;
+	}
+	settingsReturnScroll = ui.scroll;
+	SCREEN_NavigationRestore ();
+	LCD_TOUCH_DeleteAllSetTouch ();
+	ui.pressed = -1;
+	unsigned mode = ui.data.ports[port - 1].mode;
+	if ( !names && ( mode == HTTP_MODE_TEMP || mode == HTTP_MODE_TEMP_RHU || mode == HTTP_MODE_PT1000 ) )
+	{
+		settingsModal = 1;
+		lcdThresholdPort = port;
+		settingsModalResult = LCD_SensorThresholds ( LCD_THRESH_ENTER );
+	}
+	else
+	{
+		if ( !FormOpen ( port, names ) )
+			return 0;
+		settingsModal = 2;
+	}
+	return 1;
+}
+static int SettingsReturn ( void )
+{
+	if ( settingsModal == 1 )
+		LCD_SensorThresholds ( LCD_THRESH_EXIT );
+	else
+		HTTP_LCDFormClose ();
+	settingsModal = 0;
+	int result = LCD_HttpPanel ( LCD_TEMP_ENTER, 1 );
+	if ( result >= 0 )
+	{
+		ui.scroll = Clamp ( settingsReturnScroll, 0, Maximum () );
+		ui.full = ui.dirty = 1;
+		Draw ();
+	}
+	SCREEN_NavigationEnter ( HAL_GetTick (), LCD_TOUCH_isPress () == press );
+	return result;
+}
 int LCD_HttpPanel ( uint8_t mode, int settings )
 {
 	if ( mode == LCD_TEMP_EXIT )
 	{
+		if ( settingsModal == 1 )
+			LCD_SensorThresholds ( LCD_THRESH_EXIT );
+		if ( settingsModal == 2 )
+			HTTP_LCDFormClose ();
+		settingsModal = 0;
 		ui.active = 0;
 		ui.capture = 0;
 		HTTP_LCDPanelActive ( 0 );
+		return 0;
+	}
+	if ( mode == LCD_TEMP_UPDATE && settingsModal )
+	{
+		if ( settingsModal == 2 )
+		{
+			if ( FormUpdate () )
+				return SettingsReturn ();
+		}
+		else if ( settingsModalResult < 0 || LCD_SensorThresholds ( LCD_THRESH_UPDATE ) == LCD_THRESH_BACK )
+			return SettingsReturn ();
 		return 0;
 	}
 	if ( mode > LCD_TEMP_EXIT || settings < 0 || settings > 2 )
@@ -840,6 +914,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 					edit.saving = HTTP_LCDPanelSaveModes ( changed, modes, edit.draftBase );
 					edit.saveError = !edit.saving;
 					edit.saved = 0;
+					edit.openError = 0;
 				}
 				Header ();
 			}
@@ -870,6 +945,11 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 				ui.full = 1;
 				ui.dirty = 1;
 			}
+		}
+		else if ( ui.settings == 1 && hit >= 0 && position.x >= ui.tiles[hit].x + 14 && position.x < ui.tiles[hit].x + 212 )
+		{
+			ui.capture = 7;
+			ui.armed = hit;
 		}
 		else if ( SettingsOutputHit ( position.x, position.y ) >= 0 )
 		{
@@ -953,6 +1033,16 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 	}
 	if ( !down && ui.wasDown )
 	{
+		if ( ui.settings == 1 && !ui.moved && ( ( ui.capture == 1 && button >= 0 && button == ui.armed ) || ( ui.capture == 7 && hit >= 0 && hit == ui.armed && position.x >= ui.tiles[hit].x + 14 && position.x < ui.tiles[hit].x + 212 ) ) )
+		{
+			unsigned port = (unsigned) ui.tiles[ui.armed].port;
+			int names = ui.capture == 7;
+			ui.capture = 0;
+			ui.armed = -1;
+			ui.wasDown = down;
+			if ( SettingsOpen ( port, names ) )
+				return 0;
+		}
 		if ( ui.capture == 5 && !ui.moved && output_hit >= 0 && output_hit == ui.armed )
 			(void) HTTP_LCDPanelToggle ( (unsigned) ui.tiles[output_hit].port );
 		if ( ui.capture == 4 && !ui.moved && mode_hit >= 0 && mode_hit == ui.armed )
