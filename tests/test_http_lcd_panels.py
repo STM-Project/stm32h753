@@ -90,6 +90,13 @@ int main(void){
  assert(!HTTP_LCDPanelSaveModes(NULL,values,expected));
  /* Generic owner forms use the actual strict HTTP model, canonical fields and SD callback. */
  static HTTP_LCDFormData base_form,draft_form,read_form;
+ /* H7 places these structures in SDRAM NOLOAD, unlike zeroed host BSS. */
+ memset(&form_published,0xA5,sizeof form_published);
+ memset(&form_request,0xA5,sizeof form_request);
+ assert(!HTTP_LCDFormRead(&read_form));
+ form_published.revision=0x5A5A5A5Au; /* even garbage must not look ready either */
+ assert(!HTTP_LCDFormRead(&read_form));
+ form_published.revision=0xA5A5A5A5u;
  const struct {unsigned port,mode;const char*route;unsigned instance,count;} routes[]={
  {1,HTTP_MODE_INPUT,"/we",1,7},{20,HTTP_MODE_INPUT,"/we",18,7},{1,HTTP_MODE_EOL,"/eol",1,6},
  {15,HTTP_MODE_ADC,"/nap",1,301},{16,HTTP_MODE_ADC,"/nap",2,301},{17,HTTP_MODE_COUNTER,"/etr",1,19},

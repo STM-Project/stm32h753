@@ -8,6 +8,9 @@ static HTTP_LCDFormData form_published FORM_SDRAM, form_request FORM_SDRAM;
 static char form_target[HTTP_SETTINGS_TARGET_MAX + 1u] FORM_SDRAM;
 static unsigned form_operation, form_active, form_port, form_names;
 static uint32_t form_serial, form_last;
+/* SDRAM is NOLOAD on H7. Readiness must live in zeroed internal BSS, not in
+ * form_published, whose serial/revision may survive reset or contain garbage. */
+static unsigned form_initialized, form_ready;
 static unsigned form_pwm_changed, form_pwm_base;
 const HTTP_SettingPage *HTTP_LCDFormRoute ( unsigned port, unsigned mode, int names_only, uint16_t *instance )
 {
@@ -103,7 +106,7 @@ int HTTP_LCDFormRead ( HTTP_LCDFormData *out )
 		return 0;
 	taskENTER_CRITICAL ();
 	uint32_t revision = form_published.revision;
-	int ready = !( revision & 1u ) && form_published.serial;
+	int ready = form_ready && !( revision & 1u ) && form_published.serial && form_published.count <= HTTP_LCD_FORM_FIELDS;
 	if ( ready )
 		memcpy ( out, &form_published, offsetof ( HTTP_LCDFormData, values ) );
 	taskEXIT_CRITICAL ();
@@ -242,6 +245,13 @@ void HTTP_LCDFormService ( uint32_t now )
 	if ( !operation && ( !active_form || (uint32_t) ( now - form_last ) < 250 ) )
 		return;
 	form_last = now;
+	if ( !form_initialized )
+	{
+		/* Initialize only the header; every published value is overwritten
+		 * below before form_ready allows the GUI to read it. */
+		memset ( &form_published, 0, offsetof ( HTTP_LCDFormData, values ) );
+		form_initialized = 1;
+	}
 	int status = operation == 2 ? FormCommit () : LCD_FORM_READY;
 	taskENTER_CRITICAL ();
 	++form_published.revision;
@@ -278,6 +288,7 @@ void HTTP_LCDFormService ( uint32_t now )
 	form_published.status = operation ? status : form_published.status;
 	taskENTER_CRITICAL ();
 	++form_published.revision;
+	form_ready = 1;
 	if ( operation )
 		form_operation = 0;
 	taskEXIT_CRITICAL ();

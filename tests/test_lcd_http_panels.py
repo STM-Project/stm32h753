@@ -40,6 +40,7 @@ unsigned lcdThresholdPort;static int threshold_active,threshold_back,form_save_c
 void SCREEN_NavigationRestore(void){}void SCREEN_NavigationEnter(uint32_t now,int d){(void)now;(void)d;}
 int LCD_SensorThresholds(uint8_t m){if(m==1)threshold_active=1;if(m==2)threshold_active=0;if(m==0&&threshold_back){threshold_back=0;return LCD_THRESH_BACK;}return 0;}
 static HTTP_LCDFormData formModel;
+static int form_read_delay;
 unsigned HTTP_LCDFormFieldIndex(const HTTP_LCDFormData*d,unsigned row){return d->names_only?d->port-1:row;}
 uint32_t HTTP_LCDFormOpen(unsigned port,int names){
  static unsigned serial;memset(&formModel,0,sizeof formModel);formModel.serial=++serial;formModel.port=port;formModel.mode=model.ports[port-1].mode;
@@ -49,7 +50,7 @@ uint32_t HTTP_LCDFormOpen(unsigned port,int names){
  return formModel.serial;
 }
 void HTTP_LCDFormClose(void){}
-int HTTP_LCDFormRead(HTTP_LCDFormData*out){if(!formModel.serial)return 0;*out=formModel;return 1;}
+int HTTP_LCDFormRead(HTTP_LCDFormData*out){if(form_read_delay||!formModel.serial)return 0;*out=formModel;return 1;}
 int HTTP_LCDFormSave(const HTTP_LCDFormData*base,const HTTP_LCDFormData*draft){assert(base->serial==formModel.serial);form_save_calls++;formModel=*draft;formModel.status=LCD_FORM_SAVED;formModel.hash++;return 1;}
 void SCREEN_ResetAllParameters(void){}void LCD_TOUCH_DeleteAllSetTouch(void){}
 void HTTP_LCDPanelActive(int a){active=a;}
@@ -274,7 +275,22 @@ int main(void){
   int tile=-1;for(int i=0;i<ui.count;i++)if((unsigned)ui.tiles[i].port==port)tile=i;assert(tile>=0);
   ui.scroll=Clamp(ui.tiles[tile].y,0,Maximum());ui.full=ui.dirty=1;LCD_HttpPanel(0,1);
   int x=ui.tiles[tile].x+410,y=TOP+ui.tiles[tile].y-ui.scroll+30;
+  if(port==28&&mode==0){
+   /* Reboot-retained GUI base can even match the next freshly allocated ID. */
+   lcdFormBase=formModel;lcdFormBase.serial=formModel.serial+1;lcdFormBase.hash=1;lcdFormBase.pwm=0;
+   memset(&lcdFormDraft,0xA5,sizeof lcdFormDraft);memset(&lcdFormLatest,0xA5,sizeof lcdFormLatest);
+   form_read_delay=1;
+  }
   assert(y>=TOP&&y<TOP+VIEW);touch(1,x,y);touch(0,x,y);assert(LCD_HttpPanelModal());LCD_HttpPanel(0,1);
+  if(port==28&&mode==0){
+   assert(FormLoading()&&lcdFormDraft.page&&!strcmp(lcdFormDraft.page->route,"/wypk")&&lcdFormDraft.count==3);
+   unsigned visible=0;for(unsigned i=TOP*W;i<(TOP+VIEW)*W;i++)if(shown[i]!=BG)visible++;assert(visible>10000);
+   preview("lcd-settings-relay-loading");
+   int saves_before=form_save_calls;
+   touch(1,500,TOP+30);touch(0,500,TOP+30);assert(lcdForm.editing==-1&&!lcdForm.dirty);
+   touch(1,630,30);touch(0,630,30);assert(form_save_calls==saves_before);
+   form_read_delay=0;LCD_HttpPanel(0,1);assert(!FormLoading());
+  }
   assert(lcdFormDraft.port==port&&lcdFormDraft.count==(mode==1?19:mode==2?7:3));
   assert(!strcmp(lcdFormDraft.page->route,mode==1?"/tim":mode==2?"/term":"/wypk"));
   if(port==28&&mode==0)preview("lcd-settings-relay");

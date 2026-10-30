@@ -11,6 +11,10 @@ static struct
 	uint32_t serial, sample;
 	char text[HTTP_LCD_FORM_VALUE], notice[96];
 } lcdForm;
+static int FormLoading ( void )
+{
+	return lcdFormBase.serial != lcdForm.serial;
+}
 static unsigned FormRows ( void )
 {
 	if ( !lcdFormDraft.page )
@@ -179,8 +183,9 @@ static void FormHeader ( void )
 		snprintf ( title, sizeof title, "%s . port %u", lcdFormDraft.page ? lcdFormDraft.page->title : "Wczytywanie", lcdFormDraft.port );
 	Text ( W, TOP, ui.font[1], 164, 22, 264, title, WHITE );
 	FormButton ( 436, 120, lcdForm.editing >= 0 ? ( lcdForm.selection >= 0 ? "Poczatek" : "Wyczysc" ) : "Odrzuc", lcdForm.armed == -11 );
-	FormButton ( 588, 136, lcdForm.editing >= 0 ? "Gotowe" : lcdForm.pending ? "Zapis..."
-																			 : "Zapisz",
+	FormButton ( 588, 136, lcdForm.editing >= 0 ? "Gotowe" : FormLoading () ? "Wczytuje..."
+														 : lcdForm.pending	? "Zapis..."
+																			: "Zapisz",
 				 lcdForm.armed == -12 );
 	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
 	Rect ( W, 0, 0, W, 40, BG );
@@ -190,6 +195,11 @@ static void FormHeader ( void )
 static void FormValueBox ( int x, int y, int width, unsigned field )
 {
 	TileRound ( W, x, y, width, 40, 4, WHITE, WHITE );
+	if ( FormLoading () )
+	{
+		Text ( W, 64, ui.font[1], x + 8, y + 9, width - 16, "...", VALUE_BLACK );
+		return;
+	}
 	const char *value = lcdFormDraft.values[field];
 	char checkbox[8], option[HTTP_LCD_FORM_VALUE];
 	if ( FormField ( field )->kind == HTTP_SETTING_SELECT )
@@ -361,7 +371,11 @@ static int FormOpen ( unsigned port, int names )
 	if ( !serial )
 		return 0;
 	memset ( &lcdForm, 0, sizeof lcdForm );
+	/* These three copies are also in SDRAM NOLOAD. A retained base serial
+	 * must not make the first freshly published snapshot look unchanged. */
+	memset ( &lcdFormBase, 0, sizeof lcdFormBase );
 	memset ( &lcdFormDraft, 0, sizeof lcdFormDraft );
+	memset ( &lcdFormLatest, 0, sizeof lcdFormLatest );
 	lcdForm.serial = serial;
 	lcdForm.active = 1;
 	lcdForm.editing = -1;
@@ -370,6 +384,19 @@ static int FormOpen ( unsigned port, int names )
 	lcdForm.keyPressed = -1;
 	lcdForm.wasDown = LCD_TOUCH_isPress () == press;
 	lcdFormDraft.port = port;
+	lcdFormDraft.mode = ui.data.ports[port - 1].mode;
+	lcdFormDraft.names_only = !!names;
+	lcdFormDraft.page = HTTP_LCDFormRoute ( port, lcdFormDraft.mode, names, &lcdFormDraft.instance );
+	if ( lcdFormDraft.page )
+	{
+		if ( !strcmp ( lcdFormDraft.page->route, "/set" ) )
+			lcdFormDraft.names_only = 1;
+		lcdFormDraft.count = lcdFormDraft.names_only ? 1 : lcdFormDraft.page->field_count;
+		if ( lcdFormDraft.count > HTTP_LCD_FORM_FIELDS )
+			lcdFormDraft.count = 0;
+	}
+	/* Show the actual schema immediately, with placeholders until the owner
+	 * supplies values. A busy WiFi/TLS task must not leave a black viewport. */
 	snprintf ( lcdForm.notice, sizeof lcdForm.notice, "Wczytuje wspolne ustawienia HTTP..." );
 	FormDraw ();
 	return 1;
@@ -426,7 +453,7 @@ static int FormUpdate ( void )
 		if ( !lcdForm.dirty && !lcdForm.pending && lcdForm.editing < 0 && ( lcdFormBase.serial != lcdFormLatest.serial || lcdFormBase.hash != lcdFormLatest.hash || lcdFormBase.pwm != lcdFormLatest.pwm ) )
 		{
 			if ( lcdFormBase.serial != lcdFormLatest.serial )
-				snprintf ( lcdForm.notice, sizeof lcdForm.notice, "Dotknij pola, edytuj, potem Zapisz. Wspolne dane HTTP / SD." );
+				snprintf ( lcdForm.notice, sizeof lcdForm.notice, "%s", lcdFormLatest.status == LCD_FORM_INVALID || !lcdFormLatest.page || !lcdFormLatest.count ? "Nie odczytano ustawien. Nacisnij Wroc i ponow." : "Dotknij pola, edytuj, potem Zapisz. Wspolne dane HTTP / SD." );
 			lcdFormBase = lcdFormLatest;
 			lcdFormDraft = lcdFormLatest;
 			FormDraw ();
@@ -524,7 +551,7 @@ static int FormUpdate ( void )
 	if ( down || action == -1 )
 		return 0;
 	lcdForm.armed = -1;
-	if ( lcdForm.pending )
+	if ( lcdForm.pending || ( FormLoading () && action != -10 ) )
 		return 0;
 	if ( action == -10 )
 	{
