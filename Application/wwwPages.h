@@ -49,6 +49,8 @@ char* HTTP_TEMPLATE_TestUsun(char* buff);
  * inactive IDs needed by polling. Returns zero on insufficient capacity.
  * Uses shared scratch space; call from the single HTTP task. */
 size_t HTTP_MainReadPanelRender ( char *out, size_t capacity );
+/* Setting-independent templates for the browser-cached /main layout. */
+size_t HTTP_ReadTemplatesRender ( char *out, size_t capacity );
 
 /* HttpMainReadPanel2: each function returns the next free buffer position. */
 char *HTTP_TEMPLATE_AdcTempRhu2 ( char *buff, u8 type, u8 nr, float val1, float val2, u32 color1, u32 color2, char *name1, char *name2 );
@@ -105,6 +107,7 @@ char *HTTP_TEMPLATE_2_AdcTempRhu ( char *buff, u8 type, u8 nr, u8 route, const c
 char *HTTP_TEMPLATE_2_In ( char *buff, u8 type, u8 nr, u8 route, const char *value1, const char *value2, u8 pwm );
 char *HTTP_TEMPLATE_2_Impl ( char *buff, u8 type, u8 nr, u8 route, const char *value1, const char *value2, u8 pwm );
 char *HTTP_TEMPLATE_2_Out ( char *buff, u8 type, u8 nr, u8 route, const char *value1, const char *value2, u8 pwm );
+char *HTTP_TEMPLATE_2_OutNeutral ( char *buff, u8 type, u8 nr, u8 route, const char *value1, const char *value2, u8 pwm );
 char *HTTP_TEMPLATE_2_NamesBegin ( char *buff );
 char *HTTP_TEMPLATE_2_NamesEnd ( char *buff );
 char *HTTP_TEMPLATE_2_ModesBegin ( char *buff );

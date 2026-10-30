@@ -29,9 +29,9 @@ int main(void) {
     check_response(0,200,"text/plain; charset=UTF-8");body(0,html,sizeof html);assert(!strcmp(html,"37"));
     assert(pwm->pwm_valid && pwm->pwm_percent==37 && pwm->requested_on && pwm->request_valid);
     assert(!pwm->valid && !pwm->on); /* A request is not physical GPIO feedback. */
-    request(0,"/main");body(0,html,sizeof html);
-    assert(strstr(html,"value=\"37\""));
-    request(0,"/set");body(0,html,sizeof html);assert(strstr(html,"value=\"37\""));
+    request(0,"/main");body(0,html,sizeof html);assert(strstr(html,"data-h7-panel='read'"));
+    request(0,"/set");body(0,html,sizeof html);assert(strstr(html,"data-h7-panel='set'"));
+    request(0,"/api/panel-config");body(0,html,sizeof html);assert(strstr(html,"\",37]"));
     request(0,"/mobile/pk001");check_response(0,200,"text/html; charset=UTF-8");
     assert(strstr(last_debug,"HTTP GET PK: TCP=1 port=28 zadano=ON -> OK"));
     body(0,html,sizeof html);assert(strstr(html,"Stan ON"));assert(pk->request_valid && pk->requested_on && !pk->valid);

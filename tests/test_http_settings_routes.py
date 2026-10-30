@@ -185,6 +185,12 @@ static void check_main_route(unsigned port, const char *id, int visible) {
     static char html[250000], alias[250000];
     request(0, "/main"); check_response(0, 200, "text/html; charset=UTF-8");
     body(0, html, sizeof html);
+    assert(strstr(html, "data-h7-panel='read'"));
+    /* Legacy renderer remains independently checked; the browser integration
+     * suite verifies the new static templates against the same model. */
+    assert(HTTP_MainReadPanelRender(html, sizeof html));
+    strcat(html, HttpMainMenu);
+    strcat(html, HttpStructMainReadPanel);
     assert(main_id_visible(html, id) == visible);
     check_main_refresh_dom(html);
     if (port == 5u) {
@@ -192,7 +198,7 @@ static void check_main_route(unsigned port, const char *id, int visible) {
         assert(!strstr(html, "Kuchnia & <ok> Łódź"));
     }
     request(0, "/"); check_response(0, 200, "text/html; charset=UTF-8");
-    body(0, alias, sizeof alias); assert(!strcmp(html, alias));
+    body(0, alias, sizeof alias); assert(strstr(alias, "data-h7-panel='read'"));
 }
 static void check_main_settings_integration(void) {
     static HTTP_RequestStream stream;
@@ -240,12 +246,12 @@ static void check_main_settings_integration(void) {
         assert(HTTP_SettingsPortMode(port) == (unsigned)atoi(cases[i].mode));
         check_main_route(port, cases[i].id, cases[i].visible);
         if (port == 5u && !strcmp(cases[i].mode, "02")) {
-            body(0, html, sizeof html);
+            assert(HTTP_MainReadPanelRender(html, sizeof html));
             assert(!main_id_visible(html, "tu_temp005b"));
             assert(!main_id_visible(html, "tu_temp005c"));
         }
         if (port == 5u && !strcmp(cases[i].mode, "09")) {
-            body(0, html, sizeof html);
+            assert(HTTP_MainReadPanelRender(html, sizeof html));
             assert(!main_id_visible(html, "tu_temp005a"));
             assert(main_id_visible(html, "tu_temp005c"));
         }
@@ -265,6 +271,8 @@ static void check_main_settings_integration(void) {
     assert(slot_for(2) == 1); body(0, html, sizeof html); assert(!strcmp(html, queued));
     HTTP_HandleTarget(1, "/main", 5u, NULL);
     assert(slot_for(1) == 2); body(2, html, sizeof html);
+    assert(strstr(html, "data-h7-panel='read'"));
+    assert(HTTP_MainReadPanelRender(html, sizeof html));
     assert(main_id_visible(html, "tu_we005"));
     assert(!main_id_visible(html, "tu_temp005b"));
     body(0, html, sizeof html); assert(!strcmp(html, queued));
@@ -290,12 +298,12 @@ int main(void) {
             request(0, path);
             check_response(0, page->field_count ? 200u : 501u, "text/html; charset=UTF-8");
             body(0, html, sizeof html);
-            assert(strstr(html, "<html>")); assert(strstr(html, "</html>"));
+            assert(strstr(html, "<html")); assert(strstr(html, "</html>"));
             if (!page->field_count) {
                 assert(strstr(html, "Ta akcja nie zostala wykonana."));
                 ++action_responses;
             } else {
-                assert(strstr(html, "h7_page")); ++page_responses;
+                assert(strstr(html, !strcmp(page->route, "/set") ? "data-h7-panel='set'" : "h7_page")); ++page_responses;
             }
         }
     }
@@ -333,7 +341,7 @@ int main(void) {
     feed_large_request(&stream, 0); check_response(0, 200, "text/html; charset=UTF-8");
     assert(generic_saves == 1 && bindings_count == 1);
     body(0, html, sizeof html);
-    assert(strstr(html, "Kuchnia &amp; &lt;ok&gt; Łódź"));
+    assert(strstr(html, "data-h7-panel='set'"));
     assert(strstr(html, "window.history.replaceState(null,'','/set')"));
     assert(!strcmp(HTTP_SettingsPortName(5, "fallback"), "Kuchnia & <ok> Łódź"));
     generic_form("/set", 1, 0, 1); request(0, generic_target);

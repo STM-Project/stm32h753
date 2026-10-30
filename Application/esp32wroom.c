@@ -169,7 +169,11 @@ typedef enum
 	WWW_FAVICON,
 	WWW_SENSOR_SETTING,
 	WWW_OTHER_SETTING,
-	WWW_HTTP_ERROR
+	WWW_HTTP_ERROR,
+	WWW_PANEL_SCRIPT,
+	WWW_PANEL_READ_TEMPLATE,
+	WWW_PANEL_SET_TEMPLATE,
+	WWW_PANEL_CONFIG
 }WEB_WWW;
 
 static const char *freeAnswerTypes[] = {
@@ -780,6 +784,8 @@ static void GoToTest(char* txt){
 	DbgVarDma(DBG,50, _S_"%s"_E_,txt);
 }
 */
+#include "HTTP/http_panel_cache.inc"
+
 static char* HTTP_SetWeb(int channel, int nrWWW)
 {
 	LOOP_FOR(i,MAX_HTML_WEBs){  httpPar.web[channel][i] = NULL;		httpPar.siz[channel][i] = 0;  }
@@ -788,6 +794,23 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	char *ptr = httpBuff;
 	httpLpcPage[channel] = 0;
 	switch(nrWWW){
+	case WWW_PANEL_SCRIPT:
+		httpPar.web[channel][nrPartWWW] = (char *) HTTP_PanelScript;
+		httpPar.siz[channel][nrPartWWW++] = sizeof HTTP_PanelScript - 1;
+		break;
+	case WWW_PANEL_CONFIG:
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = HTTP_PanelConfigJson ( httpBuff, sizeof httpPageBuff[channel] );
+		if ( !httpPar.siz[channel][0] )
+			httpResponseStatus[channel] = 500;
+		break;
+	case WWW_MAIN_READ:
+	case WWW_MAIN_SETTING:
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) snprintf ( httpBuff, sizeof httpPageBuff[channel],
+			"<!doctype html><html lang='pl'><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><body style='background:#000;color:#eee' data-h7-panel='%s'><div id='h7-notice'>%s</div><p id='h7-loading'>Wczytywanie panelu...</p><script src='" HTTP_PANEL_SCRIPT_PATH "'></script></body></html>",
+			nrWWW == WWW_MAIN_SETTING ? "set" : "read", httpSensorNotice[channel] ? httpSensorNotice[channel] : "" );
+		break;
 	case WWW_LPC_ASSET:
 		httpSensorPort[channel] = httpLpcAsset[channel]->storage_page;
 		/* /nowa uses the same bounded SD stream as /nowaN. */
@@ -849,23 +872,17 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		if ( !httpPar.siz[channel][0] )
 			httpResponseStatus[channel] = 500;
 		break;
-	case WWW_MAIN_READ:
-		httpPar.web[channel][nrPartWWW] = (char*)HttpStyle;					httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStyle);
-		httpPar.web[channel][nrPartWWW] = (char*)HttpMainMenu;				httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpMainMenu);
-
-		{
-			size_t length = HTTP_MainReadPanelRender ( httpBuff, sizeof ( httpPageBuff[channel] ) );
-			if ( !length )
-			{
-				httpResponseStatus[channel] = 500;
-				strcpy ( httpBuff, "<p>Nie mozna wygenerowac strony glownej.</p>" );
-				length = strlen ( httpBuff );
-			}
-			httpPar.web[channel][nrPartWWW] = httpBuff;
-			httpPar.siz[channel][nrPartWWW++] = (u32) length;
-		}
-
-		httpPar.web[channel][nrPartWWW] = (char*)HttpStructMainReadPanel;	httpPar.siz[channel][nrPartWWW++] = mini_strlen(HttpStructMainReadPanel);
+	case WWW_PANEL_READ_TEMPLATE:
+		httpPar.web[channel][nrPartWWW] = (char *) HttpStyle;
+		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( HttpStyle );
+		httpPar.web[channel][nrPartWWW] = (char *) HttpMainMenu;
+		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( HttpMainMenu );
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) HTTP_ReadTemplatesRender ( httpBuff, sizeof httpPageBuff[channel] );
+		if ( !httpPar.siz[channel][nrPartWWW - 1] )
+			httpResponseStatus[channel] = 500;
+		httpPar.web[channel][nrPartWWW] = (char *) HttpStructMainReadPanel;
+		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( HttpStructMainReadPanel );
 		break;
 	case WWW_DATA_REFRESH:
 		/* Retain this slot's snapshot and overlay requested/reported output
@@ -892,85 +909,80 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		httpPar.siz[channel][nrPartWWW++] = (u32) strlen ( httpBuff );
 	}
 		break;
-	case WWW_MAIN_SETTING:
+	case WWW_PANEL_SET_TEMPLATE:
 		httpPar.web[channel][nrPartWWW] = (char *) HttpStyle;
 		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( HttpStyle );
 		httpPar.web[channel][nrPartWWW] = (char *) HttpMainMenu;
 		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( HttpMainMenu );
-		if ( httpSensorNotice[channel] )
-		{
-			httpPar.web[channel][nrPartWWW] = (char *) httpSensorNotice[channel];
-			httpPar.siz[channel][nrPartWWW++] = mini_strlen ( httpSensorNotice[channel] );
-		}
 		ptr = HTTP_TEMPLATE_2_NamesBegin ( ptr );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 1, HTTP_SettingsPortName ( 1, "Nazwa portu nr 1" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 2, HTTP_SettingsPortName ( 2, "Nazwa portu nr 2" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 3, HTTP_SettingsPortName ( 3, "Nazwa portu nr 3" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 4, HTTP_SettingsPortName ( 4, "Nazwa portu nr 4" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 5, HTTP_SettingsPortName ( 5, "Nazwa portu nr 5" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 6, HTTP_SettingsPortName ( 6, "Nazwa portu nr 6" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 7, HTTP_SettingsPortName ( 7, "Nazwa portu nr 7" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 8, HTTP_SettingsPortName ( 8, "Nazwa portu nr 8" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 9, HTTP_SettingsPortName ( 9, "Nazwa portu nr 9" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 10, HTTP_SettingsPortName ( 10, "Nazwa portu nr 10" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 11, HTTP_SettingsPortName ( 11, "Nazwa portu nr 11" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 12, HTTP_SettingsPortName ( 12, "Nazwa portu nr 12" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 13, HTTP_SettingsPortName ( 13, "Nazwa portu nr 13" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 14, HTTP_SettingsPortName ( 14, "Nazwa portu nr 14" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 15, HTTP_SettingsPortName ( 15, "Nazwa portu nr 15     0-10V" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 16, HTTP_SettingsPortName ( 16, "Nazwa portu nr 16     0-10V" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 17, HTTP_SettingsPortName ( 17, "Nazwa portu nr 17     E1" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 18, HTTP_SettingsPortName ( 18, "Nazwa portu nr 18     E2" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 19, HTTP_SettingsPortName ( 19, "Nazwa portu nr 19     E3" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 20, HTTP_SettingsPortName ( 20, "Nazwa portu nr 20     E4" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 21, HTTP_SettingsPortName ( 21, "Nazwa portu nr 21     PW1" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 22, HTTP_SettingsPortName ( 22, "Nazwa portu nr 22     PW2" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 23, HTTP_SettingsPortName ( 23, "Nazwa portu nr 23     PW3" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 24, HTTP_SettingsPortName ( 24, "Nazwa portu nr 24     OC1" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 25, HTTP_SettingsPortName ( 25, "Nazwa portu nr 25     OC2" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 26, HTTP_SettingsPortName ( 26, "Nazwa portu nr 26     OC3" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 27, HTTP_SettingsPortName ( 27, "Nazwa portu nr 27     OC4" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 28, HTTP_SettingsPortName ( 28, "Nazwa portu nr 28     PK1" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 29, HTTP_SettingsPortName ( 29, "Moj Przekaznik" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 30, HTTP_SettingsPortName ( 30, "Nazwa portu nr 30     PK3" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 31, HTTP_SettingsPortName ( 31, "Nazwa portu nr 31     PK4" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 32, HTTP_SettingsPortName ( 32, "Nazwa portu nr 32     PK5" ) );
-		ptr = HTTP_TEMPLATE_2_Name ( ptr, 33, HTTP_SettingsPortName ( 33, "Nazwa portu nr 33     PK6" ) );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 1, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 2, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 3, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 4, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 5, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 6, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 7, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 8, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 9, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 10, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 11, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 12, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 13, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 14, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 15, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 16, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 17, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 18, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 19, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 20, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 21, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 22, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 23, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 24, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 25, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 26, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 27, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 28, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 29, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 30, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 31, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 32, "" );
+		ptr = HTTP_TEMPLATE_2_Name ( ptr, 33, "" );
 		ptr = HTTP_TEMPLATE_2_NamesEnd ( ptr );
 		ptr = HTTP_TEMPLATE_2_ModesBegin ( ptr );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 1, HTTP_SettingsPortMode ( 1 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 2, HTTP_SettingsPortMode ( 2 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 3, HTTP_SettingsPortMode ( 3 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 4, HTTP_SettingsPortMode ( 4 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 5, HTTP_SettingsPortMode ( 5 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 6, HTTP_SettingsPortMode ( 6 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 7, HTTP_SettingsPortMode ( 7 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 8, HTTP_SettingsPortMode ( 8 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 9, HTTP_SettingsPortMode ( 9 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 10, HTTP_SettingsPortMode ( 10 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 11, HTTP_SettingsPortMode ( 11 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 12, HTTP_SettingsPortMode ( 12 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 13, HTTP_SettingsPortMode ( 13 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 14, HTTP_SettingsPortMode ( 14 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 15, HTTP_SettingsPortMode ( 15 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 16, HTTP_SettingsPortMode ( 16 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 17, HTTP_SettingsPortMode ( 17 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 18, HTTP_SettingsPortMode ( 18 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 19, HTTP_SettingsPortMode ( 19 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 20, HTTP_SettingsPortMode ( 20 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 21, HTTP_SettingsPortMode ( 21 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 22, HTTP_SettingsPortMode ( 22 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 23, HTTP_SettingsPortMode ( 23 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 24, HTTP_SettingsPortMode ( 24 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 25, HTTP_SettingsPortMode ( 25 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 26, HTTP_SettingsPortMode ( 26 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 27, HTTP_SettingsPortMode ( 27 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 28, HTTP_SettingsPortMode ( 28 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 29, HTTP_SettingsPortMode ( 29 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 30, HTTP_SettingsPortMode ( 30 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 31, HTTP_SettingsPortMode ( 31 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 32, HTTP_SettingsPortMode ( 32 ) );
-		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 33, HTTP_SettingsPortMode ( 33 ) );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 1, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 2, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 3, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 4, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 5, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 6, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 7, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 8, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 9, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 10, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 11, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 12, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 13, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 14, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 15, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 16, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 17, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 18, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 19, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 20, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 21, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 22, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 23, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 24, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 25, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 26, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 27, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 28, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 29, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 30, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 31, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 32, HTTP_MODE_DISABLED );
+		ptr = HTTP_TEMPLATE_2_Mode ( ptr, 33, HTTP_MODE_DISABLED );
 		ptr = HTTP_TEMPLATE_2_ModesEnd ( ptr );
 		ptr = HTTP_TEMPLATE_2_PanelBegin ( ptr );
 		ptr = HTTP_TEMPLATE_2_AdcTempRhu ( ptr, HTTP_MODE_TEMP, 1, 1, "<font color='#000'>   --.- °C</font>", NULL, 0 );
@@ -1081,67 +1093,67 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		ptr = HTTP_TEMPLATE_2_In ( ptr, HTTP_MODE_INPUT, 20, 18, "<font color='#000'>Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Impl ( ptr, HTTP_MODE_COUNTER, 20, 4, "0.000 KWh", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 20 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_PWM, 21, 0, NULL, NULL, 50 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_PWM, 21, 0, NULL, NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_IR, 21, 11, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 21 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_PWM, 22, 0, NULL, NULL, 18 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_PWM, 22, 0, NULL, NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_IR, 22, 12, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 22 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_PWM, 23, 0, NULL, NULL, 50 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_PWM, 23, 0, NULL, NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_IR, 23, 13, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 23 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_IR, 24, 7, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 24 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_IR, 25, 8, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 25 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_IR, 26, 9, "<font color=\"#fff\">Stan ON</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 26 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 27, 10, NULL, NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_IR, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 27, 10, NULL, NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_IR, 27, 10, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 27 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 28, 1, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 28 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 29, 2, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 29 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 30, 3, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 30 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 31, 4, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 31 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 32, 5, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 32 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_RELAY, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_TIMER, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
-		ptr = HTTP_TEMPLATE_2_Out ( ptr, HTTP_MODE_THERMOSTAT, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_RELAY, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_TIMER, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
+		ptr = HTTP_TEMPLATE_2_OutNeutral ( ptr, HTTP_MODE_THERMOSTAT, 33, 6, "<font color=\"#000\">Stan OFF</font>", NULL, 0 );
 		ptr = HTTP_TEMPLATE_2_Hidden ( ptr, 33 );
 		ptr = HTTP_TEMPLATE_2_PanelEnd ( ptr );
 		httpPar.web[channel][nrPartWWW] = (char *) httpBuff;
@@ -1182,8 +1194,8 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 	default:
 		break;
 	}
-	/* A CGI response already contains the freshly rendered form and its save
-	 * result. Replace its URL without re-submitting the write or losing errors. */
+	/* Preserve the CGI result and replace its URL without resubmitting writes.
+	 * /set loads the committed form values through its uncached JSON snapshot. */
 	if ( httpSensorNotice[channel] && httpResponseStatus[channel] != 500 )
 	{
 		char path[64] = { 0 };
@@ -1214,13 +1226,21 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 																	 : httpResponseStatus[channel] == 503	? "Service Unavailable"
 																	 : httpResponseStatus[channel] == 501	? "Not Implemented"
 																											: "Internal Server Error";
-		const char *contentType = nrWWW == WWW_LPC_ASSET ? httpLpcAsset[channel]->content_type : ( nrWWW == WWW_LPC_DATA || nrWWW == WWW_LPC_CONFIG || nrWWW == WWW_LPC_SAVE || nrWWW == WWW_LPC_LIVE ) ? "application/json; charset=UTF-8"
-																							 : ( nrWWW == WWW_DATA_REFRESH || ( nrWWW == WWW_OUTPUT_CONTROL && httpSensorNotice[channel] ) )			? "text/plain; charset=UTF-8"
-																							 : nrWWW == WWW_FAVICON																						? "image/x-icon"
-																																																		: "text/html; charset=UTF-8";
+		const char *contentType = "text/html; charset=UTF-8";
+		if ( nrWWW == WWW_PANEL_SCRIPT )
+			contentType = "application/javascript; charset=UTF-8";
+		else if ( nrWWW == WWW_PANEL_CONFIG || nrWWW == WWW_LPC_DATA || nrWWW == WWW_LPC_CONFIG || nrWWW == WWW_LPC_SAVE || nrWWW == WWW_LPC_LIVE )
+			contentType = "application/json; charset=UTF-8";
+		else if ( nrWWW == WWW_LPC_ASSET )
+			contentType = httpLpcAsset[channel]->content_type;
+		else if ( nrWWW == WWW_DATA_REFRESH || ( nrWWW == WWW_OUTPUT_CONTROL && httpSensorNotice[channel] ) )
+			contentType = "text/plain; charset=UTF-8";
+		else if ( nrWWW == WWW_FAVICON )
+			contentType = "image/x-icon";
 		int headerSize = snprintf ( httpResponseHeader[channel], sizeof ( httpResponseHeader[channel] ),
-									"HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %lu\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n",
-									httpResponseStatus[channel], reason, contentType, (unsigned long) bodySize );
+									"HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %lu\r\nConnection: close\r\nCache-Control: %s\r\n\r\n",
+									httpResponseStatus[channel], reason, contentType, (unsigned long) bodySize,
+									HTTP_PanelIsAsset ( nrWWW ) && httpResponseStatus[channel] == 200 ? "private, max-age=31536000, immutable" : "no-store" );
 		for ( int i = nrPartWWW; i > 0; i-- )
 		{
 			httpPar.web[channel][i] = httpPar.web[channel][i - 1];
@@ -1396,6 +1416,26 @@ static void HTTP_HandleTarget ( unsigned channel, const char *target, size_t len
 	else if ( !target )
 	{
 		status = 400;
+	}
+	else if ( HTTP_TargetEquals ( target, length, HTTP_PANEL_SCRIPT_PATH ) )
+	{
+		page = WWW_PANEL_SCRIPT;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, HTTP_PANEL_READ_PATH ) )
+	{
+		page = WWW_PANEL_READ_TEMPLATE;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, HTTP_PANEL_SET_PATH ) )
+	{
+		page = WWW_PANEL_SET_TEMPLATE;
+		status = 200;
+	}
+	else if ( HTTP_TargetEquals ( target, length, "/api/panel-config" ) )
+	{
+		page = WWW_PANEL_CONFIG;
+		status = 200;
 	}
 	else if ( asset )
 	{

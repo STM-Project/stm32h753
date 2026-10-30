@@ -392,6 +392,39 @@ too_small:
 	return 0;
 }
 
+/* The browser caches these neutral tiles. Port 255 is a template marker,
+ * replaced before inserting the tile; saved names are assigned as textContent.
+ * Inactive polling IDs are added by the browser without duplicate active IDs. */
+size_t HTTP_ReadTemplatesRender ( char *out, size_t capacity )
+{
+	static char tile[8192];
+	size_t used = 0;
+	if ( !out || !capacity )
+		return 0;
+	out[0] = 0;
+	if ( !HTTP_MainAppend ( out, capacity, &used, "<div id='h7-read' class='h7-read-grid'></div><div id='h7-hidden' hidden></div>" ) )
+		return 0;
+	for ( unsigned type = TEMPL_Temp; type <= TEMPL_Pwm; type++ )
+	{
+		char opening[64];
+		mini_snprintf ( opening, sizeof opening, "<template id='h7-tile-%u'>", type );
+		if ( !HTTP_MainAppend ( out, capacity, &used, opening ) )
+			return 0;
+		tile[0] = 0;
+		if ( type <= TEMPL_Adc )
+			HTTP_TEMPLATE_AdcTempRhu ( tile, type, 255, NAN, NAN, 0xeee, 0xeee, "", "" );
+		else if ( type == TEMPL_Impl )
+			HTTP_TEMPLATE_Impl ( tile, type, 255, 0, 0, 0, 0, 0, 0xeee, "" );
+		else if ( type == TEMPL_In || type == TEMPL_Eol )
+			HTTP_TEMPLATE_In ( tile, type, 255, "---", 0xeee, "" );
+		else
+			HTTP_TEMPLATE_Out ( tile, type, 255, 0, "---", "" );
+		if ( !HTTP_MainAppend ( out, capacity, &used, tile ) || !HTTP_MainAppend ( out, capacity, &used, "</template>" ) )
+			return 0;
+	}
+	return used;
+}
+
 /* Separate tile templates for HttpMainReadPanel2. */
 char *HTTP_TEMPLATE_AdcTempRhu2 ( char *buff, u8 type, u8 nr, float val1, float val2, u32 color1, u32 color2, char *name1, char *name2 ) /* #f88 - #eee - #8cf */
 {
@@ -2038,7 +2071,7 @@ char *HTTP_TEMPLATE_2_Impl ( char *buff, u8 type, u8 nr, u8 route, const char *v
 	return buff;
 }
 
-char *HTTP_TEMPLATE_2_Out ( char *buff, u8 type, u8 nr, u8 route, const char *value1, const char *value2, u8 pwm )
+static char *HTTP_TEMPLATE_2_OutRender ( char *buff, u8 type, u8 nr, u8 route, const char *value1, const char *value2, u8 pwm, int live )
 {
 	(void) route;
 	(void) value1;
@@ -2046,12 +2079,12 @@ char *HTTP_TEMPLATE_2_Out ( char *buff, u8 type, u8 nr, u8 route, const char *va
 	(void) pwm;
 	if ( nr < 1 || nr > 33 )
 		return buff;
-	const RelayState *state = RELAY_GetState ( nr );
+	const RelayState *state = live ? RELAY_GetState ( nr ) : NULL;
 	if ( type == HTTP_MODE_PWM && state && state->pwm_valid )
 		pwm = state->pwm_percent;
 	if ( type == HTTP_MODE_RELAY || type == HTTP_MODE_IR )
 	{
-		int display = RELAY_GetDisplayState ( nr );
+		int display = live ? RELAY_GetDisplayState ( nr ) : -1;
 		if ( display >= 0 )
 			value1 = display ? "<font color='#000'>Stan ON</font>" : "<font color='#000'>Stan OFF</font>";
 	}
@@ -2109,6 +2142,18 @@ char *HTTP_TEMPLATE_2_Hidden ( char *buff, u8 nr )
 	}
 	buff += mini_snprintf ( buff, 300, "<div class=\"port-unassigned\" id=\"06p%03d\" style=\"display: none;\"><table><tr><td width=\"50px\"></td><td><font size=\"4\" color=\"white\">---&nbsp; Wybierz funkcję&nbsp; ---</font></td></tr></table></div>\r\n", nr );
 	return buff;
+}
+
+/* Keep the legacy renderer live; the immutable browser template must never
+ * capture a relay or PWM state from the moment of its first download. */
+char *HTTP_TEMPLATE_2_Out ( char *buff, u8 type, u8 nr, u8 route, const char *value1, const char *value2, u8 pwm )
+{
+	return HTTP_TEMPLATE_2_OutRender ( buff, type, nr, route, value1, value2, pwm, 1 );
+}
+
+char *HTTP_TEMPLATE_2_OutNeutral ( char *buff, u8 type, u8 nr, u8 route, const char *value1, const char *value2, u8 pwm )
+{
+	return HTTP_TEMPLATE_2_OutRender ( buff, type, nr, route, value1, value2, pwm, 0 );
 }
 
 const char HttpStructMainReadPanel2[] =

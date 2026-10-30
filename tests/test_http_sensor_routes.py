@@ -222,9 +222,9 @@ int main(void) {
     for (unsigned i = 0; i < sizeof aliases / sizeof aliases[0]; ++i) {
         request(0, aliases[i]); check_response(0, 200, "text/html; charset=UTF-8");
         body(0, html, sizeof html);
-        assert(strstr(html, "href='temp001'"));
-        assert(strstr(html, "href='temp005'"));
-        assert(strstr(html, "n_GPIO_val_005"));
+        assert(strstr(html, "data-h7-panel='set'"));
+        assert(strstr(html, HTTP_PANEL_SCRIPT_PATH));
+        assert(strlen(html) < 1000);
     }
     request(0, "/temp005"); check_response(0, 200, "text/html; charset=UTF-8");
     body(0, html, sizeof html);
@@ -334,11 +334,14 @@ def harness_source(tests=TESTS):
         '"' + ''.join('\\x%02x' % c for c in panel[start:start+80]) + '"'
         for start in range(0, len(panel), 80)) + ';\n'
     harness = (panel_constant + PREAMBLE + "\n#define ESP_MAX_HTTP_CONN " + channels + "\n" + web_enum + enums +
-               fragments + read_templates + read_hidden + helpers + templates + queue + buffers + route + tests)
+               fragments + read_templates + read_hidden + helpers + templates + queue + buffers +
+               (ROOT / 'Application/HTTP/http_panel_assets.inc').read_text() +
+               (ROOT / 'Application/HTTP/http_panel_cache.inc').read_text().replace('#include "http_panel_assets.inc"', '') +
+               route + tests)
     return harness
 
 
-def compile_and_run(harness):
+def compile_and_run(harness, runner=None):
     compiler = shutil.which("gcc") or shutil.which("clang")
     assert compiler, "A host C compiler is required"
     with tempfile.TemporaryDirectory(prefix="http-sensor-routes-") as directory:
@@ -365,7 +368,10 @@ def compile_and_run(harness):
                         str(ROOT / "Application/HTTP/http_settings_page.c"),
                         str(ROOT / "Application/General_Utilities/mini_printf.c"),
                         "-o", str(executable)], check=True)
-        subprocess.run([str(executable)], check=True)
+        if runner:
+            runner(executable)
+        else:
+            subprocess.run([str(executable)], check=True)
 
 
 def main():
