@@ -205,3 +205,20 @@ timer dodatkowo cztery pary godzin i dni tygodnia, a termostat wybór czujnika,
 próg, histerezę i czas reakcji. Długie formularze mają przewijanie.
 Testy obejmują dotknięcie tych przycisków dla wszystkich fizycznych wyjść
 oraz zapis pól przez rzeczywisty wspólny model HTTP i callback zapisu SD.
+
+Podstrony ustawien portow uzywaja teraz duzych kafelkow z zaokraglonym obrysem,
+w stylu panelu progow temperatury i z grupami pol odpowiadajacymi HTTP:
+
+- Przekaznik/IR: nazwa oraz osobne kafelki opisow ON i OFF.
+- Termostat: regulacja (czujnik, prog, histereza, opoznienie) i nazwy wyjscia
+  obok siebie. Jednostka progu/histerezy zalezy od wyboru T/W; stopien jest
+  rysowany jako koleczko, niezaleznie od zestawu znakow czcionki.
+- Timer: cztery pary godzin ON/OFF, dni i aktywacja, nastepnie nazwy stanow.
+- Wejscie/EOL: nazwy i stany oraz reakcja/sterowanie przekaznikiem.
+- Licznik: przelicznik i cztery grupy progow (godzina/doba/tydzien/miesiac).
+- ADC: tabela punktow i osobny kafelek jednostki. PWM: nazwa i wartosc PWM.
+
+Przewijanie pokazuje pozostale kafelki; trafienia dotyku sa obliczane z tej
+samej geometrii co rysowanie. Biale pola i przyciski pozostaja bez gradientu.
+Ramki i kafelki powstaja funkcjami graficznymi, bez bitmap i nowego framebuffera.
+Model HTTP, walidacja, zapis SD, klawiatura i listy wyboru pozostaja wspolne.

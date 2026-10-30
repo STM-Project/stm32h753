@@ -100,6 +100,22 @@ void LCD_DisplayBuffStride(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t 
  for(unsigned row=0;row<h;row++)memcpy(shown+(y+row)*800+x,s+row*stride,w*4);
 }
 static void touch(int d,int x,int y){down=d;pos=(XY_Touch_Struct){(uint16_t)x,(uint16_t)y};tick+=20;assert(LCD_HttpPanel(0,ui.settings)==0);}
+static void form_touch_field(unsigned field){
+ FormControl box;assert(FormControlAt(field,&box));
+ lcdForm.scroll=Clamp(box.y-12,0,FormMaximum());FormDraw();
+ int y=TOP+box.y-lcdForm.scroll+44;
+ assert(y>=TOP&&y<TOP+VIEW);touch(1,box.x+box.w/2,y);touch(0,box.x+box.w/2,y);
+}
+static void check_form_geometry(void){
+ FormControl a,b;FormCard card;
+ unsigned count=lcdFormDraft.count+(lcdFormDraft.mode==HTTP_MODE_PWM);
+ for(unsigned i=0;i<count;i++){
+  assert(FormControlAt(i,&a)&&a.x>=36&&a.x+a.w<=726&&a.h==64);
+  int inside=0;for(unsigned c=0;FormCardAt(c,&card);c++)if(a.x>=card.x+3&&a.x+a.w<=card.x+card.w-3&&a.y>=card.y+44&&a.y+a.h<=card.y+card.h-3)inside=1;
+  assert(inside);assert(FormControlHit(a.x+a.w/2,a.y+44)==(int)i);
+  for(unsigned j=0;j<i;j++){assert(FormControlAt(j,&b));assert(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y);}
+ }
+}
 /* Live updates without touch, HTTP request, or screen re-entry. */
 static void live_update(void){
  int d=draws,full=viewport_draws;uint32_t hash=0;
@@ -241,10 +257,10 @@ int main(void){
  model.ports[14].mode=HTTP_MODE_ADC;tick+=250;LCD_HttpPanel(0,1);
  ui.scroll=Clamp(ui.tiles[14].y,0,Maximum());ui.full=ui.dirty=1;LCD_HttpPanel(0,1);
  touch(1,CONTENT_X+410,TOP+30);touch(0,CONTENT_X+410,TOP+30);assert(LCD_HttpPanelModal());LCD_HttpPanel(0,1);
- assert(lcdFormDraft.count==301&&FormRows()==101&&FormMaximum()>0);preview("lcd-settings-adc-top");
- touch(1,420,TOP+30);touch(0,420,TOP+30);assert(lcdForm.editing==0&&lcdForm.selection==0);
+ assert(lcdFormDraft.count==301&&FormContentHeight()>6400&&FormMaximum()>0);check_form_geometry();preview("lcd-settings-adc-top");
+ form_touch_field(0);assert(lcdForm.editing==0&&lcdForm.selection==0);
  touch(1,100,TOP+78);touch(0,100,TOP+78);assert(!strcmp(lcdFormDraft.values[0],"-"));
- touch(1,500,TOP+30);touch(0,500,TOP+30);assert(lcdForm.editing==1&&lcdForm.selection<0);
+ form_touch_field(1);assert(lcdForm.editing==1&&lcdForm.selection<0);
  touch(1,500,30);touch(0,500,30);assert(!lcdForm.text[0]);
  touch(1,55,TOP+92);touch(0,55,TOP+92);touch(1,132,TOP+92);touch(0,132,TOP+92);assert(!strcmp(lcdForm.text,"12"));
  preview("lcd-settings-keyboard");touch(1,630,30);touch(0,630,30);assert(lcdForm.editing==-1&&!strcmp(lcdFormDraft.values[1],"12"));
@@ -258,12 +274,12 @@ int main(void){
  touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
  model.ports[27].mode=HTTP_MODE_TIMER;tick+=250;LCD_HttpPanel(0,1);
  assert(SettingsOpen(28,0));LCD_HttpPanel(0,1);assert(lcdFormDraft.count==19);preview("lcd-settings-timer");
- lcdForm.scroll=8*64;FormDraw();touch(1,500,TOP+30);touch(0,500,TOP+30);assert(!strcmp(lcdFormDraft.values[8],"1"));
+ form_touch_field(8);assert(!strcmp(lcdFormDraft.values[8],"1"));
  touch(1,500,30);touch(0,500,30);assert(!lcdForm.dirty);touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
  model.ports[27].mode=HTTP_MODE_THERMOSTAT;tick+=250;LCD_HttpPanel(0,1);
  assert(SettingsOpen(28,0));LCD_HttpPanel(0,1);assert(lcdFormDraft.count==7);
  char option_label[64];FormOptionLabel(FormField(0),"T01",option_label,sizeof option_label);assert(!strcmp(option_label,"Temp. port 1"));
- touch(1,500,TOP+30);touch(0,500,TOP+30);assert(lcdForm.selection==0);preview("lcd-settings-thermostat-options");
+ form_touch_field(0);assert(lcdForm.selection==0);preview("lcd-settings-thermostat-options");
  touch(1,100,400);touch(1,100,140);touch(0,100,140);assert(lcdForm.selection>0);
  touch(1,70,30);touch(0,70,30);touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
  /* Open every output editor by its real /set numeric touch button,
@@ -287,14 +303,22 @@ int main(void){
    unsigned visible=0;for(unsigned i=TOP*W;i<(TOP+VIEW)*W;i++)if(shown[i]!=BG)visible++;assert(visible>10000);
    preview("lcd-settings-relay-loading");
    int saves_before=form_save_calls;
-   touch(1,500,TOP+30);touch(0,500,TOP+30);assert(lcdForm.editing==-1&&!lcdForm.dirty);
+   form_touch_field(0);assert(lcdForm.editing==-1&&!lcdForm.dirty);
    touch(1,630,30);touch(0,630,30);assert(form_save_calls==saves_before);
    form_read_delay=0;LCD_HttpPanel(0,1);assert(!FormLoading());
   }
-  assert(lcdFormDraft.port==port&&lcdFormDraft.count==(mode==1?19:mode==2?7:3));
+  assert(lcdFormDraft.port==port&&lcdFormDraft.count==(mode==1?19:mode==2?7:3));check_form_geometry();
   assert(!strcmp(lcdFormDraft.page->route,mode==1?"/tim":mode==2?"/term":"/wypk"));
   if(port==28&&mode==0)preview("lcd-settings-relay");
   if(port==28&&mode==2)preview("lcd-settings-thermostat");
+  if(port==28&&mode==1){lcdForm.scroll=340;FormDraw();preview("lcd-settings-timer-days");lcdForm.scroll=FormMaximum();FormDraw();preview("lcd-settings-timer-names");lcdForm.scroll=0;FormDraw();}
+  touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
+ }
+ const struct{unsigned port,mode;const char*preview;} other_forms[]={
+  {1,HTTP_MODE_INPUT,"lcd-settings-input"},{1,HTTP_MODE_EOL,"lcd-settings-eol"},{17,HTTP_MODE_COUNTER,"lcd-settings-counter"},{21,HTTP_MODE_PWM,"lcd-settings-pwm"}};
+ for(unsigned i=0;i<sizeof other_forms/sizeof *other_forms;i++){
+  model.ports[other_forms[i].port-1].mode=other_forms[i].mode;edit.draftMode[other_forms[i].port-1]=-1;tick+=250;LCD_HttpPanel(0,1);
+  assert(SettingsOpen(other_forms[i].port,0));LCD_HttpPanel(0,1);check_form_geometry();preview(other_forms[i].preview);
   touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
  }
  puts("PASS: relay/IR, timer and thermostat editors open by touch for every physical output, with scrolling and Back.");

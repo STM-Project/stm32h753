@@ -15,17 +15,166 @@ static int FormLoading ( void )
 {
 	return lcdFormBase.serial != lcdForm.serial;
 }
-static unsigned FormRows ( void )
+/* Section cards follow the HTTP forms, with two columns on an 800x480 LCD.
+ * Geometry is calculated from the schema; no bitmap or framebuffer is added. */
+typedef struct
+{
+	int x, y, w, h;
+	const char *title;
+} FormCard;
+typedef struct
+{
+	int x, y, w, h;
+} FormControl;
+static int FormRouteIs ( const char *route )
+{
+	return lcdFormDraft.page && !strcmp ( lcdFormDraft.page->route, route );
+}
+static int FormCardAt ( unsigned index, FormCard *card )
 {
 	if ( !lcdFormDraft.page )
 		return 0;
-	if ( !strcmp ( lcdFormDraft.page->route, "/nap" ) )
-		return 101;
-	return lcdFormDraft.count + ( lcdFormDraft.mode == HTTP_MODE_PWM );
+	*card = (FormCard) { 36, 8, 690, 132, "Nazwa portu" };
+	if ( lcdFormDraft.names_only )
+	{
+		if ( !index )
+			return 1;
+		if ( index == 1 && lcdFormDraft.mode == HTTP_MODE_PWM )
+		{
+			*card = (FormCard) { 36, 156, 690, 140, "Sterowanie PWM" };
+			return 1;
+		}
+		return 0;
+	}
+	if ( FormRouteIs ( "/wypk" ) )
+	{
+		if ( !index )
+			return 1;
+		if ( index > 2 )
+			return 0;
+		*card = (FormCard) { index == 1 ? 36 : 388, 156, 338, 164, index == 1 ? "Stan ON" : "Stan OFF" };
+		return 1;
+	}
+	if ( FormRouteIs ( "/term" ) || FormRouteIs ( "/we" ) || FormRouteIs ( "/eol" ) )
+	{
+		if ( index > 1 )
+			return 0;
+		*card = (FormCard) { index ? 388 : 36, 8, 338, 350, FormRouteIs ( "/term" ) ? ( index ? "Nazwy i stany wyjscia" : "Termostat / higrostat" ) : ( index ? "Reakcja i przekaznik" : "Nazwa i stany wejscia" ) };
+		return 1;
+	}
+	if ( FormRouteIs ( "/tim" ) )
+	{
+		static const FormCard cards[] = {
+			{ 36, 8, 690, 326, "Timer . godziny ON / OFF" },
+			{ 36, 350, 690, 258, "Dni tygodnia i aktywacja" },
+			{ 36, 624, 690, 236, "Nazwa i stany wyjscia" } };
+		if ( index >= sizeof cards / sizeof *cards )
+			return 0;
+		*card = cards[index];
+		return 1;
+	}
+	if ( FormRouteIs ( "/etr" ) )
+	{
+		static const char *periods[] = { "Godzina", "Doba", "Tydzien", "Miesiac" };
+		if ( index > 4 )
+			return 0;
+		if ( !index )
+			*card = (FormCard) { 36, 8, 690, 166, "Licznik impulsow . przelicznik" };
+		else
+			*card = (FormCard) { index % 2 ? 36 : 388, 190 + (int) ( ( index - 1 ) / 2 ) * 236, 338, 220, periods[index - 1] };
+		return 1;
+	}
+	if ( FormRouteIs ( "/nap" ) )
+	{
+		if ( index > 1 )
+			return 0;
+		*card = index ? (FormCard) { 36, 6488, 690, 132, "Jednostka pomiaru" } : (FormCard) { 36, 8, 690, 6464, "Tabela translacji . 100 punktow" };
+		return 1;
+	}
+	if ( index >= lcdFormDraft.count )
+		return 0;
+	*card = (FormCard) { index % 2 ? 388 : 36, 8 + (int) ( index / 2 ) * 148, 338, 132, "Ustawienia portu" };
+	return 1;
 }
+static int FormControlAt ( unsigned field, FormControl *box )
+{
+	if ( !lcdFormDraft.page || field >= lcdFormDraft.count + ( lcdFormDraft.mode == HTTP_MODE_PWM ) )
+		return 0;
+	*box = (FormControl) { 54, 62, 654, 64 };
+	if ( lcdFormDraft.names_only )
+	{
+		if ( field )
+			box->y = 210;
+	}
+	else if ( FormRouteIs ( "/wypk" ) )
+	{
+		if ( field )
+			*box = (FormControl) { field == 1 ? 54 : 406, 210, 302, 64 };
+	}
+	else if ( FormRouteIs ( "/term" ) )
+	{
+		if ( field >= 4 )
+			*box = (FormControl) { 406, 62 + (int) ( field - 4 ) * 80, 302, 64 };
+		else if ( field == 1 || field == 2 )
+			*box = (FormControl) { field == 1 ? 54 : 213, 142, 143, 64 };
+		else
+			*box = (FormControl) { 54, field ? 222 : 62, 302, 64 };
+	}
+	else if ( FormRouteIs ( "/we" ) || FormRouteIs ( "/eol" ) )
+	{
+		unsigned names = FormRouteIs ( "/eol" ) ? 4 : 3;
+		*box = (FormControl) { field < names ? 54 : 406, 62 + (int) ( field < names ? field : field - names ) * 64, 302, 64 };
+	}
+	else if ( FormRouteIs ( "/tim" ) )
+	{
+		if ( field < 8 )
+			*box = (FormControl) { field < 4 ? 54 : 388, 62 + (int) ( field % 4 ) * 64, 320, 64 };
+		else if ( field < 15 )
+			*box = (FormControl) { 54 + (int) ( ( field - 8 ) % 3 ) * 224, 404 + (int) ( ( field - 8 ) / 3 ) * 64, 206, 64 };
+		else if ( field == 15 )
+			*box = (FormControl) { 278, 532, 430, 64 };
+		else if ( field == 16 )
+			*box = (FormControl) { 54, 678, 654, 64 };
+		else
+			*box = (FormControl) { field == 17 ? 54 : 388, 750, 320, 64 };
+	}
+	else if ( FormRouteIs ( "/etr" ) )
+	{
+		if ( field < 3 )
+			*box = (FormControl) { 54 + (int) field * 224, 62, 206, 64 };
+		else
+		{
+			unsigned period = ( field - 3 ) / 4, part = ( field - 3 ) % 4;
+			*box = (FormControl) { ( period % 2 ? 406 : 54 ) + (int) ( part % 2 ) * 159, 244 + (int) ( period / 2 ) * 236 + (int) ( part / 2 ) * 80, 143, 64 };
+		}
+	}
+	else if ( FormRouteIs ( "/nap" ) )
+	{
+		if ( field == 300 )
+			box->y = 6542;
+		else
+		{
+			static const int positions[] = { 54, 160, 438 }, widths[] = { 90, 260, 270 };
+			*box = (FormControl) { positions[field % 3], 62 + (int) ( field / 3 ) * 64, widths[field % 3], 64 };
+		}
+	}
+	else
+		*box = (FormControl) { field % 2 ? 406 : 54, 62 + (int) ( field / 2 ) * 148, 302, 64 };
+	return 1;
+}
+static int FormContentHeight ( void )
+{
+	int height = 0;
+	FormCard card;
+	for ( unsigned i = 0; FormCardAt ( i, &card ); ++i )
+		if ( card.y + card.h + 8 > height )
+			height = card.y + card.h + 8;
+	return height;
+}
+
 static int FormMaximum ( void )
 {
-	int height = (int) FormRows () * 64 - VIEW;
+	int height = FormContentHeight () - VIEW;
 	return height > 0 ? height : 0;
 }
 static const HTTP_SettingField *FormField ( unsigned index )
@@ -96,10 +245,7 @@ static void FormLabel ( unsigned index, char *out, size_t size )
 	else if ( strstr ( name, "pEtr" ) )
 	{
 		const char *part = name + strlen ( "n_s_pEtr" );
-		const char *period = *part == 'g' ? "Godzina" : *part == 'd' ? "Doba"
-													: *part == 't'	 ? "Tydzien"
-																	 : "Miesiac";
-		snprintf ( out, size, "%s . prog %c . %s", period, part[2], part[1] == 'd' ? "calkowite" : "setne" );
+		snprintf ( out, size, "Prog %c . %s", part[2], part[1] == 'd' ? "calkowite" : "setne" );
 	}
 	else
 		snprintf ( out, size, "%s", name );
@@ -212,62 +358,100 @@ static void FormValueBox ( int x, int y, int width, unsigned field )
 		snprintf ( checkbox, sizeof checkbox, "%s", !strcmp ( value, "0" ) ? "[ ]" : "[X]" );
 		value = checkbox;
 	}
-	Text ( W, 64, ui.font[1], x + 8, y + 9, width - 16, value, VALUE_BLACK );
+	if ( FormRouteIs ( "/term" ) && ( field == 1 || field == 2 ) )
+	{
+		char measurement[HTTP_LCD_FORM_VALUE + 8];
+		snprintf ( measurement, sizeof measurement, "%s %s", value, lcdFormDraft.values[0][0] == 'W' ? "%RH" : "C" );
+		Measurement ( W, 64, x + 8, y + 9, width - 16, measurement, VALUE_BLACK, ui.font[3], 0 );
+	}
+	else
+		Text ( W, 64, ui.font[1], x + 8, y + 9, width - ( FormField ( field )->kind == HTTP_SETTING_SELECT ? 36 : 16 ), value, VALUE_BLACK );
+	if ( FormField ( field )->kind == HTTP_SETTING_SELECT )
+		for ( int row = 0; row < 5; ++row )
+			Rect ( W, x + width - 24 + row, y + 17 + row, 9 - 2 * row, 1, VALUE_BLACK );
+}
+/* Outer cards are clipped directly into the existing viewport. The tail of
+ * pLcd remains a single 64-row canvas for titles/controls and native fonts. */
+static void FormRoundViewport ( int x, int y, int w, int h, int radius, uint32_t color )
+{
+	int top = y < 0 ? -y : 0, bottom = y + h > VIEW ? VIEW - y : h;
+	for ( int row = top; row < bottom; ++row )
+		for ( int col = 0; col < w; ++col )
+		{
+			int dx = col < radius ? 2 * ( radius - col ) - 1 : col >= w - radius ? 2 * ( col - ( w - radius ) ) + 1
+																				 : 0;
+			int dy = row < radius ? 2 * ( radius - row ) - 1 : row >= h - radius ? 2 * ( row - ( h - radius ) ) + 1
+																				 : 0;
+			if ( dx * dx + dy * dy <= 4 * radius * radius )
+				pLcd[( y + row ) * W + x + col] = color;
+		}
+}
+static void FormCopyControl ( int x, int content_y, int width, int height )
+{
+	int y = content_y - lcdForm.scroll;
+	int first = y < 0 ? -y : 0, end = y + height > VIEW ? VIEW - y : height;
+	for ( int row = first; row < end; ++row )
+		memcpy ( pLcd + ( y + row ) * W + x, pLcd + SCRATCH + row * W + x, (size_t) width * sizeof *pLcd );
 }
 static void FormDraw ( void )
 {
 	for ( unsigned i = 0; i < W * VIEW; ++i )
 		pLcd[i] = BG;
-	unsigned rows = FormRows ();
-	for ( unsigned row = 0; row < rows; ++row )
+	FormCard card;
+	for ( unsigned index = 0; FormCardAt ( index, &card ); ++index )
 	{
-		int y = (int) row * 64 - lcdForm.scroll;
-		if ( y >= VIEW || y + 64 <= 0 )
+		int y = card.y - lcdForm.scroll;
+		if ( y >= VIEW || y + card.h <= 0 )
 			continue;
-		Rect ( W, 0, 0, W, 64, BG );
-		TileRound ( W, 36, 2, 690, 58, 8, FRAME, FRAME );
-		TileRound ( W, 38, 4, 686, 54, 6, CARD, CARD );
+		FormRoundViewport ( card.x, y, card.w, card.h, 28, FRAME );
+		FormRoundViewport ( card.x + 3, y + 3, card.w - 6, card.h - 6, 25, CARD );
+		Rect ( W, card.x + 18, 0, card.w - 36, 32, CARD );
+		Text ( W, 32, ui.font[1], card.x + 18, 3, card.w - 36, card.title, GREEN );
+		FormCopyControl ( card.x + 18, card.y + 12, card.w - 36, 32 );
+	}
+	for ( unsigned field = 0; field < lcdFormDraft.count + ( lcdFormDraft.mode == HTTP_MODE_PWM ); ++field )
+	{
+		FormControl box;
+		if ( !FormControlAt ( field, &box ) || box.y - lcdForm.scroll >= VIEW || box.y + box.h <= lcdForm.scroll )
+			continue;
+		Rect ( W, box.x, 0, box.w, box.h, CARD );
 		char label[96];
-		int translation = lcdFormDraft.page && !strcmp ( lcdFormDraft.page->route, "/nap" );
-		if ( translation && row < 100 )
+		if ( field == lcdFormDraft.count )
+			snprintf ( label, sizeof label, "PWM (%%)" );
+		else
+			FormLabel ( field, label, sizeof label );
+		Text ( W, 64, ui.font[0], box.x + 2, 2, box.w - 4, label, GREEN );
+		if ( field == lcdFormDraft.count )
 		{
-			snprintf ( label, sizeof label, "Punkt %u . znak / calkowite / setne", row );
-			Text ( W, 64, ui.font[0], 50, 23, 340, label, GREEN );
-			FormValueBox ( 400, 12, 60, row * 3 );
-			FormValueBox ( 470, 12, 140, row * 3 + 1 );
-			FormValueBox ( 620, 12, 86, row * 3 + 2 );
-		}
-		else if ( !translation && row == lcdFormDraft.count )
-		{
-			Text ( W, 64, ui.font[1], 50, 22, 330, "PWM (%)", GREEN );
-			TileRound ( W, 400, 12, 306, 40, 4, WHITE, WHITE );
+			TileRound ( W, box.x, 24, box.w, 40, 4, WHITE, WHITE );
 			snprintf ( label, sizeof label, "%u", lcdFormDraft.pwm );
-			Text ( W, 64, ui.font[1], 408, 21, 280, label, VALUE_BLACK );
+			Text ( W, 64, ui.font[1], box.x + 8, 33, box.w - 16, FormLoading () ? "..." : label, VALUE_BLACK );
 		}
 		else
-		{
-			unsigned field = translation ? 300 : row;
-			if ( translation )
-				snprintf ( label, sizeof label, "Jednostka pomiaru" );
-			else
-				FormLabel ( field, label, sizeof label );
-			Text ( W, 64, ui.font[0], 50, 23, 330, label, GREEN );
-			FormValueBox ( 400, 12, 306, field );
-		}
-		int first = y < 0 ? -y : 0, end = y + 64 > VIEW ? VIEW - y : 64;
-		for ( int r = first; r < end; ++r )
-			memcpy ( pLcd + ( y + r ) * W, pLcd + SCRATCH + r * W, W * sizeof *pLcd );
+			FormValueBox ( box.x, 24, box.w, field );
+		FormCopyControl ( box.x, box.y, box.w, box.h );
 	}
-	int maximum = FormMaximum (), thumb = rows * 64 > VIEW ? VIEW * VIEW / ( (int) rows * 64 ) : VIEW;
+	int height = FormContentHeight (), maximum = FormMaximum ();
+	int thumb = height > VIEW ? VIEW * VIEW / height : VIEW;
 	if ( thumb < 32 )
 		thumb = 32;
 	int top = maximum ? lcdForm.scroll * ( VIEW - thumb ) / maximum : 0;
-	for ( int y = 0; y < VIEW; ++y )
-		for ( int x = 738; x < 760; ++x )
-			pLcd[y * W + x] = y >= top && y < top + thumb ? GREEN : 0xFF333333U;
+	if ( maximum )
+		for ( int y = 0; y < VIEW; ++y )
+			for ( int x = SCROLL_X; x < SCROLL_X + SCROLL_W; ++x )
+				pLcd[y * W + x] = y >= top && y < top + thumb ? GREEN : 0xFF333333U;
 	LCD_DisplayBuff ( 0, TOP, W, VIEW, pLcd );
 	FormHeader ();
 }
+static int FormControlHit ( int x, int content_y )
+{
+	FormControl box;
+	for ( unsigned field = 0; FormControlAt ( field, &box ); ++field )
+		if ( x >= box.x && x < box.x + box.w && content_y >= box.y + 24 && content_y < box.y + box.h )
+			return (int) field;
+	return -1;
+}
+
 static const char *FormKey ( unsigned key, char out[8] )
 {
 	static const char *polish[] = { "ą", "ć", "ę", "ł", "ń", "ó", "ś", "ź", "ż", "?" };
@@ -487,18 +671,8 @@ static int FormUpdate ( void )
 		}
 		else if ( lcdForm.editing >= 0 )
 			hit = ( y + lcdForm.selection ) / 52;
-		else if ( position.x >= 400 && position.x < 706 )
-		{
-			unsigned row = (unsigned) ( y + lcdForm.scroll ) / 64;
-			if ( row < FormRows () && ( y + lcdForm.scroll ) % 64 >= 12 && ( y + lcdForm.scroll ) % 64 < 52 )
-			{
-				if ( lcdFormDraft.page && !strcmp ( lcdFormDraft.page->route, "/nap" ) )
-					hit = row == 100 ? 300 : (int) row * 3 + ( position.x >= 620 ? 2 : position.x >= 470 ? 1
-																										 : 0 );
-				else
-					hit = (int) row;
-			}
-		}
+		else
+			hit = FormControlHit ( position.x, y + lcdForm.scroll );
 	}
 	if ( down && !lcdForm.wasDown )
 	{
