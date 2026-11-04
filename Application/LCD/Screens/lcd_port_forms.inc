@@ -7,6 +7,7 @@
 static HTTP_LCDFormData lcdFormBase LCD_FORM_SDRAM, lcdFormDraft LCD_FORM_SDRAM, lcdFormLatest LCD_FORM_SDRAM;
 static struct
 {
+	int nativeActive, nativePrevious;
 	int active, dirty, pending, scroll, startScroll, startY, wasDown, armed, moved, drag, editing, selection, upper, polish, keyPressed;
 	uint32_t serial, sample;
 	char text[HTTP_LCD_FORM_VALUE], notice[96];
@@ -469,8 +470,59 @@ static const char *FormKey ( unsigned key, char out[8] )
 	out[1] = 0;
 	return out;
 }
+#define FORM_NATIVE_KEYS 180
+_Static_assert ( FORM_NATIVE_KEYS + 35 <= UINT8_MAX, "Native keyboard touch IDs exceed uint8_t" );
+enum
+{
+	KEY_All_release = 0,
+	KEYBOARD_SETTXT_KEYS
+};
+static int FormNativeName ( void )
+{
+	return lcdForm.editing >= 0 && (unsigned) lcdForm.editing < lcdFormDraft.count && FormField ( (unsigned) lcdForm.editing )->kind == HTTP_SETTING_TEXT && strstr ( FormField ( (unsigned) lcdForm.editing )->name, "nazwa" );
+}
+static void FormNativeStop ( void )
+{
+	if ( lcdForm.nativeActive )
+	{
+		KEYBOARD_StartUp ( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, KeysDel );
+		KEYBOARD_SetTextRows ( 6 );
+		lcdForm.nativeActive = lcdForm.nativePrevious = 0;
+	}
+}
+static void FormNativeKey ( int key, int create )
+{
+	KEYBOARD_SetGeneral ( ui.font[3], ui.font[0], 0xFF999999U, 0xFFD0D0D0U, 0xFF313131U, 0xFFD0D0D0U, 0xFF3B3B3BU, 0xFFBABABAU, 0xFF606060U, 0xFF383838U );
+	figureShape shape = create ? LCD_RoundRectangle : 0;
+	int width = 2 * ( 4 + LCD_GetWholeStrPxlWidth ( ui.font[3], "q", 0, NoConstWidth ) );
+	int height = 2 * ( 4 + LCD_GetFontHeight ( ui.font[3] ) );
+	KEYBOARD_StartUp ( 1, shape, 0, 10, 65, width, height, 10, 0, FORM_NATIVE_KEYS, KeysDel );
+	/* Reserve Keyboard.c's two cursor bytes in addition to the field limit. */
+	int size = (int) FormField ( (unsigned) lcdForm.editing )->max_length + 3;
+	if ( size > (int) sizeof lcdForm.text )
+		size = sizeof lcdForm.text;
+	KEYBOARD__ServiceSetTxt ( 0, key, shape, 0, 10, 65, width, height, 10, 0, create ? FORM_NATIVE_KEYS : 0, KeysDel, KEY_All_release, KEY_Q, KEY_big, KEY_back, KEY_alt, KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, lcdForm.text, size );
+}
+static void FormNativeDraw ( void )
+{
+	FormNativeStop ();
+	LCD_TOUCH_DeleteAllSetTouch ();
+	for ( unsigned i = 0; i < W * VIEW; ++i )
+		pLcd[i] = BG;
+	LCD_DisplayBuff ( 0, TOP, W, VIEW, pLcd );
+	FormHeader ();
+	KEYBOARD_SetTextRows ( 1 );
+	lcdForm.nativeActive = 1;
+	FormNativeKey ( KEY_All_release, 1 );
+	/* Keyboard.c presents its own windows using pLcd as scratch. */
+}
 static void FormKeyboardDraw ( void )
 {
+	if ( FormNativeName () )
+	{
+		FormNativeDraw ();
+		return;
+	}
 	for ( unsigned i = 0; i < W * VIEW; ++i )
 		pLcd[i] = BG;
 	Rect ( W, 0, 0, W, 56, BG );
@@ -592,6 +644,11 @@ static int FormOpen ( unsigned port, int names )
 }
 static void FormFinishEdit ( int commit )
 {
+	if ( lcdForm.nativeActive )
+	{
+		lcdForm.text[FormField ( (unsigned) lcdForm.editing )->max_length] = 0;
+		FormNativeStop ();
+	}
 	if ( commit && lcdForm.selection < 0 )
 	{
 		if ( (unsigned) lcdForm.editing == lcdFormDraft.count )
@@ -649,8 +706,33 @@ static int FormUpdate ( void )
 		}
 	}
 	XY_Touch_Struct position = LCD_TOUCH_GetPos ();
-	(void) LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
+	uint16_t native_touch = LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
 	int down = LCD_TOUCH_isPress () == press, hit = -1;
+	if ( lcdForm.nativeActive )
+	{
+		if ( down && native_touch >= FORM_NATIVE_KEYS && native_touch < FORM_NATIVE_KEYS + 36 )
+		{
+			int key = KEY_Q + native_touch - FORM_NATIVE_KEYS;
+			if ( key == KEY_exit )
+			{
+				FormFinishEdit ( 0 );
+				lcdForm.wasDown = down;
+				return 0;
+			}
+			if ( lcdForm.nativePrevious && lcdForm.nativePrevious != key )
+				FormNativeKey ( KEY_All_release, 0 );
+			FormNativeKey ( key, 0 );
+			lcdForm.nativePrevious = key;
+			lcdForm.wasDown = down;
+			lcdForm.armed = -1;
+			return 0;
+		}
+		if ( !down && lcdForm.nativePrevious )
+		{
+			FormNativeKey ( KEY_All_release, 0 );
+			lcdForm.nativePrevious = 0;
+		}
+	}
 	if ( position.y >= 14 && position.y < 50 )
 	{
 		if ( position.x >= 36 && position.x < 144 )
@@ -660,7 +742,7 @@ static int FormUpdate ( void )
 		if ( position.x >= 588 && position.x < 724 )
 			hit = -12;
 	}
-	if ( position.y >= TOP && position.y < TOP + VIEW && position.x >= 24 && position.x < 760 )
+	if ( !lcdForm.nativeActive && position.y >= TOP && position.y < TOP + VIEW && position.x >= 24 && position.x < 760 )
 	{
 		int y = position.y - TOP;
 		if ( lcdForm.editing >= 0 && lcdForm.selection < 0 )
@@ -710,7 +792,7 @@ static int FormUpdate ( void )
 			FormPaint ();
 		}
 	}
-	if ( lcdForm.editing >= 0 && lcdForm.selection < 0 )
+	if ( !lcdForm.nativeActive && lcdForm.editing >= 0 && lcdForm.selection < 0 )
 	{
 		int pressed = down && hit >= 0 && hit == lcdForm.armed ? hit : -1;
 		if ( pressed != lcdForm.keyPressed )

@@ -2,7 +2,7 @@
 Also save 800x480 previews with host Arial-compatible glyphs (not hardware timing).
 """
 from pathlib import Path
-import re,subprocess,tempfile,shutil,os
+import re,subprocess,tempfile,shutil,os,ast
 from PIL import Image,ImageFont
 ROOT=Path(__file__).resolve().parents[1]
 mode=re.search(r'typedef enum\s*\{\s*HTTP_MODE_RELAY.*?\} HTTP_PORT_MODE;',(ROOT/'Application/wwwPages.h').read_text(),re.S)[0]
@@ -11,6 +11,8 @@ SUPPORT=r'''
 #define SUPPORT_H
 #include <stdint.h>
 #include <stddef.h>
+typedef void* figureShape;
+#define LCD_RoundRectangle ((void*)2)
 typedef struct {uint16_t x,y;} XY_Touch_Struct;
 extern XY_Touch_Struct screenTouchPos;
 enum {press=1,release=0,FONT_12=12,FONT_16=16,FONT_20=20,FONT_18=18,FONT_28=28,Arial=0,fontID_13=12,fontID_17=16,fullHight=-3,NoConstWidth=0};
@@ -32,6 +34,10 @@ uint32_t pLcd[800*480];static uint32_t shown[800*480];
 static HTTP_LCDPanelData model;
 static int down,active,pwm_calls,toggle_calls,save_calls,draws,viewport_draws;
 static unsigned pwm_port,pwm_percent;
+static uint16_t native_event;
+static int native_creates,native_calls,native_releases,native_last,native_rows;
+static char *native_buffer;
+static int check_port_name,port_name_lines,port_name_font;
 static uint32_t tick;
 static int check_description,description_lines,check_measurement,number_count,unit_count,check_percent,percent_count;
 static XY_Touch_Struct pos;
@@ -73,6 +79,7 @@ int LCD_GetFontHeight(int font){return font==28?35:font==20?27:font==18?24:font=
 int LCD_GetFontHalfHeight(int font){return LCD_GetFontHeight(font)-(font>=20?7:4);}
 int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==28?4:f==20?2:f==18?3:f==16?1:0][(unsigned char)*t];return n;}
 void LCD_StrChangeColorWindow(uint32_t offset,uint32_t w,uint32_t h,int font,int x,int y,char*t,int only,int space,uint32_t bg,uint32_t color,uint8_t a,int fixed){
+ if(check_port_name){assert(!strstr(t,"..."));assert(color==WHITE);port_name_lines++;port_name_font=font;}
  if(check_percent&&strchr(t,'%')){assert(!strcmp(t,"%")&&font==12);percent_count++;}
  if(check_description){assert(font==12&&y==104+description_lines*18);description_lines++;}
  if(check_measurement){if(!strcmp(t,"C")||!strcmp(t,"%")){assert(font==12&&y==43+LCD_GetFontHalfHeight(20)-LCD_GetFontHalfHeight(12));unit_count++;}else{assert(font==20&&y==43);if(number_count==1)assert(!strcmp(t,"65"));number_count++;}}
@@ -91,7 +98,7 @@ void LCD_StrChangeColorWindow(uint32_t offset,uint32_t w,uint32_t h,int font,int
 }
 uint32_t LCD_GetXSize(void){return 800;}uint32_t LCD_GetYSize(void){return 480;}uint32_t HAL_GetTick(void){return tick;}
 int LCD_TOUCH_isPress(void){return down;}XY_Touch_Struct LCD_TOUCH_GetPos(void){return pos;}
-uint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct*p){*p=pos;return 0;}
+uint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct*p){*p=pos;return native_event;}
 void LCD_DisplayBuff(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *s){
  assert(x+w<=800&&y+h<=480&&s>=pLcd&&s+w*h<=pLcd+800*480);draws++;if(w==800&&h==368)viewport_draws++;
  for(unsigned row=0;row<h;row++)memcpy(shown+(y+row)*800+x,s+row*w,w*4);
@@ -99,6 +106,18 @@ void LCD_DisplayBuff(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *s){
 void LCD_DisplayBuffStride(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *s,uint32_t stride){
  assert(x+w<=800&&y+h<=480&&s>=pLcd&&s+(h-1)*stride+w<=pLcd+800*480&&stride==800);draws++;
  for(unsigned row=0;row<h;row++)memcpy(shown+(y+row)*800+x,s+row*stride,w*4);
+}
+void KEYBOARD_SetTextRows(unsigned rows){native_rows=(int)rows;}
+void KEYBOARD_SetGeneral(int a,int b,int c,int d,int e,int f,int g,int h,int i,int j){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;}
+int KEYBOARD_StartUp(int type,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase){
+ (void)bold;(void)space;(void)forTouch;(void)erase;if(type&&shape){assert(start==FORM_NATIVE_KEYS&&start+35<=255&&x==10&&y==65&&w>0&&h>0);native_creates++;}return 0;
+}
+void KEYBOARD__ServiceSetTxt(int k,int key,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase,int releaseKey,int action,int big,int back,int alt,int enter,int field,int style,int exitKey,uint32_t color,char *buffer,int size){
+ (void)k;(void)bold;(void)x;(void)y;(void)w;(void)h;(void)space;(void)forTouch;(void)start;(void)erase;(void)releaseKey;(void)action;(void)big;(void)back;(void)alt;(void)enter;(void)field;(void)style;(void)exitKey;(void)color;
+ assert(size==33||size==23);native_calls++;native_buffer=buffer;
+ if(!key){native_last=0;native_releases++;}
+ if(!shape&&key==KEY_Q){size_t n=strlen(buffer);if(native_last==key&&n)buffer[n-1]='1';else{assert(n+3<(size_t)size);buffer[n]='q';buffer[n+1]=0;}native_last=key;}
+ buffer[size-2]=1;buffer[size-1]=2; /* native cursor metadata must never be saved */
 }
 static void touch(int d,int x,int y){down=d;pos=(XY_Touch_Struct){(uint16_t)x,(uint16_t)y};tick+=20;assert(LCD_HttpPanel(0,ui.settings)==0);}
 static void form_touch_field(unsigned field){
@@ -138,6 +157,12 @@ int main(void){
   snprintf(p->value[1],32,"65.0 %%");for(unsigned r=2;r<5;r++)snprintf(p->value[r],32,"%u.125",r*123);for(unsigned r=0;r<5;r++)p->color[r]=0xffeeeeee;p->pwm=42;p->pwm_valid=1;
  }
  strcpy(model.time,"12:34:56");model.revision=1;
+ ui.font[0]=12;ui.font[1]=16;
+ char name_lines[2][96];assert(PortNameLines("WWWWWWWWWWWWWWWWWWWW",16,name_lines)==2);
+ assert(!PortNameLines("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",16,name_lines));
+ check_port_name=1;PortName(690,68,"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");check_port_name=0;
+ assert(port_name_lines==2&&port_name_font==12);
+
  assert(LCD_HttpPanel(1,0)==0&&active&&ui.count==33&&Maximum()>0);preview("lcd-http-read-top");
  live_update();
  check_description=1;Description(216,166,104,"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");check_description=0;assert(description_lines==3);
@@ -162,6 +187,9 @@ int main(void){
  touch(1,x+90,y);touch(1,x+90,y-20);touch(0,x+90,y-20);assert(toggle_calls==1);
  assert(LCD_HttpPanel(2,0)==0&&!active);
  assert(LCD_HttpPanel(1,1)==0&&active&&ui.count==33);preview("lcd-http-settings-top");
+ strcpy(model.ports[0].name,"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");tick+=250;LCD_HttpPanel(0,1);preview("lcd-http-settings-long-name");
+ strcpy(model.ports[0].name,"Nazwa portu nr 1");tick+=250;LCD_HttpPanel(0,1);
+
  assert(shown[20*800+705]==shown[42*800+705]); /* solid save fill */
  assert(shown[92*800+410]==shown[116*800+410]); /* solid dropdown */
  assert(shown[92*800+700]==0xffeeeeee&&shown[120*800+700]==0xffeeeeee); /* white value field */
@@ -276,6 +304,14 @@ int main(void){
  strcpy(formModel.values[1],"99");formModel.hash++;tick+=250;LCD_HttpPanel(0,1);assert(!strcmp(lcdFormDraft.values[1],"99"));
  touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal()&&ui.settings==1);
  touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);LCD_HttpPanel(0,1);assert(lcdFormDraft.names_only&&lcdFormDraft.count==1);preview("lcd-settings-name");
+ int created_before=native_creates;form_touch_field(0);assert(lcdForm.nativeActive&&native_creates==created_before+1&&native_rows==1);
+ native_event=FORM_NATIVE_KEYS;touch(1,100,180);int releases_before=native_releases;touch(1,100,180);assert(native_releases==releases_before&&native_buffer[strlen(native_buffer)-1]=='1');
+ native_event=0;touch(0,100,180);assert(native_releases==releases_before+1);
+ touch(1,630,30);touch(0,630,30);assert(!lcdForm.nativeActive&&native_rows==6&&lcdForm.dirty&&strchr(lcdFormDraft.values[0],'1'));
+ touch(1,500,30);touch(0,500,30);assert(!lcdForm.dirty);
+ form_touch_field(0);strcpy(native_buffer,"Anulowana nazwa");native_event=FORM_NATIVE_KEYS+KEY_exit-KEY_Q;touch(1,100,180);native_event=0;touch(0,100,180);
+ assert(!lcdForm.nativeActive&&lcdForm.editing==-1&&!lcdForm.dirty);
+
  touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
  model.ports[27].mode=HTTP_MODE_TIMER;tick+=250;LCD_HttpPanel(0,1);
  assert(SettingsOpen(28,0));LCD_HttpPanel(0,1);assert(lcdFormDraft.count==19);preview("lcd-settings-timer");
@@ -388,6 +424,9 @@ with tempfile.TemporaryDirectory() as d:
  (p/'LCD_SensorThresholds.h').write_text('enum{LCD_THRESH_UPDATE=0,LCD_THRESH_ENTER=1,LCD_THRESH_EXIT=2,LCD_THRESH_BACK=2};extern unsigned lcdThresholdPort,lcdThresholdHumidity;int LCD_SensorThresholds(uint8_t);')
  (p/'SCREEN_Navigation.h').write_text('void SCREEN_NavigationRestore(void);void SCREEN_NavigationEnter(uint32_t,int);')
  (p/'support.h').write_text(SUPPORT)
+ keyboard_ast=ast.parse((ROOT/'tests/lcd_sensor_thresholds_test.py').read_text())
+ keyboard_resources=ast.literal_eval(next(n.value for n in keyboard_ast.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='resources' for t in n.targets)))
+ (p/'Keyboard.h').write_text(keyboard_resources['Keyboard.h'].replace('test_support.h','support.h'))
  for n in ['SCREEN_ReadPanel.h','LCD_BasicGraphics.h','LCD_fonts_images.h','LCD_Hardware.h','touch.h']:(p/n).write_text('#include "support.h"\n')
  (p/'SCREEN_TemperaturePk.h').write_text('enum{LCD_TEMP_UPDATE=0,LCD_TEMP_ENTER=1,LCD_TEMP_EXIT=2};\n')
  (p/'wwwPages.h').write_text(mode)

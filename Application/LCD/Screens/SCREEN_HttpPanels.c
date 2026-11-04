@@ -9,6 +9,7 @@
 #include "touch.h"
 #include "SCREEN_Navigation.h"
 #include "LCD_SensorThresholds.h"
+#include "Keyboard.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -383,6 +384,64 @@ static void Measurement ( int w, int h, int x, int y, int width, const char *val
 		Text ( w, h, ui.font[0], unit_x + degree, unit_y, unit_width - degree, unit, color );
 	}
 }
+static int PortNameLines ( const char *name, int font, char lines[2][96] )
+{
+	char remaining[96];
+	snprintf ( remaining, sizeof remaining, "%s", name );
+	for ( int row = 0; row < 2; ++row )
+	{
+		if ( LCD_GetWholeStrPxlWidth ( font, remaining, 0, NoConstWidth ) <= 198 )
+		{
+			strcpy ( lines[row], remaining );
+			return row + 1;
+		}
+		if ( row )
+			return 0;
+		size_t fit = 0, space = 0;
+		for ( size_t next = 0; remaining[next]; )
+		{
+			++next;
+			while ( ( (unsigned char) remaining[next] & 0xC0 ) == 0x80 )
+				++next;
+			memcpy ( lines[row], remaining, next );
+			lines[row][next] = 0;
+			if ( LCD_GetWholeStrPxlWidth ( font, lines[row], 0, NoConstWidth ) > 198 )
+				break;
+			fit = next;
+			if ( remaining[next] == ' ' )
+				space = next;
+		}
+		if ( space )
+			fit = space;
+		if ( !fit )
+			return 0;
+		memcpy ( lines[row], remaining, fit );
+		lines[row][fit] = 0;
+		while ( remaining[fit] == ' ' )
+			++fit;
+		memmove ( remaining, remaining + fit, strlen ( remaining + fit ) + 1 );
+	}
+	return 0;
+}
+static void PortName ( int w, int h, const char *name )
+{
+	char lines[2][96];
+	int font = ui.font[1], count = PortNameLines ( name, font, lines );
+	if ( !count )
+	{
+		font = ui.font[0];
+		count = PortNameLines ( name, font, lines );
+	}
+	if ( !count )
+	{
+		Text ( w, h, font, 14, 24, 198, name, WHITE );
+		return;
+	}
+	int step = LCD_GetFontHeight ( font ) + 2;
+	int y = ( h - ( count * step - 2 ) ) / 2;
+	for ( int row = 0; row < count; ++row )
+		Text ( w, h, font, 14, y + row * step, 198, lines[row], WHITE );
+}
 static void CopyTile ( int index )
 {
 	int y = ui.tiles[index].y - ui.scroll;
@@ -419,8 +478,7 @@ static void Tile ( int index )
 	{
 		unsigned shown = ShownMode ( (unsigned) port );
 		int same = shown == p->mode;
-		Text ( w, h, ui.font[1], 14, 10, 198, p->name, WHITE );
-		Text ( w, h, ui.font[0], 14, 36, 198, "Nazwa portu", MUTED );
+		PortName ( w, h, p->name );
 		int selected = ui.modePressed == port || ui.menuPort == port;
 		TileRound ( w, 224, 16, 160, 36, 4, selected ? 0xFFAAC765U : 0xFFBBBBBBU, selected ? 0xFFAAC765U : 0xFFBBBBBBU );
 		Text ( w, h, ui.font[0], 234, 25, 122, ModeName ( shown ), 0xFF111111U );
@@ -762,7 +820,10 @@ static int SettingsReturn ( void )
 	if ( settingsModal == 1 )
 		LCD_SensorThresholds ( LCD_THRESH_EXIT );
 	else
+	{
+		FormNativeStop ();
 		HTTP_LCDFormClose ();
+	}
 	settingsModal = 0;
 	int result = LCD_HttpPanel ( LCD_TEMP_ENTER, 1 );
 	if ( result >= 0 )
@@ -781,7 +842,10 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		if ( settingsModal == 1 )
 			LCD_SensorThresholds ( LCD_THRESH_EXIT );
 		if ( settingsModal == 2 )
+		{
+			FormNativeStop ();
 			HTTP_LCDFormClose ();
+		}
 		settingsModal = 0;
 		ui.active = 0;
 		ui.capture = 0;

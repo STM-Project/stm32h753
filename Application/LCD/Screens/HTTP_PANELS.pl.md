@@ -238,3 +238,13 @@ ale nie zmienia typu portu. Zapisz w naglowku /set zatwierdza lokalne typy.
 Zapis parametrow wykrywa rownolegla zmiane aktywnego typu przez HTTP.
 Sterowanie wartoscia PWM pozostaje niedostepne dla niezapisanego typu PWM;
 podglad konfiguracji nie moze uruchamiac wyjscia pracujacego w innym trybie.
+
+W liscie /set usunieto szary podpis "Nazwa portu". Sama nazwa jest wyrownana
+w pionie i zawijana do najwyzej dwoch wierszy. Jesli dwa wiersze nie wystarcza,
+uzywana jest mniejsza, juz zaladowana czcionka Arial 12. Zawijanie uwzglednia
+spacje i granice znakow UTF-8; szerokosc obszaru nazwy i pozostale kontrolki
+pozostaja bez zmian.
+Edycja nazw korzysta z oryginalnego Keyboard.c: KEYBOARD_StartUp oraz
+KEYBOARD__ServiceSetTxt, z obsluga przytrzymania, Gotowe/Anuluj i limitu pola.
+Dwa bajty metadanych kursora klawiatury nie sa kopiowane do zapisu ustawien.
+Nie zmieniano implementacji Keyboard.c ani konfiguracji CubeMX.
