@@ -157,6 +157,31 @@ int main(void){
   HTTP_LCDFormClose();
  }
  puts("PASS: relay/IR names, timer schedule/days and thermostat sensor/threshold/hysteresis/delay save through the shared HTTP model for every output.");
+ /* Every allowed dropdown choice can be opened before committing its type. */
+ for(unsigned port=1;port<=33;port++)for(unsigned selected=0;selected<=13;selected++){
+  if(!FormModeAllowed(port,selected))continue;
+  modes[port-1]=HTTP_MODE_DISABLED;
+  assert(HTTP_LCDFormOpenMode(port,selected,0));HTTP_LCDFormService(12000+port*20+selected);
+  assert(HTTP_LCDFormRead(&read_form)&&read_form.mode==selected&&read_form.port==port);
+  assert(modes[port-1]==HTTP_MODE_DISABLED);HTTP_LCDFormClose();
+ }
+ assert(!HTTP_LCDFormOpenMode(1,HTTP_MODE_RELAY,0));assert(!HTTP_LCDFormOpenMode(15,HTTP_MODE_TEMP,0));
+ char stored_mode_before[8];snprintf(stored_mode_before,sizeof stored_mode_before,"%s",HTTP_SettingsGetByName(page,0,"n_GPIO_val_028"));
+ modes[27]=HTTP_MODE_RELAY;assert(HTTP_LCDFormOpenMode(28,HTTP_MODE_TIMER,0));HTTP_LCDFormService(14000);assert(HTTP_LCDFormRead(&base_form));
+ assert(base_form.mode==HTTP_MODE_TIMER&&!strcmp(base_form.page->route,"/tim"));draft_form=base_form;
+ strcpy(draft_form.values[0],"08:30:00");strcpy(draft_form.values[16],"Parametry bez zmiany typu");
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(14001);assert(HTTP_LCDFormRead(&read_form)&&read_form.status==LCD_FORM_SAVED);
+ assert(modes[27]==HTTP_MODE_RELAY&&!strcmp(read_form.values[0],"08:30:00"));
+ assert(!strcmp(stored_mode_before,HTTP_SettingsGetByName(page,0,"n_GPIO_val_028")));
+ base_form=read_form;draft_form=base_form;strcpy(draft_form.values[0],"09:00:00");modes[27]=HTTP_MODE_THERMOSTAT;
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(14002);assert(HTTP_LCDFormRead(&read_form)&&read_form.status==LCD_FORM_CONFLICT);
+ assert(!strcmp(read_form.values[0],"08:30:00"));HTTP_LCDFormClose();
+ /* A preview of PWM must not activate PWM on a live relay output. */
+ modes[20]=HTTP_MODE_RELAY;assert(HTTP_LCDFormOpenMode(21,HTTP_MODE_PWM,0));HTTP_LCDFormService(15000);assert(HTTP_LCDFormRead(&base_form));draft_form=base_form;
+ RelayStates unchanged=*RELAY_GetStates();draft_form.pwm=54;
+ assert(HTTP_LCDFormSave(&base_form,&draft_form));HTTP_LCDFormService(15001);assert(HTTP_LCDFormRead(&read_form)&&read_form.status==LCD_FORM_CONFLICT);
+ assert(!memcmp(&unchanged,RELAY_GetStates(),sizeof unchanged));HTTP_LCDFormClose();
+ puts("PASS: all port dropdown drafts open without mode writes; preview settings save independently; concurrent mode changes conflict; preview PWM never drives a relay.");
  assert(HTTP_SettingsModelInit(load,save,NULL)==1);
  uint16_t saved_instance=0;const HTTP_SettingPage*saved_adc=HTTP_SettingsCatalogFind("/nap001",&saved_instance);
  assert(saved_adc&&saved_instance==1&&!strcmp(HTTP_SettingsGet(saved_adc,1,&saved_adc->fields[300]),"Volt"));

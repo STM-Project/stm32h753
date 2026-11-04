@@ -6,7 +6,7 @@
 #endif
 static HTTP_LCDFormData form_published FORM_SDRAM, form_request FORM_SDRAM;
 static char form_target[HTTP_SETTINGS_TARGET_MAX + 1u] FORM_SDRAM;
-static unsigned form_operation, form_active, form_port, form_names;
+static unsigned form_operation, form_active, form_port, form_names, form_mode, form_base_mode;
 static uint32_t form_serial, form_last;
 /* SDRAM is NOLOAD on H7. Readiness must live in zeroed internal BSS, not in
  * form_published, whose serial/revision may survive reset or contain garbage. */
@@ -66,9 +66,38 @@ unsigned HTTP_LCDFormFieldIndex ( const HTTP_LCDFormData *data, unsigned row )
 {
 	return data->names_only ? data->port - 1 : row;
 }
+static int FormModeAllowed ( unsigned port, unsigned mode )
+{
+	uint16_t instance = 0;
+	const HTTP_SettingPage *page = HTTP_SettingsCatalogFind ( "/set", &instance );
+	char name[32], code[4];
+	if ( !page || mode > 13 )
+		return 0;
+	snprintf ( name, sizeof name, "n_GPIO_val_%03u", port );
+	snprintf ( code, sizeof code, "%02u", mode );
+	for ( unsigned i = 0; i < page->field_count; ++i )
+		if ( !strcmp ( page->fields[i].name, name ) )
+		{
+			const char *choice = page->fields[i].choices;
+			while ( choice && *choice )
+			{
+				if ( !strncmp ( choice, code, 2 ) && ( !choice[2] || choice[2] == '|' ) )
+					return 1;
+				choice = strchr ( choice, '|' );
+				if ( choice )
+					++choice;
+			}
+			return 0;
+		}
+	return 0;
+}
 uint32_t HTTP_LCDFormOpen ( unsigned port, int names_only )
 {
-	if ( port < 1 || port > 33 )
+	return HTTP_LCDFormOpenMode ( port, 255, names_only );
+}
+uint32_t HTTP_LCDFormOpenMode ( unsigned port, unsigned mode, int names_only )
+{
+	if ( port < 1 || port > 33 || ( mode != 255 && !FormModeAllowed ( port, mode ) ) )
 		return 0;
 	taskENTER_CRITICAL ();
 	uint32_t serial = 0;
@@ -79,6 +108,7 @@ uint32_t HTTP_LCDFormOpen ( unsigned port, int names_only )
 		serial = form_serial;
 		form_port = port;
 		form_names = !!names_only;
+		form_mode = mode;
 		form_active = 1;
 		form_operation = 1;
 	}
@@ -187,11 +217,14 @@ static int FormEncode ( size_t *used, const char *text )
 static int FormCommit ( void )
 {
 	uint16_t instance_now = 0;
-	if ( form_request.page != HTTP_LCDFormRoute ( form_request.port, HTTP_SettingsPortMode ( form_request.port ), form_request.names_only, &instance_now ) || instance_now != form_request.instance ||
-		 HTTP_SettingsPortMode ( form_request.port ) != form_request.mode || FormHash ( &form_request ) != form_request.hash )
+	if ( form_request.page != HTTP_LCDFormRoute ( form_request.port, form_request.mode, form_request.names_only, &instance_now ) || instance_now != form_request.instance ||
+		 HTTP_SettingsPortMode ( form_request.port ) != form_base_mode || FormHash ( &form_request ) != form_request.hash )
 		return LCD_FORM_CONFLICT;
 	if ( form_request.mode == HTTP_MODE_PWM && form_pwm_changed )
 	{
+		/* Configuring an inactive type must never drive a live output. */
+		if ( form_base_mode != HTTP_MODE_PWM )
+			return LCD_FORM_CONFLICT;
 		const RelayState *state = RELAY_GetState ( form_request.port );
 		unsigned current = state && state->pwm_valid ? state->pwm_percent : 0;
 		if ( current != form_pwm_base )
@@ -260,7 +293,8 @@ void HTTP_LCDFormService ( uint32_t now )
 	{
 		form_published.serial = form_serial;
 		form_published.port = form_port;
-		form_published.mode = HTTP_SettingsPortMode ( form_port );
+		form_base_mode = HTTP_SettingsPortMode ( form_port );
+		form_published.mode = form_mode == 255 ? form_base_mode : form_mode;
 		form_published.names_only = form_names;
 		form_published.page = HTTP_LCDFormRoute ( form_port, form_published.mode, form_names, &form_published.instance );
 		if ( form_published.page && !strcmp ( form_published.page->route, "/set" ) )

@@ -23,6 +23,8 @@ typedef struct
 } HTTP_LCDFormData;
 /* GUI only passes messages/copies; model and SD remain in the WiFi owner. */
 uint32_t HTTP_LCDFormOpen ( unsigned port, int names_only );
+/* Open the form for a local /set dropdown draft without committing its mode. */
+uint32_t HTTP_LCDFormOpenMode ( unsigned port, unsigned mode, int names_only );
 void HTTP_LCDFormClose ( void );
 int HTTP_LCDFormRead ( HTTP_LCDFormData *out );
 int HTTP_LCDFormSave ( const HTTP_LCDFormData *base, const HTTP_LCDFormData *draft );

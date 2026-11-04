@@ -158,9 +158,9 @@ Obrys kafelków odczytu ma 3 px, ustawień pozostaje 2 px.
 
 ## Edytory portow pod panelem /set
 
-Przycisk z numerem portu otwiera konfiguracje dla zapisanego typu. Najpierw
-nalezy zatwierdzic zmiane typu przyciskiem Zapisz w /set. Po wejsciu i powrocie
-pozostaje poprzednie polozenie listy. Strzalki next/prev sa w edytorze wylaczone.
+Przycisk z numerem portu otwiera konfiguracje dla typu aktualnie wybranego
+w dropdownie, takze przed jego zapisem. Po wejsciu i powrocie pozostaje lokalny
+wybor typu oraz poprzednie polozenie listy. Strzalki next/prev sa w edytorze wylaczone.
 Ekran 10 progow nie jest w petli next/prev: 9 → 11 oraz 11 → 9.
 Progi temperatury/RH/PT1000 otwieraja istniejacy LCD_SensorThresholds dla
 wskazanego portu, z przyciskiem Wroc. Zapis i Odrzuc dzialaja jak dotychczas.
@@ -198,9 +198,9 @@ w zakresie formularza, nazwa pojedynczego portu nie kasuje innych nazw.
 Odczyt HTTP wraca automatycznie do czystego edytora, szkic wymaga Zapisz lub
 Odrzuc. GUI nie wywoluje bezposrednio funkcji modelu ani FatFs.
 
-Sprawdzone wejście do ustawień portu: na ekranie LCD `/set` wybierz typ,
-zapisz go przyciskiem `Zapisz` w nagłówku, następnie dotknij przycisku
-z numerem portu obok listy typu. Przekaźnik i IR otwierają opisy/nazwy,
+Sprawdzone wejście do ustawień portu: na ekranie LCD `/set` wybierz typ
+i od razu dotknij przycisku z numerem portu obok listy typu. Samo otwarcie
+formularza nie zapisuje typu; zatwierdza go przycisk `Zapisz` w nagłówku /set. Przekaźnik i IR otwierają opisy/nazwy,
 timer dodatkowo cztery pary godzin i dni tygodnia, a termostat wybór czujnika,
 próg, histerezę i czas reakcji. Długie formularze mają przewijanie.
 Testy obejmują dotknięcie tych przycisków dla wszystkich fizycznych wyjść
@@ -231,3 +231,10 @@ przelaczania portow. Zachowane sa Wroc, Zapisz i Odrzuc. Ukryta wilgotnosc
 nie jest edytowana ani zerowana podczas zapisu samej temperatury.
 Znacznik braku RH '--%' jest normalizowany do '--- %'; jednostka jest rysowana
 jednokrotnie mala czcionka, takze dla brakujacego pomiaru.
+
+Dziala to dla wszystkich 33 portow i wszystkich dopuszczonych opcji dropdownu.
+Zapisz wewnatrz podstrony zapisuje jej parametry przez wspolny model HTTP/SD,
+ale nie zmienia typu portu. Zapisz w naglowku /set zatwierdza lokalne typy.
+Zapis parametrow wykrywa rownolegla zmiane aktywnego typu przez HTTP.
+Sterowanie wartoscia PWM pozostaje niedostepne dla niezapisanego typu PWM;
+podglad konfiguracji nie moze uruchamiac wyjscia pracujacego w innym trybie.

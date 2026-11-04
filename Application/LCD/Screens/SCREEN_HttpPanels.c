@@ -54,7 +54,7 @@ static struct
 /* Local edits survive next/prev navigation, but not a power cycle. */
 static struct
 {
-	int initialized, saveError, saved, openError;
+	int initialized, saveError, saved;
 	int8_t draftMode[HTTP_LCD_PORTS];
 	uint8_t draftBase[HTTP_LCD_PORTS];
 	uint32_t saving;
@@ -557,10 +557,6 @@ static void Header ( void )
 			notice = "Nie zapisano ustawien. Sprawdz SD lub ponow wybor.";
 			notice_color = 0xFFFF8888U;
 		}
-		else if ( edit.openError )
-		{
-			notice = "Najpierw Zapisz wybrany typ portu, potem otworz ustawienia.";
-		}
 		else if ( edit.saved )
 		{
 			notice = "Zapisano na SD. Ustawienia sa dostepne w HTTP.";
@@ -711,7 +707,6 @@ static void MenuTouch ( int down, XY_Touch_Struct position )
 			edit.draftMode[port] = ui.menuModes[hit] == ui.data.ports[port].mode ? -1 : (int8_t) ui.menuModes[hit];
 			edit.saveError = 0;
 			edit.saved = 0;
-			edit.openError = 0;
 			Header ();
 		}
 		ui.menuPort = 0;
@@ -742,17 +737,11 @@ static void Pwm ( int x )
 }
 static int SettingsOpen ( unsigned port, int names )
 {
-	if ( !names && ShownMode ( port ) != ui.data.ports[port - 1].mode )
-	{
-		edit.openError = 1;
-		Header ();
-		return 0;
-	}
 	settingsReturnScroll = ui.scroll;
 	SCREEN_NavigationRestore ();
 	LCD_TOUCH_DeleteAllSetTouch ();
 	ui.pressed = -1;
-	unsigned mode = ui.data.ports[port - 1].mode;
+	unsigned mode = ShownMode ( port );
 	if ( !names && ( mode == HTTP_MODE_TEMP || mode == HTTP_MODE_TEMP_RHU || mode == HTTP_MODE_PT1000 ) )
 	{
 		settingsModal = 1;
@@ -919,7 +908,6 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 					edit.saving = HTTP_LCDPanelSaveModes ( changed, modes, edit.draftBase );
 					edit.saveError = !edit.saving;
 					edit.saved = 0;
-					edit.openError = 0;
 				}
 				Header ();
 			}

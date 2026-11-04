@@ -42,8 +42,8 @@ int LCD_SensorThresholds(uint8_t m){if(m==1)threshold_active=1;if(m==2)threshold
 static HTTP_LCDFormData formModel;
 static int form_read_delay;
 unsigned HTTP_LCDFormFieldIndex(const HTTP_LCDFormData*d,unsigned row){return d->names_only?d->port-1:row;}
-uint32_t HTTP_LCDFormOpen(unsigned port,int names){
- static unsigned serial;memset(&formModel,0,sizeof formModel);formModel.serial=++serial;formModel.port=port;formModel.mode=model.ports[port-1].mode;
+uint32_t HTTP_LCDFormOpenMode(unsigned port,unsigned mode,int names){
+ static unsigned serial;memset(&formModel,0,sizeof formModel);formModel.serial=++serial;formModel.port=port;formModel.mode=mode;
  formModel.page=HTTP_LCDFormRoute(port,formModel.mode,names,&formModel.instance);assert(formModel.page);
  formModel.names_only=names||!strcmp(formModel.page->route,"/set");formModel.count=formModel.names_only?1:formModel.page->field_count;formModel.status=LCD_FORM_READY;formModel.hash=1;
  for(unsigned i=0;i<formModel.count;i++)snprintf(formModel.values[i],HTTP_LCD_FORM_VALUE,"%s",formModel.page->fields[HTTP_LCDFormFieldIndex(&formModel,i)].default_value);
@@ -194,6 +194,8 @@ int main(void){
  whole=viewport_draws;
  touch(1,CONTENT_X+410,TOP+30);assert(ui.pressed==1);preview("lcd-http-settings-pressed");
  touch(0,CONTENT_X+410,TOP+30);assert(ui.pressed==-1&&ui.settings==1&&viewport_draws==whole);
+ assert(LCD_HttpPanelModal()&&threshold_active&&lcdThresholdPort==1);threshold_back=1;LCD_HttpPanel(0,1);
+ assert(!LCD_HttpPanelModal()&&ShownMode(1)==HTTP_MODE_PT1000&&model.ports[0].mode==HTTP_MODE_TEMP);
  touch(1,CONTENT_X+410,TOP+30);touch(1,CONTENT_X+410,TOP+90);touch(0,CONTENT_X+410,TOP+90);assert(ui.scroll==0); /* clamp at top */
  touch(1,100,400);touch(1,100,120);touch(0,100,120);assert(ui.scroll>0);
  touch(1,746,75);touch(1,746,439);touch(0,746,439);assert(ui.scroll==Maximum());preview("lcd-http-settings-bottom");
@@ -324,6 +326,33 @@ int main(void){
   assert(SettingsOpen(other_forms[i].port,0));LCD_HttpPanel(0,1);check_form_geometry();preview(other_forms[i].preview);
   touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
  }
+ /* Real dropdown -> numeric button -> chosen editor -> Back for every port
+    and every supported option. No header Save is issued during this sequence. */
+ int mode_saves_before=save_calls;
+ for(unsigned port=1;port<=33;port++){
+  model.ports[port-1].mode=HTTP_MODE_DISABLED;edit.draftMode[port-1]=-1;tick+=250;LCD_HttpPanel(0,1);
+  uint8_t options[6];unsigned option_count=ModeOptions(port,options);
+  for(unsigned option=0;option<option_count;option++){
+   int tile=-1;for(int i=0;i<ui.count;i++)if((unsigned)ui.tiles[i].port==port)tile=i;assert(tile>=0);
+   ui.scroll=Clamp(ui.tiles[tile].y,0,Maximum());ui.full=ui.dirty=1;LCD_HttpPanel(0,1);
+   int y=TOP+ui.tiles[tile].y-ui.scroll+30;
+   touch(1,CONTENT_X+240,y);touch(0,CONTENT_X+240,y);assert(ui.menuPort==(int)port);
+   int mx=ui.menuX+20,my=ui.menuY+2+(int)option*MENU_ITEM+MENU_ITEM/2;
+   touch(1,mx,my);touch(0,mx,my);assert(ShownMode(port)==options[option]);
+   assert(model.ports[port-1].mode==HTTP_MODE_DISABLED&&save_calls==mode_saves_before);
+   touch(1,CONTENT_X+410,y);touch(0,CONTENT_X+410,y);assert(LCD_HttpPanelModal());
+   if(options[option]==HTTP_MODE_TEMP||options[option]==HTTP_MODE_TEMP_RHU||options[option]==HTTP_MODE_PT1000){
+    assert(threshold_active&&lcdThresholdPort==port&&lcdThresholdHumidity==(unsigned)(options[option]==HTTP_MODE_TEMP_RHU));threshold_back=1;LCD_HttpPanel(0,1);
+   }else{
+    LCD_HttpPanel(0,1);assert(lcdFormDraft.mode==options[option]);
+    if(options[option]==HTTP_MODE_PWM&&FormModePending()){FormControl b;assert(FormControlAt(lcdFormDraft.count,&b));assert(FormControlHit(b.x+b.w/2,b.y+44)==-1);}
+    touch(1,70,30);touch(0,70,30);
+   }
+   assert(!LCD_HttpPanelModal()&&ShownMode(port)==options[option]);
+   assert(model.ports[port-1].mode==HTTP_MODE_DISABLED&&save_calls==mode_saves_before);
+  }
+ }
+ puts("PASS: all 33 ports open the dropdown draft before Save, preserve it after Back and never commit the port type implicitly.");
  puts("PASS: relay/IR, timer and thermostat editors open by touch for every physical output, with scrolling and Back.");
  assert(LCD_HttpPanel(2,1)==0);
  for(int dir=-1;dir<=1;dir+=2){

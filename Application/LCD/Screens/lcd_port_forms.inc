@@ -11,6 +11,10 @@ static struct
 	uint32_t serial, sample;
 	char text[HTTP_LCD_FORM_VALUE], notice[96];
 } lcdForm;
+static int FormModePending ( void )
+{
+	return lcdFormDraft.port >= 1 && lcdFormDraft.port <= HTTP_LCD_PORTS && lcdFormDraft.mode != ui.data.ports[lcdFormDraft.port - 1].mode;
+}
 static int FormLoading ( void )
 {
 	return lcdFormBase.serial != lcdForm.serial;
@@ -425,7 +429,7 @@ static void FormDraw ( void )
 		{
 			TileRound ( W, box.x, 24, box.w, 40, 4, WHITE, WHITE );
 			snprintf ( label, sizeof label, "%u", lcdFormDraft.pwm );
-			Text ( W, 64, ui.font[1], box.x + 8, 33, box.w - 16, FormLoading () ? "..." : label, VALUE_BLACK );
+			Text ( W, 64, ui.font[1], box.x + 8, 33, box.w - 16, FormLoading () ? "..." : FormModePending () ? "Najpierw Zapisz typ w /set" : label, VALUE_BLACK );
 		}
 		else
 			FormValueBox ( box.x, 24, box.w, field );
@@ -448,7 +452,7 @@ static int FormControlHit ( int x, int content_y )
 	FormControl box;
 	for ( unsigned field = 0; FormControlAt ( field, &box ); ++field )
 		if ( x >= box.x && x < box.x + box.w && content_y >= box.y + 24 && content_y < box.y + box.h )
-			return (int) field;
+			return field == lcdFormDraft.count && FormModePending () ? -1 : (int) field;
 	return -1;
 }
 
@@ -551,7 +555,8 @@ static void FormPaint ( void )
 }
 static int FormOpen ( unsigned port, int names )
 {
-	uint32_t serial = HTTP_LCDFormOpen ( port, names );
+	unsigned mode = names ? ui.data.ports[port - 1].mode : ShownMode ( port );
+	uint32_t serial = HTTP_LCDFormOpenMode ( port, mode, names );
 	if ( !serial )
 		return 0;
 	memset ( &lcdForm, 0, sizeof lcdForm );
@@ -568,7 +573,7 @@ static int FormOpen ( unsigned port, int names )
 	lcdForm.keyPressed = -1;
 	lcdForm.wasDown = LCD_TOUCH_isPress () == press;
 	lcdFormDraft.port = port;
-	lcdFormDraft.mode = ui.data.ports[port - 1].mode;
+	lcdFormDraft.mode = mode;
 	lcdFormDraft.names_only = !!names;
 	lcdFormDraft.page = HTTP_LCDFormRoute ( port, lcdFormDraft.mode, names, &lcdFormDraft.instance );
 	if ( lcdFormDraft.page )
@@ -629,7 +634,7 @@ static int FormUpdate ( void )
 			lcdForm.pending = 0;
 			if ( lcdFormLatest.status == LCD_FORM_SAVED )
 				lcdForm.dirty = 0;
-			snprintf ( lcdForm.notice, sizeof lcdForm.notice, "%s", lcdFormLatest.status == LCD_FORM_SAVED ? "Zapisano LCD / HTTP / SD." : lcdFormLatest.status == LCD_FORM_CONFLICT ? "Zmiana HTTP. Odrzuc, Wroc i otworz ustawienia ponownie."
+			snprintf ( lcdForm.notice, sizeof lcdForm.notice, "%s", lcdFormLatest.status == LCD_FORM_SAVED ? ( FormModePending () ? "Zapisano parametry. Typ: Zapisz w /set." : "Zapisano LCD / HTTP / SD." ) : lcdFormLatest.status == LCD_FORM_CONFLICT ? "Zmiana HTTP. Odrzuc, Wroc i otworz ustawienia ponownie."
 																																	   : lcdFormLatest.status == LCD_FORM_SD_ERROR	 ? "Blad SD. Zachowano edycje."
 																																													 : "Bledna wartosc. Sprawdz zakres i format jak w HTTP." );
 			FormHeader ();
@@ -637,7 +642,7 @@ static int FormUpdate ( void )
 		if ( !lcdForm.dirty && !lcdForm.pending && lcdForm.editing < 0 && ( lcdFormBase.serial != lcdFormLatest.serial || lcdFormBase.hash != lcdFormLatest.hash || lcdFormBase.pwm != lcdFormLatest.pwm ) )
 		{
 			if ( lcdFormBase.serial != lcdFormLatest.serial )
-				snprintf ( lcdForm.notice, sizeof lcdForm.notice, "%s", lcdFormLatest.status == LCD_FORM_INVALID || !lcdFormLatest.page || !lcdFormLatest.count ? "Nie odczytano ustawien. Nacisnij Wroc i ponow." : "Dotknij pola, edytuj, potem Zapisz. Wspolne dane HTTP / SD." );
+				snprintf ( lcdForm.notice, sizeof lcdForm.notice, "%s", lcdFormLatest.status == LCD_FORM_INVALID || !lcdFormLatest.page || !lcdFormLatest.count ? "Nie odczytano ustawien. Nacisnij Wroc i ponow." : FormModePending () ? "Parametry: Zapisz tutaj. Typ portu: Zapisz w /set." : "Dotknij pola, edytuj, potem Zapisz. Wspolne dane HTTP / SD." );
 			lcdFormBase = lcdFormLatest;
 			lcdFormDraft = lcdFormLatest;
 			FormDraw ();
