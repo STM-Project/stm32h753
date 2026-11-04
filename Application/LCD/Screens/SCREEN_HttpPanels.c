@@ -354,6 +354,10 @@ static void Measurement ( int w, int h, int x, int y, int width, const char *val
 	/* Humidity is displayed as whole percent; retain the shared raw value. */
 	if ( strcmp ( unit, "%" ) == 0 )
 	{
+		/* Tolerate a legacy placeholder carrying its own percent glyph. */
+		char *percent = strchr ( number, '%' );
+		if ( percent )
+			*percent = 0;
 		char *dot = strchr ( number, '.' );
 		if ( dot )
 			*dot = 0;
@@ -753,6 +757,7 @@ static int SettingsOpen ( unsigned port, int names )
 	{
 		settingsModal = 1;
 		lcdThresholdPort = port;
+		lcdThresholdHumidity = mode == HTTP_MODE_TEMP_RHU;
 		settingsModalResult = LCD_SensorThresholds ( LCD_THRESH_ENTER );
 	}
 	else

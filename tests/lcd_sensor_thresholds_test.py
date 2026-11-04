@@ -126,7 +126,7 @@ int main(void){
  saveResult=1;HTTP_SensorSettingsInit(NULL,save,NULL);HTTP_SensorLCDService();
  assert(LCD_SensorThresholds(3)==-1);resolution=640;assert(LCD_SensorThresholds(1)==-2);resolution=800;
  fontFailure=1;assert(LCD_SensorThresholds(1)==-3);fontFailure=0;
- assert(LCD_SensorThresholds(1)==0&&ui.port==1);
+ lcdThresholdHumidity=1;assert(LCD_SensorThresholds(1)==0&&ui.port==1&&ui.columns==2);
  assert(!strcmp(ui.draft[0].name,"Temperatura")&&!strcmp(ui.draft[1].name,"Wilgotnosc"));
  uint32_t normal=pLcd[205*800+180];int fullShows=shows,oldParts=parts;
  assert(step(1,200,205)==0&&ui.pressed==1&&parts==oldParts+1&&shows==fullShows);
@@ -150,7 +150,7 @@ int main(void){
  assert(LCD_SensorThresholds(0)==0&&saveCalls==2&&ui.dirty&&!strcmp(HTTP_SensorSettingsGet(1,0)->name,"Temperatura"));
  saveResult=1;assert(click(100,440)==0&&ui.pending);HTTP_SensorLCDService();
  assert(LCD_SensorThresholds(0)==1&&saveCalls==3&&!strcmp(HTTP_SensorSettingsGet(1,0)->name,"Pomiar temperatury"));
- assert(click(750,25)==0&&ui.port==2);assert(click(570,25)==0&&ui.port==1);
+ assert(click(750,25)==0&&ui.port==1);assert(click(570,25)==0&&ui.port==1);
  assert(click(200,205)==0);tick=nativeStartTouch;touch(1,150,350);assert(LCD_SensorThresholds(0)==0&&keyboardCalls>keyboardCreates&&lastShape==0);
  assert(lastKeyEvent==TOUCH_KEYS&&strchr(ui.edit,'q')!=NULL);
  int releases=keyReleases;size_t heldLength=strlen(ui.edit);
@@ -187,7 +187,16 @@ int main(void){
  assert(HTTP_SensorSettingsInit(load,save,NULL)==1);HTTP_SensorLCDService();
  assert(HTTP_SensorSettingsGet(1,1)->max1==755&&HTTP_SensorSettingsGet(1,0)->max1==500);
  assert(click(450,25)==LCD_THRESH_BACK);
- puts("Threshold page: field validation, keyboard routing, save/cancel, port selection, shared HTTP/LCD commits, SD errors/reload, conflict protection and display bounds: PASS");
+ assert(LCD_SensorThresholds(2)==0);lcdThresholdHumidity=0;lcdThresholdPort=1;
+ assert(LCD_SensorThresholds(1)==0&&ui.columns==1&&ui.port==1);
+ assert(pLcd[100*800+25]==0xFF000000U&&pLcd[100*800+750]==0xFF000000U);
+ assert(click(750,25)==0&&ui.port==1);assert(click(570,25)==0&&ui.port==1);
+ assert(click(580,205)==0&&ui.editing==-1); /* removed humidity field */
+ edit(390,205,"26.0");assert(ui.draft[0].max1==260);
+ assert(click(100,440)==0);HTTP_SensorLCDService();assert(LCD_SensorThresholds(0)==1);
+ assert(HTTP_SensorSettingsGet(1,0)->max1==260&&HTTP_SensorSettingsGet(1,1)->max1==755);
+ assert(click(450,25)==LCD_THRESH_BACK);
+ puts("Threshold page: field validation, keyboard routing, save/cancel, fixed port, single temperature/dual RH cards, shared HTTP/LCD commits, SD errors/reload, conflict protection and display bounds: PASS");
 }
 """,
     'FreeRTOS.h': '#define taskENTER_CRITICAL() ((void)0)\n#define taskEXIT_CRITICAL() ((void)0)\n',

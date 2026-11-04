@@ -245,7 +245,15 @@ void HTTP_LCDPanelService ( const char *data, size_t length, uint32_t now )
 			{
 				char humidity[8];
 				Field ( humidity, sizeof humidity, data, length, offset + 7, 3 );
-				if ( humidity[0] >= '0' && humidity[0] <= '9' && strlen ( humidity ) == 3 )
+				/* The legacy missing-value marker may already contain '%'. Keep
+				 * the unit separate, including for '--%', so LCD draws it once. */
+				char *percent = strchr ( humidity, '%' );
+				if ( percent )
+					*percent = 0;
+				size_t digits = strlen ( humidity );
+				if ( !digits || strspn ( humidity, "0123456789" ) != digits )
+					snprintf ( p->value[1], sizeof p->value[1], "--- %%" );
+				else if ( digits == 3 )
 					snprintf ( p->value[1], sizeof p->value[1], "%c%c.%c %%", humidity[0], humidity[1], humidity[2] );
 				else
 					snprintf ( p->value[1], sizeof p->value[1], "%s %%", humidity );

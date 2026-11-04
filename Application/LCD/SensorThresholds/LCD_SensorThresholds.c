@@ -36,12 +36,13 @@ enum
 /* Only edit drafts and read snapshots live here; HTTP owns committed values. */
 static LCD_SensorThreshold readback[2];
 unsigned lcdThresholdPort = 1;
+unsigned lcdThresholdHumidity;
 volatile int lcdThresholdResult;
 
 static struct
 {
 	int initialized, active, font[3], wasDown, armed, editing, previousKey, dirty, keyPadding, keyWidth, keyHeight, pressed;
-	unsigned port;
+	unsigned port, columns;
 	int pending;
 	LCD_SensorThreshold draft[2], base[2];
 	/* Keyboard.c reserves the last TWO bytes for its cursor index. */
@@ -207,7 +208,7 @@ static void FieldText ( int column, int field, char *out, size_t size )
 }
 static void FieldRect ( int column, int field, int *x, int *y, int *w, int *h )
 {
-	int offset = column * 388;
+	int offset = ui.columns == 1 ? 194 : column * 388;
 	*h = 32;
 	if ( field == 0 )
 	{
@@ -239,20 +240,6 @@ static void PressPaint ( int id, int pressed )
 	{
 		FieldRect ( id / 8, id % 8, &x, &y, &w, &h );
 		bg = CARD;
-	}
-	else if ( id == 16 )
-	{
-		x = 552;
-		y = 9;
-		w = 44;
-		strcpy ( text, "<" );
-	}
-	else if ( id == 17 )
-	{
-		x = 732;
-		y = 9;
-		w = 44;
-		strcpy ( text, ">" );
 	}
 	else if ( id == 18 )
 	{
@@ -318,20 +305,16 @@ static int Draw ( void )
 {
 	LCD_TOUCH_DeleteAllSetTouch ();
 	Fill ( BG );
-	Text ( 1, 24, 16, "Ustawienia czujnikow", WHITE_TEXT );
+	Text ( 1, 24, 16, ui.columns == 1 ? "Ustawienia temperatury" : "Temperatura i wilgotnosc", WHITE_TEXT );
 	Button ( 404, 9, 120, "Wroc" );
 	if ( !TouchRect ( 404, 9, 120, 40, TOUCH_FIRST + 22 ) )
 		return -4;
-	Button ( 552, 9, 44, "<" );
-	Button ( 732, 9, 44, ">" );
 	char text[64];
-	snprintf ( text, sizeof ( text ), "Port %u / 20", ui.port );
+	snprintf ( text, sizeof text, "Port %u", ui.port );
 	ThresholdCenter ( 2, 664, 21, text, WHITE_TEXT );
-	if ( !TouchRect ( 552, 9, 44, 40, TOUCH_FIRST + 16 ) || !TouchRect ( 732, 9, 44, 40, TOUCH_FIRST + 17 ) )
-		return -4;
-	for ( int c = 0; c < 2; c++ )
+	for ( unsigned c = 0; c < ui.columns; c++ )
 	{
-		int x = 24 + c * 388;
+		int x = ui.columns == 1 ? 218 : 24 + (int) c * 388;
 		ThresholdRound ( x, 69, 364, 325, 30, 0xFF808080U, 0xFF808080U );
 		ThresholdRound ( x + 4, 73, 356, 317, 26, CARD, CARD );
 		snprintf ( text, sizeof ( text ), "%s Port %u", c ? "Wilgotnosc" : "Temperatura", ui.port );
@@ -497,6 +480,7 @@ int LCD_SensorThresholds ( uint8_t mode )
 		}
 		ui.port = lcdThresholdPort >= 1 && lcdThresholdPort <= 20 ? lcdThresholdPort : 1;
 		lcdThresholdPort = ui.port;
+		ui.columns = lcdThresholdHumidity ? 2 : 1;
 		ui.initialized = Reload ();
 		ui.dirty = 0;
 		ui.editing = -1;
@@ -582,7 +566,7 @@ int LCD_SensorThresholds ( uint8_t mode )
 	}
 	XY_Touch_Struct p = LCD_TOUCH_GetPos ();
 	int hit = -1;
-	for ( int c = 0; c < 2; c++ )
+	for ( unsigned c = 0; c < ui.columns; c++ )
 		for ( int f = 0; f < 8; f++ )
 		{
 			int x, y, w, h;
@@ -594,10 +578,6 @@ int LCD_SensorThresholds ( uint8_t mode )
 	{
 		if ( p.x >= 404 && p.x < 524 )
 			hit = 22;
-		if ( p.x >= 552 && p.x < 596 )
-			hit = 16;
-		if ( p.x >= 732 && p.x < 776 )
-			hit = 17;
 	}
 	if ( p.y >= 419 && p.y < 459 )
 	{
@@ -632,11 +612,5 @@ int LCD_SensorThresholds ( uint8_t mode )
 	}
 	if ( action == 22 )
 		return LCD_THRESH_BACK;
-	if ( action == 16 && ui.port > 1 )
-		ui.port--;
-	if ( action == 17 && ui.port < 20 )
-		ui.port++;
-	lcdThresholdPort = ui.port;
-	ui.initialized = Reload ();
-	return Draw ();
+	return 0;
 }

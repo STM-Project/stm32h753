@@ -15,6 +15,7 @@ enum
 /* Snapshot of committed shared settings. NULL until WiFi loads the model. */
 const LCD_SensorThreshold *LCD_SensorThresholdGet ( unsigned port, unsigned humidity );
 extern unsigned lcdThresholdPort; /* 1..20, default 1 */
+extern unsigned lcdThresholdHumidity; /* 0: temperature only; 1: temperature + RH. */
 extern volatile int lcdThresholdResult;
 /* Reads the shared HTTP settings. Save is asynchronous through the WiFi task.
  * Return 1 for successful Save, 0 otherwise; -1 mode, -2 LCD resolution,

@@ -33,7 +33,11 @@ int main(void){
  data[39+3]='0';data[58+5]='5';memcpy(data+290,"   5.125 ",9);
  memcpy(data+465,"000000000000123.456Wh",21);memcpy(data+465+23,"00000000012.34",14);
  RELAY_ResetStates();HTTP_LCDPanelActive(1);assert(wake==1&&HTTP_LCDPanelWanted());
+ memcpy(data+73+48+7,"--%",3);
  HTTP_LCDPanelService(data,sizeof data,0);assert(HTTP_LCDPanelRead(&out));
+ assert(!strcmp(out.ports[4].value[1],"--- %"));
+ memcpy(data+73+48+7,"650",3);
+ HTTP_LCDPanelService(data,sizeof data,250);assert(HTTP_LCDPanelRead(&out));
  assert(!strcmp(out.time,"12:34:56")&&!strcmp(out.ports[0].value[0],"-12.3 C"));
  assert(out.ports[0].color[0]==ALARM&&!strcmp(out.ports[4].value[1],"65.0 %"));
  assert(!strcmp(out.ports[3].value[0],"Stan ON")&&!strcmp(out.ports[5].value[0],"Uszkodzona linia"));

@@ -33,10 +33,10 @@ static HTTP_LCDPanelData model;
 static int down,active,pwm_calls,toggle_calls,save_calls,draws,viewport_draws;
 static unsigned pwm_port,pwm_percent;
 static uint32_t tick;
-static int check_description,description_lines,check_measurement,number_count,unit_count;
+static int check_description,description_lines,check_measurement,number_count,unit_count,check_percent,percent_count;
 static XY_Touch_Struct pos;
 XY_Touch_Struct screenTouchPos;
-unsigned lcdThresholdPort;static int threshold_active,threshold_back,form_save_calls;
+unsigned lcdThresholdPort,lcdThresholdHumidity;static int threshold_active,threshold_back,form_save_calls;
 void SCREEN_NavigationRestore(void){}void SCREEN_NavigationEnter(uint32_t now,int d){(void)now;(void)d;}
 int LCD_SensorThresholds(uint8_t m){if(m==1)threshold_active=1;if(m==2)threshold_active=0;if(m==0&&threshold_back){threshold_back=0;return LCD_THRESH_BACK;}return 0;}
 static HTTP_LCDFormData formModel;
@@ -73,6 +73,7 @@ int LCD_GetFontHeight(int font){return font==28?35:font==20?27:font==18?24:font=
 int LCD_GetFontHalfHeight(int font){return LCD_GetFontHeight(font)-(font>=20?7:4);}
 int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==28?4:f==20?2:f==18?3:f==16?1:0][(unsigned char)*t];return n;}
 void LCD_StrChangeColorWindow(uint32_t offset,uint32_t w,uint32_t h,int font,int x,int y,char*t,int only,int space,uint32_t bg,uint32_t color,uint8_t a,int fixed){
+ if(check_percent&&strchr(t,'%')){assert(!strcmp(t,"%")&&font==12);percent_count++;}
  if(check_description){assert(font==12&&y==104+description_lines*18);description_lines++;}
  if(check_measurement){if(!strcmp(t,"C")||!strcmp(t,"%")){assert(font==12&&y==43+LCD_GetFontHalfHeight(20)-LCD_GetFontHalfHeight(12));unit_count++;}else{assert(font==20&&y==43);if(number_count==1)assert(!strcmp(t,"65"));number_count++;}}
  (void)only;(void)space;(void)bg;(void)a;(void)fixed;assert(offset==SCRATCH&&offset+w*h<=800*480&&x>=0&&y>=0);
@@ -141,6 +142,8 @@ int main(void){
  live_update();
  check_description=1;Description(216,166,104,"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");check_description=0;assert(description_lines==3);
  check_measurement=1;Measurement(216,166,14,43,92,"25.6 C",WHITE,ui.font[2],0);Measurement(216,166,113,43,89,"65.0 %",WHITE,ui.font[2],2);check_measurement=0;assert(number_count==2&&unit_count==2);
+ check_percent=1;Measurement(216,166,14,43,150,"--- %",WHITE,ui.font[3],0);assert(percent_count==1);
+ Measurement(216,166,14,43,150,"--% %",WHITE,ui.font[3],0);assert(percent_count==2);check_percent=0;
  Rect(216,0,0,216,166,CARD);Degree(216,10,10,WHITE);
  assert(pLcd[SCRATCH+10*216+12]==WHITE&&pLcd[SCRATCH+12*216+12]==CARD);
  int before=draws;tick+=500;LCD_HttpPanel(0,0);assert(draws==before); /* no redraw without changes */
@@ -252,7 +255,7 @@ int main(void){
  assert((blue&255)>((blue>>16)&255)&&((red>>16)&255)>(red&255));
  /* Configuration buttons open child editors, and return to the same /set scroll. */
  assert(LCD_HttpPanel(1,1)==0);
- touch(1,CONTENT_X+410,TOP+30);touch(0,CONTENT_X+410,TOP+30);assert(LCD_HttpPanelModal()&&threshold_active&&lcdThresholdPort==1);
+ touch(1,CONTENT_X+410,TOP+30);touch(0,CONTENT_X+410,TOP+30);assert(LCD_HttpPanelModal()&&threshold_active&&lcdThresholdPort==1&&!lcdThresholdHumidity);
  threshold_back=1;LCD_HttpPanel(0,1);assert(!LCD_HttpPanelModal()&&!threshold_active&&ui.settings==1);
  model.ports[14].mode=HTTP_MODE_ADC;tick+=250;LCD_HttpPanel(0,1);
  ui.scroll=Clamp(ui.tiles[14].y,0,Maximum());ui.full=ui.dirty=1;LCD_HttpPanel(0,1);
@@ -353,7 +356,7 @@ with tempfile.TemporaryDirectory() as d:
  shutil.copy(ROOT/'Application/HTTP/http_lcd_panels.h',p/'http_lcd_panels.h')
  shutil.copy(ROOT/'Application/LPC2148/http_lpc_panel.h',p/'http_lpc_panel.h')
  for n in ['http_lcd_forms.h','http_settings_model.h','http_settings_catalog.h']:shutil.copy(ROOT/'Application/HTTP'/n,p/n)
- (p/'LCD_SensorThresholds.h').write_text('enum{LCD_THRESH_UPDATE=0,LCD_THRESH_ENTER=1,LCD_THRESH_EXIT=2,LCD_THRESH_BACK=2};extern unsigned lcdThresholdPort;int LCD_SensorThresholds(uint8_t);')
+ (p/'LCD_SensorThresholds.h').write_text('enum{LCD_THRESH_UPDATE=0,LCD_THRESH_ENTER=1,LCD_THRESH_EXIT=2,LCD_THRESH_BACK=2};extern unsigned lcdThresholdPort,lcdThresholdHumidity;int LCD_SensorThresholds(uint8_t);')
  (p/'SCREEN_Navigation.h').write_text('void SCREEN_NavigationRestore(void);void SCREEN_NavigationEnter(uint32_t,int);')
  (p/'support.h').write_text(SUPPORT)
  for n in ['SCREEN_ReadPanel.h','LCD_BasicGraphics.h','LCD_fonts_images.h','LCD_Hardware.h','touch.h']:(p/n).write_text('#include "support.h"\n')

@@ -222,3 +222,12 @@ Przewijanie pokazuje pozostale kafelki; trafienia dotyku sa obliczane z tej
 samej geometrii co rysowanie. Biale pola i przyciski pozostaja bez gradientu.
 Ramki i kafelki powstaja funkcjami graficznymi, bez bitmap i nowego framebuffera.
 Model HTTP, walidacja, zapis SD, klawiatura i listy wyboru pozostaja wspolne.
+
+Dla trybu Temperatura oraz Pt1000 panel progow pokazuje jeden wycentrowany
+kafelek temperatury. Tryb Temperatura + RHU zachowuje kafelek wilgotnosci.
+Rodzic przekazuje wariant przez lcdThresholdHumidity, bez odczytu modelu HTTP
+z zadania LCD. Formularz dotyczy portu wybranego w /set: nie ma strzalek
+przelaczania portow. Zachowane sa Wroc, Zapisz i Odrzuc. Ukryta wilgotnosc
+nie jest edytowana ani zerowana podczas zapisu samej temperatury.
+Znacznik braku RH '--%' jest normalizowany do '--- %'; jednostka jest rysowana
+jednokrotnie mala czcionka, takze dla brakujacego pomiaru.
