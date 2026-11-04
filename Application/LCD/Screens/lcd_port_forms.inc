@@ -7,7 +7,7 @@
 static HTTP_LCDFormData lcdFormBase LCD_FORM_SDRAM, lcdFormDraft LCD_FORM_SDRAM, lcdFormLatest LCD_FORM_SDRAM;
 static struct
 {
-	int nativeActive, nativePrevious;
+	int nativeActive, nativePrevious, nativePressed;
 	int active, dirty, pending, scroll, startScroll, startY, wasDown, armed, moved, drag, editing, selection, upper, polish, keyPressed;
 	uint32_t serial, sample;
 	char text[HTTP_LCD_FORM_VALUE], notice[96];
@@ -513,6 +513,9 @@ static void FormNativeDraw ( void )
 	FormHeader ();
 	KEYBOARD_SetTextRows ( 1 );
 	lcdForm.nativeActive = 1;
+	lcdForm.nativePressed = -1;
+	lcdForm.drag = lcdForm.moved = 0;
+	lcdForm.armed = -1;
 	FormNativeKey ( KEY_All_release, 1 );
 	/* Keyboard.c presents its own windows using pLcd as scratch. */
 }
@@ -672,6 +675,68 @@ static void FormFinishEdit ( int commit )
 	snprintf ( lcdForm.notice, sizeof lcdForm.notice, "Zmieniono lokalnie. Nacisnij Zapisz." );
 	FormDraw ();
 }
+/* Native text editing owns its complete touch cycle, just like the sensor
+ * editor. It must never fall through into the form's scroll/drag painter. */
+static void FormNativeButton ( int action, int pressed )
+{
+	if ( action > -10 || action < -12 )
+		return;
+	int x = action == -10 ? 36 : action == -11 ? 436 : 588;
+	int width = action == -10 ? 108 : action == -11 ? 120 : 136;
+	FormButton ( x, width, action == -10 ? "Anuluj" : action == -11 ? "Wyczysc" : "Gotowe", pressed );
+	LCD_DisplayBuffStride ( (uint32_t) x, 14, (uint32_t) width, 36, pLcd + SCRATCH + 14 * W + x, W );
+}
+static void FormNativeUpdate ( int down, uint16_t event, XY_Touch_Struct position )
+{
+	if ( down && event >= FORM_NATIVE_KEYS && event < FORM_NATIVE_KEYS + 36 )
+	{
+		int key = KEY_Q + event - FORM_NATIVE_KEYS;
+		if ( lcdForm.nativePrevious && lcdForm.nativePrevious != key )
+			FormNativeKey ( KEY_All_release, 0 );
+		/* Forward repeats, including exit's native long-press clear action. */
+		FormNativeKey ( key, 0 );
+		lcdForm.nativePrevious = key;
+	}
+	else if ( !down && lcdForm.nativePrevious )
+	{
+		FormNativeKey ( KEY_All_release, 0 );
+		lcdForm.nativePrevious = 0;
+	}
+	int hit = -1;
+	if ( position.y >= 14 && position.y < 50 )
+	{
+		if ( position.x >= 36 && position.x < 144 )
+			hit = -10;
+		else if ( position.x >= 436 && position.x < 556 )
+			hit = -11;
+		else if ( position.x >= 588 && position.x < 724 )
+			hit = -12;
+	}
+	if ( down && !lcdForm.wasDown )
+		lcdForm.armed = hit;
+	int pressed = down && hit == lcdForm.armed ? hit : -1;
+	if ( pressed != lcdForm.nativePressed )
+	{
+		FormNativeButton ( lcdForm.nativePressed, 0 );
+		lcdForm.nativePressed = pressed;
+		FormNativeButton ( pressed, 1 );
+	}
+	int action = !down && lcdForm.wasDown && hit == lcdForm.armed ? hit : -1;
+	lcdForm.wasDown = down;
+	if ( !down )
+		lcdForm.armed = -1;
+	if ( action == -10 || action == -12 )
+		FormFinishEdit ( action == -12 );
+	else if ( action == -11 )
+	{
+		/* Use the original clear action to reset its cursor/line bookkeeping
+		 * and refresh the text field without recreating the keyboard. */
+		for ( unsigned repeat = 0; repeat < 12; ++repeat )
+			FormNativeKey ( KEY_exit, 0 );
+		FormNativeKey ( KEY_All_release, 0 );
+		lcdForm.nativePrevious = 0;
+	}
+}
 static int FormUpdate ( void )
 {
 	int latest_valid = 0;
@@ -705,33 +770,13 @@ static int FormUpdate ( void )
 			FormDraw ();
 		}
 	}
-	XY_Touch_Struct position = LCD_TOUCH_GetPos ();
 	uint16_t native_touch = LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
+	XY_Touch_Struct position = LCD_TOUCH_GetPos ();
 	int down = LCD_TOUCH_isPress () == press, hit = -1;
 	if ( lcdForm.nativeActive )
 	{
-		if ( down && native_touch >= FORM_NATIVE_KEYS && native_touch < FORM_NATIVE_KEYS + 36 )
-		{
-			int key = KEY_Q + native_touch - FORM_NATIVE_KEYS;
-			if ( key == KEY_exit )
-			{
-				FormFinishEdit ( 0 );
-				lcdForm.wasDown = down;
-				return 0;
-			}
-			if ( lcdForm.nativePrevious && lcdForm.nativePrevious != key )
-				FormNativeKey ( KEY_All_release, 0 );
-			FormNativeKey ( key, 0 );
-			lcdForm.nativePrevious = key;
-			lcdForm.wasDown = down;
-			lcdForm.armed = -1;
-			return 0;
-		}
-		if ( !down && lcdForm.nativePrevious )
-		{
-			FormNativeKey ( KEY_All_release, 0 );
-			lcdForm.nativePrevious = 0;
-		}
+		FormNativeUpdate ( down, native_touch, position );
+		return 0;
 	}
 	if ( position.y >= 14 && position.y < 50 )
 	{

@@ -35,7 +35,7 @@ static HTTP_LCDPanelData model;
 static int down,active,pwm_calls,toggle_calls,save_calls,draws,viewport_draws;
 static unsigned pwm_port,pwm_percent;
 static uint16_t native_event;
-static int native_creates,native_calls,native_releases,native_last,native_rows;
+static int native_creates,native_calls,native_releases,native_last,native_rows,native_exit_count;
 static char *native_buffer;
 static int check_port_name,port_name_lines,port_name_font;
 static uint32_t tick;
@@ -115,7 +115,8 @@ int KEYBOARD_StartUp(int type,figureShape shape,uint8_t bold,uint16_t x,uint16_t
 void KEYBOARD__ServiceSetTxt(int k,int key,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase,int releaseKey,int action,int big,int back,int alt,int enter,int field,int style,int exitKey,uint32_t color,char *buffer,int size){
  (void)k;(void)bold;(void)x;(void)y;(void)w;(void)h;(void)space;(void)forTouch;(void)start;(void)erase;(void)releaseKey;(void)action;(void)big;(void)back;(void)alt;(void)enter;(void)field;(void)style;(void)exitKey;(void)color;
  assert(size==33||size==23);native_calls++;native_buffer=buffer;
- if(!key){native_last=0;native_releases++;}
+ if(!key){native_last=0;native_releases++;native_exit_count=0;}
+ if(!shape&&key==KEY_exit&&++native_exit_count>=11)memset(buffer,0,(size_t)size);
  if(!shape&&key==KEY_Q){size_t n=strlen(buffer);if(native_last==key&&n)buffer[n-1]='1';else{assert(n+3<(size_t)size);buffer[n]='q';buffer[n+1]=0;}native_last=key;}
  buffer[size-2]=1;buffer[size-1]=2; /* native cursor metadata must never be saved */
 }
@@ -306,11 +307,22 @@ int main(void){
  touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);LCD_HttpPanel(0,1);assert(lcdFormDraft.names_only&&lcdFormDraft.count==1);preview("lcd-settings-name");
  int created_before=native_creates;form_touch_field(0);assert(lcdForm.nativeActive&&native_creates==created_before+1&&native_rows==1);
  native_event=FORM_NATIVE_KEYS;touch(1,100,180);int releases_before=native_releases;touch(1,100,180);assert(native_releases==releases_before&&native_buffer[strlen(native_buffer)-1]=='1');
- native_event=0;touch(0,100,180);assert(native_releases==releases_before+1);
+ int native_full_before=viewport_draws,native_created_before=native_creates;
+ native_event=0;touch(1,100,280); /* native repeat wait while finger stays down */
+ assert(viewport_draws==native_full_before&&native_creates==native_created_before);
+ native_event=0;touch(0,100,280);assert(native_releases==releases_before+1);
  touch(1,630,30);touch(0,630,30);assert(!lcdForm.nativeActive&&native_rows==6&&lcdForm.dirty&&strchr(lcdFormDraft.values[0],'1'));
  touch(1,500,30);touch(0,500,30);assert(!lcdForm.dirty);
- form_touch_field(0);strcpy(native_buffer,"Anulowana nazwa");native_event=FORM_NATIVE_KEYS+KEY_exit-KEY_Q;touch(1,100,180);native_event=0;touch(0,100,180);
+ form_touch_field(0);strcpy(native_buffer,"Anulowana nazwa");touch(1,70,30);touch(0,70,30);
  assert(!lcdForm.nativeActive&&lcdForm.editing==-1&&!lcdForm.dirty);
+ form_touch_field(0);strcpy(native_buffer,"Wyczysc dlugim exit");int stable_creates=native_creates,stable_view=viewport_draws;
+ native_event=FORM_NATIVE_KEYS+KEY_exit-KEY_Q;
+ for(unsigned hold=0;hold<12;hold++)touch(1,100,280);
+ native_event=0;touch(0,100,280);
+ assert(lcdForm.nativeActive&&!native_buffer[0]&&native_creates==stable_creates&&viewport_draws==stable_view);
+ strcpy(native_buffer,"Wyczysc przyciskiem");touch(1,500,30);touch(0,500,30);
+ assert(lcdForm.nativeActive&&!native_buffer[0]&&native_creates==stable_creates&&viewport_draws==stable_view);
+ touch(1,70,30);touch(0,70,30);assert(!lcdForm.nativeActive&&!lcdForm.dirty);
 
  touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
  model.ports[27].mode=HTTP_MODE_TIMER;tick+=250;LCD_HttpPanel(0,1);

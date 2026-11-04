@@ -248,3 +248,11 @@ Edycja nazw korzysta z oryginalnego Keyboard.c: KEYBOARD_StartUp oraz
 KEYBOARD__ServiceSetTxt, z obsluga przytrzymania, Gotowe/Anuluj i limitu pola.
 Dwa bajty metadanych kursora klawiatury nie sa kopiowane do zapisu ustawien.
 Nie zmieniano implementacji Keyboard.c ani konfiguracji CubeMX.
+
+Klawiatura nazw ma osobna obsluge cyklu dotyku, jak edytor temperatury:
+powtorzenie i oczekiwanie z nadal przycisnietym palcem nie uruchamiaja
+przewijania formularza ani ponownego tworzenia klawiatury. Naglowkowe
+Anuluj/Wyczysc/Gotowe odswiezaja tylko swoj prostokat przez stride DMA.
+Przytrzymanie natywnego klawisza exit jest przekazywane do Keyboard.c,
+ktory czysci tekst i pozycje kursora. Mozna tez uzyc przycisku Wyczysc;
+nie odtwarza on calej klawiatury. Anuluj w naglowku porzuca edycje.
