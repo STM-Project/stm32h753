@@ -107,7 +107,7 @@ static void ThermometerValue ( char *out, size_t size, int tenths )
 }
 static void NowaDraw ( void )
 {
-	for ( unsigned i = 0; i < W * VIEW; ++i )
+	for ( unsigned i = 0; i < (unsigned) ( W * VIEW ); ++i )
 		pLcd[i] = 0xFFFFFFFFU;
 	for ( unsigned i = 0; i < 3; ++i )
 	{

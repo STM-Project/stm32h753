@@ -37,7 +37,7 @@ static unsigned pwm_port,pwm_percent;
 static uint16_t native_event;
 static int native_creates,native_calls,native_releases,native_last,native_rows,native_exit_count;
 static char *native_buffer;
-static int check_port_name,port_name_lines,port_name_font;
+static int check_port_name,port_name_lines,port_name_font,status_messages;
 static uint32_t tick;
 static int check_description,description_lines,check_measurement,number_count,unit_count,check_percent,percent_count;
 static XY_Touch_Struct pos;
@@ -63,15 +63,26 @@ void HTTP_LCDPanelActive(int a){active=a;}
 int HTTP_LCDPanelRead(HTTP_LCDPanelData*out){*out=model;return 1;}
 int HTTP_LCDPanelPwm(unsigned p,unsigned v){assert(p>=21&&p<=23&&v<=100);pwm_calls++;pwm_port=p;pwm_percent=v;model.ports[p-1].pwm=v;return 1;}
 static uint8_t saved_modes[33],saved_changed[33];
-static uint32_t save_serial;
+static uint32_t save_serial,mode_request_serial,name_request_serial;
+static unsigned name_save_calls;
+static uint8_t saved_name_changed[33];
+static char saved_names[33][31];
+uint32_t HTTP_LCDPanelSaveNames(const uint8_t c[33],const char n[33][31],const char e[33][31]){
+ name_save_calls++;for(unsigned i=0;i<33;i++)if(c[i])assert(!strcmp(model.ports[i].name,e[i]));
+ memcpy(saved_name_changed,c,33);memcpy(saved_names,n,sizeof saved_names);return name_request_serial=++save_serial;
+}
 uint32_t HTTP_LCDPanelSaveModes(const uint8_t c[33],const uint8_t m[33],const uint8_t e[33]){
  save_calls++;for(unsigned i=0;i<33;i++)if(c[i])assert(model.ports[i].mode==e[i]);
- memcpy(saved_modes,m,33);memcpy(saved_changed,c,33);return ++save_serial;
+ memcpy(saved_modes,m,33);memcpy(saved_changed,c,33);return mode_request_serial=++save_serial;
 }
 static void complete_save(int ok){
  for(unsigned i=0;i<33;i++)if(ok&&saved_changed[i])model.ports[i].mode=saved_modes[i];
- model.mode_result=ok?1:-2;model.mode_serial=save_serial;tick+=250;
+ model.mode_result=ok?1:-2;model.mode_serial=mode_request_serial;tick+=250;
  LCD_HttpPanel(0,1);
+}
+static void complete_names_save(int ok){
+ for(unsigned i=0;i<33;i++)if(ok&&saved_name_changed[i])strcpy(model.ports[i].name,saved_names[i]);
+ model.name_result=ok?1:-2;model.name_serial=name_request_serial;tick+=250;LCD_HttpPanel(0,1);
 }
 int HTTP_LCDPanelToggle(unsigned p){assert(p>=21&&p<=33);toggle_calls++;return 1;}
 int LCD_LoadFont_ChangeColor(int size,int style,uint32_t id){(void)style;if(id>fontID_17)return -1;return size;}
@@ -79,6 +90,7 @@ int LCD_GetFontHeight(int font){return font==28?35:font==20?27:font==18?24:font=
 int LCD_GetFontHalfHeight(int font){return LCD_GetFontHeight(font)-(font>=20?7:4);}
 int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==28?4:f==20?2:f==18?3:f==16?1:0][(unsigned char)*t];return n;}
 void LCD_StrChangeColorWindow(uint32_t offset,uint32_t w,uint32_t h,int font,int x,int y,char*t,int only,int space,uint32_t bg,uint32_t color,uint8_t a,int fixed){
+ if(strstr(t,"Zapisywanie ustawien")||strstr(t,"Nie zapisano ustawien")||strstr(t,"Zapisano na SD")||strstr(t,"Niezapisane zmiany")){assert(h==TOP&&y>=48&&y+LCD_GetFontHeight(font)<=TOP);status_messages++;}
  if(check_port_name){assert(!strstr(t,"..."));assert(color==WHITE);port_name_lines++;port_name_font=font;}
  if(check_percent&&strchr(t,'%')){assert(!strcmp(t,"%")&&font==12);percent_count++;}
  if(check_description){assert(font==12&&y==104+description_lines*18);description_lines++;}
@@ -100,7 +112,7 @@ uint32_t LCD_GetXSize(void){return 800;}uint32_t LCD_GetYSize(void){return 480;}
 int LCD_TOUCH_isPress(void){return down;}XY_Touch_Struct LCD_TOUCH_GetPos(void){return pos;}
 uint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct*p){*p=pos;return native_event;}
 void LCD_DisplayBuff(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *s){
- assert(x+w<=800&&y+h<=480&&s>=pLcd&&s+w*h<=pLcd+800*480);draws++;if(w==800&&h==368)viewport_draws++;
+ assert(x+w<=800&&y+h<=480&&s>=pLcd&&s+w*h<=pLcd+800*480);draws++;if(w==800&&(h==368||h==408))viewport_draws++;
  for(unsigned row=0;row<h;row++)memcpy(shown+(y+row)*800+x,s+row*w,w*4);
 }
 void LCD_DisplayBuffStride(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *s,uint32_t stride){
@@ -187,7 +199,7 @@ int main(void){
  touch(1,x+90,y);assert(ui.pressed==28);touch(0,x+90,y);assert(toggle_calls==1);
  touch(1,x+90,y);touch(1,x+90,y-20);touch(0,x+90,y-20);assert(toggle_calls==1);
  assert(LCD_HttpPanel(2,0)==0&&!active);
- assert(LCD_HttpPanel(1,1)==0&&active&&ui.count==33);preview("lcd-http-settings-top");
+ assert(LCD_HttpPanel(1,1)==0&&active&&ui.count==33);assert(VIEW==408&&SCRATCH==800u*408);assert(shown[479*800+SCROLL_X]==0xFF333333U);preview("lcd-http-settings-top");
  strcpy(model.ports[0].name,"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");tick+=250;LCD_HttpPanel(0,1);preview("lcd-http-settings-long-name");
  strcpy(model.ports[0].name,"Nazwa portu nr 1");tick+=250;LCD_HttpPanel(0,1);
 
@@ -227,7 +239,7 @@ int main(void){
  assert(!LCD_HttpPanelModal()&&ShownMode(1)==HTTP_MODE_PT1000&&model.ports[0].mode==HTTP_MODE_TEMP);
  touch(1,CONTENT_X+410,TOP+30);touch(1,CONTENT_X+410,TOP+90);touch(0,CONTENT_X+410,TOP+90);assert(ui.scroll==0); /* clamp at top */
  touch(1,100,400);touch(1,100,120);touch(0,100,120);assert(ui.scroll>0);
- touch(1,746,75);touch(1,746,439);touch(0,746,439);assert(ui.scroll==Maximum());preview("lcd-http-settings-bottom");
+ touch(1,746,75);touch(1,746,479);touch(0,746,479);assert(ui.scroll==Maximum()&&shown[479*800+SCROLL_X]==GREEN);preview("lcd-http-settings-bottom");
 
  int row=32,field_y=TOP+ui.tiles[row].y-ui.scroll+30;
  touch(1,CONTENT_X+300,field_y);touch(0,CONTENT_X+300,field_y);
@@ -304,27 +316,40 @@ int main(void){
  assert(!strcmp(formModel.values[1],"12"));
  strcpy(formModel.values[1],"99");formModel.hash++;tick+=250;LCD_HttpPanel(0,1);assert(!strcmp(lcdFormDraft.values[1],"99"));
  touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal()&&ui.settings==1);
- touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);LCD_HttpPanel(0,1);assert(lcdFormDraft.names_only&&lcdFormDraft.count==1);preview("lcd-settings-name");
- int created_before=native_creates;form_touch_field(0);assert(lcdForm.nativeActive&&native_creates==created_before+1&&native_rows==1);
+ char original_name[31];strcpy(original_name,model.ports[14].name);
+ int created_before=native_creates;unsigned name_writes_before=name_save_calls;
+ touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);
+ assert(LCD_HttpPanelModal()&&lcdForm.directName&&lcdForm.nativeActive&&lcdForm.editing==0&&native_creates==created_before+1&&native_rows==1);
  native_event=FORM_NATIVE_KEYS;touch(1,100,180);int releases_before=native_releases;touch(1,100,180);assert(native_releases==releases_before&&native_buffer[strlen(native_buffer)-1]=='1');
  int native_full_before=viewport_draws,native_created_before=native_creates;
- native_event=0;touch(1,100,280); /* native repeat wait while finger stays down */
- assert(viewport_draws==native_full_before&&native_creates==native_created_before);
+ native_event=0;touch(1,100,280);assert(viewport_draws==native_full_before&&native_creates==native_created_before);
  native_event=0;touch(0,100,280);assert(native_releases==releases_before+1);
- touch(1,630,30);touch(0,630,30);assert(!lcdForm.nativeActive&&native_rows==6&&lcdForm.dirty&&strchr(lcdFormDraft.values[0],'1'));
- touch(1,500,30);touch(0,500,30);assert(!lcdForm.dirty);
- form_touch_field(0);strcpy(native_buffer,"Anulowana nazwa");touch(1,70,30);touch(0,70,30);
- assert(!lcdForm.nativeActive&&lcdForm.editing==-1&&!lcdForm.dirty);
- form_touch_field(0);strcpy(native_buffer,"Wyczysc dlugim exit");int stable_creates=native_creates,stable_view=viewport_draws;
- native_event=FORM_NATIVE_KEYS+KEY_exit-KEY_Q;
+ touch(1,630,30);touch(0,630,30);
+ assert(!LCD_HttpPanelModal()&&!lcdForm.nativeActive&&native_rows==6&&edit.nameChanged[14]);
+ assert(!strcmp(model.ports[14].name,original_name)&&name_save_calls==name_writes_before);
+ char local_name[31];strcpy(local_name,edit.names[14]);assert(strcmp(local_name,original_name));
+ touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);assert(lcdForm.nativeActive&&!strcmp(native_buffer,local_name));
+ strcpy(native_buffer,"Anulowana nazwa");touch(1,70,30);touch(0,70,30);
+ assert(!LCD_HttpPanelModal()&&!strcmp(edit.names[14],local_name));
+ touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);int stable_creates=native_creates,stable_view=viewport_draws;
+ strcpy(native_buffer,"Wyczysc dlugim exit");native_event=FORM_NATIVE_KEYS+KEY_exit-KEY_Q;
  for(unsigned hold=0;hold<12;hold++)touch(1,100,280);
- native_event=0;touch(0,100,280);
- assert(lcdForm.nativeActive&&!native_buffer[0]&&native_creates==stable_creates&&viewport_draws==stable_view);
+ native_event=0;touch(0,100,280);assert(lcdForm.nativeActive&&!native_buffer[0]&&native_creates==stable_creates&&viewport_draws==stable_view);
  strcpy(native_buffer,"Wyczysc przyciskiem");touch(1,500,30);touch(0,500,30);
  assert(lcdForm.nativeActive&&!native_buffer[0]&&native_creates==stable_creates&&viewport_draws==stable_view);
- touch(1,70,30);touch(0,70,30);assert(!lcdForm.nativeActive&&!lcdForm.dirty);
-
- touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal());
+ touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal()&&!strcmp(edit.names[14],local_name));
+ /* Only the parent Save commits names. A failed SD write retains the draft. */
+ touch(1,630,30);touch(0,630,30);assert(edit.savingNames&&name_save_calls==name_writes_before+1);
+ complete_names_save(0);assert(edit.saveError&&edit.nameChanged[14]&&!strcmp(model.ports[14].name,original_name));
+ touch(1,630,30);touch(0,630,30);complete_names_save(1);
+ assert(!edit.nameChanged[14]&&edit.saved&&!strcmp(model.ports[14].name,local_name));
+ /* Independent results retain only failed drafts when names and types save together. */
+ edit.draftMode[14]=HTTP_MODE_DISABLED;edit.draftBase[14]=model.ports[14].mode;
+ edit.nameChanged[14]=1;strcpy(edit.nameBase[14],model.ports[14].name);strcpy(edit.names[14],"Nazwa po czesciowym zapisie");
+ touch(1,630,30);touch(0,630,30);assert(edit.saving&&edit.savingNames);
+ complete_save(0);complete_names_save(1);assert(edit.saveError&&edit.draftMode[14]>=0&&!edit.nameChanged[14]);
+ touch(1,630,30);touch(0,630,30);complete_save(1);assert(edit.saved&&edit.draftMode[14]<0);
+ puts("PASS: name click opens native keyboard directly; Done stages locally; only parent Save writes; cancel, SD retry and partial result handling preserve drafts.");
  model.ports[27].mode=HTTP_MODE_TIMER;tick+=250;LCD_HttpPanel(0,1);
  assert(SettingsOpen(28,0));LCD_HttpPanel(0,1);assert(lcdFormDraft.count==19);preview("lcd-settings-timer");
  form_touch_field(8);assert(!strcmp(lcdFormDraft.values[8],"1"));
@@ -353,7 +378,7 @@ int main(void){
   assert(y>=TOP&&y<TOP+VIEW);touch(1,x,y);touch(0,x,y);assert(LCD_HttpPanelModal());LCD_HttpPanel(0,1);
   if(port==28&&mode==0){
    assert(FormLoading()&&lcdFormDraft.page&&!strcmp(lcdFormDraft.page->route,"/wypk")&&lcdFormDraft.count==3);
-   unsigned visible=0;for(unsigned i=TOP*W;i<(TOP+VIEW)*W;i++)if(shown[i]!=BG)visible++;assert(visible>10000);
+   unsigned visible=0;for(unsigned i=TOP*W;i<(unsigned)((TOP+VIEW)*W);i++)if(shown[i]!=BG)visible++;assert(visible>10000);
    preview("lcd-settings-relay-loading");
    int saves_before=form_save_calls;
    form_touch_field(0);assert(lcdForm.editing==-1&&!lcdForm.dirty);
@@ -400,6 +425,8 @@ int main(void){
    assert(model.ports[port-1].mode==HTTP_MODE_DISABLED&&save_calls==mode_saves_before);
   }
  }
+ assert(status_messages>4);
+ puts("PASS: /set status messages stay in header; viewport/scrollbar reach y=479; modal and other panels retain independent scratch bounds.");
  puts("PASS: all 33 ports open the dropdown draft before Save, preserve it after Back and never commit the port type implicitly.");
  puts("PASS: relay/IR, timer and thermostat editors open by touch for every physical output, with scrolling and Back.");
  assert(LCD_HttpPanel(2,1)==0);

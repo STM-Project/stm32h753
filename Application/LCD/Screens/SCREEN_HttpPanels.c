@@ -18,8 +18,11 @@ extern uint32_t pLcd[];
 #define W 800
 #define H 480
 #define TOP 72
-#define VIEW 368
-#define SCRATCH ( W * VIEW )
+#define BASE_VIEW 368
+#define SET_VIEW ( H - TOP )
+static int panelView = BASE_VIEW;
+#define VIEW panelView
+#define SCRATCH ( (uint32_t) ( W * VIEW ) )
 #define CONTENT_X 36
 #define COL_W 216
 #define COL_STEP 230
@@ -34,8 +37,8 @@ extern uint32_t pLcd[];
 #define MUTED 0xFFBBBBBBU
 #define VALUE_BLACK 0xFF000000U
 
-_Static_assert ( SCRATCH + ROW_W * 72 <= W * H, "LCD tile scratch exceeds pLcd" );
-_Static_assert ( SCRATCH + COL_W * 210 <= W * H, "LCD read scratch exceeds pLcd" );
+_Static_assert ( W * SET_VIEW + ROW_W * 72 <= W * H, "LCD tile scratch exceeds pLcd" );
+_Static_assert ( W * SET_VIEW + COL_W * 210 <= W * H, "LCD read scratch exceeds pLcd" );
 static struct
 {
 	int active, settings, font[5], scroll, extent, count, wasDown, capture, startY, startScroll, armed, pressed, moved, dirty, full;
@@ -58,20 +61,43 @@ static struct
 	int initialized, saveError, saved;
 	int8_t draftMode[HTTP_LCD_PORTS];
 	uint8_t draftBase[HTTP_LCD_PORTS];
-	uint32_t saving;
+	uint32_t saving, savingNames;
+	uint8_t nameChanged[HTTP_LCD_PORTS];
+	char names[HTTP_LCD_PORTS][31], nameBase[HTTP_LCD_PORTS][31];
 } edit;
+static int EditSaving ( void )
+{
+	return edit.saving || edit.savingNames;
+}
+static const char *ShownName ( unsigned port )
+{
+	return ui.settings == 1 && edit.nameChanged[port - 1] ? edit.names[port - 1] : ui.data.ports[port - 1].name;
+}
 static void SaveCompleted ( const HTTP_LCDPanelData *data )
 {
+	int completed = 0;
 	if ( edit.saving && data->mode_serial == edit.saving )
 	{
 		edit.saving = 0;
-		edit.saveError = data->mode_result != 1;
-		edit.saved = !edit.saveError;
-		if ( !edit.saveError )
-		{
+		completed = 1;
+		if ( data->mode_result == 1 )
 			memset ( edit.draftMode, -1, sizeof edit.draftMode );
-			ui.full = ui.dirty = 1;
-		}
+		else
+			edit.saveError = 1;
+	}
+	if ( edit.savingNames && data->name_serial == edit.savingNames )
+	{
+		edit.savingNames = 0;
+		completed = 1;
+		if ( data->name_result == 1 )
+			memset ( edit.nameChanged, 0, sizeof edit.nameChanged );
+		else
+			edit.saveError = 1;
+	}
+	if ( completed )
+	{
+		edit.saved = !EditSaving () && !edit.saveError;
+		ui.full = ui.dirty = 1;
 	}
 }
 
@@ -478,7 +504,7 @@ static void Tile ( int index )
 	{
 		unsigned shown = ShownMode ( (unsigned) port );
 		int same = shown == p->mode;
-		PortName ( w, h, p->name );
+		PortName ( w, h, ShownName ( (unsigned) port ) );
 		int selected = ui.modePressed == port || ui.menuPort == port;
 		TileRound ( w, 224, 16, 160, 36, 4, selected ? 0xFFAAC765U : 0xFFBBBBBBU, selected ? 0xFFAAC765U : 0xFFBBBBBBU );
 		Text ( w, h, ui.font[0], 234, 25, 122, ModeName ( shown ), 0xFF111111U );
@@ -586,26 +612,24 @@ static void Header ( void )
 	Text ( W, 64, ui.font[1], 52, 20, ui.settings ? 410 : 480, ui.settings ? "H7 . Ustawienia portow /set" : "H7 . Panel odczytowy /main", WHITE );
 	if ( ui.settings )
 	{
-		uint32_t fill = edit.saving ? 0xFF9A6600U : edit.saveError ? 0xFFAD3333U
+		uint32_t fill = EditSaving () ? 0xFF9A6600U : edit.saveError ? 0xFFAD3333U
 												: edit.saved	   ? 0xFF347B3CU
 												: ui.savePressed   ? 0xFF285F90U
 																   : 0xFF468CCFU;
 		TileRound ( W, 538, 14, 174, 34, 4, fill, fill );
-		Text ( W, 64, ui.font[1], 550, 21, 150, edit.saving ? "Zapisywanie..." : edit.saveError ? "Blad zapisu"
+		Text ( W, 64, ui.font[1], 550, 21, 150, EditSaving () ? "Zapisywanie..." : edit.saveError ? "Blad zapisu"
 																			 : edit.saved		? "Zapisano"
 																								: "Zapisz",
 			   WHITE );
 	}
 	else
 		Text ( W, 64, ui.font[0], 602, 24, 108, ui.data.time, GREEN );
-	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
-	Rect ( W, 0, 0, W, 40, BG );
 	const char *notice = "Pomiar i stany HTTP . przewijaj palcem lub suwakiem";
 	uint32_t notice_color = MUTED;
 	if ( ui.settings )
 	{
 		notice = "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie";
-		if ( edit.saving )
+		if ( EditSaving () )
 		{
 			notice = "Zapisywanie ustawien na karcie SD...";
 			notice_color = 0xFFFFCC55U;
@@ -620,13 +644,27 @@ static void Header ( void )
 			notice = "Zapisano na SD. Ustawienia sa dostepne w HTTP.";
 			notice_color = GREEN;
 		}
+		else
+			for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
+				if ( edit.draftMode[i] >= 0 || edit.nameChanged[i] )
+				{
+					notice = "Niezapisane zmiany. Nacisnij Zapisz.";
+					notice_color = 0xFFFFCC55U;
+					break;
+				}
+		Text ( W, TOP, ui.font[0], 36, TOP - LCD_GetFontHeight ( ui.font[0] ) - 1, 690, notice, notice_color );
 	}
-	Text ( W, 40, ui.font[0], 36, 12, 690, notice, notice_color );
-	LCD_DisplayBuff ( 0, 440, W, 40, pLcd + SCRATCH );
+	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
+	if ( !ui.settings )
+	{
+		Rect ( W, 0, 0, W, 40, BG );
+		Text ( W, 40, ui.font[0], 36, 12, 690, notice, notice_color );
+		LCD_DisplayBuff ( 0, 440, W, 40, pLcd + SCRATCH );
+	}
 }
 #define MENU_W 240
 #define MENU_ITEM 32
-_Static_assert ( SCRATCH + MENU_W * ( 6 * MENU_ITEM + 4 ) <= W * H, "LCD mode dropdown exceeds pLcd scratch" );
+_Static_assert ( W * SET_VIEW + MENU_W * ( 6 * MENU_ITEM + 4 ) <= W * H, "LCD mode dropdown exceeds pLcd scratch" );
 static void DrawMenu ( void )
 {
 	int h = ui.menuCount * MENU_ITEM + 4;
@@ -795,6 +833,8 @@ static void Pwm ( int x )
 }
 static int SettingsOpen ( unsigned port, int names )
 {
+	if ( EditSaving () )
+		return 0;
 	settingsReturnScroll = ui.scroll;
 	SCREEN_NavigationRestore ();
 	LCD_TOUCH_DeleteAllSetTouch ();
@@ -803,15 +843,21 @@ static int SettingsOpen ( unsigned port, int names )
 	if ( !names && ( mode == HTTP_MODE_TEMP || mode == HTTP_MODE_TEMP_RHU || mode == HTTP_MODE_PT1000 ) )
 	{
 		settingsModal = 1;
+		panelView = BASE_VIEW;
 		lcdThresholdPort = port;
 		lcdThresholdHumidity = mode == HTTP_MODE_TEMP_RHU;
 		settingsModalResult = LCD_SensorThresholds ( LCD_THRESH_ENTER );
 	}
 	else
 	{
-		if ( !FormOpen ( port, names ) )
-			return 0;
 		settingsModal = 2;
+		panelView = BASE_VIEW;
+		if ( !FormOpen ( port, names ) )
+		{
+			settingsModal = 0;
+			panelView = SET_VIEW;
+			return 0;
+		}
 	}
 	return 1;
 }
@@ -873,6 +919,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		LCD_TOUCH_DeleteAllSetTouch ();
 		memset ( &ui, 0, sizeof ui );
 		ui.settings = settings;
+		panelView = settings == 1 ? SET_VIEW : BASE_VIEW;
 		if ( !edit.initialized )
 		{
 			memset ( edit.draftMode, -1, sizeof edit.draftMode );
@@ -949,7 +996,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 	{
 		if ( down && !ui.wasDown )
 			ui.capture = 6;
-		int pressed = down && save_hit && !edit.saving;
+		int pressed = down && save_hit && !EditSaving ();
 		if ( ui.savePressed != pressed )
 		{
 			ui.savePressed = pressed;
@@ -957,21 +1004,32 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 		}
 		if ( !down && ui.wasDown )
 		{
-			if ( save_hit && !edit.saving )
+			if ( save_hit && !EditSaving () )
 			{
 				uint8_t changed[HTTP_LCD_PORTS], modes[HTTP_LCD_PORTS];
-				unsigned count = 0;
+				unsigned count = 0, names = 0;
 				for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
 				{
 					changed[i] = edit.draftMode[i] >= 0;
 					modes[i] = changed[i] ? (uint8_t) edit.draftMode[i] : ui.data.ports[i].mode;
 					count += changed[i];
+					names += edit.nameChanged[i] != 0;
 				}
-				if ( count )
+				if ( count || names )
 				{
-					edit.saving = HTTP_LCDPanelSaveModes ( changed, modes, edit.draftBase );
-					edit.saveError = !edit.saving;
-					edit.saved = 0;
+					edit.saveError = edit.saved = 0;
+					if ( count )
+					{
+						edit.saving = HTTP_LCDPanelSaveModes ( changed, modes, edit.draftBase );
+						if ( !edit.saving )
+							edit.saveError = 1;
+					}
+					if ( names )
+					{
+						edit.savingNames = HTTP_LCDPanelSaveNames ( edit.nameChanged, edit.names, edit.nameBase );
+						if ( !edit.savingNames )
+							edit.saveError = 1;
+					}
 				}
 				Header ();
 			}
@@ -1013,7 +1071,7 @@ int LCD_HttpPanel ( uint8_t mode, int settings )
 			ui.capture = 5;
 			ui.armed = SettingsOutputHit ( position.x, position.y );
 		}
-		else if ( !edit.saving && ModeHit ( position.x, position.y ) >= 0 )
+		else if ( !EditSaving () && ModeHit ( position.x, position.y ) >= 0 )
 		{
 			ui.capture = 4;
 			ui.armed = ModeHit ( position.x, position.y );

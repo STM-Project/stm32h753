@@ -18,6 +18,8 @@ typedef struct
 	uint32_t revision;
 	int mode_result;
 	uint32_t mode_serial;
+	int name_result;
+	uint32_t name_serial;
 	char time[25];
 	HTTP_LCDPort ports[HTTP_LCD_PORTS];
 	HTTP_LpcThermometer thermometers[3];
@@ -30,6 +32,8 @@ int HTTP_LCDPanelToggle ( unsigned port );
 /* One atomic form commit. Unchanged ports use the latest HTTP values.
  * Returns request id, or zero when another save is pending / arguments invalid. */
 uint32_t HTTP_LCDPanelSaveModes ( const uint8_t changed[HTTP_LCD_PORTS], const uint8_t modes[HTTP_LCD_PORTS], const uint8_t expected[HTTP_LCD_PORTS] );
+/* Immutable name drafts; unchanged names are retained from the current model. */
+uint32_t HTTP_LCDPanelSaveNames ( const uint8_t changed[HTTP_LCD_PORTS], const char names[HTTP_LCD_PORTS][31], const char expected[HTTP_LCD_PORTS][31] );
 /* Only call from WiFi, after HTTP model init and before its notification wait. */
 void HTTP_LCDPanelService ( const char *refresh, size_t length, uint32_t now );
 #endif

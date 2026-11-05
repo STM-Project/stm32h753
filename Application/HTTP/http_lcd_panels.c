@@ -29,6 +29,47 @@ static ModeBatch mode_batch;
 static int mode_busy, mode_result;
 static uint32_t mode_serial, next_serial;
 
+typedef struct
+{
+	uint8_t changed[HTTP_LCD_PORTS];
+	char names[HTTP_LCD_PORTS][31], expected[HTTP_LCD_PORTS][31];
+	uint32_t serial;
+} NameBatch;
+static NameBatch name_batch;
+static int name_busy, name_result;
+static uint32_t name_serial;
+static int SaveNames ( const NameBatch *batch );
+uint32_t HTTP_LCDPanelSaveNames ( const uint8_t changed[HTTP_LCD_PORTS], const char names[HTTP_LCD_PORTS][31], const char expected[HTTP_LCD_PORTS][31] )
+{
+	if ( !changed || !names || !expected )
+		return 0;
+	unsigned count = 0;
+	for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
+		if ( changed[i] )
+		{
+			if ( !memchr ( names[i], 0, 31 ) || !memchr ( expected[i], 0, 31 ) )
+				return 0;
+			++count;
+		}
+	if ( !count )
+		return 0;
+	taskENTER_CRITICAL ();
+	uint32_t serial = 0;
+	if ( !name_busy )
+	{
+		if ( !++next_serial )
+			++next_serial;
+		serial = name_batch.serial = next_serial;
+		memcpy ( name_batch.changed, changed, sizeof name_batch.changed );
+		memcpy ( name_batch.names, names, sizeof name_batch.names );
+		memcpy ( name_batch.expected, expected, sizeof name_batch.expected );
+		name_busy = 1;
+	}
+	taskEXIT_CRITICAL ();
+	if ( serial )
+		HTTP_SensorLCDWake ();
+	return serial;
+}
 uint32_t HTTP_LCDPanelSaveModes ( const uint8_t changed[HTTP_LCD_PORTS], const uint8_t modes[HTTP_LCD_PORTS], const uint8_t expected[HTTP_LCD_PORTS] )
 {
 	if ( !changed || !modes || !expected )
@@ -91,7 +132,7 @@ void HTTP_LCDPanelActive ( int enabled )
 int HTTP_LCDPanelWanted ( void )
 {
 	taskENTER_CRITICAL ();
-	int wanted = active || mode_busy;
+	int wanted = active || mode_busy || name_busy;
 	taskEXIT_CRITICAL ();
 	return wanted || HTTP_LCDFormWanted ();
 }
@@ -177,6 +218,18 @@ void HTTP_LCDPanelService ( const char *data, size_t length, uint32_t now )
 		taskEXIT_CRITICAL ();
 		command = 1;
 	}
+	taskENTER_CRITICAL ();
+	queued = name_busy;
+	taskEXIT_CRITICAL ();
+	if ( queued )
+	{
+		name_result = SaveNames ( &name_batch );
+		name_serial = name_batch.serial;
+		taskENTER_CRITICAL ();
+		name_busy = 0;
+		taskEXIT_CRITICAL ();
+		command = 1;
+	}
 	for ( unsigned i = 0; i < 13; ++i )
 	{
 		taskENTER_CRITICAL ();
@@ -223,6 +276,8 @@ void HTTP_LCDPanelService ( const char *data, size_t length, uint32_t now )
 	memset ( &pending, 0, sizeof pending );
 	pending.mode_result = mode_result;
 	pending.mode_serial = mode_serial;
+	pending.name_result = name_result;
+	pending.name_serial = name_serial;
 	Field ( pending.time, sizeof pending.time, data, length, 0, 8 );
 	for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
 	{

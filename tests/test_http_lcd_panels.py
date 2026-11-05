@@ -8,15 +8,15 @@ C=r'''
 #include <assert.h>
 #include <stdlib.h>
 static unsigned modes[33],wake,critical;
+static char names[33][31];
 static int fail_save, committed;
 static unsigned char disk[HTTP_SETTINGS_BLOB_SIZE];
 static int load(void*b,size_t n,void*c){(void)c;memcpy(b,disk,n);return 1;}
 static int save(const void*b,size_t n,void*c){(void)c;assert(!critical);if(fail_save)return -1;memcpy(disk,b,n);return 1;}
 void HTTP_SettingsBindingsCommitted(const HTTP_SettingPage*p,uint16_t instance){
  assert(!critical);if(instance||strcmp(p->route,"/set"))return;committed++;
- for(unsigned i=0;i<33;i++){char name[32];snprintf(name,sizeof name,"n_GPIO_val_%03u",i+1);modes[i]=(unsigned)atoi(HTTP_SettingsGetByName(p,0,name));}
+ for(unsigned i=0;i<33;i++){char name[32];snprintf(name,sizeof name,"n_GPIO_val_%03u",i+1);modes[i]=(unsigned)atoi(HTTP_SettingsGetByName(p,0,name));snprintf(name,sizeof name,"n_s_Port_nazwa%u_001",i+1);snprintf(names[i],31,"%s",HTTP_SettingsGetByName(p,0,name));}
 }
-static char names[33][31];
 void enter(void){critical++;} void leave(void){assert(critical);critical--;}
 void HTTP_SensorLCDWake(void){wake++;}
 void HTTP_LpcReadThermometers(HTTP_LpcThermometer out[3],const char*d,size_t n){(void)d;(void)n;memset(out,0,3*sizeof *out);}

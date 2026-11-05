@@ -214,6 +214,39 @@ static int FormEncode ( size_t *used, const char *text )
 	form_target[*used] = 0;
 	return 1;
 }
+/* The same owner and URL encoder are reused; no extra target buffer is
+ * needed. A failed name transaction leaves all shared names unchanged. */
+static int SaveNames ( const NameBatch *batch )
+{
+	for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
+		if ( batch->changed[i] )
+		{
+			const char *current = HTTP_SettingsPortName ( i + 1, NULL );
+			if ( strcmp ( current ? current : "", batch->expected[i] ) )
+				return HTTP_SETTINGS_INVALID;
+		}
+	size_t used = (size_t) snprintf ( form_target, sizeof form_target, "/set?h7_page=/set&h7_form=0&n_109_zapisz=1" );
+	for ( unsigned i = 0; i < HTTP_LCD_PORTS; ++i )
+		if ( batch->changed[i] )
+		{
+			char name[40];
+			snprintf ( name, sizeof name, "n_s_Port_nazwa%u_001", i + 1 );
+			if ( used + 2 >= sizeof form_target )
+				return HTTP_SETTINGS_CAPACITY_ERROR;
+			form_target[used++] = '&';
+			if ( !FormEncode ( &used, name ) )
+				return HTTP_SETTINGS_CAPACITY_ERROR;
+			form_target[used++] = '=';
+			if ( !FormEncode ( &used, batch->names[i] ) )
+				return HTTP_SETTINGS_CAPACITY_ERROR;
+		}
+	const HTTP_SettingPage *page = NULL;
+	uint16_t instance = 0;
+	int result = HTTP_SettingsApplyTarget ( form_target, used, &page, &instance );
+	if ( result == HTTP_SETTINGS_SAVED )
+		HTTP_SettingsBindingsCommitted ( page, instance );
+	return result;
+}
 static int FormCommit ( void )
 {
 	uint16_t instance_now = 0;

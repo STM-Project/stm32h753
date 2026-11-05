@@ -376,9 +376,35 @@ static int _GetPosKeySize(uint16_t dimKey[]){
 	return countKey;
 }
 
+/* Soft shading is enabled only while servicing the text keyboard. */
+static int textKeyboardGradient;
+static void TextKeyboardGradient ( int stride, int x, int y, int w, int h, uint32_t color )
+{
+	extern uint32_t pLcd[];
+	if ( !textKeyboardGradient || h < 2 ) return;
+	for ( int row = 0; row < h; ++row )
+	{
+		int delta = 9 - 18 * row / ( h - 1 );
+		uint32_t shaded = color & 0xFF000000;
+		for ( int shift = 0; shift < 24; shift += 8 )
+		{
+			int channel = ( ( color >> shift ) & 255 ) + delta;
+			if ( channel < 0 ) channel = 0;
+			if ( channel > 255 ) channel = 255;
+			shaded |= (uint32_t)channel << shift;
+		}
+		for ( int col = 0; col < w; ++col )
+		{
+			uint32_t *pixel = &pLcd[( y + row ) * stride + x + col];
+			if ( *pixel == color ) *pixel = shaded;
+		}
+	}
+}
+
 static void KeyStrDisp_Ind(int nr, XY_Touch_Struct pos, char *txt, u32 colorTxt, int releasePress){
 	if(releasePress) LCD_ShapeWindow( s[nr].shape, 0, s[nr].widthKey,s[nr].heightKey, 0,0, s[nr].widthKey,s[nr].heightKey, SetBold2Color(framePressColor,s[nr].bold),fillPressColor,bkColor);
 	else				  LCD_ShapeWindow( s[nr].shape, 0, s[nr].widthKey,s[nr].heightKey, 0,0, s[nr].widthKey,s[nr].heightKey, SetBold2Color(frameColor,	  s[nr].bold),fillColor,	  bkColor);
+	TextKeyboardGradient ( s[nr].widthKey, 0, 0, s[nr].widthKey, s[nr].heightKey, releasePress ? fillPressColor : fillColor );
 	TxtPos(nr,(XY_Touch_Struct){0});
 	LCD_StrDependOnColorsWindowIndirect(0, s[nr].x+pos.x, s[nr].y+pos.y, s[nr].widthKey, s[nr].heightKey,fontID, GET_X((char*)txt),GET_Y,(char*)txt, fullHight, 0, READ_BGCOLOR, colorTxt,FONT_COEFF, NoConstWidth);
 }
@@ -392,6 +418,7 @@ static void KeyStrDisp2_Ind(int nr, XY_Touch_Struct pos, char *txt, u32 colorTxt
 static void KeyStrDisp_Win(int nr, XY_Touch_Struct pos, char *txt, u32 colorTxt, int releasePress){
 	if(releasePress) LCD_ShapeWindow( s[nr].shape, 0, widthAll,heightAll, pos.x,pos.y, s[nr].widthKey,s[nr].heightKey, SetBold2Color(framePressColor,s[nr].bold),fillPressColor,bkColor);
 	else				  LCD_ShapeWindow( s[nr].shape, 0, widthAll,heightAll, pos.x,pos.y, s[nr].widthKey,s[nr].heightKey, SetBold2Color(frameColor,	    s[nr].bold),fillColor,	    bkColor);
+	TextKeyboardGradient ( widthAll, pos.x, pos.y, s[nr].widthKey, s[nr].heightKey, releasePress ? fillPressColor : fillColor );
 	TxtPos(nr,pos);
 	LCD_StrDependOnColorsWindow(0,widthAll,heightAll,fontID, GET_X((char*)txt),GET_Y,(char*)txt, fullHight, 0, READ_BGCOLOR, colorTxt,FONT_COEFF, NoConstWidth);	/* Str_bkColorRead(txt,colorTxt); */
 }
@@ -405,6 +432,7 @@ static void KeyStrDisp2_Win(int nr, XY_Touch_Struct pos, char *txt, u32 colorTxt
 static void KeyShapeDisp_Ind(int nr, XY_Touch_Struct pos, ShapeFunc pShape, SHAPE_PARAMS param, int releasePress){
 	if(releasePress){ LCD_ShapeWindow( s[nr].shape, 0, s[nr].widthKey,s[nr].heightKey, 0,0, s[nr].widthKey,s[nr].heightKey, SetBold2Color(framePressColor,s[nr].bold),fillPressColor,bkColor); 	param.color[0].bk = fillPressColor; }	/* bkColor for pShape is fillPressColor */
 	else				 { LCD_ShapeWindow( s[nr].shape, 0, s[nr].widthKey,s[nr].heightKey, 0,0, s[nr].widthKey,s[nr].heightKey, SetBold2Color(frameColor,	   s[nr].bold),fillColor,		bkColor); 	param.color[0].bk = fillColor; 		}	/* bkColor for pShape is fillColor */
+	TextKeyboardGradient ( s[nr].widthKey, 0, 0, s[nr].widthKey, s[nr].heightKey, releasePress ? fillPressColor : fillColor );
 	pShape(0,param);
 	LCD_Display(0, s[nr].x+pos.x, s[nr].y+pos.y, s[nr].widthKey, s[nr].heightKey);
 }
@@ -417,6 +445,7 @@ static void KeyShapeDisp2_Ind(int nr, XY_Touch_Struct pos, ShapeFunc pShape, SHA
 static void KeyShapeDisp_Win(int nr, XY_Touch_Struct pos, ShapeFunc pShape, SHAPE_PARAMS param, int releasePress){
 	if(releasePress){ LCD_ShapeWindow( s[nr].shape, 0, param.bkSize.w, param.bkSize.h, pos.x,pos.y, s[nr].widthKey,s[nr].heightKey, SetBold2Color(framePressColor,s[nr].bold),fillPressColor,bkColor); 	param.color[0].bk = fillPressColor; }	/* bkColor for pShape is fillPressColor */
 	else				 { LCD_ShapeWindow( s[nr].shape, 0, param.bkSize.w, param.bkSize.h, pos.x,pos.y, s[nr].widthKey,s[nr].heightKey, SetBold2Color(frameColor,	  s[nr].bold),fillColor,	  bkColor); 	param.color[0].bk = fillColor; 		}	/* bkColor for pShape is fillColor */
+	TextKeyboardGradient ( widthAll, pos.x, pos.y, s[nr].widthKey, s[nr].heightKey, releasePress ? fillPressColor : fillColor );
 	pShape(0,param);
 }
 static void KeyShapeDisp2_Win(int nr, XY_Touch_Struct pos, ShapeFunc pShape, SHAPE_PARAMS param, int releasePress){
@@ -428,6 +457,7 @@ static void KeyShapeDisp2_Win(int nr, XY_Touch_Struct pos, ShapeFunc pShape, SHA
 static void KeyBk_Ind(int nr,int releasePress){
 	if(releasePress) LCD_ShapeWindow( s[nr].shape, 0, s[nr].widthKey,s[nr].heightKey, 0,0, s[nr].widthKey,s[nr].heightKey, SetBold2Color(framePressColor,s[nr].bold),fillPressColor,bkColor);
 	else				  LCD_ShapeWindow( s[nr].shape, 0, s[nr].widthKey,s[nr].heightKey, 0,0, s[nr].widthKey,s[nr].heightKey, SetBold2Color(frameColor,	  s[nr].bold),fillColor,	  bkColor);
+	TextKeyboardGradient ( s[nr].widthKey, 0, 0, s[nr].widthKey, s[nr].heightKey, releasePress ? fillPressColor : fillColor );
 }
 static void KeyBk2_Ind(int nr,int releasePress){
 	if(releasePress) LCD_RoundRectangle2(0,PARAM32(Up,  bold2,unUsed,Rectangle), s[nr].widthKey,s[nr].heightKey, 0,0, s[nr].widthKey, s[nr].heightKey, BrightIncr(framePressColor,0x65),BrightDecr(framePressColor,0x20), 0xFF808080,BrightDecr(fillPressColor,0x44), bkColor, 0.0, Up  );
@@ -436,6 +466,7 @@ static void KeyBk2_Ind(int nr,int releasePress){
 static void KeyBk_Win(int nr, XY_Touch_Struct pos, int releasePress){
 	if(releasePress) LCD_ShapeWindow( s[nr].shape, 0, widthAll,heightAll, pos.x,pos.y, s[nr].widthKey,s[nr].heightKey, SetBold2Color(framePressColor,s[nr].bold),fillPressColor,bkColor);
 	else				  LCD_ShapeWindow( s[nr].shape, 0, widthAll,heightAll, pos.x,pos.y, s[nr].widthKey,s[nr].heightKey, SetBold2Color(frameColor,	    s[nr].bold),fillColor,	    bkColor);
+	TextKeyboardGradient ( widthAll, pos.x, pos.y, s[nr].widthKey, s[nr].heightKey, releasePress ? fillPressColor : fillColor );
 }
 static void KeyBk2_Win(int nr, XY_Touch_Struct pos, int releasePress){
 	if(releasePress) LCD_RoundRectangle2(0,PARAM32(Up,  bold2,unUsed,Rectangle), widthAll,heightAll, pos.x,pos.y, s[nr].widthKey, s[nr].heightKey, BrightIncr(framePressColor,0x65),BrightDecr(framePressColor,0x20), 0xFF808080,BrightDecr(fillPressColor,0x44), bkColor, 0.0, Up  );
@@ -1849,6 +1880,7 @@ int KEYBOARD_ServiceLenOffsWin(int k, int selBlockPress, INIT_KEYBOARD_PARAM, in
 
 void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int touchRelease, int touchAction, int tBig,int tBack,int tAlt,int tEnter,int tField,int tStyle,int tExit,uint32_t colorDescr, char *charBuff,int charBuffSize)
 {
+	textKeyboardGradient = 1;
 	#define _ARROWS_NMBR	 6
 	#define _EDGE_DIST	 7
 
@@ -1998,8 +2030,12 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 	}
 
 	void _DispMainField 	 (void){	 LCD_ShapeWindow( s[k].shape,0, widthAll,	  	  heightAll, 	   0,					 0, 				   widthAll,	  heightAll, 		SetBold2Color(frameMainColor,s[k].bold), fillMainColor/*colorFillBk*/, bkColor 	  );	}
-	void _DispTxtField  	 (void){	 LCD_ShapeWindow( s[k].shape,0, widthAll,	  	  heightAll, 	   s[k].interSpace,s[k].interSpace, widthFieldTxt,heightFieldTxt, SetBold2Color(TXTFIELD_COLOR,s[k].bold), TXTFIELD_COLOR,  				  colorFillBk );	}
-	void _DispTxtFieldInd (void){	 LCD_ShapeWindow( s[k].shape,0, widthFieldTxt, heightFieldTxt, 0,					 0, 				   widthFieldTxt,heightFieldTxt, SetBold2Color(TXTFIELD_COLOR,s[k].bold), TXTFIELD_COLOR,  				  colorFillBk );  }
+	void _DispTxtField  	 (void){	 LCD_ShapeWindow( s[k].shape,0, widthAll,	  	  heightAll, 	   s[k].interSpace,s[k].interSpace, widthFieldTxt,heightFieldTxt, SetBold2Color(TXTFIELD_COLOR,s[k].bold), TXTFIELD_COLOR,  				  colorFillBk );
+		TextKeyboardGradient ( widthAll, s[k].interSpace, s[k].interSpace, widthFieldTxt, heightFieldTxt, TXTFIELD_COLOR );
+	}
+	void _DispTxtFieldInd (void){	 LCD_ShapeWindow( s[k].shape,0, widthFieldTxt, heightFieldTxt, 0,					 0, 				   widthFieldTxt,heightFieldTxt, SetBold2Color(TXTFIELD_COLOR,s[k].bold), TXTFIELD_COLOR,  				  colorFillBk );
+		TextKeyboardGradient ( widthFieldTxt, 0, 0, widthFieldTxt, heightFieldTxt, TXTFIELD_COLOR );
+	}
 
 	int  _GetIndxCharBuff(void)		{ return CharBuffToInt16(&charBuff[charBuffSize-2]); 		 };
 	void _SetIndxCharBuff(int size)	{ 			Int16ToCharBuff(&charBuff[charBuffSize-2],size); };
@@ -2040,7 +2076,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 		char txt_temp[editWidth];
 		LOOP_FOR(i,seperateParam[0]){
 			LOOP_FOR(j,seperateParam[1+i]){  txt_temp[j]=txtBuff[offss_buff+j]; }   txt_temp[ seperateParam[1+i] ] = 0;
-			DispTxt(txt_temp, offsX+_EDGE_DIST, offsY+_EDGE_DIST + offss_yPos, 	BLACK, TXTFIELD_COLOR, bkSizeX, bkSizeY);
+			DispTxt(txt_temp, offsX+_EDGE_DIST, offsY+_EDGE_DIST + offss_yPos, 	BLACK, READ_BGCOLOR, bkSizeX, bkSizeY);
 			offss_buff += seperateParam[1+i];
 			offss_yPos += fontHeight;
 			if(offss_yPos + fontHeight > editHeightPxl) return;
@@ -2617,6 +2653,8 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 	}
 
 	#undef P
+	textKeyboardGradient = 0;
+
 	#undef P2
 	#undef F
 	#undef G

@@ -17,7 +17,9 @@ Oba ekrany są w tej samej pętli next/prev oraz debug `=` (0..13 z pominieciem 
 Można je również wybrać w kodzie przez SCREEN_SetNr(11) / SCREEN_SetNr(12).
 Pasek przewijania jest po prawej, x=738..759, niezależnie od pola next
 x=770..799. Kafelki/listę można przewijać palcem. Góra, środek i dół treści
-są obcinane pikselowo do obszaru y=72..439; nagłówek i stopka pozostają stałe.
+są obcinane pikselowo do obszaru y=72..479 dla listy /set (408 px), a do
+y=72..439 dla odczytu i podstron. Naglowek /set jest staly; komunikaty zapisu
+oraz niezapisanych zmian sa w jego dolnym wierszu, bez osobnej stopki /set.
 
 ## Wspólne dane i sterowanie
 
@@ -256,3 +258,11 @@ Anuluj/Wyczysc/Gotowe odswiezaja tylko swoj prostokat przez stride DMA.
 Przytrzymanie natywnego klawisza exit jest przekazywane do Keyboard.c,
 ktory czysci tekst i pozycje kursora. Mozna tez uzyc przycisku Wyczysc;
 nie odtwarza on calej klawiatury. Anuluj w naglowku porzuca edycje.
+
+Lista /set i jej pasek przewijania siegaja do ostatniego wiersza LCD, y=479.
+Obszar roboczy w ogonie istniejacego pLcd przesuwa sie za aktualny viewport;
+kontrole rozmiaru obejmuja 408 px tresci, naglowek, kafelki oraz dropdown.
+Otwarcie podstrony przywraca jej dotychczasowy viewport 368 px i stopke,
+a powrot odtwarza dluzsza liste. Nie dodano framebuffera ani bufora w SDRAM.
+
+Klikniecie nazwy portu otwiera od razu klawiature. Gotowe zachowuje nazwe lokalnie i wraca do listy; dopiero Zapisz w naglowku /set zapisuje zmienione nazwy przez wspolny model HTTP i SD. Anuluj pozostawia poprzednia wersje robocza. Klawiatura tekstowa ma delikatny pionowy gradient klawiszy i pola tekstowego, zachowujac odswiezanie czesciowe.

@@ -7,7 +7,7 @@
 static HTTP_LCDFormData lcdFormBase LCD_FORM_SDRAM, lcdFormDraft LCD_FORM_SDRAM, lcdFormLatest LCD_FORM_SDRAM;
 static struct
 {
-	int nativeActive, nativePrevious, nativePressed;
+	int nativeActive, nativePrevious, nativePressed, directName, nameDone;
 	int active, dirty, pending, scroll, startScroll, startY, wasDown, armed, moved, drag, editing, selection, upper, polish, keyPressed;
 	uint32_t serial, sample;
 	char text[HTTP_LCD_FORM_VALUE], notice[96];
@@ -400,7 +400,7 @@ static void FormCopyControl ( int x, int content_y, int width, int height )
 }
 static void FormDraw ( void )
 {
-	for ( unsigned i = 0; i < W * VIEW; ++i )
+	for ( unsigned i = 0; i < (unsigned) ( W * VIEW ); ++i )
 		pLcd[i] = BG;
 	FormCard card;
 	for ( unsigned index = 0; FormCardAt ( index, &card ); ++index )
@@ -507,7 +507,7 @@ static void FormNativeDraw ( void )
 {
 	FormNativeStop ();
 	LCD_TOUCH_DeleteAllSetTouch ();
-	for ( unsigned i = 0; i < W * VIEW; ++i )
+	for ( unsigned i = 0; i < (unsigned) ( W * VIEW ); ++i )
 		pLcd[i] = BG;
 	LCD_DisplayBuff ( 0, TOP, W, VIEW, pLcd );
 	FormHeader ();
@@ -526,7 +526,7 @@ static void FormKeyboardDraw ( void )
 		FormNativeDraw ();
 		return;
 	}
-	for ( unsigned i = 0; i < W * VIEW; ++i )
+	for ( unsigned i = 0; i < (unsigned) ( W * VIEW ); ++i )
 		pLcd[i] = BG;
 	Rect ( W, 0, 0, W, 56, BG );
 	Rect ( W, 24, 8, 736, 44, WHITE );
@@ -568,7 +568,7 @@ static void FormChoicesDraw ( void )
 {
 	const HTTP_SettingField *field = FormField ( (unsigned) lcdForm.editing );
 	unsigned count = FormOptionCount ( field );
-	for ( unsigned i = 0; i < W * VIEW; ++i )
+	for ( unsigned i = 0; i < (unsigned) ( W * VIEW ); ++i )
 		pLcd[i] = BG;
 	for ( unsigned i = 0; i < count; ++i )
 	{
@@ -611,7 +611,7 @@ static void FormPaint ( void )
 static int FormOpen ( unsigned port, int names )
 {
 	unsigned mode = names ? ui.data.ports[port - 1].mode : ShownMode ( port );
-	uint32_t serial = HTTP_LCDFormOpenMode ( port, mode, names );
+	uint32_t serial = names ? 1 : HTTP_LCDFormOpenMode ( port, mode, names );
 	if ( !serial )
 		return 0;
 	memset ( &lcdForm, 0, sizeof lcdForm );
@@ -639,6 +639,20 @@ static int FormOpen ( unsigned port, int names )
 		if ( lcdFormDraft.count > HTTP_LCD_FORM_FIELDS )
 			lcdFormDraft.count = 0;
 	}
+	if ( names )
+	{
+		/* The parent owns the local name draft; opening the keyboard performs
+		 * no model read/write or SD transaction. */
+		lcdForm.directName = 1;
+		lcdForm.editing = 0;
+		lcdFormDraft.serial = serial;
+		lcdFormBase = lcdFormDraft;
+		snprintf ( lcdFormBase.values[0], HTTP_LCD_FORM_VALUE, "%s", ui.data.ports[port - 1].name );
+		snprintf ( lcdForm.text, sizeof lcdForm.text, "%s", ShownName ( port ) );
+		snprintf ( lcdForm.notice, sizeof lcdForm.notice, "Gotowe: powrot. Zapis nazwy na glownym /set." );
+		FormNativeDraw ();
+		return 1;
+	}
 	/* Show the actual schema immediately, with placeholders until the owner
 	 * supplies values. A busy WiFi/TLS task must not leave a black viewport. */
 	snprintf ( lcdForm.notice, sizeof lcdForm.notice, "Wczytuje wspolne ustawienia HTTP..." );
@@ -651,6 +665,20 @@ static void FormFinishEdit ( int commit )
 	{
 		lcdForm.text[FormField ( (unsigned) lcdForm.editing )->max_length] = 0;
 		FormNativeStop ();
+	}
+	if ( lcdForm.directName )
+	{
+		if ( commit )
+		{
+			unsigned index = lcdFormDraft.port - 1;
+			snprintf ( edit.names[index], sizeof edit.names[index], "%.30s", lcdForm.text );
+			snprintf ( edit.nameBase[index], sizeof edit.nameBase[index], "%.30s", lcdFormBase.values[0] );
+			edit.nameChanged[index] = strcmp ( edit.names[index], edit.nameBase[index] ) != 0;
+			edit.saved = edit.saveError = 0;
+		}
+		lcdForm.editing = -1;
+		lcdForm.nameDone = 1;
+		return;
 	}
 	if ( commit && lcdForm.selection < 0 )
 	{
@@ -739,6 +767,13 @@ static void FormNativeUpdate ( int down, uint16_t event, XY_Touch_Struct positio
 }
 static int FormUpdate ( void )
 {
+	if ( lcdForm.directName )
+	{
+		uint16_t event = LCD_TOUCH_GetTypeAndPosition ( &screenTouchPos );
+		XY_Touch_Struct position = LCD_TOUCH_GetPos ();
+		FormNativeUpdate ( LCD_TOUCH_isPress () == press, event, position );
+		return lcdForm.nameDone;
+	}
 	int latest_valid = 0;
 	uint32_t now = HAL_GetTick ();
 	if ( lcdForm.pending || lcdFormBase.serial != lcdForm.serial || (uint32_t) ( now - lcdForm.sample ) >= 250 )
