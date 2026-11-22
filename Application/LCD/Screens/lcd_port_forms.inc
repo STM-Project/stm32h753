@@ -318,26 +318,28 @@ static void FormOptionLabel ( const HTTP_SettingField *field, const char *code, 
 		--n;
 	out[n] = 0;
 }
-static void FormButton ( int x, int width, const char *text, int pressed )
+static void FormButton ( int x, int width, const char *text, int pressed, int clear )
 {
-	TileRound ( W, x, 14, width, 36, 4, pressed ? 0xFF285F90U : 0xFF468CCFU, pressed ? 0xFF285F90U : 0xFF468CCFU );
-	Text ( W, TOP, ui.font[0], x + 8, 23, width - 16, text, WHITE );
+	uint32_t color = clear ? ( pressed ? 0xFF992C36U : 0xFFC83A48U ) : ( pressed ? 0xFF285F90U : 0xFF468CCFU );
+	TileRound ( W, x, 14, width, 36, 4, color, color );
+	int text_x = clear ? x + ( width - LCD_GetWholeStrPxlWidth ( ui.font[0], "X", 0, NoConstWidth ) ) / 2 : x + 8;
+	Text ( W, TOP, ui.font[0], text_x, 23, width - 16, clear ? "X" : text, WHITE );
 }
 static void FormHeader ( void )
 {
 	Rect ( W, 0, 0, W, TOP, BG );
-	FormButton ( 36, 108, lcdForm.editing >= 0 ? "Anuluj" : "Wroc", lcdForm.armed == -10 );
+	FormButton ( 36, 108, lcdForm.editing >= 0 ? "Anuluj" : "Wroc", lcdForm.armed == -10, 0 );
 	char title[64];
 	if ( lcdForm.editing >= 0 && (unsigned) lcdForm.editing < lcdFormDraft.count )
 		FormLabel ( (unsigned) lcdForm.editing, title, sizeof title );
 	else
 		snprintf ( title, sizeof title, "%s . port %u", lcdFormDraft.page ? lcdFormDraft.page->title : "Wczytywanie", lcdFormDraft.port );
 	Text ( W, TOP, ui.font[1], 164, 22, 264, title, WHITE );
-	FormButton ( 436, 120, lcdForm.editing >= 0 ? ( lcdForm.selection >= 0 ? "Poczatek" : "Wyczysc" ) : "Odrzuc", lcdForm.armed == -11 );
+	FormButton ( 436, 120, lcdForm.editing >= 0 ? ( lcdForm.selection >= 0 ? "Poczatek" : "Wyczysc" ) : "Odrzuc", lcdForm.armed == -11, lcdForm.editing >= 0 && lcdForm.selection < 0 && !lcdForm.nativeActive );
 	FormButton ( 588, 136, lcdForm.editing >= 0 ? "Gotowe" : FormLoading () ? "Wczytuje..."
 														 : lcdForm.pending	? "Zapis..."
 																			: "Zapisz",
-				 lcdForm.armed == -12 );
+				 lcdForm.armed == -12, 0 );
 	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
 	Rect ( W, 0, 0, W, 40, BG );
 	Text ( W, 40, ui.font[0], 36, 12, 690, lcdForm.notice, GREEN );
@@ -510,9 +512,9 @@ static void FormNativeDraw ( void )
 	for ( unsigned i = 0; i < (unsigned) ( W * VIEW ); ++i )
 		pLcd[i] = BG;
 	LCD_DisplayBuff ( 0, TOP, W, VIEW, pLcd );
+	lcdForm.nativeActive = 1;
 	FormHeader ();
 	KEYBOARD_SetTextRows ( 1 );
-	lcdForm.nativeActive = 1;
 	lcdForm.nativePressed = -1;
 	lcdForm.drag = lcdForm.moved = 0;
 	lcdForm.armed = -1;
@@ -529,7 +531,11 @@ static void FormKeyboardDraw ( void )
 	for ( unsigned i = 0; i < (unsigned) ( W * VIEW ); ++i )
 		pLcd[i] = BG;
 	Rect ( W, 0, 0, W, 56, BG );
-	Rect ( W, 24, 8, 736, 44, WHITE );
+	for ( unsigned row = 0; row < 44; ++row )
+	{
+		uint32_t shade = 255U - 18U * row / 43U;
+		Rect ( W, 24, 8 + row, 736, 1, 0xFF000000U | ( shade * 0x010101U ) );
+	}
 	const char *shown = lcdForm.text;
 	while ( *shown && LCD_GetWholeStrPxlWidth ( ui.font[1], (char *) shown, 0, NoConstWidth ) > 712 )
 	{
@@ -711,7 +717,7 @@ static void FormNativeButton ( int action, int pressed )
 		return;
 	int x = action == -10 ? 36 : action == -11 ? 436 : 588;
 	int width = action == -10 ? 108 : action == -11 ? 120 : 136;
-	FormButton ( x, width, action == -10 ? "Anuluj" : action == -11 ? "Wyczysc" : "Gotowe", pressed );
+	FormButton ( x, width, action == -10 ? "Anuluj" : action == -11 ? "Wyczysc" : "Gotowe", pressed, 0 );
 	LCD_DisplayBuffStride ( (uint32_t) x, 14, (uint32_t) width, 36, pLcd + SCRATCH + 14 * W + x, W );
 }
 static void FormNativeUpdate ( int down, uint16_t event, XY_Touch_Struct position )
@@ -721,8 +727,10 @@ static void FormNativeUpdate ( int down, uint16_t event, XY_Touch_Struct positio
 		int key = KEY_Q + event - FORM_NATIVE_KEYS;
 		if ( lcdForm.nativePrevious && lcdForm.nativePrevious != key )
 			FormNativeKey ( KEY_All_release, 0 );
-		/* Forward repeats, including exit's native long-press clear action. */
-		FormNativeKey ( key, 0 );
+		if ( key != KEY_exit )
+			FormNativeKey ( key, 0 );
+		else if ( lcdForm.nativePrevious != KEY_exit )
+			FormNativeKey ( KEYBOARD_CLEAR_TEXT, 0 );
 		lcdForm.nativePrevious = key;
 	}
 	else if ( !down && lcdForm.nativePrevious )
@@ -757,11 +765,7 @@ static void FormNativeUpdate ( int down, uint16_t event, XY_Touch_Struct positio
 		FormFinishEdit ( action == -12 );
 	else if ( action == -11 )
 	{
-		/* Use the original clear action to reset its cursor/line bookkeeping
-		 * and refresh the text field without recreating the keyboard. */
-		for ( unsigned repeat = 0; repeat < 12; ++repeat )
-			FormNativeKey ( KEY_exit, 0 );
-		FormNativeKey ( KEY_All_release, 0 );
+		FormNativeKey ( KEYBOARD_CLEAR_TEXT, 0 );
 		lcdForm.nativePrevious = 0;
 	}
 }

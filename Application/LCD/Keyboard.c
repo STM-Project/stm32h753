@@ -1884,7 +1884,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 	#define _ARROWS_NMBR	 6
 	#define _EDGE_DIST	 7
 
-	#define TXTFIELD_COLOR		BrightDecr(frameColor,0x40)
+	#define TXTFIELD_COLOR		0xFFF6F6F6U
 	#define _UP		"up"
 	#define _LF		"<--"
 	#define _EN		"<-|"
@@ -2126,10 +2126,15 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 		BKCOPY(fillColor,fillColor_c[0]);
 	}
 
-	void _KeyEXIT_win(int nr,int relPress){	_PARAM_ARROW_EX;
-		u32 colorShape = CONDITION( relPress, colorTxtPressKey[nr], colorTxtKey[nr] );
-		if(0==_GetStyle()) KeyShapeDisp_Win (k,posKey[nr], LCDSHAPE_Exit, LCD_Exit(ToStructAndReturn, widthAll,heightAll, MIDDLE(posKey[nr].x,s[k].widthKey,size_EX.w),MIDDLE(posKey[nr].y,s[k].heightKey,size_EX.h), size_EX.w, size_EX.h, RED/*colorShape*/,colorShape,unUsed), relPress);
-		else					 KeyShapeDisp2_Win(k,posKey[nr], LCDSHAPE_Exit, LCD_Exit(ToStructAndReturn, widthAll,heightAll, MIDDLE(posKey[nr].x,s[k].widthKey,size_EX.w),MIDDLE(posKey[nr].y,s[k].heightKey,size_EX.h), size_EX.w, size_EX.h, RED/*colorShape*/,colorShape,unUsed), relPress);
+	void _KeyEXIT_win(int nr){	_PARAM_ARROW_EX;
+		uint32_t previousFill = fillColor;
+		fillColor = 0xFFC83A48U;
+		SHAPE_PARAMS symbol = LCD_Exit(ToStructAndReturn, widthAll, heightAll,
+			MIDDLE(posKey[nr].x,s[k].widthKey,size_EX.w), MIDDLE(posKey[nr].y,s[k].heightKey,size_EX.h),
+			size_EX.w, size_EX.h, WHITE, WHITE, unUsed);
+		if(0==_GetStyle()) KeyShapeDisp_Win(k,posKey[nr], LCDSHAPE_Exit, symbol, release);
+		else KeyShapeDisp2_Win(k,posKey[nr], LCDSHAPE_Exit, symbol, release);
+		fillColor = previousFill;
 	}
 
 	void _KeyStr_ind(int nr){
@@ -2248,7 +2253,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 		charsInGivenRow = offsCharBuff-offsBuff;
 		cursorVar.pos.y = LCD_GetFontHeight(fontID) * CONDITION(nrRow,nrRow,1);
 		cursorVar.pos.x = CONDITION(0==charsInGivenRow, 0, LCD_GetStrPxlWidth(fontID,&charBuff[offsBuff], charsInGivenRow ,textParam.space,textParam.constWidth));
-		if( cursorVar.pos.x + LCD_GetFontWidth(fontID,_GetCursorChar()) >= LineLenBuff[nrRow-1]  	&&   nrRow < setTextRows ){
+		if( nrRow > 0 && nrRow < setTextRows && cursorVar.pos.x + LCD_GetFontWidth(fontID,_GetCursorChar()) >= LineLenBuff[nrRow-1] ){
 			cursorVar.pos.y = LCD_GetFontHeight(fontID)*(nrRow+1);
 			cursorVar.pos.x = 0;
 	}}
@@ -2264,7 +2269,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 	void _DispTxt2Field_Ind(u8 *seperateTxtParam){
 		_DispTxtFieldInd();
 		_DisplayTxt2Field(charBuff,seperateTxtParam,  widthFieldTxt,heightFieldTxt, 0,0);
-		_CursorShapeWin(cursorVar.pos, widthFieldTxt,widthFieldTxt,_GetCursorChar());
+		_CursorShapeWin(cursorVar.pos, widthFieldTxt,heightFieldTxt,_GetCursorChar());
 		LCD_Display(0, s[k].x+s[k].interSpace, s[k].y+s[k].interSpace, widthFieldTxt,heightFieldTxt);
 	}
 
@@ -2297,14 +2302,19 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 		return 1;
 	}
 
+	void _ClearText(void){
+		cursorVar.offs = 0;
+		memset(charBuff, 0, charBuffSize);
+		_DeleteRowsInLineLenBuff(0, _ARROWS_NMBR-1);
+		_DispSeperatedTxt2Field_Ind();
+	}
+
 	void _ExitTouchService(void){
 			  if(altParam.pressTime < 10)  altParam.pressTime++;
 		else if(altParam.pressTime > 11)  altParam.pressTime=0;
 		else if(altParam.pressTime==10){  altParam.pressTime=11;
-			cursorVar.offs=0;
-			memset(charBuff,0,charBuffSize);		_DeleteRowsInLineLenBuff(0,_ARROWS_NMBR-1);
 			_TouchExitFlag_AsClearBufferTxt();
-			_DispSeperatedTxt2Field_Ind();
+			_ClearText();
 	}}
 
 	void _ServiceTxtFieldTouch(void)
@@ -2500,7 +2510,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 				s[k].widthKey = wKey[i];
 					  if(_IsSign(i,_LF,NULL,NULL))  _KeyBACK_win	(i,0);
 				else if(_IsSign(i,_EN,NULL,NULL))  _KeyENTER_win(i,0);
-				else if(_IsSign(i,_EX,NULL,NULL))  _KeyEXIT_win	(i,0);
+				else if(_IsSign(i,_EX,NULL,NULL))  _KeyEXIT_win(i);
 				else if(_IsSign(i,_AL,NULL,NULL))  _ServiceDispKey(i,release);
 				else if(IS_RANGE(i,0,countKey2-1))
 				{
@@ -2528,7 +2538,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 				if		 (_IsSign(i,_UP,NULL,NULL))  _KeyUP_win	(i);
 				else if(_IsSign(i,_LF,NULL,NULL))  _KeyBACK_win	(i,0);
 				else if(_IsSign(i,_EN,NULL,NULL))  _KeyENTER_win(i,0);
-				else if(_IsSign(i,_EX,NULL,NULL))  _KeyEXIT_win	(i,0);
+				else if(_IsSign(i,_EX,NULL,NULL))  _KeyEXIT_win(i);
 				else										  _ServiceDispKey(i,release);
 			}
 			s[k].widthKey = c.widthKey;
@@ -2543,7 +2553,8 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 
 	if(_TouchExitFlag_IsAsClearBufferTxt()){	if(tExit != selBlockPress){ _TouchExitFlag_AsDeleteKeyboard(); altParam.pressTime=0; }	}
 
-	if(touchRelease == selBlockPress) _DispAllReleaseKeyboard();
+	if(KEYBOARD_CLEAR_TEXT == selBlockPress) _ClearText();
+	else if(touchRelease == selBlockPress) _DispAllReleaseKeyboard();
 
 	else if(tBig == selBlockPress){		_ToogleUp();
 		nr = selBlockPress-touchAction;
