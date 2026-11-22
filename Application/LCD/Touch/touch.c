@@ -210,22 +210,23 @@ void CalibrationWasDone(void)
 
 static uint8_t GetTouchPos(XY_Touch_Struct *pos)
 {
-  /* STMPE811 INT is active low. A pending level must also be serviced
-   * when its edge occurred during startup, before the task was ready. */
-  if(touchDetect || HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4)==GPIO_PIN_RESET)
-  {
-	 touchDetect=0;
-	 BSP_TS_ClearIT();
-	 BSP_TS_GetState(&TS_State);
+  uint8_t pending = touchDetect || HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4) == GPIO_PIN_RESET;
 
-	 if(TS_State.TouchDetected)
-	 {
-		 pos->x = Calibration_GetX(TS_State.x);
-	    pos->y = Calibration_GetY(TS_State.y);
-	    return 1;
-	 }
-  }
-  return 0;
+  /* Sample independently of INT so a missed edge cannot stall touch. */
+  touchDetect = 0;
+  if(BSP_TS_GetState(&TS_State) != 0)
+    return 0;
+
+  /* Acknowledge after servicing the FIFO. */
+  if(pending)
+    BSP_TS_ClearIT();
+
+  if(!TS_State.TouchDetected)
+    return 0;
+
+  pos->x = Calibration_GetX(TS_State.x);
+  pos->y = Calibration_GetY(TS_State.y);
+  return 1;
 }
 
 static uint16_t GetTouchType(int *param)

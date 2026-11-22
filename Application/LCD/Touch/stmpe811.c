@@ -206,7 +206,7 @@ static void IOE_Delay(uint32_t Delay)
   HAL_Delay(Delay);
 }
 
-static void I2Cx_Error(uint8_t Addr)
+static void I2Cx_Error(void)
 {
   io_failed = 1;
   /* De-initialize the IOE comunication BUS */
@@ -221,6 +221,8 @@ static uint8_t I2Cx_Read(uint8_t Addr, uint8_t Reg)
   HAL_StatusTypeDef status = HAL_OK;
   uint8_t Value = 0;
 
+  if(io_failed) return 0;
+
   status = HAL_I2C_Mem_Read(&hi2c1, Addr, Reg, I2C_MEMADD_SIZE_8BIT, &Value, 1, I2C_TIMEOUT);
 
   /* Check the communication status */
@@ -228,7 +230,7 @@ static uint8_t I2Cx_Read(uint8_t Addr, uint8_t Reg)
   {
     RecordInitError('R',Reg,status);
     /* Execute user timeout callback */
-    I2Cx_Error(Addr);
+    I2Cx_Error();
   }
 
   return Value;
@@ -238,6 +240,8 @@ static void I2Cx_Write(uint8_t Addr, uint8_t Reg, uint8_t Value)
 {
   HAL_StatusTypeDef status = HAL_OK;
 
+  if(io_failed) return;
+
   status = HAL_I2C_Mem_Write(&hi2c1, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT, &Value, 1, I2C_TIMEOUT);
 
   /* Check the communication status */
@@ -245,7 +249,7 @@ static void I2Cx_Write(uint8_t Addr, uint8_t Reg, uint8_t Value)
   {
     RecordInitError('W',Reg,status);
     /* I2C error occured */
-    I2Cx_Error(Addr);
+    I2Cx_Error();
   }
 }
 
@@ -263,13 +267,15 @@ static HAL_StatusTypeDef I2Cx_ReadMultiple(uint8_t Addr, uint16_t Reg, uint16_t 
 {
   HAL_StatusTypeDef status = HAL_OK;
 
+  if(io_failed) return HAL_ERROR;
+
   status = HAL_I2C_Mem_Read(&hi2c1, Addr, (uint16_t)Reg, MemAddress, Buffer, Length, I2C_TIMEOUT);
 
   /* Check the communication status */
   if(status != HAL_OK)
   {
     /* I2C error occured */
-    I2Cx_Error(Addr);
+    I2Cx_Error();
   }
   return status;
 }
@@ -490,27 +496,26 @@ static void stmpe811_TS_Start(uint16_t DeviceAddr)
 
 static uint8_t stmpe811_TS_DetectTouch(uint16_t DeviceAddr)
 {
-  uint8_t state;
-  uint8_t ret = 0;
-  
-  state = ((IOE_Read(DeviceAddr, STMPE811_REG_TSC_CTRL) & (uint8_t)STMPE811_TS_CTRL_STATUS) == (uint8_t)0x80);
-  
-  if(state > 0)
+  uint8_t control = IOE_Read(DeviceAddr, STMPE811_REG_TSC_CTRL);
+  if(io_failed) return 0;
+  if(!(control & STMPE811_TS_CTRL_ENABLE))
   {
-    if(IOE_Read(DeviceAddr, STMPE811_REG_FIFO_SIZE) > 0)
-    {
-      ret = 1;
-    }
+    io_failed = 1; /* Reconfigure a controller that lost its register state. */
+    return 0;
   }
-  else
+
+  if(IOE_Read(DeviceAddr, STMPE811_REG_FIFO_SIZE) == 0)
   {
-    /* Reset FIFO */
-    IOE_Write(DeviceAddr, STMPE811_REG_FIFO_STA, 0x01);
-    /* Enable the FIFO again */
-    IOE_Write(DeviceAddr, STMPE811_REG_FIFO_STA, 0x00);
+    if((control & STMPE811_TS_CTRL_STATUS) && (IOE_Read(DeviceAddr, STMPE811_REG_FIFO_STA) & 0x01))
+      io_failed = 1;
+    return 0;
   }
-  
-  return ret;
+  if(control & STMPE811_TS_CTRL_STATUS) return 1;
+
+  /* Discard samples from a contact that has already ended. */
+  IOE_Write(DeviceAddr, STMPE811_REG_FIFO_STA, 0x01);
+  IOE_Write(DeviceAddr, STMPE811_REG_FIFO_STA, 0x00);
+  return 0;
 }
 
 static void stmpe811_TS_GetXY(uint16_t DeviceAddr, uint16_t *X, uint16_t *Y)
@@ -518,10 +523,11 @@ static void stmpe811_TS_GetXY(uint16_t DeviceAddr, uint16_t *X, uint16_t *Y)
   uint8_t  dataXYZ[4];
   uint32_t uldataXYZ;
   
-  IOE_ReadMultiple(DeviceAddr, STMPE811_REG_TSC_DATA_NON_INC, dataXYZ, sizeof(dataXYZ)) ;
+  if(IOE_ReadMultiple(DeviceAddr, STMPE811_REG_TSC_DATA_NON_INC, dataXYZ, sizeof(dataXYZ)) != HAL_OK)
+    return;
   
   /* Calculate positions values */
-  uldataXYZ = (dataXYZ[0] << 24)|(dataXYZ[1] << 16)|(dataXYZ[2] << 8)|(dataXYZ[3] << 0);     
+  uldataXYZ = ((uint32_t)dataXYZ[0] << 24)|(dataXYZ[1] << 16)|(dataXYZ[2] << 8)|(dataXYZ[3] << 0);
   *X = (uldataXYZ >> 20) & 0x00000FFF;     
   *Y = (uldataXYZ >>  8) & 0x00000FFF;     
   
@@ -620,12 +626,27 @@ uint8_t BSP_TS_GetState(TS_StateTypeDef *TS_State)
   uint16_t xDiff, yDiff , x , y;
   uint16_t swap;
 
-  if(!ts_driver){TS_State->TouchDetected=0;return TS_ERROR;}
-  TS_State->TouchDetected = ts_driver->DetectTouch(TS_I2C_ADDRESS);
+  TS_State->TouchDetected = 0;
+  if(!ts_driver) return TS_ERROR;
 
-  if(TS_State->TouchDetected)
+  if(io_failed)
+  {
+    io_failed = 0;
+    /* Restore the controller, including a FIFO left in reset by a failed write. */
+    stmpe811_Reset(TS_I2C_ADDRESS);
+    ts_driver->Start(TS_I2C_ADDRESS);
+    ts_driver->ClearIT(TS_I2C_ADDRESS);
+    ts_driver->EnableIT(TS_I2C_ADDRESS);
+    if(io_failed) return TS_ERROR;
+  }
+
+  uint8_t detected = ts_driver->DetectTouch(TS_I2C_ADDRESS);
+  if(io_failed) return TS_ERROR;
+
+  if(detected)
   {
     ts_driver->GetXY(TS_I2C_ADDRESS, &x, &y);
+    if(io_failed) return TS_ERROR;
 
     if(ts_orientation & TS_SWAP_X)
     {
@@ -656,6 +677,7 @@ uint8_t BSP_TS_GetState(TS_StateTypeDef *TS_State)
       y_p = _y;
     }
 
+    TS_State->TouchDetected = 1;
     TS_State->x = x_p;
     TS_State->y = y_p;
   }
@@ -665,8 +687,7 @@ uint8_t BSP_TS_GetState(TS_StateTypeDef *TS_State)
 
 void BSP_TS_ClearIT(void)
 {
-    ts_driver = &stmpe811_ts_drv;
-    ts_driver->ClearIT(TS_I2C_ADDRESS);
+    if(ts_driver) ts_driver->ClearIT(TS_I2C_ADDRESS);
 }
 
 void TOUCH_SetNewResolution(uint8_t resol){

@@ -17,11 +17,13 @@
 extern uint32_t pLcd[];
 #define W 800
 #define H 480
-#define TOP 72
+#define BASE_TOP 72
+#define SET_TOP 64
 #define BASE_VIEW 368
-#define SET_VIEW ( H - TOP )
+#define SET_VIEW ( H - SET_TOP )
 static int panelView = BASE_VIEW;
 #define VIEW panelView
+#define TOP ( VIEW == SET_VIEW ? SET_TOP : BASE_TOP )
 #define SCRATCH ( (uint32_t) ( W * VIEW ) )
 #define CONTENT_X 36
 #define COL_W 216
@@ -608,7 +610,7 @@ static void Header ( void )
 		return;
 	}
 	Rect ( W, 0, 0, W, TOP, BG );
-	TileRound ( W, 36, 8, 690, 46, 7, FRAME, 0xFF333333U );
+	TileRound ( W, 36, 8, 690, ui.settings ? 40 : 46, 7, FRAME, 0xFF333333U );
 	Text ( W, 64, ui.font[1], 52, 20, ui.settings ? 410 : 480, ui.settings ? "H7 . Ustawienia portow /set" : "H7 . Panel odczytowy /main", WHITE );
 	if ( ui.settings )
 	{
@@ -628,7 +630,7 @@ static void Header ( void )
 	uint32_t notice_color = MUTED;
 	if ( ui.settings )
 	{
-		notice = "Nazwa portu                  Tryb               Nr          Odczyt / sterowanie";
+		notice = NULL;
 		if ( EditSaving () )
 		{
 			notice = "Zapisywanie ustawien na karcie SD...";
@@ -652,7 +654,8 @@ static void Header ( void )
 					notice_color = 0xFFFFCC55U;
 					break;
 				}
-		Text ( W, TOP, ui.font[0], 36, TOP - LCD_GetFontHeight ( ui.font[0] ) - 1, 690, notice, notice_color );
+		if ( notice )
+			Text ( W, TOP, ui.font[0], 36, TOP - LCD_GetFontHeight ( ui.font[0] ), 690, notice, notice_color );
 	}
 	LCD_DisplayBuff ( 0, 0, W, TOP, pLcd + SCRATCH );
 	if ( !ui.settings )

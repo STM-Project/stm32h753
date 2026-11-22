@@ -90,6 +90,7 @@ int LCD_GetFontHeight(int font){return font==28?35:font==20?27:font==18?24:font=
 int LCD_GetFontHalfHeight(int font){return LCD_GetFontHeight(font)-(font>=20?7:4);}
 int LCD_GetWholeStrPxlWidth(int f,char*t,int s,int c){(void)s;(void)c;int n=0;for(;*t;t++)n+=glyph_width[f==28?4:f==20?2:f==18?3:f==16?1:0][(unsigned char)*t];return n;}
 void LCD_StrChangeColorWindow(uint32_t offset,uint32_t w,uint32_t h,int font,int x,int y,char*t,int only,int space,uint32_t bg,uint32_t color,uint8_t a,int fixed){
+ assert(!strstr(t,"Odczyt / sterowanie"));
  if(strstr(t,"Zapisywanie ustawien")||strstr(t,"Nie zapisano ustawien")||strstr(t,"Zapisano na SD")||strstr(t,"Niezapisane zmiany")){assert(h==TOP&&y>=48&&y+LCD_GetFontHeight(font)<=TOP);status_messages++;}
  if(check_port_name){assert(!strstr(t,"..."));assert(color==WHITE);port_name_lines++;port_name_font=font;}
  if(check_percent&&strchr(t,'%')){assert(!strcmp(t,"%")&&font==12);percent_count++;}
@@ -112,7 +113,7 @@ uint32_t LCD_GetXSize(void){return 800;}uint32_t LCD_GetYSize(void){return 480;}
 int LCD_TOUCH_isPress(void){return down;}XY_Touch_Struct LCD_TOUCH_GetPos(void){return pos;}
 uint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct*p){*p=pos;return native_event;}
 void LCD_DisplayBuff(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *s){
- assert(x+w<=800&&y+h<=480&&s>=pLcd&&s+w*h<=pLcd+800*480);draws++;if(w==800&&(h==368||h==408))viewport_draws++;
+ assert(x+w<=800&&y+h<=480&&s>=pLcd&&s+w*h<=pLcd+800*480);draws++;if(w==800&&(h==BASE_VIEW||h==SET_VIEW))viewport_draws++;
  for(unsigned row=0;row<h;row++)memcpy(shown+(y+row)*800+x,s+row*w,w*4);
 }
 void LCD_DisplayBuffStride(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t *s,uint32_t stride){
@@ -199,13 +200,13 @@ int main(void){
  touch(1,x+90,y);assert(ui.pressed==28);touch(0,x+90,y);assert(toggle_calls==1);
  touch(1,x+90,y);touch(1,x+90,y-20);touch(0,x+90,y-20);assert(toggle_calls==1);
  assert(LCD_HttpPanel(2,0)==0&&!active);
- assert(LCD_HttpPanel(1,1)==0&&active&&ui.count==33);assert(VIEW==408&&SCRATCH==800u*408);assert(shown[479*800+SCROLL_X]==0xFF333333U);preview("lcd-http-settings-top");
+ assert(LCD_HttpPanel(1,1)==0&&active&&ui.count==33);assert(TOP==64&&VIEW==416&&SCRATCH==800u*416);assert(shown[479*800+SCROLL_X]==0xFF333333U);preview("lcd-http-settings-top");
  strcpy(model.ports[0].name,"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");tick+=250;LCD_HttpPanel(0,1);preview("lcd-http-settings-long-name");
  strcpy(model.ports[0].name,"Nazwa portu nr 1");tick+=250;LCD_HttpPanel(0,1);
 
  assert(shown[20*800+705]==shown[42*800+705]); /* solid save fill */
- assert(shown[92*800+410]==shown[116*800+410]); /* solid dropdown */
- assert(shown[92*800+700]==0xffeeeeee&&shown[120*800+700]==0xffeeeeee); /* white value field */
+ assert(shown[(TOP+20)*800+410]==shown[(TOP+44)*800+410]); /* solid dropdown */
+ assert(shown[(TOP+20)*800+700]==0xffeeeeee&&shown[(TOP+48)*800+700]==0xffeeeeee); /* white value field */
  /* All four field corners expose the card background, unlike a rectangle. */
  const int fx=CONTENT_X+442,fy=TOP+16;
  assert(shown[fy*800+fx]==CARD&&shown[fy*800+fx+231]==CARD);
