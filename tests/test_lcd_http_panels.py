@@ -125,11 +125,11 @@ void KEYBOARD_SetGeneral(int a,int b,int c,int d,int e,int f,int g,int h,int i,i
 int KEYBOARD_StartUp(int type,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase){
  (void)bold;(void)space;(void)forTouch;(void)erase;if(type&&shape){assert(start==FORM_NATIVE_KEYS&&start+35<=255&&x==10&&y==65&&w>0&&h>0);native_creates++;}return 0;
 }
-void KEYBOARD__ServiceSetTxt(int k,int key,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase,int releaseKey,int action,int big,int back,int alt,int enter,int field,int style,int exitKey,uint32_t color,char *buffer,int size){
+void KEYBOARD__ServiceSetTxt(int k,int key,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase,int releaseKey,int action,int big,int back,int alt,int enter,int field,int style,int exitKey,uint32_t color,char *buffer,int size,int clearOnTap){
  (void)k;(void)bold;(void)x;(void)y;(void)w;(void)h;(void)space;(void)forTouch;(void)start;(void)erase;(void)releaseKey;(void)action;(void)big;(void)back;(void)alt;(void)enter;(void)field;(void)style;(void)exitKey;(void)color;
- assert(size==33||size==23);native_calls++;native_buffer=buffer;
+ assert(clearOnTap&&(size==33||size==23));native_calls++;native_buffer=buffer;
  if(!key){native_last=0;native_releases++;}
- if(!shape&&key==KEYBOARD_CLEAR_TEXT)memset(buffer,0,(size_t)size);
+ if(!shape&&(key==KEYBOARD_CLEAR_TEXT||key==exitKey))memset(buffer,0,(size_t)size);
  if(!shape&&key==KEY_Q){size_t n=strlen(buffer);if(native_last==key&&n)buffer[n-1]='1';else{assert(n+3<(size_t)size);buffer[n]='q';buffer[n+1]=0;}native_last=key;}
  buffer[size-2]=1;buffer[size-1]=2; /* native cursor metadata must never be saved */
 }
@@ -335,9 +335,8 @@ int main(void){
  strcpy(native_buffer,"Anulowana nazwa");touch(1,70,30);touch(0,70,30);
  assert(!LCD_HttpPanelModal()&&!strcmp(edit.names[14],local_name));
  touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);int stable_creates=native_creates,stable_view=viewport_draws;
- strcpy(native_buffer,"Wyczysc klawiszem X");native_event=FORM_NATIVE_KEYS+KEY_exit-KEY_Q;
- touch(1,100,280);assert(!native_buffer[0]);
- native_event=0;touch(0,100,280);assert(lcdForm.nativeActive&&!native_buffer[0]&&native_creates==stable_creates&&viewport_draws==stable_view);
+ strcpy(native_buffer,"Wyczysc klawiszem X");touch(1,100,280);assert(native_buffer[0]);
+ native_event=FORM_NATIVE_KEYS+KEY_exit-KEY_Q;touch(0,100,280);native_event=0;assert(lcdForm.nativeActive&&!native_buffer[0]&&native_creates==stable_creates&&viewport_draws==stable_view);
  strcpy(native_buffer,"Wyczysc przyciskiem");touch(1,500,30);touch(0,500,30);
  assert(lcdForm.nativeActive&&!native_buffer[0]&&native_creates==stable_creates&&viewport_draws==stable_view);
  touch(1,70,30);touch(0,70,30);assert(!LCD_HttpPanelModal()&&!strcmp(edit.names[14],local_name));

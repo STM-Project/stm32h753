@@ -365,7 +365,7 @@ static void Keyboard ( int key, int create )
 	KEYBOARD_StartUp ( KEYBOARD_TYPE_ID, shape, 0, 10, 65, ui.keyWidth, ui.keyHeight, 10, 0, TOUCH_KEYS, KeysDel );
 	KEYBOARD__ServiceSetTxt ( KEYBOARD_TYPE_ID - 1, key, shape, 0, 10, 65, ui.keyWidth, ui.keyHeight, 10, 0,
 							  create ? TOUCH_KEYS : 0, KeysDel, KEY_All_release, KEY_Q, KEY_big, KEY_back, KEY_alt,
-							  KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, ui.edit, sizeof ( ui.edit ) );
+							  KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, ui.edit, sizeof ( ui.edit ), 1 );
 }
 static int EditorOpen ( int field )
 {
@@ -532,8 +532,6 @@ int LCD_SensorThresholds ( uint8_t mode )
 		if ( down && screenTouchState >= TOUCH_KEYS && screenTouchState < TOUCH_KEYS + 36 )
 		{
 			int key = KEY_Q + ( screenTouchState - TOUCH_KEYS );
-			if ( key == KEY_exit )
-				return EditorClose ( 0 );
 			/* Repeated events of the SAME held key must reach Keyboard.c
              * without release: its keyPressPrev/pressTime select alternatives.
              */
@@ -547,6 +545,8 @@ int LCD_SensorThresholds ( uint8_t mode )
 			Keyboard ( KEY_All_release, 0 );
 			ui.previousKey = 0;
 		}
+		if ( !down && screenTouchState == TOUCH_KEYS + KEY_exit - KEY_Q )
+			Keyboard ( KEY_exit, 0 );
 		/* No event while still down is the native repeat wait, not release. */
 		XY_Touch_Struct p = LCD_TOUCH_GetPos ();
 		int hit = p.y >= 8 && p.y < 48 ? ( p.x >= 550 && p.x < 656 ? 20 : p.x >= 668 && p.x < 774 ? 21

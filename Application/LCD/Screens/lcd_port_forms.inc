@@ -503,7 +503,7 @@ static void FormNativeKey ( int key, int create )
 	int size = (int) FormField ( (unsigned) lcdForm.editing )->max_length + 3;
 	if ( size > (int) sizeof lcdForm.text )
 		size = sizeof lcdForm.text;
-	KEYBOARD__ServiceSetTxt ( 0, key, shape, 0, 10, 65, width, height, 10, 0, create ? FORM_NATIVE_KEYS : 0, KeysDel, KEY_All_release, KEY_Q, KEY_big, KEY_back, KEY_alt, KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, lcdForm.text, size );
+	KEYBOARD__ServiceSetTxt ( 0, key, shape, 0, 10, 65, width, height, 10, 0, create ? FORM_NATIVE_KEYS : 0, KeysDel, KEY_All_release, KEY_Q, KEY_big, KEY_back, KEY_alt, KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, lcdForm.text, size, 1 );
 }
 static void FormNativeDraw ( void )
 {
@@ -727,10 +727,7 @@ static void FormNativeUpdate ( int down, uint16_t event, XY_Touch_Struct positio
 		int key = KEY_Q + event - FORM_NATIVE_KEYS;
 		if ( lcdForm.nativePrevious && lcdForm.nativePrevious != key )
 			FormNativeKey ( KEY_All_release, 0 );
-		if ( key != KEY_exit )
-			FormNativeKey ( key, 0 );
-		else if ( lcdForm.nativePrevious != KEY_exit )
-			FormNativeKey ( KEYBOARD_CLEAR_TEXT, 0 );
+		FormNativeKey ( key, 0 );
 		lcdForm.nativePrevious = key;
 	}
 	else if ( !down && lcdForm.nativePrevious )
@@ -738,6 +735,8 @@ static void FormNativeUpdate ( int down, uint16_t event, XY_Touch_Struct positio
 		FormNativeKey ( KEY_All_release, 0 );
 		lcdForm.nativePrevious = 0;
 	}
+	if ( !down && event == FORM_NATIVE_KEYS + KEY_exit - KEY_Q )
+		FormNativeKey ( KEY_exit, 0 );
 	int hit = -1;
 	if ( position.y >= 14 && position.y < 50 )
 	{

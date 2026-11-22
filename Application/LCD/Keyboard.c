@@ -1878,7 +1878,7 @@ int KEYBOARD_ServiceLenOffsWin(int k, int selBlockPress, INIT_KEYBOARD_PARAM, in
 	#undef _NMB2KEY
 }
 
-void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int touchRelease, int touchAction, int tBig,int tBack,int tAlt,int tEnter,int tField,int tStyle,int tExit,uint32_t colorDescr, char *charBuff,int charBuffSize)
+void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int touchRelease, int touchAction, int tBig,int tBack,int tAlt,int tEnter,int tField,int tStyle,int tExit,uint32_t colorDescr, char *charBuff,int charBuffSize,int clearOnTap)
 {
 	textKeyboardGradient = 1;
 	#define _ARROWS_NMBR	 6
@@ -2126,15 +2126,10 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 		BKCOPY(fillColor,fillColor_c[0]);
 	}
 
-	void _KeyEXIT_win(int nr){	_PARAM_ARROW_EX;
-		uint32_t previousFill = fillColor;
-		fillColor = 0xFFC83A48U;
-		SHAPE_PARAMS symbol = LCD_Exit(ToStructAndReturn, widthAll, heightAll,
-			MIDDLE(posKey[nr].x,s[k].widthKey,size_EX.w), MIDDLE(posKey[nr].y,s[k].heightKey,size_EX.h),
-			size_EX.w, size_EX.h, WHITE, WHITE, unUsed);
-		if(0==_GetStyle()) KeyShapeDisp_Win(k,posKey[nr], LCDSHAPE_Exit, symbol, release);
-		else KeyShapeDisp2_Win(k,posKey[nr], LCDSHAPE_Exit, symbol, release);
-		fillColor = previousFill;
+	void _KeyEXIT_win(int nr,int relPress){	_PARAM_ARROW_EX;
+		u32 colorShape = CONDITION( relPress, colorTxtPressKey[nr], colorTxtKey[nr] );
+		if(0==_GetStyle()) KeyShapeDisp_Win (k,posKey[nr], LCDSHAPE_Exit, LCD_Exit(ToStructAndReturn, widthAll,heightAll, MIDDLE(posKey[nr].x,s[k].widthKey,size_EX.w),MIDDLE(posKey[nr].y,s[k].heightKey,size_EX.h), size_EX.w, size_EX.h, RED/*colorShape*/,colorShape,unUsed), relPress);
+		else					 KeyShapeDisp2_Win(k,posKey[nr], LCDSHAPE_Exit, LCD_Exit(ToStructAndReturn, widthAll,heightAll, MIDDLE(posKey[nr].x,s[k].widthKey,size_EX.w),MIDDLE(posKey[nr].y,s[k].heightKey,size_EX.h), size_EX.w, size_EX.h, RED/*colorShape*/,colorShape,unUsed), relPress);
 	}
 
 	void _KeyStr_ind(int nr){
@@ -2464,12 +2459,9 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 				/* s[k].nmbTouch--; */		/* This is not needed, write of touch is not in order (next by next) because of signs: _AL,_EN,_LF,_EX */
 			}
 		}
-		for(int i=0; i<countKey; ++i){
+		for(int i=0; i<countKey2; ++i){
 			BKCOPY_VAL(c.widthKey,s[k].widthKey,wKey2[i]);
-			if(_IsSign(i,_AL,NULL,NULL) || _IsSign(i,_EN,NULL,NULL) || _IsSign(i,_LF,NULL,NULL) || _IsSign(i,_EX,NULL,NULL));
-			else if(IS_RANGE(i,0,countKey2-1)){
-				SetTouch(k,ID_TOUCH_POINT,s[k].startTouchIdx+i,press,posKey2[i]);
-			}
+			SetTouch(k,ID_TOUCH_POINT,s[k].startTouchIdx+i,press,posKey2[i]);
 			BKCOPY(s[k].widthKey,c.widthKey);
 		}
 	}
@@ -2510,7 +2502,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 				s[k].widthKey = wKey[i];
 					  if(_IsSign(i,_LF,NULL,NULL))  _KeyBACK_win	(i,0);
 				else if(_IsSign(i,_EN,NULL,NULL))  _KeyENTER_win(i,0);
-				else if(_IsSign(i,_EX,NULL,NULL))  _KeyEXIT_win(i);
+				else if(_IsSign(i,_EX,NULL,NULL))  _KeyEXIT_win(i,0);
 				else if(_IsSign(i,_AL,NULL,NULL))  _ServiceDispKey(i,release);
 				else if(IS_RANGE(i,0,countKey2-1))
 				{
@@ -2538,7 +2530,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 				if		 (_IsSign(i,_UP,NULL,NULL))  _KeyUP_win	(i);
 				else if(_IsSign(i,_LF,NULL,NULL))  _KeyBACK_win	(i,0);
 				else if(_IsSign(i,_EN,NULL,NULL))  _KeyENTER_win(i,0);
-				else if(_IsSign(i,_EX,NULL,NULL))  _KeyEXIT_win(i);
+				else if(_IsSign(i,_EX,NULL,NULL))  _KeyEXIT_win(i,0);
 				else										  _ServiceDispKey(i,release);
 			}
 			s[k].widthKey = c.widthKey;
@@ -2553,7 +2545,7 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 
 	if(_TouchExitFlag_IsAsClearBufferTxt()){	if(tExit != selBlockPress){ _TouchExitFlag_AsDeleteKeyboard(); altParam.pressTime=0; }	}
 
-	if(KEYBOARD_CLEAR_TEXT == selBlockPress) _ClearText();
+	if(KEYBOARD_CLEAR_TEXT == selBlockPress || (clearOnTap && tExit == selBlockPress)) _ClearText();
 	else if(touchRelease == selBlockPress) _DispAllReleaseKeyboard();
 
 	else if(tBig == selBlockPress){		_ToogleUp();
@@ -2634,9 +2626,9 @@ void KEYBOARD__ServiceSetTxt(int k, int selBlockPress, INIT_KEYBOARD_PARAM, int 
 		int i;
 		for(i=0; i<countKey; ++i){
 			BKCOPY_VAL(c.widthKey,s[k].widthKey,wKey[i]);
-			if(_IsSign(i,_UP,NULL,NULL) ||
-				_IsSign(i,_AL,NULL,NULL) ||
-				_IsSign(i,_EN,NULL,NULL))
+			if(clearOnTap && _IsSign(i,_EX,NULL,NULL))
+				SetTouch(k,ID_TOUCH_POINT,s[k].startTouchIdx+i,release,posKey[i]);
+			else if(_IsSign(i,_UP,NULL,NULL) || _IsSign(i,_AL,NULL,NULL) || _IsSign(i,_EN,NULL,NULL))
 				SetTouch(k,ID_TOUCH_POINT,s[k].startTouchIdx+i,press,posKey[i]);
 			else{
 				touchTemp[0].x= s[k].x + posKey[i].x;

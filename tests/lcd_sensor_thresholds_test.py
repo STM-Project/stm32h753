@@ -4,7 +4,7 @@ import tempfile, subprocess, shutil
 root=Path(__file__).resolve().parents[1]
 resources = {
     'test_support.h': '#ifndef TEST_SUPPORT_H\n#define TEST_SUPPORT_H\n#include <stdint.h>\n#include <stddef.h>\ntypedef struct {uint16_t x,y;} XY_Touch_Struct;\nextern uint16_t screenTouchState;\nextern XY_Touch_Struct screenTouchPos;\nenum {press=1,release=0,pressRelease=2,ID_TOUCH_POINT=0};\nenum {FONT_12=12,FONT_14=14,FONT_18_bold=18,FONT_9=9,FONT_14_bold=14,FONT_36=36,FONT_16=16,FONT_24=24,FONT_28_bold=28,FONT_72=72,Arial=0};\nenum {fontID_14=13,fontID_15=14,fontID_16=15,fontID_17=16};\nenum {fullHight=-3,NoConstWidth=0,ConstWidth=1};\n#define LCD_Rectangle ((void*)1)\n#define LCD_RoundRectangle ((void*)2)\ntypedef void* figureShape;\nuint32_t HAL_GetTick(void);\nvoid SCREEN_ResetAllParameters(void);\nvoid LCD_Buffer(uint16_t,uint16_t,uint16_t,uint32_t);\nvoid LCD_Shape(uint32_t,uint32_t,void*,uint32_t,uint32_t,uint32_t,uint32_t,uint32_t);\nvoid LCD_StrChangeColor(int,int,int,char*,int,int,uint32_t,uint32_t,uint8_t,int);\nint LCD_GetFontHeight(int);\nint LCD_GetWholeStrPxlWidth(int,char*,int,int);\nint LCD_LoadFont_ChangeColor(int,int,uint32_t);\nvoid LCD_Show(void);\nvoid LCD_DisplayPart(uint32_t,uint32_t,uint32_t,uint32_t,uint32_t);\nuint32_t LCD_GetXSize(void);\nuint32_t LCD_GetYSize(void);\nvoid LCD_TOUCH_DeleteSelectTouch(uint16_t);\nvoid LCD_TOUCH_DeleteAllSetTouch(void);\nint LCDTOUCH_Set(uint16_t,uint16_t,uint16_t,uint16_t,uint16_t,uint16_t,uint8_t);\nint LCD_TOUCH_isPress(void);\nXY_Touch_Struct LCD_TOUCH_GetPos(void);\nuint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct*);\n#endif\n',
-    'Keyboard.h': '#include "test_support.h"\n#define KEYBOARD_CLEAR_TEXT (-1)\n#define KEYBOARD_SETTXT_KEYS KEY_Q,KEY_W,KEY_E,KEY_R,KEY_T,KEY_Y,KEY_U,KEY_I,KEY_O,KEY_P,KEY_A,KEY_S,KEY_D,KEY_F,KEY_G,KEY_H,KEY_J,KEY_K,KEY_L,KEY_big,KEY_Z,KEY_X,KEY_C,KEY_V,KEY_B,KEY_N,KEY_M,KEY_back,KEY_alt,KEY_exit,KEY_space,KEY_comma,KEY_dot,KEY_enter,KEY_field,KEY_style\nenum {KeysAutoSize=0,KeysNotDel=1,KeysDel=2};\nvoid KEYBOARD_SetTextRows(unsigned);\nvoid KEYBOARD_SetGeneral(int,int,int,int,int,int,int,int,int,int);\nint KEYBOARD_StartUp(int,figureShape,uint8_t,uint16_t,uint16_t,uint16_t,uint16_t,uint8_t,uint16_t,uint16_t,uint8_t);\nvoid KEYBOARD__ServiceSetTxt(int,int,figureShape,uint8_t,uint16_t,uint16_t,uint16_t,uint16_t,uint8_t,uint16_t,uint16_t,uint8_t,int,int,int,int,int,int,int,int,int,uint32_t,char*,int);\n',
+    'Keyboard.h': '#include "test_support.h"\n#define KEYBOARD_CLEAR_TEXT (-1)\n#define KEYBOARD_SETTXT_KEYS KEY_Q,KEY_W,KEY_E,KEY_R,KEY_T,KEY_Y,KEY_U,KEY_I,KEY_O,KEY_P,KEY_A,KEY_S,KEY_D,KEY_F,KEY_G,KEY_H,KEY_J,KEY_K,KEY_L,KEY_big,KEY_Z,KEY_X,KEY_C,KEY_V,KEY_B,KEY_N,KEY_M,KEY_back,KEY_alt,KEY_exit,KEY_space,KEY_comma,KEY_dot,KEY_enter,KEY_field,KEY_style\nenum {KeysAutoSize=0,KeysNotDel=1,KeysDel=2};\nvoid KEYBOARD_SetTextRows(unsigned);\nvoid KEYBOARD_SetGeneral(int,int,int,int,int,int,int,int,int,int);\nint KEYBOARD_StartUp(int,figureShape,uint8_t,uint16_t,uint16_t,uint16_t,uint16_t,uint8_t,uint16_t,uint16_t,uint8_t);\nvoid KEYBOARD__ServiceSetTxt(int,int,figureShape,uint8_t,uint16_t,uint16_t,uint16_t,uint16_t,uint8_t,uint16_t,uint16_t,uint8_t,int,int,int,int,int,int,int,int,int,uint32_t,char*,int,int);\n',
     'font_metrics.h': 'static const int mockSizes[3]={16,24,19};\nstatic const unsigned short mockWidths[3][128]={{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,6,9,9,14,11,3,5,5,6,9,4,5,4,4,9,9,9,9,9,9,9,9,9,9,4,4,9,9,9,9,16,11,11,12,12,11,10,12,12,4,8,11,9,13,12,12,11,12,12,11,10,12,11,15,11,11,10,4,4,4,8,9,5,9,9,8,9,9,4,9,9,4,4,8,4,13,9,9,9,9,5,8,4,9,8,12,8,8,8,5,4,5,9,12},{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,8,11,13,13,21,17,6,8,8,9,14,7,8,7,7,13,13,13,13,13,13,13,13,13,13,8,8,14,14,14,15,23,17,17,17,17,16,15,19,17,7,13,17,15,20,17,19,16,19,17,16,15,17,16,23,16,16,15,8,7,8,14,13,8,13,15,13,15,13,8,15,15,7,7,13,7,21,15,15,15,15,9,13,8,15,13,19,13,13,12,9,7,9,14,18},{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,7,11,11,17,13,4,6,6,7,11,5,6,5,5,11,11,11,11,11,11,11,11,11,11,5,5,11,11,11,11,19,13,13,14,14,13,12,15,14,5,10,13,11,16,14,15,13,15,14,13,12,14,13,18,13,13,12,5,5,5,9,11,6,11,11,10,11,11,5,11,11,4,4,10,4,16,11,11,11,11,6,10,5,11,10,14,10,10,10,6,5,6,11,14}};',
     'test.c': r"""#include "LCD_SensorThresholds.c"
 #include "font_metrics.h"
@@ -53,7 +53,10 @@ int LCDTOUCH_Set(uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint16_t id,uint16_
 }
 int LCD_TOUCH_isPress(void){return down?press:release;}
 XY_Touch_Struct LCD_TOUCH_GetPos(void){return position;}
-uint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct*p){*p=position;return registered&&down?(uint16_t)tick:0;}
+uint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct*p){
+ *p=position;
+ return registered&&(down||tick==TOUCH_KEYS+KEY_exit-KEY_Q)?(uint16_t)tick:0;
+}
 static int sensor(void){samples++;return currentTemperature;}
 static void touch(int isDown,int x,int y){down=isDown;position.x=x;position.y=y;}
 
@@ -70,10 +73,11 @@ int KEYBOARD_StartUp(int type,figureShape shape,uint8_t bold,uint16_t x,uint16_t
  if(type&&shape){nativeStartTouch=(uint8_t)start;assert(nativeStartTouch==start&&start+35<=UINT8_MAX);assert(x==10&&y==65&&w==ui.keyWidth&&h==ui.keyHeight&&h==2*(2*ui.keyPadding+LCD_GetFontHeight(ui.font[2]))&&space==10&&start==TOUCH_KEYS);keyboardCreates++;}
  return 0;
 }
-void KEYBOARD__ServiceSetTxt(int k,int key,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase,int releaseKey,int action,int big,int back,int alt,int enter,int field,int style,int exitKey,uint32_t color,char *buffer,int size){
+void KEYBOARD__ServiceSetTxt(int k,int key,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase,int releaseKey,int action,int big,int back,int alt,int enter,int field,int style,int exitKey,uint32_t color,char *buffer,int size,int clearOnTap){
  (void)bold;(void)x;(void)y;(void)w;(void)h;(void)space;(void)forTouch;(void)erase;(void)big;(void)back;(void)alt;(void)enter;(void)field;(void)style;(void)exitKey;(void)color;
- assert(k==0&&releaseKey==0&&action==KEY_Q&&key>=0&&key<=KEY_style&&size==64);
+ assert(clearOnTap&&k==0&&releaseKey==0&&action==KEY_Q&&key>=0&&key<=KEY_style&&size==64);
  if(shape)assert(start==TOUCH_KEYS&&start==nativeStartTouch);else assert(start==0);
+ if(!shape&&key==exitKey)memset(buffer,0,(size_t)size);
  if(key==KEY_All_release){nativePreviousKey=0;keyReleases++;}
  if(!shape&&key==KEY_Q){
   size_t length=strlen(buffer);assert(length+3<(size_t)size);
@@ -162,7 +166,9 @@ int main(void){
  tick=nativeStartTouch;touch(1,150,350);LCD_SensorThresholds(0);
  assert(strlen(ui.edit)==heldLength+1&&ui.edit[heldLength]=='q');
 
- tick=TOUCH_KEYS+KEY_exit-KEY_Q;assert(LCD_SensorThresholds(0)==0&&ui.editing==-1);touch(0,0,0);tick=0;LCD_SensorThresholds(0);
+ touch(0,150,350);tick=TOUCH_KEYS+KEY_exit-KEY_Q;
+ assert(LCD_SensorThresholds(0)==0&&ui.editing>=0&&!ui.edit[0]);
+ tick=0;assert(click(700,25)==0&&ui.editing==-1);
  for(int field=0;field<8;field++)for(int c=0;c<2;c++){
   int x,y,w,h;FieldRect(c,field,&x,&y,&w,&h);assert(click(x+4,y+4)==0&&ui.editing==c*8+field);assert(click(700,25)==0);
  }
