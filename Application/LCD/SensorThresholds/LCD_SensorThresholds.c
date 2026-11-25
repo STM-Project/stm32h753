@@ -365,7 +365,7 @@ static void Keyboard ( int key, int create )
 	KEYBOARD_StartUp ( KEYBOARD_TYPE_ID, shape, 0, 10, 65, ui.keyWidth, ui.keyHeight, 10, 0, TOUCH_KEYS, KeysDel );
 	KEYBOARD__ServiceSetTxt ( KEYBOARD_TYPE_ID - 1, key, shape, 0, 10, 65, ui.keyWidth, ui.keyHeight, 10, 0,
 							  create ? TOUCH_KEYS : 0, KeysDel, KEY_All_release, KEY_Q, KEY_big, KEY_back, KEY_alt,
-							  KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, ui.edit, sizeof ( ui.edit ), 1 );
+							  KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, ui.edit, sizeof ( ui.edit ), 1, ui.font[1] );
 }
 static int EditorOpen ( int field )
 {
@@ -378,9 +378,9 @@ static int EditorOpen ( int field )
 	if ( ui.keyPadding < 4 )
 		return -3;
 	ui.keyWidth = 2 * ( 2 * ui.keyPadding + LCD_GetWholeStrPxlWidth ( ui.font[2], "q", 0, NoConstWidth ) );
-	ui.keyHeight = 2 * ( 2 * ui.keyPadding + LCD_GetFontHeight ( ui.font[2] ) );
+	ui.keyHeight = 2 * ( 2 * ui.keyPadding + LCD_GetFontHeight ( ui.font[2] ) ) - 6;
 	if ( 10 + 11 * 10 + 10 * ui.keyWidth > 800 ||
-		 65 + 14 + LCD_GetFontHeight ( ui.font[2] ) + 7 * 10 + 4 * ui.keyHeight > 480 )
+		 65 + 14 + LCD_GetFontHeight ( ui.font[1] ) + 7 * 10 + 4 * ui.keyHeight > 480 )
 		return -3;
 	KEYBOARD_SetTextRows ( 1 );
 	ui.pressed = -1;

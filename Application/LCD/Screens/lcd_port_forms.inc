@@ -497,13 +497,13 @@ static void FormNativeKey ( int key, int create )
 	KEYBOARD_SetGeneral ( ui.font[3], ui.font[0], 0xFF999999U, 0xFFD0D0D0U, 0xFF313131U, 0xFFD0D0D0U, 0xFF3B3B3BU, 0xFFBABABAU, 0xFF606060U, 0xFF383838U );
 	figureShape shape = create ? LCD_RoundRectangle : 0;
 	int width = 2 * ( 4 + LCD_GetWholeStrPxlWidth ( ui.font[3], "q", 0, NoConstWidth ) );
-	int height = 2 * ( 4 + LCD_GetFontHeight ( ui.font[3] ) );
+	int height = 2 * ( 4 + LCD_GetFontHeight ( ui.font[3] ) ) - 6;
 	KEYBOARD_StartUp ( 1, shape, 0, 10, 65, width, height, 10, 0, FORM_NATIVE_KEYS, KeysDel );
 	/* Reserve Keyboard.c's two cursor bytes in addition to the field limit. */
 	int size = (int) FormField ( (unsigned) lcdForm.editing )->max_length + 3;
 	if ( size > (int) sizeof lcdForm.text )
 		size = sizeof lcdForm.text;
-	KEYBOARD__ServiceSetTxt ( 0, key, shape, 0, 10, 65, width, height, 10, 0, create ? FORM_NATIVE_KEYS : 0, KeysDel, KEY_All_release, KEY_Q, KEY_big, KEY_back, KEY_alt, KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, lcdForm.text, size, 1 );
+	KEYBOARD__ServiceSetTxt ( 0, key, shape, 0, 10, 65, width, height, 10, 0, create ? FORM_NATIVE_KEYS : 0, KeysDel, KEY_All_release, KEY_Q, KEY_big, KEY_back, KEY_alt, KEY_enter, KEY_field, KEY_style, KEY_exit, 0xFF999999U, lcdForm.text, size, 1, ui.font[2] );
 }
 static void FormNativeDraw ( void )
 {
@@ -514,13 +514,15 @@ static void FormNativeDraw ( void )
 	LCD_DisplayBuff ( 0, TOP, W, VIEW, pLcd );
 	lcdForm.nativeActive = 1;
 	FormHeader ();
-	KEYBOARD_SetTextRows ( 1 );
+	KEYBOARD_SetTextRows ( 2 );
 	lcdForm.nativePressed = -1;
 	lcdForm.drag = lcdForm.moved = 0;
 	lcdForm.armed = -1;
 	FormNativeKey ( KEY_All_release, 1 );
 	/* Keyboard.c presents its own windows using pLcd as scratch. */
 }
+enum { FORM_TEXT_HEIGHT = 60, FORM_KEY_WIDTH = 64, FORM_KEY_HEIGHT = 42 };
+
 static void FormKeyboardDraw ( void )
 {
 	if ( FormNativeName () )
@@ -530,22 +532,22 @@ static void FormKeyboardDraw ( void )
 	}
 	for ( unsigned i = 0; i < (unsigned) ( W * VIEW ); ++i )
 		pLcd[i] = BG;
-	Rect ( W, 0, 0, W, 56, BG );
-	for ( unsigned row = 0; row < 44; ++row )
+	Rect ( W, 0, 0, W, 72, BG );
+	for ( unsigned row = 0; row < FORM_TEXT_HEIGHT; ++row )
 	{
-		uint32_t shade = 255U - 18U * row / 43U;
+		uint32_t shade = 255U - 18U * row / ( FORM_TEXT_HEIGHT - 1 );
 		Rect ( W, 24, 8 + row, 736, 1, 0xFF000000U | ( shade * 0x010101U ) );
 	}
 	const char *shown = lcdForm.text;
-	while ( *shown && LCD_GetWholeStrPxlWidth ( ui.font[1], (char *) shown, 0, NoConstWidth ) > 712 )
+	while ( *shown && LCD_GetWholeStrPxlWidth ( ui.font[4], (char *) shown, 0, NoConstWidth ) > 712 )
 	{
 		++shown;
 		while ( ( (unsigned char) *shown & 0xC0 ) == 0x80 )
 			++shown;
 	}
-	Text ( W, 56, ui.font[1], 36, 20, 712, shown, VALUE_BLACK );
+	Text ( W, 72, ui.font[4], 36, 8 + ( FORM_TEXT_HEIGHT - LCD_GetFontHeight ( ui.font[4] ) ) / 2, 712, shown, VALUE_BLACK );
 	/* Text helpers render to scratch; keyboard canvas is copied strip by strip. */
-	memcpy ( pLcd, pLcd + SCRATCH, W * 56 * sizeof *pLcd );
+	memcpy ( pLcd, pLcd + SCRATCH, W * 72 * sizeof *pLcd );
 	for ( unsigned row = 0; row < 4; ++row )
 	{
 		Rect ( W, 0, 0, W, 52, BG );
@@ -554,8 +556,8 @@ static void FormKeyboardDraw ( void )
 			char key[8];
 			const char *caption = FormKey ( row * 10 + col, key );
 			uint32_t key_color = lcdForm.keyPressed == (int) ( row * 10 + col ) ? 0xFF468CCFU : 0xFF666666U;
-			TileRound ( W, 24 + col * 74, 0, 68, 48, 5, key_color, key_color );
-			Text ( W, 52, ui.font[1], 48 + col * 74, 13, 38, caption, WHITE );
+			TileRound ( W, 24 + col * 74, 0, FORM_KEY_WIDTH, FORM_KEY_HEIGHT, 5, key_color, key_color );
+			Text ( W, 52, ui.font[1], 46 + col * 74, 10, 38, caption, WHITE );
 		}
 		memcpy ( pLcd + ( 72 + row * 52 ) * W, pLcd + SCRATCH, W * 52 * sizeof *pLcd );
 	}
@@ -833,7 +835,7 @@ static int FormUpdate ( void )
 			if ( y >= 72 && y < 280 )
 			{
 				int row = ( y - 72 ) / 52, col = ( position.x - 24 ) / 74;
-				if ( col < 10 && ( position.x - 24 ) % 74 < 68 && ( y - 72 ) % 52 < 48 )
+				if ( col < 10 && ( position.x - 24 ) % 74 < FORM_KEY_WIDTH && ( y - 72 ) % 52 < FORM_KEY_HEIGHT )
 					hit = row * 10 + col;
 			}
 			else if ( y >= 308 && y < 352 )

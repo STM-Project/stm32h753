@@ -125,9 +125,9 @@ void KEYBOARD_SetGeneral(int a,int b,int c,int d,int e,int f,int g,int h,int i,i
 int KEYBOARD_StartUp(int type,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase){
  (void)bold;(void)space;(void)forTouch;(void)erase;if(type&&shape){assert(start==FORM_NATIVE_KEYS&&start+35<=255&&x==10&&y==65&&w>0&&h>0);native_creates++;}return 0;
 }
-void KEYBOARD__ServiceSetTxt(int k,int key,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase,int releaseKey,int action,int big,int back,int alt,int enter,int field,int style,int exitKey,uint32_t color,char *buffer,int size,int clearOnTap){
+void KEYBOARD__ServiceSetTxt(int k,int key,figureShape shape,uint8_t bold,uint16_t x,uint16_t y,uint16_t w,uint16_t h,uint8_t space,uint16_t forTouch,uint16_t start,uint8_t erase,int releaseKey,int action,int big,int back,int alt,int enter,int field,int style,int exitKey,uint32_t color,char *buffer,int size,int clearOnTap,int fieldFontID){
  (void)k;(void)bold;(void)x;(void)y;(void)w;(void)h;(void)space;(void)forTouch;(void)start;(void)erase;(void)releaseKey;(void)action;(void)big;(void)back;(void)alt;(void)enter;(void)field;(void)style;(void)exitKey;(void)color;
- assert(clearOnTap&&(size==33||size==23));native_calls++;native_buffer=buffer;
+ assert(clearOnTap&&fieldFontID==ui.font[2]&&(size==33||size==23));native_calls++;native_buffer=buffer;
  if(!key){native_last=0;native_releases++;}
  if(!shape&&(key==KEYBOARD_CLEAR_TEXT||key==exitKey))memset(buffer,0,(size_t)size);
  if(!shape&&key==KEY_Q){size_t n=strlen(buffer);if(native_last==key&&n)buffer[n-1]='1';else{assert(n+3<(size_t)size);buffer[n]='q';buffer[n+1]=0;}native_last=key;}
@@ -171,7 +171,7 @@ int main(void){
   snprintf(p->value[1],32,"65.0 %%");for(unsigned r=2;r<5;r++)snprintf(p->value[r],32,"%u.125",r*123);for(unsigned r=0;r<5;r++)p->color[r]=0xffeeeeee;p->pwm=42;p->pwm_valid=1;
  }
  strcpy(model.time,"12:34:56");model.revision=1;
- ui.font[0]=12;ui.font[1]=16;
+ ui.font[0]=12;ui.font[1]=16;ui.font[2]=20;ui.font[3]=18;ui.font[4]=28;
  char name_lines[2][96];assert(PortNameLines("WWWWWWWWWWWWWWWWWWWW",16,name_lines)==2);
  assert(!PortNameLines("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",16,name_lines));
  check_port_name=1;PortName(690,68,"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");check_port_name=0;
@@ -308,7 +308,7 @@ int main(void){
  form_touch_field(0);assert(lcdForm.editing==0&&lcdForm.selection==0);
  touch(1,100,TOP+78);touch(0,100,TOP+78);assert(!strcmp(lcdFormDraft.values[0],"-"));
  form_touch_field(1);assert(lcdForm.editing==1&&lcdForm.selection<0);
- assert(shown[(TOP+8)*W+750]==0xFFFFFFFFU&&shown[(TOP+51)*W+750]==0xFFEDEDEDU);
+ assert(shown[(TOP+8)*W+750]==0xFFFFFFFFU&&shown[(TOP+8+FORM_TEXT_HEIGHT-1)*W+750]==0xFFEDEDEDU);
  assert(shown[30*W+445]==0xFFC83A48U);
  touch(1,500,30);touch(0,500,30);assert(!lcdForm.text[0]);
  touch(1,55,TOP+92);touch(0,55,TOP+92);touch(1,132,TOP+92);touch(0,132,TOP+92);assert(!strcmp(lcdForm.text,"12"));
@@ -322,7 +322,7 @@ int main(void){
  char original_name[31];strcpy(original_name,model.ports[14].name);
  int created_before=native_creates;unsigned name_writes_before=name_save_calls;
  touch(1,CONTENT_X+60,TOP+30);touch(0,CONTENT_X+60,TOP+30);
- assert(LCD_HttpPanelModal()&&lcdForm.directName&&lcdForm.nativeActive&&lcdForm.editing==0&&native_creates==created_before+1&&native_rows==1);
+ assert(LCD_HttpPanelModal()&&lcdForm.directName&&lcdForm.nativeActive&&lcdForm.editing==0&&native_creates==created_before+1&&native_rows==2);
  native_event=FORM_NATIVE_KEYS;touch(1,100,180);int releases_before=native_releases;touch(1,100,180);assert(native_releases==releases_before&&native_buffer[strlen(native_buffer)-1]=='1');
  int native_full_before=viewport_draws,native_created_before=native_creates;
  native_event=0;touch(1,100,280);assert(viewport_draws==native_full_before&&native_creates==native_created_before);
