@@ -308,8 +308,14 @@ void SystemInit (void)
 
   /* Configure the Vector Table location -------------------------------------*/
 #if defined(USER_VECT_TAB_ADDRESS)
-  SCB->VTOR = VECT_TAB_BASE_ADDRESS | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal D1 AXI-RAM or in Internal FLASH */
+  SCB->VTOR = VECT_TAB_BASE_ADDRESS | VECT_TAB_OFFSET; /* Explicit vector location override */
+#else
+  /* Use the address selected by the application linker script. */
+  extern const uint32_t g_pfnVectors[];
+  SCB->VTOR = (uint32_t)g_pfnVectors;
 #endif /* USER_VECT_TAB_ADDRESS */
+  __DSB();
+  __ISB();
 
 #endif /*DUAL_CORE && CORE_CM4*/
 }
