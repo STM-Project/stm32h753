@@ -22,9 +22,9 @@ od `0x08000000` i zapisuje wyniki w `Debug/cloud`.
 
 W STM32CubeIDE wybierz **Debug** lub **Release** i wykonaj **Clean Project**,
 a następnie **Build Project**. Obie konfiguracje linkują aplikację od
-`0x08020000` i generują HEX oraz BIN. Python 3 musi być w `PATH` IDE jako
-`python`. Krok wstępny przygotowuje ten sam lokalny klucz aktualizacji
-co skrypt. Do pierwszego wgrania użyj ST-LINK z kasowaniem wyłącznie
+`0x08020000` i generują HEX oraz BIN. Krok wstępny korzysta z systemowego
+Windows PowerShell na Windows lub `python3` na Linuksie. Oba używają tego
+samego lokalnego klucza aktualizacji co skrypt. Do pierwszego wgrania użyj ST-LINK z kasowaniem wyłącznie
 sektorów aplikacji, aby zachować bootloader w pierwszym sektorze.
 
 ## Aktualizacja z działającej aplikacji
