@@ -40,9 +40,9 @@ _estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of RAM */
 _Min_Heap_Size = 0x4000;      /* required amount of heap  */
 _Min_Stack_Size = 0x4000; /* required amount of stack */
 
-/* The hosted build passes --defsym=__bootloader_app=1 before this script
-   to reserve the first flash erase sector for the bootloader. */
-__app_flash_offset = DEFINED(__bootloader_app) ? 128K : 0;
+/* Debug and Release in STM32CubeIDE reserve one Flash erase sector.
+   The standalone CLI build opts out before processing this script. */
+__app_flash_offset = DEFINED(__standalone_app) ? 0 : 128K;
 
 /* Specify the memory areas */
 MEMORY

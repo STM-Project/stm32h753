@@ -1,4 +1,5 @@
 import argparse, re, pathlib, xml.etree.ElementTree as E, subprocess, concurrent.futures, json, os, shutil
+from h753_update_key import generate_header
 parser = argparse.ArgumentParser(description="Build the STM32H753 application.")
 parser.add_argument('--bootloader-app', action='store_true',
                     help='link after the first 128 KiB flash sector and produce a raw BIN')
@@ -7,13 +8,17 @@ root = pathlib.Path(__file__).resolve().parents[1]
 out = root / 'Debug' / ('bootloader-app' if args.bootloader_app else 'cloud')
 out.mkdir(parents=True, exist_ok=True)
 config=E.parse(root/'.cproject').getroot().find('.//configuration')
+if args.bootloader_app:
+    key_header = out / 'h753_update_key.h'
+    generate_header(key_header)
 opts=config.findall('.//option')
 incs=[]; defs=[]
 for opt in opts:
  s=opt.get('superClass','')
  if '.c.compiler.' in s:
   if opt.get('valueType')=='includePath': incs=['-I'+str((root/'Debug'/x.get('value')).resolve()) for x in opt]
-  if opt.get('valueType')=='definedSymbols': defs=['-D'+x.get('value') for x in opt]
+  if opt.get('valueType')=='definedSymbols': defs=['-D'+x.get('value') for x in opt if x.get('value') != 'H753_CUBEIDE_BOOT_APP']
+if args.bootloader_app: defs += ['-include', str(key_header)]
 overlay=out/'include'; overlay.mkdir(parents=True,exist_ok=True)
 headers={}
 for p in root.rglob('*.h'): headers.setdefault(p.name.lower(),[]).append(p)
@@ -44,7 +49,7 @@ for obj,r,cmd,p in results:
 (out/'compile_commands.json').write_text(json.dumps([{'directory':str(root),'arguments':cmd,'file':str(p)} for _,_,cmd,p in results],indent=2))
 print(f'Compiled {len(sources)-len(errors)}/{len(sources)} sources; failures: {errors}')
 if errors: raise SystemExit(1)
-link_options = ["-Wl,--defsym=__bootloader_app=1"] if args.bootloader_app else []
+link_options = [] if args.bootloader_app else ["-Wl,--defsym=__standalone_app=1"]
 subprocess.run([gcc,*flags,*map(str,[x[0] for x in results]),*link_options,'-T'+str(root/'STM32H753BITX_FLASH.ld'),'--specs=nano.specs','--specs=nosys.specs','-Wl,--gc-sections','-Wl,-Map='+str(out/'firmware.map'),'-o',str(out/'firmware.elf'),'-Wl,--start-group','-lc','-lm','-Wl,--end-group'],check=True)
 # Same Intel HEX output enabled in STM32CubeIDE's Debug/Release settings.
 objcopy=pathlib.Path(gcc).with_name('arm-none-eabi-objcopy'+('.exe' if str(gcc).lower().endswith('.exe') else ''))

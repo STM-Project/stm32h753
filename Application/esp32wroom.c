@@ -173,8 +173,80 @@ typedef enum
 	WWW_PANEL_SCRIPT,
 	WWW_PANEL_READ_TEMPLATE,
 	WWW_PANEL_SET_TEMPLATE,
-	WWW_PANEL_CONFIG
+	WWW_PANEL_CONFIG,
+	WWW_BOOT_UPDATE
 }WEB_WWW;
+
+#ifdef H753_CUBEIDE_BOOT_APP
+#include "h753_update_key.h"
+#endif
+
+#ifdef H753_BOOT_UPDATE_KEY
+#include "HTTP/h753_boot_request.h"
+
+_Static_assert(sizeof H753_BOOT_UPDATE_KEY == H753_UPDATE_KEY_LENGTH + 1, "Update key length");
+static H753_BootRequest bootRequest;
+
+static const char bootUpdateForm[] =
+    "<!doctype html><html lang=pl><meta charset=utf-8>"
+    "<title>Aktualizacja STM32H753</title><h1>Aktualizacja STM32H753</h1>"
+    "<form action='/upload' method=post "
+    "onsubmit=\"sessionStorage.setItem('h753-update-key',this.elements.key.value)\">"
+    "<label>Klucz aktualizacji <input name=key type=password required "
+    "pattern='[0-9a-f]{32}' maxlength=32 autocomplete=off></label> "
+    "<button>Uruchom bootloader</button></form></html>";
+static const char bootUpdateStarting[] =
+    "<!doctype html><html lang=pl><meta charset=utf-8>"
+    "<title>Uruchamianie bootloadera</title><h1>Uruchamianie bootloadera</h1>"
+    "<p>ESP32 ponownie laczy sie z ta sama siecia Wi-Fi.</p>"
+    "<p><a href='/upload'>Otworz strone wgrywania</a></p>"
+    "<script>let tries=0;const timer=setInterval(async()=>{"
+    "if(++tries>20){clearInterval(timer);return;}"
+    "try{const r=await fetch('/upload',{cache:'no-store'});"
+    "if(r.headers.get('X-H753-Bootloader')==='1')location.replace('/upload');}"
+    "catch(e){}},3000);</script></html>";
+
+static int HTTP_BootPrepare(void)
+{
+    const unsigned slot = (unsigned)Const.wifiGeneral.nrSTA;
+    if ((Const.wifiGeneral.mode != WIFI_MODE_STA && Const.wifiGeneral.mode != WIFI_MODE_AP_STA) ||
+        slot >= WIFI_STA_MAX || bootRequest.magic)
+        return 0;
+    const s_wifi_STA *wifi = &Const.wifiSTA[slot];
+    if (!wifi->name[0] || !memchr(wifi->name, 0, sizeof wifi->name) ||
+        !memchr(wifi->pass, 0, sizeof wifi->pass) || !wifi->port)
+        return 0;
+
+    bootRequest.ip = wifi->ip;
+    bootRequest.gateway = wifi->gate;
+    bootRequest.mask = wifi->mask;
+    bootRequest.port = wifi->port;
+    bootRequest.dhcp = wifi->dhcp != 0;
+    memcpy(bootRequest.ssid, wifi->name, sizeof bootRequest.ssid);
+    memcpy(bootRequest.password, wifi->pass, sizeof bootRequest.password);
+    memcpy(bootRequest.update_key, H753_BOOT_UPDATE_KEY, sizeof bootRequest.update_key);
+    bootRequest.magic = H753_BOOT_REQUEST_MAGIC;
+    bootRequest.check = H753_BootRequestCheck(&bootRequest);
+    return 1;
+}
+
+static void HTTP_BootReset(void)
+{
+    HAL_PWR_EnableBkUpAccess();
+    uint32_t started = HAL_GetTick();
+    while (!(PWR->CR1 & PWR_CR1_DBP)) {
+        if ((uint32_t)(HAL_GetTick() - started) > 100u) {
+            memset(&bootRequest, 0, sizeof bootRequest);
+            return;
+        }
+    }
+    __HAL_RCC_BKPRAM_CLK_ENABLE();
+    *(volatile H753_BootRequest *)H753_BOOT_MAILBOX_ADDRESS = bootRequest;
+    SCB_CleanDCache_by_Addr((void *)H753_BOOT_MAILBOX_ADDRESS, sizeof bootRequest);
+    __DSB();
+    NVIC_SystemReset();
+}
+#endif
 
 static const char *freeAnswerTypes[] = {
     "WIFI CONNECTED",
@@ -261,6 +333,10 @@ static inline void HTTP_ClearSlot ( unsigned slot )
 	httpRefreshPrepared[slot] = 0;
 	httpResponseStarted[slot] = 0;
 	httpSensorPort[slot] = 0;
+#ifdef H753_BOOT_UPDATE_KEY
+	if (httpSensorNotice[slot] == bootUpdateStarting)
+		memset(&bootRequest, 0, sizeof bootRequest);
+#endif
 	httpSensorNotice[slot] = NULL;
 	httpResponseStatus[slot] = 0;
 	httpSettingsPage[slot] = NULL;
@@ -1221,6 +1297,10 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 			httpPar.siz[channel][0] = mini_strlen ( httpPar.web[channel][0] );
 		}
 		break;
+	case WWW_BOOT_UPDATE:
+		httpPar.web[channel][nrPartWWW] = httpSensorNotice[channel];
+		httpPar.siz[channel][nrPartWWW++] = mini_strlen(httpSensorNotice[channel]);
+		break;
 	case WWW_HTTP_ERROR:
 		httpPar.web[channel][nrPartWWW] = "<!doctype html><html><body><p>Niepoprawny lub nieobslugiwany adres.</p><a href='/set'>Ustawienia</a></body></html>";
 		httpPar.siz[channel][nrPartWWW++] = mini_strlen ( httpPar.web[channel][0] );
@@ -1407,6 +1487,33 @@ static void HTTP_HandleTarget ( unsigned channel, const char *target, size_t len
 	}
 	if ( !freeSlot )
 		return;
+#ifdef H753_BOOT_UPDATE_KEY
+	if (HTTP_TargetEquals(target, length, "/upload") ||
+	    HTTP_TargetEquals(target, length, "/ulpad")) {
+		HTTP_QueueResponse(channel, WWW_BOOT_UPDATE, 0, bootUpdateForm, 200, NULL, 0, NULL);
+		return;
+	}
+	static const char bootPost[] = "/upload?key=";
+	if (target && length >= sizeof bootPost - 1 &&
+	    !memcmp(target, bootPost, sizeof bootPost - 1)) {
+		const char *body = "<p>Niepoprawny klucz aktualizacji. <a href='/upload'>Wroc</a></p>";
+		int code = 400;
+		if (H753_UpdateKeyMatches(H753_BOOT_UPDATE_KEY, target + sizeof bootPost - 1,
+		                         length - (sizeof bootPost - 1))) {
+			if (HTTP_BootPrepare()) {
+				body = bootUpdateStarting;
+				code = 200;
+			} else {
+				body = "<p>W /wifi ustaw profil STA i port HTTP lub poczekaj na trwajaca aktualizacje.</p>";
+				code = 503;
+			}
+		}
+		if (HTTP_QueueResponse(channel, WWW_BOOT_UPDATE, 0, body, code, NULL, 0, NULL) < 0 &&
+		    body == bootUpdateStarting)
+			memset(&bootRequest, 0, sizeof bootRequest);
+		return;
+	}
+#endif
 	HTTP_OutputCommand command;
 	int outputCommand = HTTP_OutputControlParse ( target, length, &command );
 	if ( outputCommand )
@@ -1801,6 +1908,13 @@ static int HTTP_SendAcknowledged ( ARCHIVING_TYPE archType )
 	httpLastActivity[slot] = HAL_GetTick ();
 	httpTxPhase[slot] = 0;
 	httpPar.chnl = 0xFF;
+#ifdef H753_BOOT_UPDATE_KEY
+	if (httpSensorNotice[slot] == bootUpdateStarting && httpPar.nrWeb[slot] == 1 &&
+	    httpTxOffset[slot] == httpPar.siz[slot][1]) {
+		vTaskDelay(pdMS_TO_TICKS(300));
+		HTTP_BootReset();
+	}
+#endif
 	HTTP_SendCloseChnl ( archType, previous );
 	return 1;
 }

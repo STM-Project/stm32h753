@@ -333,6 +333,19 @@ static void post_requests(void)
     frame_text(1,"GET /set HTTP/1.1\r\n"); valid(0,1,"/set");
     frame_text(0,"1"); valid(1,0,"/lpc.cgi/A117?a=1");
 
+    init();
+    frame_text(0, "POST /upload HTTP/1.1\r\nContent-Length: 36\r\n"
+                  "Content-Type: application/x-www-form-urlencoded\r\n\r\n"
+                  "key=0123456789abcdef");
+    assert(event_count==0);
+    frame_text(0, "0123456789abcdef");
+    valid(0,0,"/upload?key=0123456789abcdef0123456789abcdef");
+    init();
+    frame_text(0, "GET /upload?key=0123456789abcdef0123456789abcdef HTTP/1.1\r\n");
+    assert(event_count==1); bad(0,0);
+    init();
+    frame_text(0, "GET /ulpad HTTP/1.1\r\n"); valid(0,0,"/ulpad");
+
     /* The aggregate normalized target must fit exactly, including CGI prefix. */
     {
         static char body[HTTP_REQUEST_STREAM_MAX_TARGET];

@@ -18,6 +18,28 @@ W pliku `firmware.hex` adres jest zapisany w rekordach. `SystemInit` ustawia
 `SCB->VTOR` na adres wektorów wybrany przez linker.
 
 Wariant bez `--bootloader-app` służy do samodzielnego uruchamiania aplikacji
-od `0x08000000` i zapisuje wyniki w `Debug/cloud`. Flaga wariantu
-bootloadera dotyczy powyższego skryptu. Konfiguracje STM32CubeIDE domyślnie
-budują aplikację samodzielną.
+od `0x08000000` i zapisuje wyniki w `Debug/cloud`.
+
+W STM32CubeIDE wybierz **Debug** lub **Release** i wykonaj **Clean Project**,
+a następnie **Build Project**. Obie konfiguracje linkują aplikację od
+`0x08020000` i generują HEX oraz BIN. Python 3 musi być w `PATH` IDE jako
+`python`. Krok wstępny przygotowuje ten sam lokalny klucz aktualizacji
+co skrypt. Do pierwszego wgrania użyj ST-LINK z kasowaniem wyłącznie
+sektorów aplikacji, aby zachować bootloader w pierwszym sektorze.
+
+## Aktualizacja z działającej aplikacji
+
+Po zwykłym resecie nowy bootloader od razu uruchamia poprawną aplikację.
+W aplikacji ustaw aktywny profil **STA** w `/wifi` i po połączeniu otwórz
+`/upload` (alias `/ulpad`) pod adresem i portem interfejsu STA.
+Podaj klucz z `Debug/bootloader-app/update-key` i zatwierdź. Od tej chwili
+aplikacja uruchomi bootloader, który ponownie połączy ESP32 z tą samą siecią
+i włączy stronę przesyłania na tym samym porcie HTTP. Profil z ręcznym IP
+zachowuje ten adres. Przy DHCP, jeśli router przydzieli inny adres,
+sprawdź dzierżawę dla urządzenia o nazwie `Elektronika_STM`.
+
+Klucz jest generowany lokalnie podczas pierwszej kompilacji wariantu
+`--bootloader-app`. Zachowaj plik do kolejnych kompilacji. Klucz oraz
+plik BIN przechowuj prywatnie. Używaj aktualizacji w zaufanej sieci lokalnej,
+ponieważ HTTP nie szyfruje klucza. Aplikacja i bootloader muszą pochodzić
+z wersji obsługującej przekazanie profilu przez pamięć podtrzymywaną.

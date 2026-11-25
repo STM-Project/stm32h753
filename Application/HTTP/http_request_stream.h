@@ -28,9 +28,9 @@ extern "C"
 {
 #endif
 
-	/* POST /lpc.cgi/A117 accepts application/x-www-form-urlencoded with an
- * explicit Content-Length. Once the full body arrives it is normalized to
- * /lpc.cgi/A117?<body> for the existing settings decoder (not a wire GET).
+	/* POST /lpc.cgi/A117 and POST /upload accept application/x-www-form-urlencoded
+ * with an explicit Content-Length. The decoded target is path?<body>.
+ * A wire GET cannot use the reserved /upload? target.
  * Exactly one event is delivered per channel until ResetChannel is called.
  * A NULL target and zero length report a malformed or oversized request.
  * Otherwise target is NUL terminated, and length excludes the terminator.

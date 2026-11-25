@@ -167,7 +167,10 @@ static void http_stream_complete_line ( HTTP_RequestStream *stream,
 
 	if ( post )
 	{
-		if ( target_length != 13u || memcmp ( channel->line + start, "/lpc.cgi/A117", 13u ) != 0 )
+		const char *path = channel->line + start;
+		int settings = target_length == 13u && memcmp ( path, "/lpc.cgi/A117", 13u ) == 0;
+		int upload = target_length == 7u && memcmp ( path, "/upload", 7u ) == 0;
+		if ( !settings && !upload )
 		{
 			http_stream_bad_request ( stream );
 			return;
@@ -177,6 +180,12 @@ static void http_stream_complete_line ( HTTP_RequestStream *stream,
 		channel->length = target_length + 1u;
 		channel->phase = 1u;
 		channel->saw_cr = 0u;
+		return;
+	}
+	/* The normalized /upload?body target is reserved for a wire POST. */
+	if ( target_length >= 8u && memcmp ( channel->line + start, "/upload?", 8u ) == 0 )
+	{
+		http_stream_bad_request ( stream );
 		return;
 	}
 	channel->line[suffix] = '\0';
