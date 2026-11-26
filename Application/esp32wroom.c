@@ -922,11 +922,36 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		break;
 	case WWW_MAIN_READ:
 	case WWW_MAIN_SETTING:
-		httpPar.web[channel][nrPartWWW] = httpBuff;
-		httpPar.siz[channel][nrPartWWW++] = (u32) snprintf ( httpBuff, sizeof httpPageBuff[channel],
-			"<!doctype html><html lang='pl'><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><body style='background:#000;color:#eee' data-h7-panel='%s'><div id='h7-notice'>%s</div><p id='h7-loading'>Wczytywanie panelu...</p><script src='" HTTP_PANEL_SCRIPT_PATH "'></script></body></html>",
+	{
+		const size_t capacity = sizeof httpPageBuff[channel];
+		size_t used = (size_t) snprintf ( httpBuff, capacity,
+			"<!doctype html><html lang='pl'><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><body style='background:#000;color:#eee' data-h7-panel='%s'><div id='h7-notice'>%s</div><p id='h7-loading'>Wczytywanie panelu...</p>",
 			nrWWW == WWW_MAIN_SETTING ? "set" : "read", httpSensorNotice[channel] ? httpSensorNotice[channel] : "" );
+		const char *suffix = "<script src='" HTTP_PANEL_SCRIPT_PATH "'></script></body></html>";
+		static const char start[] = "<script type='application/json' id='h7-initial-config'>";
+		static const char end[] = "</script><script>";
+		static const char inlineSuffix[] = "</script></body></html>";
+		const size_t reserved = sizeof start + sizeof end + sizeof HTTP_PanelScript + sizeof inlineSuffix;
+		if ( channel == HTTP_LAN_SLOT && used < capacity - reserved )
+		{
+			size_t length = HTTP_PanelConfigJson ( httpBuff + used + sizeof start - 1,
+				capacity - used - reserved );
+			if ( length )
+			{
+				memcpy ( httpBuff + used, start, sizeof start - 1 );
+				used += sizeof start - 1 + length;
+				memcpy ( httpBuff + used, end, sizeof end - 1 );
+				used += sizeof end - 1;
+				memcpy ( httpBuff + used, HTTP_PanelScript, sizeof HTTP_PanelScript - 1 );
+				used += sizeof HTTP_PanelScript - 1;
+				suffix = inlineSuffix;
+			}
+		}
+		used += (size_t) snprintf ( httpBuff + used, capacity - used, "%s", suffix );
+		httpPar.web[channel][nrPartWWW] = httpBuff;
+		httpPar.siz[channel][nrPartWWW++] = (u32) used;
 		break;
+	}
 	case WWW_LPC_ASSET:
 		httpSensorPort[channel] = httpLpcAsset[channel]->storage_page;
 		/* /nowa uses the same bounded SD stream as /nowaN. */
@@ -2107,12 +2132,12 @@ void HTTP_SensorLCDWake ( void )
 
 enum LanWebCommand { LAN_WEB_START, LAN_WEB_READ, LAN_WEB_FINISH, LAN_WEB_CANCEL };
 enum LanWebState { LAN_WEB_IDLE, LAN_WEB_PENDING, LAN_WEB_RUNNING, LAN_WEB_DONE, LAN_WEB_ABANDONED };
-static StaticSemaphore_t lanWebMutexStorage;
-static SemaphoreHandle_t lanWebMutex;
+static StaticSemaphore_t lanWebMutexStorage, lanWebDoneStorage;
+static SemaphoreHandle_t lanWebMutex, lanWebDone;
 SDRAM static struct
 {
 	char target[HTTP_REQUEST_STREAM_MAX_TARGET + 1u];
-	unsigned char chunk[ETH_PACKET_LEN];
+	unsigned char chunk[NETWORK_WEB_CHUNK_BYTES];
 	size_t length;
 	enum LanWebCommand command;
 	int result;
@@ -2145,26 +2170,20 @@ static int HTTP_LanExchange ( enum LanWebCommand command )
 	xTaskNotify ( vtaskWifiHandle, BIT_ETH_HTTP, eSetBits );
 	taskEXIT_CRITICAL ();
 
-	TickType_t start = xTaskGetTickCount ();
-	for ( ;; )
+	xSemaphoreTake ( lanWebDone, pdMS_TO_TICKS ( 15000 ) );
+	taskENTER_CRITICAL ();
+	if ( lanWebState == LAN_WEB_DONE )
 	{
-		taskENTER_CRITICAL ();
-		if ( lanWebState == LAN_WEB_DONE )
-		{
-			int result = lanWeb.result;
-			lanWebState = LAN_WEB_IDLE;
-			taskEXIT_CRITICAL ();
-			return result;
-		}
-		if ( xTaskGetTickCount () - start >= pdMS_TO_TICKS ( 15000 ) )
-		{
-			lanWebState = lanWebState == LAN_WEB_RUNNING ? LAN_WEB_ABANDONED : LAN_WEB_IDLE;
-			taskEXIT_CRITICAL ();
-			return -1;
-		}
+		int result = lanWeb.result;
+		lanWebState = LAN_WEB_IDLE;
+		/* Completion may have arrived exactly as the timeout fired. */
+		xSemaphoreTake ( lanWebDone, 0 );
 		taskEXIT_CRITICAL ();
-		vTaskDelay ( 1 );
+		return result;
 	}
+	lanWebState = lanWebState == LAN_WEB_RUNNING ? LAN_WEB_ABANDONED : LAN_WEB_IDLE;
+	taskEXIT_CRITICAL ();
+	return -1;
 }
 
 int NetworkWebStart ( const char *target, size_t length )
@@ -2218,6 +2237,8 @@ static int HTTP_LanReadChunk ( void )
 				length = sizeof lanWeb.chunk;
 			if ( httpLpcPage[slot] && part == 1 )
 			{
+				if ( length > sizeof httpLpcChunk[slot] )
+					length = sizeof httpLpcChunk[slot];
 				if ( HTTP_ReadLpcPart ( slot, length ) != length )
 					return -1;
 			}
@@ -2282,6 +2303,7 @@ static void HTTP_ServiceLan ( void )
 	{
 		lanWeb.result = result;
 		lanWebState = LAN_WEB_DONE;
+		xSemaphoreGive ( lanWebDone );
 	}
 	taskEXIT_CRITICAL ();
 }
@@ -3576,7 +3598,10 @@ void vtaskWifi(void *argument)
 void CreateWifiTask(void)
 {
 	if ( !lanWebMutex )
+	{
+		lanWebDone = xSemaphoreCreateBinaryStatic ( &lanWebDoneStorage );
 		lanWebMutex = xSemaphoreCreateMutexStatic ( &lanWebMutexStorage );
+	}
 	xTaskCreate(vtaskWifi, "vtaskWifi", 1024, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
 }
 
@@ -3589,6 +3614,7 @@ void CloseWifiTask(void)
 	{
 		lanWeb.result = -1;
 		lanWebState = LAN_WEB_DONE;
+		xSemaphoreGive ( lanWebDone );
 	}
 	else if ( lanWebState == LAN_WEB_ABANDONED )
 		lanWebState = LAN_WEB_IDLE;

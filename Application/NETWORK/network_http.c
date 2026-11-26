@@ -80,6 +80,8 @@ struct LanRequest
 };
 
 static HTTP_RequestStream lanRequestStream __attribute__ ( ( section ( ".sdram" ) ) );
+/* The LAN lock protects the parser and the buffers for both socket tasks. */
+static unsigned char lanResponse[NETWORK_WEB_CHUNK_BYTES] __attribute__ ( ( section ( ".sdram" ) ) );
 
 static void capture_target ( unsigned channel, const char *target, size_t length, void *ctx )
 {
@@ -138,9 +140,9 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 
 	int count;
 	int ok = 1;
-	while ( (count = NetworkWebRead ( buffer, sizeof buffer )) > 0 )
+	while ( (count = NetworkWebRead ( lanResponse, sizeof lanResponse )) > 0 )
 	{
-		if ( !send_all ( ctx, write_fn, buffer, (size_t) count ) )
+		if ( !send_all ( ctx, write_fn, lanResponse, (size_t) count ) )
 		{
 			ok = 0;
 			break;

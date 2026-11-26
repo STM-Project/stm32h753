@@ -305,6 +305,8 @@ int main(void) {
     assert(httpPar.que[HTTP_LAN_SLOT] == HTTP_LAN_SLOT);
     assert(!strncmp(httpPar.web[HTTP_LAN_SLOT][0], "HTTP/1.1 200 OK", 15));
     assert(strstr(httpPar.web[HTTP_LAN_SLOT][1], "data-h7-panel='set'"));
+    assert(strstr(httpPar.web[HTTP_LAN_SLOT][1], "id='h7-initial-config'>{\"ports\":["));
+    assert(strstr(httpPar.web[HTTP_LAN_SLOT][1], "var H7_SET_TEMPLATE="));
     assert(saves == before);
     assert(reload_count > 20);
     assert(bindings_count == 0);

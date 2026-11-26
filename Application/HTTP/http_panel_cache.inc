@@ -36,7 +36,7 @@ static size_t HTTP_PanelConfigJson ( char *out, size_t capacity )
 				escaped[1] = (char) c;
 				length = 2;
 			}
-			else if ( c < 32 )
+			else if ( c < 32 || c == '<' )
 			{
 				snprintf ( escaped, sizeof escaped, "\\u%04x", c );
 				length = 6;

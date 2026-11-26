@@ -11,7 +11,7 @@ typedef int ARCHIVING_TYPE;
 #define ETH_PACKET_LEN 2039
 #define DbgVarDma(...) ((void)0)
 static char sendBuff[2048];
-static struct { unsigned char chunk[ETH_PACKET_LEN]; } lanWeb;
+static struct { unsigned char chunk[8192]; } lanWeb;
 static int RcvTimeoutTimerStop(void) { return 1; }
 static unsigned commands,payloads,closes,command_fail,payload_fail;
 static size_t sent;
@@ -74,6 +74,12 @@ int main(void) {
     clear_queue();HTTP_HandleTarget(HTTP_LAN_SLOT,"/nowa",5,NULL);
     assert(HTTP_LanReadChunk()>0);lpc_chunk_fail=1;
     assert(HTTP_LanReadChunk()==-1);lpc_chunk_fail=0;
+    clear_queue();static char lanAsset[13000];
+    httpPar.que[HTTP_LAN_SLOT]=HTTP_LAN_SLOT;httpTxOffset[HTTP_LAN_SLOT]=0;
+    httpPar.web[HTTP_LAN_SLOT][0]=lanAsset;httpPar.siz[HTTP_LAN_SLOT][0]=sizeof lanAsset;
+    assert(HTTP_LanReadChunk()==8192);
+    assert(HTTP_LanReadChunk()==(int)sizeof lanAsset-8192);
+    assert(HTTP_LanReadChunk()==0);
     /* Old code could read NULL or underflow length after a delayed prompt. */
     for(unsigned bad=0;bad<5;bad++){
         request(0,"/nowa");httpPar.chnl=0xFF;HTTP_SendCloseChnl(noArch,-1);

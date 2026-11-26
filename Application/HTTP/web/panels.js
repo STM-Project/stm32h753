@@ -106,13 +106,22 @@
 		});
 		lastConfig = config;
 	}
+	function parseConfig(text) {
+		var data;
+		try { data = JSON.parse(text); } catch (ignore) { return null; }
+		return data && Array.isArray(data.ports) && data.ports.length === 33 ? data : null;
+	}
 	function configRequest(done) {
 		request('/api/panel-config', function (failed, text) {
-			var data;
-			try { data = JSON.parse(text); } catch (ignore) { failed = true; }
-			if (!data || !Array.isArray(data.ports) || data.ports.length !== 33) failed = true;
-			done(failed, data);
+			var data = failed ? null : parseConfig(text);
+			done(!data, data);
 		});
+	}
+	function initialConfig(done) {
+		var embedded = document.getElementById('h7-initial-config');
+		var data = embedded && parseConfig(embedded.textContent);
+		if (data) done(false, data);
+		else configRequest(done);
 	}
 	function pollConfig() {
 		configRequest(function (failed, data) {
@@ -122,7 +131,7 @@
 	}
 	request(settings ? H7_SET_TEMPLATE : H7_READ_TEMPLATE, function (failed, html) {
 		if (failed) { error(); return; }
-		configRequest(function (failed, data) {
+		initialConfig(function (failed, data) {
 			if (failed) { error(); return; }
 			var doc = new DOMParser().parseFromString(html, 'text/html');
 			var scripts = Array.prototype.slice.call(doc.querySelectorAll('script'));

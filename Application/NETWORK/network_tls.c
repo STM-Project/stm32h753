@@ -118,7 +118,8 @@ static void https_thread ( void *arg )
 			DbgVarDma ( 1, 96, "\r\nHTTPS ETH: connection failed -0x%04X", (unsigned) -ret );
 		mbedtls_ssl_free ( &ssl );
 		mbedtls_net_free ( &client );
-		sys_msleep ( 10 );
+		if ( ret )
+			sys_msleep ( 10 );
 	}
 }
 void https_server_netconn_init ( void )

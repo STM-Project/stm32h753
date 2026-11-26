@@ -144,6 +144,8 @@ extern unsigned char network_lwip_heap[];
 #define LWIP_RAM_HEAP_POINTER network_lwip_heap
 #define LWIP_SO_RCVTIMEO 1
 #define LWIP_SO_SNDTIMEO 1
+/* Allow four full TCP segments in flight when sending the panel templates. */
+#define TCP_SND_BUF (4 * TCP_MSS)
 #define LWIP_NETIF_API 1
 #ifndef LWIP_TCPIP_CORE_LOCKING
 #define LWIP_TCPIP_CORE_LOCKING 1
