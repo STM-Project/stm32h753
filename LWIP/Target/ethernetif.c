@@ -1062,7 +1062,7 @@ lan8742_IOCtx_t LAN8742_IOCtx = { ETH_PHY_IO_Init,
 								  ETH_PHY_IO_GetTick };
 
 /* Counters remain available in the debugger without logging from interrupts. */
-volatile uint32_t ethRxFrames, ethTxCompletions, ethDmaErrors;
+volatile uint32_t ethRxFrames, ethTxCompletions, ethDmaErrors, ethTxFailures;
 
 static void start_mac ( struct netif *netif, uint32_t speed, uint32_t duplex )
 {
@@ -1298,7 +1298,10 @@ static err_t low_level_output ( struct netif *netif, struct pbuf *p )
 	for ( q = p; q != NULL; q = q->next )
 	{
 		if ( i >= ETH_TX_DESC_CNT )
+		{
+			++ethTxFailures;
 			return ERR_IF;
+		}
 
 		/* DMA reads CPU-owned pbuf payloads. Clean all overlapping cache lines;
      * no invalidation here, so neighboring dirty data is preserved. */
@@ -1337,6 +1340,7 @@ static err_t low_level_output ( struct netif *netif, struct pbuf *p )
 		if ( osSemaphoreWait ( TxPktSemaphore, 1000 ) != osOK )
 		{
 			/* Keep the HAL's pbuf reference until a later release observes DMA done. */
+			++ethTxFailures;
 			return ERR_TIMEOUT;
 		}
 
@@ -1344,6 +1348,7 @@ static err_t low_level_output ( struct netif *netif, struct pbuf *p )
 	}
 	else
 	{
+		++ethTxFailures;
 		errval = ERR_IF;
 		pbuf_free ( p );
 	}

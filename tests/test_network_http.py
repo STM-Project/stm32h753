@@ -62,6 +62,13 @@ static int write_fragment(void *context,const unsigned char *data,size_t size){(
 static int serve(const char *text){request=text;offset=outputSize=readCount=closes=0;return NetworkHTTPServe(NULL,read_fragment,write_fragment,"TLS-test");}
 int main(void){
  assert(serve("GET /test HTTP/1.1\r\nHost: board\r\n\r\n"));assert(strstr(output,"200 OK")&&strstr(output,"TLS-test")&&!closes);
+ request="GET /test HTTP/1.1\r\nHost: board\r\n\r\n";offset=outputSize=0;
+ assert(NetworkHTTPServe(NULL,read_fragment,write_fragment,NULL));
+ const char *testBody="<html><body>Test: HTTP</body></html>";
+ assert(strstr(output,"HTTP/1.1 200 OK\r\n") == output);
+ assert(!strcmp(strstr(output,"\r\n\r\n")+4,testBody));
+ char lengthHeader[40];snprintf(lengthHeader,sizeof lengthHeader,"Content-Length: %zu\r\n",strlen(testBody));
+ assert(strstr(output,lengthHeader));
  fileSize=200000;assert(serve("GET / HTTP/1.1\r\n\r\n")&&closes==1&&readCount>90);
  char *body=strstr(output,"\r\n\r\n")+4;assert(strlen(body)==fileSize);for(unsigned i=0;i<fileSize;i++)assert(body[i]=='a'+i%26);
  missing=1;assert(serve("GET / HTTP/1.1\r\n\r\n")&&strstr(output,"503 Service Unavailable")&&!closes);missing=0;

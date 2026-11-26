@@ -25,10 +25,10 @@ static int send_all ( void *ctx, NetworkWrite write_fn, const void *data, size_t
 }
 static int message ( void *ctx, NetworkWrite write_fn, unsigned code, const char *reason, const char *body )
 {
-	char header[192];
+	char response[384];
 	size_t length = strlen ( body );
-	int n = snprintf ( header, sizeof header, "HTTP/1.1 %u %s\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: %u\r\nConnection: close\r\n\r\n", code, reason, (unsigned) length );
-	return n > 0 && (size_t) n < sizeof header && send_all ( ctx, write_fn, header, (size_t) n ) && send_all ( ctx, write_fn, body, length );
+	int n = snprintf ( response, sizeof response, "HTTP/1.1 %u %s\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: %u\r\nConnection: close\r\n\r\n%s", code, reason, (unsigned) length, body );
+	return n > 0 && (size_t) n < sizeof response && send_all ( ctx, write_fn, response, (size_t) n );
 }
 int NetworkHTTPServe ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name )
 {
@@ -136,7 +136,14 @@ static int plain_read ( void *context, unsigned char *out, size_t capacity )
 static int plain_write ( void *context, const unsigned char *data, size_t size )
 {
 	struct PlainConnection *c = context;
-	return netconn_write ( c->conn, data, size, NETCONN_COPY ) == ERR_OK ? (int) size : -1;
+	err_t error = netconn_write ( c->conn, data, size, NETCONN_COPY );
+	if ( error != ERR_OK )
+	{
+		DbgVarDma ( 1, 96, "\r\nHTTP ETH: netconn_write failed (%d), bytes=%u",
+					(int) error, (unsigned) size );
+		return -1;
+	}
+	return (int) size;
 }
 static void http_thread ( void *arg )
 {
@@ -167,7 +174,8 @@ static void http_thread ( void *arg )
 		netconn_set_recvtimeout ( client, 5000 );
 		netconn_set_sendtimeout ( client, 5000 );
 		struct PlainConnection c = { client, NULL, 0 };
-		NetworkHTTPServe ( &c, plain_read, plain_write, NULL );
+		if ( !NetworkHTTPServe ( &c, plain_read, plain_write, NULL ) )
+			DbgDma ( 1, "\r\nHTTP ETH: response incomplete" );
 		if ( c.buf )
 			netbuf_delete ( c.buf );
 		netconn_close ( client );
