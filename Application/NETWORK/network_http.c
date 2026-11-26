@@ -92,7 +92,8 @@ static void capture_target ( unsigned channel, const char *target, size_t length
 	request->ready = 1;
 }
 
-static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name, unsigned lockMs )
+static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name, unsigned lockMs, unsigned char *buffer,
+							   size_t capacity, int size )
 {
 	unsigned started = sys_now ();
 	struct LanRequest request = { 0 };
@@ -102,14 +103,12 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 	lanRequestStream.context = &request;
 	lanRequestStream.discard_payload = 0;
 
-	unsigned char buffer[2048];
 	unsigned headerEnd = 0;
 	int post = 0;
 	size_t received = 0;
-	do
+	for ( ;; )
 	{
-		int size = read_fn ( ctx, buffer, sizeof buffer );
-		if ( size <= 0 || (size_t) size > sizeof buffer )
+		if ( size <= 0 || (size_t) size > capacity )
 		{
 			if ( received )
 				DbgDma ( 1, "\r\nLAN: request ended before parsing completed" );
@@ -118,7 +117,7 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 		if ( !received )
 			post = buffer[0] == 'P';
 		received += (size_t) size;
-		if ( received > HTTP_REQUEST_STREAM_MAX_TARGET + 8192u + sizeof buffer )
+		if ( received > HTTP_REQUEST_STREAM_MAX_TARGET + 8192u + capacity )
 			return message ( ctx, write_fn, 431, "Request Header Fields Too Large", "Request too large" );
 		HTTP_RequestStreamFeedRaw ( &lanRequestStream, buffer, (size_t) size );
 		if ( !post )
@@ -127,7 +126,10 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 			for ( int i = 0; i < size && headerEnd < 4; ++i )
 				headerEnd = buffer[i] == end[headerEnd] ? headerEnd + 1u : (buffer[i] == '\r');
 		}
-	} while ( !request.ready || (!post && request.target && headerEnd < 4) );
+			if ( request.ready && (post || !request.target || headerEnd == 4) )
+			break;
+		size = read_fn ( ctx, buffer, capacity );
+	}
 
 	if ( !request.target )
 		return message ( ctx, write_fn, 400, "Bad Request", "Invalid request" );
@@ -142,7 +144,10 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 
 	unsigned receivedAt = sys_now ();
 	if ( !NetworkWebStart ( request.target, request.length ) )
+	{
+		DbgDma ( 1, "\r\nLAN: application page producer unavailable" );
 		return message ( ctx, write_fn, 503, "Service Unavailable", "Application pages busy" );
+	}
 
 	unsigned renderedAt = sys_now ();
 	int count;
@@ -175,10 +180,20 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 
 int NetworkHTTPServe ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name )
 {
+	/* A speculative browser connection may never send a request. Do not
+	 * hold the shared HTTP/HTTPS page lock while waiting for its first bytes. */
+	unsigned char buffer[2048];
+	int size = read_fn ( ctx, buffer, sizeof buffer );
+	if ( size <= 0 || (size_t) size > sizeof buffer )
+		return 0;
 	unsigned queuedAt = sys_now ();
 	if ( !NetworkWebLock () )
+	{
+		DbgDma ( 1, "\r\nLAN: application page lock timeout" );
 		return message ( ctx, write_fn, 503, "Service Unavailable", "Application pages busy" );
-	int result = serve_lan_request ( ctx, read_fn, write_fn, tls_name, sys_now () - queuedAt );
+	}
+	int result = serve_lan_request ( ctx, read_fn, write_fn, tls_name, sys_now () - queuedAt,
+									 buffer, sizeof buffer, size );
 	NetworkWebUnlock ();
 	return result;
 }

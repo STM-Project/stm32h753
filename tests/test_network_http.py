@@ -65,8 +65,8 @@ static int read_fragment(void *context,unsigned char *data,size_t capacity){(voi
 static int write_fragment(void *context,const unsigned char *data,size_t size){(void)context;assert(!locked);if(writeFailure)return -1;if(size>13)size=13;assert(outputSize+size<sizeof output);memcpy(output+outputSize,data,size);outputSize+=size;output[outputSize]=0;return (int)size;}
 static int serve(const char *text){request=text;offset=outputSize=readCount=closes=0;return NetworkHTTPServe(NULL,read_fragment,write_fragment,"TLS-test");}
 static const char *sharedTarget, *sharedResponse;
-static int sharedReads, finished;
-int NetworkWebLock(void){return 1;}
+static int sharedReads, finished, webLocks;
+int NetworkWebLock(void){++webLocks;return 1;}
 void NetworkWebUnlock(void){}
 int NetworkWebStart(const char *target,size_t length){
  assert(length==strlen(target)&&sharedTarget&&!strcmp(target,sharedTarget));
@@ -101,6 +101,9 @@ int main(void){
  struct PlainConnection ready;
  assert(!http_take_ready(&pending[0],&ready)&&pending[0].conn==&idle&&deleted==0);
  assert(http_take_ready(&pending[1],&ready)&&ready.conn==&active&&ready.buf==&firstRequest&&!pending[1].conn);
+ int previousLocks=webLocks;
+ request="";offset=0;
+ assert(!NetworkHTTPServe(NULL,read_fragment,write_fragment,NULL)&&webLocks==previousLocks);
  now=HTTP_IDLE_TIMEOUT_MS;
  assert(!http_take_ready(&pending[0],&ready)&&!pending[0].conn&&deleted==1);
  struct netconn client={0};
