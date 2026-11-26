@@ -55,8 +55,8 @@ int LCD_H7_Start ( void )
 	{
 		lcdH7Status.touch_available = BSP_TS_Init ( 800, 480 ) == 0;
 		const struct STMPE811_InitDiagnostic *d = BSP_TS_GetInitDiagnostic ();
-		DbgVarDma ( 1, 260, "\r\nLCD: STMPE811 attempt=%u result=%s stage=%u ID=0x%04X expected=0x0811",
-					attempt + 1, lcdH7Status.touch_available ? "OK" : "FAIL", (unsigned) d->stage, (unsigned) d->id );
+		DbgVarDma ( 1, 260, "\r\nLCD: STMPE811 attempt=%u result=%s stage=%u I2C=0x%02X ID=0x%04X expected=0x0811",
+					attempt + 1, lcdH7Status.touch_available ? "OK" : "FAIL", (unsigned) d->stage, (unsigned) d->address, (unsigned) d->id );
 		DbgVarDma ( 1, 260, "\r\nLCD: STMPE811 TSC_CTRL=0x%02X INT_CTRL=0x%02X io_failed=%u op=%c reg=0x%02X HAL_status=%u HAL_error=0x%08X SDA=%u SCL=%u",
 					(unsigned) d->ctrl, (unsigned) d->irq, (unsigned) d->io_failed, d->operation ? d->operation : '-',
 					(unsigned) d->reg, (unsigned) d->status, (unsigned) d->hal_error, (unsigned) d->sda, (unsigned) d->scl );
@@ -66,7 +66,7 @@ int LCD_H7_Start ( void )
 			osDelay ( 100 );
 	}
 	if ( !lcdH7Status.touch_available )
-		DbgDma ( 1, "\r\nLCD: STMPE811 not detected on I2C1; touch task disabled" );
+		DbgDma ( 1, "\r\nLCD: STMPE811 not detected on I2C1 at 0x41 or 0x44; touch task disabled" );
 	SetLang ( 2, English );
 	LCD_SetSpacesBetweenFonts ();
 	LCD_TOUCH_DeleteAllSetTouch ();

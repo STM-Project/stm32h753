@@ -129,6 +129,7 @@
 #define I2C_TIMEOUT  100 /*<! Value of Timeout when I2C communication fails */
 
 #define TS_I2C_ADDRESS                  0x82
+#define TS_I2C_ADDRESS_ALT              0x88
 
 #define TS_SWAP_NONE                    0x00
 #define TS_SWAP_X                       0x01
@@ -176,6 +177,7 @@ typedef struct
 }TS_DrvTypeDef;
 
 static TS_DrvTypeDef *ts_driver;
+static uint8_t ts_address = TS_I2C_ADDRESS;
 static uint8_t io_failed;
 static uint8_t diagnostic_active;
 static struct STMPE811_InitDiagnostic initDiagnostic;
@@ -343,9 +345,9 @@ static uint16_t stmpe811_ReadID(uint16_t DeviceAddr)
   /* Initialize IO BUS layer */
   IOE_Init(); 
   
-  /* Return the device ID value */
-  return ((IOE_Read(DeviceAddr, STMPE811_REG_CHP_ID_LSB) << 8) |\
-          (IOE_Read(DeviceAddr, STMPE811_REG_CHP_ID_MSB)));
+  uint16_t high = IOE_Read(DeviceAddr, STMPE811_REG_CHP_ID_LSB);
+  uint16_t low = IOE_Read(DeviceAddr, STMPE811_REG_CHP_ID_MSB);
+  return (high << 8) | low;
 }
 
 static void stmpe811_EnableGlobalIT(uint16_t DeviceAddr)
@@ -579,14 +581,20 @@ IO_DrvTypeDef stmpe811_io_drv =
 uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
 {
   uint8_t ret = TS_ERROR;
-  io_failed = 0;
   ts_driver = 0;
-  initDiagnostic=(struct STMPE811_InitDiagnostic){0};
-  diagnostic_active=1;
-  initDiagnostic.stage=1; /* Reading chip ID. */
-  initDiagnostic.id=stmpe811_ts_drv.ReadID(TS_I2C_ADDRESS);
+  diagnostic_active = 1;
+  const uint8_t addresses[] = {TS_I2C_ADDRESS, TS_I2C_ADDRESS_ALT};
+  for(unsigned i = 0; i < sizeof addresses; ++i)
+  {
+    io_failed = 0;
+    ts_address = addresses[i];
+    initDiagnostic = (struct STMPE811_InitDiagnostic){.stage = 1, .address = ts_address >> 1};
+    initDiagnostic.id = stmpe811_ts_drv.ReadID(ts_address);
+    if(!io_failed && initDiagnostic.id == STMPE811_ID)
+      break;
+  }
 
-  if(initDiagnostic.id == STMPE811_ID)
+  if(!io_failed && initDiagnostic.id == STMPE811_ID)
   {
     /* Initialize the TS driver structure */
     ts_driver = &stmpe811_ts_drv;
@@ -602,13 +610,13 @@ uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
   {
     initDiagnostic.stage=2; /* Configuring and checking registers. */
     /* Initialize the LL TS Driver */
-    ts_driver->Init(TS_I2C_ADDRESS);
-    ts_driver->Start(TS_I2C_ADDRESS);
-    ts_driver->ClearIT(TS_I2C_ADDRESS);
-    ts_driver->EnableIT(TS_I2C_ADDRESS);
+    ts_driver->Init(ts_address);
+    ts_driver->Start(ts_address);
+    ts_driver->ClearIT(ts_address);
+    ts_driver->EnableIT(ts_address);
     /* Diagnostic readback only: preserve the original F7 startup decision. */
-    uint8_t ctrl=IOE_Read(TS_I2C_ADDRESS, STMPE811_REG_TSC_CTRL);
-    uint8_t irq=IOE_Read(TS_I2C_ADDRESS, STMPE811_REG_INT_CTRL);
+    uint8_t ctrl=IOE_Read(ts_address, STMPE811_REG_TSC_CTRL);
+    uint8_t irq=IOE_Read(ts_address, STMPE811_REG_INT_CTRL);
     initDiagnostic.ctrl=ctrl;initDiagnostic.irq=irq;
   }
 
@@ -633,19 +641,19 @@ uint8_t BSP_TS_GetState(TS_StateTypeDef *TS_State)
   {
     io_failed = 0;
     /* Restore the controller, including a FIFO left in reset by a failed write. */
-    stmpe811_Reset(TS_I2C_ADDRESS);
-    ts_driver->Start(TS_I2C_ADDRESS);
-    ts_driver->ClearIT(TS_I2C_ADDRESS);
-    ts_driver->EnableIT(TS_I2C_ADDRESS);
+    stmpe811_Reset(ts_address);
+    ts_driver->Start(ts_address);
+    ts_driver->ClearIT(ts_address);
+    ts_driver->EnableIT(ts_address);
     if(io_failed) return TS_ERROR;
   }
 
-  uint8_t detected = ts_driver->DetectTouch(TS_I2C_ADDRESS);
+  uint8_t detected = ts_driver->DetectTouch(ts_address);
   if(io_failed) return TS_ERROR;
 
   if(detected)
   {
-    ts_driver->GetXY(TS_I2C_ADDRESS, &x, &y);
+    ts_driver->GetXY(ts_address, &x, &y);
     if(io_failed) return TS_ERROR;
 
     if(ts_orientation & TS_SWAP_X)
@@ -687,7 +695,7 @@ uint8_t BSP_TS_GetState(TS_StateTypeDef *TS_State)
 
 void BSP_TS_ClearIT(void)
 {
-    if(ts_driver) ts_driver->ClearIT(TS_I2C_ADDRESS);
+    if(ts_driver) ts_driver->ClearIT(ts_address);
 }
 
 void TOUCH_SetNewResolution(uint8_t resol){

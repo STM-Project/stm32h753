@@ -21,7 +21,7 @@ code = r'''
 #include <stdio.h>
 struct STMPE811_InitDiagnostic {
     uint16_t id;
-    uint8_t stage,ctrl,irq,io_failed,operation,reg,status,sda,scl;
+    uint8_t stage,ctrl,irq,io_failed,operation,reg,status,sda,scl,address;
     uint32_t hal_error;
 };
 static struct STMPE811_InitDiagnostic initDiagnostic;
@@ -47,16 +47,17 @@ int f_mount(void *fs,const char *path,int now){
 void osDelay(unsigned ms){assert(ms==250);delays++;}
 void ERROR_SDcardMount(int result){assert(result==failure);errors++;}
 ''' + function('Application/General_Utilities/sd_card.c', 'void SDCard_Init(void)') + r'''
-enum {TS_ERROR=1,TS_OK=0,TS_I2C_ADDRESS=0x82,STMPE811_ID=0x811,
+enum {TS_ERROR=1,TS_OK=0,TS_I2C_ADDRESS=0x82,TS_I2C_ADDRESS_ALT=0x88,STMPE811_ID=0x811,
  TS_SWAP_Y=2,STMPE811_REG_TSC_CTRL=0x40,STMPE811_REG_INT_CTRL=9,
  STMPE811_TS_CTRL_ENABLE=1,STMPE811_GIT_EN=1};
-static uint8_t io_failed;
+static uint8_t io_failed,ts_address;
 static int ts_x_boundary,ts_y_boundary,ts_orientation;
+static uint16_t device_address=0x82;
 static int badID,badWrite,badCtrl,badIRQ,inits;
-static unsigned readID(uint16_t addr){assert(addr==0x82);return badID?0:STMPE811_ID;}
-static void init(uint16_t addr){assert(addr==0x82);inits++;if(badWrite)io_failed=1;}
-static void noop(uint16_t addr){assert(addr==0x82);}
-static uint8_t IOE_Read(uint16_t addr,int reg){assert(addr==0x82);return reg==0x40?!badCtrl:!badIRQ;}
+static unsigned readID(uint16_t addr){return badID||addr!=device_address?0:STMPE811_ID;}
+static void init(uint16_t addr){assert(addr==device_address);inits++;if(badWrite)io_failed=1;}
+static void noop(uint16_t addr){assert(addr==device_address);}
+static uint8_t IOE_Read(uint16_t addr,int reg){assert(addr==device_address);return reg==0x40?!badCtrl:!badIRQ;}
 typedef struct {unsigned (*ReadID)(uint16_t);void (*Init)(uint16_t),(*Start)(uint16_t),(*ClearIT)(uint16_t),(*EnableIT)(uint16_t);} Driver;
 static Driver stmpe811_ts_drv={readID,init,noop,noop,noop},*ts_driver;
 ''' + function('Application/LCD/Touch/stmpe811.c', 'static void RecordInitError(') + '\n' + function('Application/LCD/Touch/stmpe811.c', 'uint8_t BSP_TS_Init(') + r'''
@@ -76,6 +77,7 @@ int main(void){
  badCtrl=1;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&initDiagnostic.ctrl==0);badCtrl=0;
  badIRQ=1;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&initDiagnostic.irq==0);badIRQ=0;
  assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&!io_failed);
+ device_address=0x88;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&ts_address==0x88&&initDiagnostic.address==0x44);
  puts("Peripheral startup: bounded SD retries, permanent error handling, STMPE811 F7-compatible acceptance and retained diagnostics: PASS");
 }
 '''

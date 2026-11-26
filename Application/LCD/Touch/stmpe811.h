@@ -16,7 +16,7 @@ extern TS_StateTypeDef  TS_State;
  * existing I2C error handler reinitializes the peripheral. */
 struct STMPE811_InitDiagnostic {
     uint16_t id;
-    uint8_t stage,ctrl,irq,io_failed,operation,reg,status,sda,scl;
+    uint8_t stage,ctrl,irq,io_failed,operation,reg,status,sda,scl,address;
     uint32_t hal_error;
 };
 const struct STMPE811_InitDiagnostic *BSP_TS_GetInitDiagnostic(void);
