@@ -161,12 +161,12 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 	else if ( !ok )
 		DbgDma ( 1, "\r\nLAN: response write stopped before the end" );
 	unsigned sentAt = sys_now ();
-	if ( lockMs + sentAt - started >= 400u )
+	if ( tls_name && lockMs + sentAt - started >= 400u )
 	{
 		const char *kind = !strncmp ( request.target, "/assets/", 8 ) ? "asset" :
 						   !strncmp ( request.target, "/api/", 5 ) ? "api" : "page";
-		DbgVarDma ( 1, 144, "\r\n%s ETH slow %s: queue=%u rx=%u render=%u tx=%u ms",
-					tls_name ? "HTTPS" : "HTTP", kind, lockMs, receivedAt - started,
+		DbgVarDma ( 1, 144, "\r\nHTTPS ETH slow %s: queue=%u rx=%u render=%u tx=%u ms",
+					kind, lockMs, receivedAt - started,
 					renderedAt - receivedAt, sentAt - renderedAt );
 	}
 	NetworkWebFinish ( ok );
@@ -229,6 +229,49 @@ static int plain_write ( void *context, const unsigned char *data, size_t size )
 	}
 	return (int) written;
 }
+enum { HTTP_PENDING_CONNECTIONS = 4, HTTP_IDLE_TIMEOUT_MS = 5000 };
+
+struct PendingConnection
+{
+	struct netconn *conn;
+	unsigned acceptedAt;
+};
+
+/* Browsers can open speculative TCP connections without sending HTTP.
+ * Keep those sockets separate from the parser until the first bytes arrive. */
+static int http_take_ready ( struct PendingConnection *pending, struct PlainConnection *ready )
+{
+	if ( !pending->conn )
+		return 0;
+
+	struct netbuf *first = NULL;
+	err_t error = netconn_recv ( pending->conn, &first );
+	if ( error == ERR_OK )
+	{
+		*ready = (struct PlainConnection) { pending->conn, first, 0 };
+		pending->conn = NULL;
+		return 1;
+	}
+	if ( error != ERR_WOULDBLOCK || sys_now () - pending->acceptedAt >= HTTP_IDLE_TIMEOUT_MS )
+	{
+		netconn_delete ( pending->conn );
+		pending->conn = NULL;
+	}
+	return 0;
+}
+
+static void http_serve_client ( struct PlainConnection *client )
+{
+	netconn_set_nonblocking ( client->conn, 0 );
+	netconn_set_recvtimeout ( client->conn, HTTP_IDLE_TIMEOUT_MS );
+	netconn_set_sendtimeout ( client->conn, HTTP_IDLE_TIMEOUT_MS );
+	NetworkHTTPServe ( client, plain_read, plain_write, NULL );
+	if ( client->buf )
+		netbuf_delete ( client->buf );
+	netconn_close ( client->conn );
+	netconn_delete ( client->conn );
+}
+
 static void http_thread ( void *arg )
 {
 	(void) arg;
@@ -247,22 +290,52 @@ static void http_thread ( void *arg )
 		return;
 	}
 	DbgDma ( 1, "\r\nHTTP ETH: listening on port 80" );
+	struct PendingConnection pending[HTTP_PENDING_CONNECTIONS] = { 0 };
 	for ( ;; )
 	{
-		struct netconn *client = NULL;
-		if ( netconn_accept ( listener, &client ) != ERR_OK )
+		unsigned occupied = 0;
+		for ( unsigned i = 0; i < HTTP_PENDING_CONNECTIONS; ++i )
 		{
-			sys_msleep ( 20 );
+			struct PlainConnection client;
+			if ( http_take_ready ( &pending[i], &client ) )
+				http_serve_client ( &client );
+			if ( pending[i].conn )
+				++occupied;
+		}
+
+		/* With no pending sockets, wait normally for a connection. */
+		netconn_set_recvtimeout ( listener, occupied ? 20 : 0 );
+		struct netconn *conn = NULL;
+		err_t error = netconn_accept ( listener, &conn );
+		if ( error != ERR_OK )
+		{
+			if ( error != ERR_TIMEOUT )
+				sys_msleep ( 20 );
 			continue;
 		}
-		netconn_set_recvtimeout ( client, 5000 );
-		netconn_set_sendtimeout ( client, 5000 );
-		struct PlainConnection c = { client, NULL, 0 };
-		NetworkHTTPServe ( &c, plain_read, plain_write, NULL );
-		if ( c.buf )
-			netbuf_delete ( c.buf );
-		netconn_close ( client );
-		netconn_delete ( client );
+		netconn_set_nonblocking ( conn, 1 );
+		struct PendingConnection incoming = { conn, sys_now () };
+		struct PlainConnection ready;
+		if ( http_take_ready ( &incoming, &ready ) )
+			http_serve_client ( &ready );
+		if ( incoming.conn )
+		{
+			unsigned slot = 0;
+			for ( unsigned i = 0; i < HTTP_PENDING_CONNECTIONS; ++i )
+			{
+				if ( !pending[i].conn )
+				{
+					slot = i;
+					break;
+				}
+				if ( incoming.acceptedAt - pending[i].acceptedAt >
+					 incoming.acceptedAt - pending[slot].acceptedAt )
+					slot = i;
+			}
+			if ( pending[slot].conn )
+				netconn_delete ( pending[slot].conn );
+			pending[slot] = incoming;
+		}
 	}
 }
 void http_server_netconn_init ( void )

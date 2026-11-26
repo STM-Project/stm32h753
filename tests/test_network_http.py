@@ -8,11 +8,14 @@ headers={
 typedef int err_t;
 struct netconn {int unused;};struct netbuf {int unused;};
 #define ERR_OK 0
+#define ERR_WOULDBLOCK (-7)
+#define ERR_TIMEOUT (-3)
 #define NETCONN_TCP 1
 #define NETCONN_COPY 1
 #define IP_ADDR_ANY 0
 struct netconn *netconn_new(int);
 int netconn_recv(struct netconn*,struct netbuf**);
+void netconn_set_nonblocking(struct netconn*,int);
 unsigned short netbuf_len(struct netbuf*);
 unsigned short netbuf_copy_partial(struct netbuf*,void*,unsigned short,unsigned short);
 void netbuf_delete(struct netbuf*);
@@ -81,10 +84,25 @@ int netconn_write_partly(struct netconn *conn,const void *data,size_t size,int f
  *written=2;
  return ERR_OK;
 }
-unsigned sys_now(void){return 0;}
+static unsigned now, deleted;
+static struct netbuf firstRequest;
+unsigned sys_now(void){return now;}
+int netconn_recv(struct netconn *conn,struct netbuf **out){
+ if(!conn->unused)return ERR_WOULDBLOCK;
+ *out=&firstRequest;
+ return ERR_OK;
+}
+int netconn_delete(struct netconn *conn){assert(conn);++deleted;return ERR_OK;}
 void DbgDma(int on,const char *text){assert(on&&text);}
 void DbgVarDma(int on,unsigned capacity,const char *format,...){assert(on&&capacity&&format);}
 int main(void){
+ struct netconn idle={0}, active={1};
+ struct PendingConnection pending[2]={{&idle,0},{&active,0}};
+ struct PlainConnection ready;
+ assert(!http_take_ready(&pending[0],&ready)&&pending[0].conn==&idle&&deleted==0);
+ assert(http_take_ready(&pending[1],&ready)&&ready.conn==&active&&ready.buf==&firstRequest&&!pending[1].conn);
+ now=HTTP_IDLE_TIMEOUT_MS;
+ assert(!http_take_ready(&pending[0],&ready)&&!pending[0].conn&&deleted==1);
  struct netconn client={0};
  struct PlainConnection connection={.conn=&client};
  assert(plain_write(&connection,(const unsigned char *)"test",4)==2);
