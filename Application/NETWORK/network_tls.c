@@ -125,11 +125,10 @@ void https_server_netconn_init ( void )
 {
 	if ( !tlsReady || httpsTaskHandle )
 		return;
-	/* Match sys_thread_new's CMSIS osPriorityBelowNormal -> FreeRTOS mapping.
-     * xTaskCreateStatic expects stack depth in words, not bytes. */
-	UBaseType_t priority = (UBaseType_t) ( osPriorityBelowNormal - osPriorityIdle );
+	/* TLS handshakes are CPU-intensive. Let the priority-1 LCD and
+	 * touch tasks preempt HTTPS whenever they are ready to run. */
 	httpsTaskHandle = xTaskCreateStatic ( https_thread, "HTTPS", HTTPS_STACK_WORDS, NULL,
-										  priority, httpsStack, &httpsTaskControl );
+										  tskIDLE_PRIORITY, httpsStack, &httpsTaskControl );
 	if ( !httpsTaskHandle )
 		DbgDma ( 1, "\r\nHTTPS: static task creation failed" );
 }
