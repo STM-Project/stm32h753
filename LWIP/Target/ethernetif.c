@@ -974,7 +974,7 @@ void HAL_ETH_TxFreeCallback(uint32_t * buff)
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* Private define ------------------------------------------------------------*/
 /* The time to block waiting for input. */
-#define TIME_WAITING_FOR_INPUT ( portMAX_DELAY )
+#define RX_POLL_INTERVAL_MS 100U
 /* Stack size of the interface thread */
 #define INTERFACE_THREAD_STACK_SIZE ( 350 )
 /* Network interface name */
@@ -1061,6 +1061,28 @@ lan8742_IOCtx_t LAN8742_IOCtx = { ETH_PHY_IO_Init,
 								  ETH_PHY_IO_ReadReg,
 								  ETH_PHY_IO_GetTick };
 
+/* Counters remain available in the debugger without logging from interrupts. */
+volatile uint32_t ethRxFrames, ethTxCompletions, ethDmaErrors;
+
+static void start_mac ( struct netif *netif, uint32_t speed, uint32_t duplex )
+{
+	ETH_MACConfigTypeDef config = { 0 };
+	if ( HAL_ETH_GetMACConfig ( &heth, &config ) == HAL_OK )
+	{
+		config.Speed = speed;
+		config.DuplexMode = duplex;
+		if ( HAL_ETH_SetMACConfig ( &heth, &config ) == HAL_OK &&
+			 HAL_ETH_Start_IT ( &heth ) == HAL_OK )
+		{
+			netif_set_up ( netif );
+			netif_set_link_up ( netif );
+			DbgDma ( 1, "\r\nETH: link up, MAC/DMA started" );
+			return;
+		}
+	}
+	DbgDma ( 1, "\r\nETH: MAC/DMA start failed" );
+}
+
 /* Private functions ---------------------------------------------------------*/
 void pbuf_free_custom ( struct pbuf *p );
 
@@ -1080,6 +1102,7 @@ void HAL_ETH_RxCpltCallback ( ETH_HandleTypeDef *handlerEth )
   */
 void HAL_ETH_TxCpltCallback ( ETH_HandleTypeDef *handlerEth )
 {
+	++ethTxCompletions;
 	osSemaphoreRelease ( TxPktSemaphore );
 }
 /**
@@ -1089,6 +1112,7 @@ void HAL_ETH_TxCpltCallback ( ETH_HandleTypeDef *handlerEth )
   */
 void HAL_ETH_ErrorCallback ( ETH_HandleTypeDef *handlerEth )
 {
+	++ethDmaErrors;
 	if ( ( HAL_ETH_GetDMAError ( handlerEth ) & ETH_DMACSR_RBU ) == ETH_DMACSR_RBU )
 	{
 		osSemaphoreRelease ( RxPktSemaphore );
@@ -1110,7 +1134,6 @@ static int low_level_init ( struct netif *netif )
 	HAL_StatusTypeDef hal_eth_init_status = HAL_OK;
 	uint32_t duplex, speed = 0;
 	int32_t PHYLinkState = 0;
-	ETH_MACConfigTypeDef MACConf = { 0 };
 	/* Start ETH HAL Init */
 
 	static uint8_t MACAddr[6];
@@ -1234,16 +1257,8 @@ static int low_level_init ( struct netif *netif )
 				break;
 			}
 
-			/* Get MAC Config MAC */
-			HAL_ETH_GetMACConfig ( &heth, &MACConf );
-			MACConf.DuplexMode = duplex;
-			MACConf.Speed = speed;
-			HAL_ETH_SetMACConfig ( &heth, &MACConf );
-
-			HAL_ETH_Start_IT ( &heth );
-			netif_set_up ( netif );
-			netif_set_link_up ( netif );
-
+			/* Leave link down on a failed start, so the link task can retry. */
+			start_mac ( netif, speed, duplex );
 		}
 	}
 	else
@@ -1372,19 +1387,15 @@ static void ethernetif_input ( void const *argument )
 
 	for ( ;; )
 	{
-		if ( osSemaphoreWait ( RxPktSemaphore, TIME_WAITING_FOR_INPUT ) == osOK )
+		/* H7 DMA may already have completed a descriptor when interrupts
+		 * are enabled at link startup. Also drain the ring on timeout. */
+		osSemaphoreWait ( RxPktSemaphore, RX_POLL_INTERVAL_MS );
+		while ( heth.gState == HAL_ETH_STATE_STARTED &&
+				( p = low_level_input ( netif ) ) != NULL )
 		{
-			do
-			{
-				p = low_level_input ( netif );
-				if ( p != NULL )
-				{
-					if ( netif->input ( p, netif ) != ERR_OK )
-					{
-						pbuf_free ( p );
-					}
-				}
-			} while ( p != NULL );
+			++ethRxFrames;
+			if ( netif->input ( p, netif ) != ERR_OK )
+				pbuf_free ( p );
 		}
 	}
 }
@@ -1574,7 +1585,6 @@ int32_t ETH_PHY_IO_GetTick ( void )
 
 void ethernet_link_thread ( void const *argument )
 {
-	ETH_MACConfigTypeDef MACConf = { 0 };
 	int32_t PHYLinkState = 0;
 	uint32_t linkchanged = 0U, speed = 0U, duplex = 0U;
 
@@ -1589,6 +1599,7 @@ void ethernet_link_thread ( void const *argument )
 			HAL_ETH_Stop_IT ( &heth );
 			netif_set_down ( netif );
 			netif_set_link_down ( netif );
+			DbgDma ( 1, "\r\nETH: link down" );
 		}
 		else if ( !netif_is_link_up ( netif ) && ( PHYLinkState > LAN8742_STATUS_LINK_DOWN ) )
 		{
@@ -1619,16 +1630,7 @@ void ethernet_link_thread ( void const *argument )
 			}
 
 			if ( linkchanged )
-			{
-				/* Get MAC Config MAC */
-				HAL_ETH_GetMACConfig ( &heth, &MACConf );
-				MACConf.DuplexMode = duplex;
-				MACConf.Speed = speed;
-				HAL_ETH_SetMACConfig ( &heth, &MACConf );
-				HAL_ETH_Start_IT ( &heth );
-				netif_set_up ( netif );
-				netif_set_link_up ( netif );
-			}
+				start_mac ( netif, speed, duplex );
 		}
 
 		UNLOCK_TCPIP_CORE ();
