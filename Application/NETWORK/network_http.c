@@ -1,7 +1,6 @@
-/* F7 Ethernet HTTP/HTTPS endpoints, shared by plain TCP and TLS on H7.
- * Streams aaa.htm from SD; no LCD scratch-buffer or SDRAM mutex ownership.
- */
+/* Ethernet HTTP and HTTPS adapters for the shared application pages. */
 #include "network_http.h"
+#include "http_request_stream.h"
 #include "lwip/api.h"
 #include "lwip/sys.h"
 #include "ff.h"
@@ -30,36 +29,8 @@ static int message ( void *ctx, NetworkWrite write_fn, unsigned code, const char
 	int n = snprintf ( response, sizeof response, "HTTP/1.1 %u %s\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: %u\r\nConnection: close\r\n\r\n%s", code, reason, (unsigned) length, body );
 	return n > 0 && (size_t) n < sizeof response && send_all ( ctx, write_fn, response, (size_t) n );
 }
-int NetworkHTTPServe ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name )
+static int serve_sd_page ( void *ctx, NetworkWrite write_fn )
 {
-	char request[1024];
-	size_t used = 0;
-	while ( used < sizeof request - 1 )
-	{
-		int n = read_fn ( ctx, (unsigned char *) request + used, sizeof request - 1 - used );
-		if ( n <= 0 || (size_t) n > sizeof request - 1 - used )
-			return 0;
-		used += (size_t) n;
-		request[used] = 0;
-		if ( strstr ( request, "\r\n\r\n" ) )
-			break;
-	}
-	if ( !strstr ( request, "\r\n\r\n" ) )
-		return message ( ctx, write_fn, 431, "Request Header Fields Too Large", "Request too large" );
-	if ( strncmp ( request, "GET ", 4 ) )
-		return message ( ctx, write_fn, 405, "Method Not Allowed", "GET required" );
-	char *path = request + 4, *end = strchr ( path, ' ' );
-	if ( !end )
-		return message ( ctx, write_fn, 400, "Bad Request", "Invalid request" );
-	*end = 0;
-	if ( !strcmp ( path, "/test" ) )
-	{
-		char body[192];
-		snprintf ( body, sizeof body, "<html><body>Test: %s</body></html>", tls_name ? tls_name : "HTTP" );
-		return message ( ctx, write_fn, 200, "OK", body );
-	}
-	if ( strcmp ( path, "/" ) && strcmp ( path, "/aaa.htm" ) )
-		return message ( ctx, write_fn, 404, "Not Found", "Not found" );
 	FIL file;
 	FRESULT result;
 	unsigned long length;
@@ -101,6 +72,94 @@ int NetworkHTTPServe ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, co
 	}
 	return ok;
 }
+struct LanRequest
+{
+	const char *target;
+	size_t length;
+	int ready;
+};
+
+static HTTP_RequestStream lanRequestStream __attribute__ ( ( section ( ".sdram" ) ) );
+
+static void capture_target ( unsigned channel, const char *target, size_t length, void *ctx )
+{
+	(void) channel;
+	struct LanRequest *request = ctx;
+	request->target = target;
+	request->length = length;
+	request->ready = 1;
+}
+
+static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name )
+{
+	struct LanRequest request = { 0 };
+	/* Only channel zero is used by the raw stream. */
+	HTTP_RequestStreamResetChannel ( &lanRequestStream, 0 );
+	lanRequestStream.callback = capture_target;
+	lanRequestStream.context = &request;
+	lanRequestStream.discard_payload = 0;
+
+	unsigned char buffer[2048];
+	unsigned headerEnd = 0;
+	int post = 0;
+	size_t received = 0;
+	do
+	{
+		int size = read_fn ( ctx, buffer, sizeof buffer );
+		if ( size <= 0 || (size_t) size > sizeof buffer )
+			return 0;
+		if ( !received )
+			post = buffer[0] == 'P';
+		received += (size_t) size;
+		if ( received > HTTP_REQUEST_STREAM_MAX_TARGET + 8192u + sizeof buffer )
+			return message ( ctx, write_fn, 431, "Request Header Fields Too Large", "Request too large" );
+		HTTP_RequestStreamFeedRaw ( &lanRequestStream, buffer, (size_t) size );
+		if ( !post )
+		{
+			static const unsigned char end[] = "\r\n\r\n";
+			for ( int i = 0; i < size && headerEnd < 4; ++i )
+				headerEnd = buffer[i] == end[headerEnd] ? headerEnd + 1u : (buffer[i] == '\r');
+		}
+	} while ( !request.ready || (!post && request.target && headerEnd < 4) );
+
+	if ( !request.target )
+		return message ( ctx, write_fn, 400, "Bad Request", "Invalid request" );
+	if ( !post && !strcmp ( request.target, "/test" ) )
+	{
+		char body[192];
+		snprintf ( body, sizeof body, "<html><body>Test: %s</body></html>", tls_name ? tls_name : "HTTP" );
+		return message ( ctx, write_fn, 200, "OK", body );
+	}
+	if ( !post && !strcmp ( request.target, "/aaa.htm" ) )
+		return serve_sd_page ( ctx, write_fn );
+
+	if ( !NetworkWebStart ( request.target, request.length ) )
+		return message ( ctx, write_fn, 503, "Service Unavailable", "Application pages busy" );
+
+	int count;
+	int ok = 1;
+	while ( (count = NetworkWebRead ( buffer, sizeof buffer )) > 0 )
+	{
+		if ( !send_all ( ctx, write_fn, buffer, (size_t) count ) )
+		{
+			ok = 0;
+			break;
+		}
+	}
+	ok = ok && count == 0;
+	NetworkWebFinish ( ok );
+	return ok;
+}
+
+int NetworkHTTPServe ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name )
+{
+	if ( !NetworkWebLock () )
+		return message ( ctx, write_fn, 503, "Service Unavailable", "Application pages busy" );
+	int result = serve_lan_request ( ctx, read_fn, write_fn, tls_name );
+	NetworkWebUnlock ();
+	return result;
+}
+
 struct PlainConnection
 {
 	struct netconn *conn;

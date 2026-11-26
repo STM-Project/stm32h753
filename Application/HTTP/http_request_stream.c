@@ -394,6 +394,14 @@ void HTTP_RequestStreamResetChannel ( HTTP_RequestStream *stream,
 	}
 }
 
+void HTTP_RequestStreamFeedRaw ( HTTP_RequestStream *stream, const uint8_t *data, size_t length )
+{
+	/* A dedicated stream is used for unframed TCP, on channel zero. */
+	stream->frame_channel = 0;
+	for ( size_t i = 0; i < length && !stream->channels[0].finished; ++i )
+		http_stream_payload ( stream, data[i] );
+}
+
 void HTTP_RequestStreamFeed ( HTTP_RequestStream *stream,
 							  const uint8_t *data,
 							  size_t length )

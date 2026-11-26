@@ -11,6 +11,7 @@ typedef int ARCHIVING_TYPE;
 #define ETH_PACKET_LEN 2039
 #define DbgVarDma(...) ((void)0)
 static char sendBuff[2048];
+static struct { unsigned char chunk[ETH_PACKET_LEN]; } lanWeb;
 static int RcvTimeoutTimerStop(void) { return 1; }
 static unsigned commands,payloads,closes,command_fail,payload_fail;
 static size_t sent;
@@ -59,6 +60,20 @@ int main(void) {
     }
     assert(closes==1 && sent==total && payloads>240);
     assert(!HTTP_SendPayload(noArch));assert(!HTTP_SendAcknowledged(noArch));
+    /* LAN streams the same SD-backed page without reserving an ESP channel. */
+    clear_queue();HTTP_HandleTarget(HTTP_LAN_SLOT,"/nowa",5,NULL);
+    size_t header=httpPar.siz[HTTP_LAN_SLOT][0], offset=0;
+    const char *page=test_sd_page(httpLpcPage[HTTP_LAN_SLOT]);
+    assert(page&&strlen(page)>500000);
+    int length;
+    while((length=HTTP_LanReadChunk())>0){
+        const char *bytes=offset<header?httpPar.web[HTTP_LAN_SLOT][0]+offset:page+offset-header;
+        assert(!memcmp(lanWeb.chunk,bytes,(size_t)length));offset+=(size_t)length;
+    }
+    assert(length==0&&offset==header+strlen(page));
+    clear_queue();HTTP_HandleTarget(HTTP_LAN_SLOT,"/nowa",5,NULL);
+    assert(HTTP_LanReadChunk()>0);lpc_chunk_fail=1;
+    assert(HTTP_LanReadChunk()==-1);lpc_chunk_fail=0;
     /* Old code could read NULL or underflow length after a delayed prompt. */
     for(unsigned bad=0;bad<5;bad++){
         request(0,"/nowa");httpPar.chnl=0xFF;HTTP_SendCloseChnl(noArch,-1);
@@ -197,10 +212,11 @@ def main():
     source=(ROOT/'Application/esp32wroom.c').read_text()
     init=source[source.index('static void InitStructRqstToSendChnl ('):source.index('static int IsActiveAnyRqstToSendChnl(')]
     tx=source[source.index('int CheckReadyToSendChnl ('):source.index('static int HTTP_GetClosedChannel(')]
+    lan=source[source.index('static int HTTP_LanReadChunk ('):source.index('static void HTTP_ServiceLan (')]
     # Guard against reintroducing a timer-task mutation of the HTTP queue.
     callback=source[source.index('static void vWaitOnSendTimeoutTimerCallback('):source.index('static int RcvTimeoutTimerInit(')]
     assert 'InitStructRqstToSendChnl(' not in callback
     assert 'httpResetRequested = 1' in callback
     base=sensor.TESTS.replace('int main(void)','static int __attribute__((unused)) sensor_routes_suite(void)')
-    sensor.compile_and_run(sensor.harness_source(base+STUBS+init+tx+TESTS))
+    sensor.compile_and_run(sensor.harness_source(base+STUBS+init+tx+lan+TESTS))
 if __name__=='__main__':main()

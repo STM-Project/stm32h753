@@ -78,6 +78,9 @@ extern "C"
 								  HTTP_RequestStreamCallback callback,
 								  void *context );
 
+	/* Feed a dedicated stream with plain HTTP bytes from a TCP/TLS socket. */
+	void HTTP_RequestStreamFeedRaw ( HTTP_RequestStream *stream, const uint8_t *data, size_t length );
+
 	/* Feed only newly received UART bytes, once, in arrival order. Arbitrary
  * chunk boundaries (including inside +IPD headers and CRLF) are supported.
  * This accepts +IPD,<channel>,<length>: in ESP-AT multiplexed mode, without

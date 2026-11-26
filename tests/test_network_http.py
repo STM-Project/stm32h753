@@ -60,6 +60,19 @@ int f_close(FIL *f){(void)f;assert(locked);closes++;return FR_OK;}
 static int read_fragment(void *context,unsigned char *data,size_t capacity){(void)context;assert(!locked);size_t n=strlen(request)-offset;if(n>7)n=7;if(n>capacity)n=capacity;memcpy(data,request+offset,n);offset+=n;return (int)n;}
 static int write_fragment(void *context,const unsigned char *data,size_t size){(void)context;assert(!locked);if(writeFailure)return -1;if(size>13)size=13;assert(outputSize+size<sizeof output);memcpy(output+outputSize,data,size);outputSize+=size;output[outputSize]=0;return (int)size;}
 static int serve(const char *text){request=text;offset=outputSize=readCount=closes=0;return NetworkHTTPServe(NULL,read_fragment,write_fragment,"TLS-test");}
+static const char *sharedTarget, *sharedResponse;
+static int sharedReads, finished;
+int NetworkWebLock(void){return 1;}
+void NetworkWebUnlock(void){}
+int NetworkWebStart(const char *target,size_t length){
+ assert(length==strlen(target)&&sharedTarget&&!strcmp(target,sharedTarget));
+ sharedReads=0;finished=-1;return 1;
+}
+int NetworkWebRead(unsigned char *out,size_t capacity){
+ if(sharedReads++)return 0;
+ size_t n=strlen(sharedResponse);assert(n<=capacity);memcpy(out,sharedResponse,n);return (int)n;
+}
+void NetworkWebFinish(int delivered){finished=delivered;}
 static int writeError;
 int netconn_write_partly(struct netconn *conn,const void *data,size_t size,int flags,size_t *written){
  assert(conn&&data&&size==4&&flags==NETCONN_COPY&&written);
@@ -82,13 +95,18 @@ int main(void){
  assert(!strcmp(strstr(output,"\r\n\r\n")+4,testBody));
  char lengthHeader[40];snprintf(lengthHeader,sizeof lengthHeader,"Content-Length: %zu\r\n",strlen(testBody));
  assert(strstr(output,lengthHeader));
- fileSize=200000;assert(serve("GET / HTTP/1.1\r\n\r\n")&&closes==1&&readCount>90);
+ fileSize=200000;assert(serve("GET /aaa.htm HTTP/1.1\r\n\r\n")&&closes==1&&readCount>90);
  char *body=strstr(output,"\r\n\r\n")+4;assert(strlen(body)==fileSize);for(unsigned i=0;i<fileSize;i++)assert(body[i]=='a'+i%26);
- missing=1;assert(serve("GET / HTTP/1.1\r\n\r\n")&&strstr(output,"503 Service Unavailable")&&!closes);missing=0;
- busy=1;assert(serve("GET / HTTP/1.1\r\n\r\n")&&strstr(output,"503"));busy=0;
+ missing=1;assert(serve("GET /aaa.htm HTTP/1.1\r\n\r\n")&&strstr(output,"503 Service Unavailable")&&!closes);missing=0;
+ busy=1;assert(serve("GET /aaa.htm HTTP/1.1\r\n\r\n")&&strstr(output,"503"));busy=0;
+ sharedTarget="/";sharedResponse="HTTP/1.1 200 OK\r\n\r\nPanel";
+ assert(serve("GET / HTTP/1.1\r\nHost: board\r\n\r\n")&&finished==1&&!strcmp(output,sharedResponse));
+ sharedTarget="/lpc.cgi/A117?field=value";
+ assert(serve("POST /lpc.cgi/A117 HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 11\r\n\r\nfield=value")&&finished==1);
+ sharedTarget="/../secret";sharedResponse="HTTP/1.1 404 Not Found\r\n\r\n";
  assert(serve("GET /../secret HTTP/1.1\r\n\r\n")&&strstr(output,"404"));
- assert(serve("POST / HTTP/1.1\r\n\r\n")&&strstr(output,"405"));
- writeFailure=1;assert(!serve("GET / HTTP/1.1\r\n\r\n")&&closes==1&&!locked);
+ assert(serve("POST / HTTP/1.1\r\n\r\n")&&strstr(output,"400"));
+ writeFailure=1;assert(!serve("GET /aaa.htm HTTP/1.1\r\n\r\n")&&closes==1&&!locked);
  puts("Ethernet HTTP: fragmented requests, short writes, 200k SD streaming, mutex release during I/O, failure cleanup and routes: PASS");
 }
 '''
@@ -97,5 +115,5 @@ with tempfile.TemporaryDirectory(prefix='network-http-') as d:
  for name,content in headers.items():
   target=p/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(content)
  (p/'test.c').write_text(code)
- subprocess.run(['gcc','-std=c11','-O1','-g','-fsanitize=address,undefined','-ffunction-sections','-fdata-sections','-Wl,--gc-sections','-I'+str(p),'-I'+str(root/'Application/NETWORK'),str(p/'test.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['gcc','-std=c11','-O1','-g','-fsanitize=address,undefined','-ffunction-sections','-fdata-sections','-Wl,--gc-sections','-I'+str(p),'-I'+str(root/'Application/NETWORK'),'-I'+str(root/'Application/HTTP'),str(p/'test.c'),str(root/'Application/HTTP/http_request_stream.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)

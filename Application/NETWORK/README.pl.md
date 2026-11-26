@@ -11,16 +11,14 @@ zgodnie z potwierdzeniem użytkownika; nie przeniesiono LAN8720A z FP70.
 - Ethernet RMII, ten sam pinout co dotychczasowa konfiguracja ETH H7.
 - IP `192.168.1.40`, maska `255.255.255.0`, brama `192.168.1.1`, DHCP wyłączony.
 - DNS `8.8.8.8`, zapasowy `8.8.4.4`.
-- `http://192.168.1.40/` i `https://192.168.1.40/`: plik `0:/aaa.htm` z SD.
-- `/aaa.htm` jest aliasem `/`, `/test` pokazuje test połączenia (dla HTTPS
-  także wynegocjowany szyfr). Brak pliku/karty daje odpowiedź HTTP 503.
+- `http://192.168.1.40/` i `https://192.168.1.40/` udostępniają te same
+  strony i formularze co serwer Wi-Fi. Zadanie aplikacji obsługuje wspólne
+  trasy i ustawienia; odpowiedź Ethernet jest przesyłana fragmentami.
+- `/aaa.htm` udostępnia plik `0:/aaa.htm` z SD. Brak pliku daje HTTP 503.
+  `/test` pokazuje test połączenia i dla HTTPS wynegocjowany szyfr.
 - HTTPS używa **tego samego certyfikatu testowego EC mbedTLS co F7**. Przeglądarka
   nie uzna go za zaufany certyfikat urządzenia. Własny certyfikat i klucz można
   podłączyć w `MBEDTLS/App/mbedtls.c`.
-
-Jest to port Ethernetowych endpointów F7. Obecne strony ustawień HTTP przez
-ESP32 pozostają obsługiwane przez istniejący kod; nie przeniesiono ich pod nowe
-endpointy Ethernet. SMTP/Google i sterownik ESP32 pozostają bez zmian.
 
 ## CubeMX i pamięć
 

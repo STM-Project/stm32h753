@@ -300,7 +300,11 @@ int main(void) {
     for (unsigned channel = 0; channel < ESP_MAX_HTTP_CONN; ++channel)
         HTTP_HandleTarget(channel, "/temp001", 8, NULL);
     unsigned before = saves; HTTP_HandleTarget(0, target, strlen(target), NULL);
-    HTTP_HandleTarget(ESP_MAX_HTTP_CONN, target, strlen(target), NULL);
+    HTTP_HandleTarget(HTTP_SLOT_COUNT, target, strlen(target), NULL);
+    HTTP_HandleTarget(HTTP_LAN_SLOT, "/set", 4, NULL);
+    assert(httpPar.que[HTTP_LAN_SLOT] == HTTP_LAN_SLOT);
+    assert(!strncmp(httpPar.web[HTTP_LAN_SLOT][0], "HTTP/1.1 200 OK", 15));
+    assert(strstr(httpPar.web[HTTP_LAN_SLOT][1], "data-h7-panel='set'"));
     assert(saves == before);
     assert(reload_count > 20);
     assert(bindings_count == 0);

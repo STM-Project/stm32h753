@@ -16,6 +16,7 @@
 #include "HTTP/http_settings_storage.h"
 #include "HTTP/http_settings_bindings.h"
 #include "HTTP/http_request_stream.h"
+#include "NETWORK/network_http.h"
 #include "HTTP/http_output_control.h"
 #include "LPC2148/http_lpc_panel.h"
 #include "LPC2148/lpc_pages.h"
@@ -34,6 +35,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "FreeRTOS.h"
+#include "semphr.h"
 #include "task.h"
 #include "_debug.h"
 #include "mini_printf.h"
@@ -89,6 +91,7 @@
 
 #define BIT_ESP_SRV			(1<<0)
 #define BIT_DBG_SRV			(1<<1)
+#define BIT_ETH_HTTP (1u << 2)
 
 #define WAIT_ON_SEND_TIMEOUT_TIME_MS 	20000
 
@@ -265,55 +268,57 @@ extern UART_HandleTypeDef ESP_UART_HANDLE;
 extern DMA_HandleTypeDef ESP_UART_DMA_RX;
 
 #define MAX_HTML_WEBs		10
+#define HTTP_LAN_SLOT ESP_MAX_HTTP_CONN
+#define HTTP_SLOT_COUNT (ESP_MAX_HTTP_CONN + 1)
 
 struct HTTP_SEND_TEMP{
-	char* web[ESP_MAX_HTTP_CONN][MAX_HTML_WEBs];	/* ptr`s to html_web`s */
- 	u32   siz[ESP_MAX_HTTP_CONN][MAX_HTML_WEBs];	/* size html_web`s */
-	u8	  nrWeb[ESP_MAX_HTTP_CONN];					/* actual nr html_web to send at web[][] */
+	char* web[HTTP_SLOT_COUNT][MAX_HTML_WEBs];	/* ptr`s to html_web`s */
+	u32   siz[HTTP_SLOT_COUNT][MAX_HTML_WEBs];	/* size html_web`s */
+	u8	  nrWeb[HTTP_SLOT_COUNT];					/* actual nr html_web to send at web[][] */
 	u8 	  chnl;										/* actual channel wait for SEND OK or CLOSED */
-	char* ptr[ESP_MAX_HTTP_CONN];					/* ptr to actual html_web */
- 	u8 	  que[ESP_MAX_HTTP_CONN];					/* buffer of requests to send channel */
- 	u32   nr[ESP_MAX_HTTP_CONN];					/* packet iterix of actual html_web */
- 	u32   len[ESP_MAX_HTTP_CONN];					/* actual packet len to send */
+	char* ptr[HTTP_SLOT_COUNT];					/* ptr to actual html_web */
+	u8 	  que[HTTP_SLOT_COUNT];					/* buffer of requests to send channel */
+	u32   nr[HTTP_SLOT_COUNT];					/* packet iterix of actual html_web */
+	u32   len[HTTP_SLOT_COUNT];					/* actual packet len to send */
 }httpPar;
 
 TimerHandle_t xWaitOnSendTimeoutTimer=NULL;
 
 /* Queued pages must retain their contents until that slot finishes sending. */
-SDRAM static char httpPageBuff[ESP_MAX_HTTP_CONN][100000];
+SDRAM static char httpPageBuff[HTTP_SLOT_COUNT][100000];
 /* One small packet per connection, rather than five complete HTML pages. */
-SDRAM static char httpLpcChunk[ESP_MAX_HTTP_CONN][LPC_STREAM_BUFFER_SIZE] __attribute__ ( ( aligned ( 32 ) ) );
+SDRAM static char httpLpcChunk[HTTP_SLOT_COUNT][LPC_STREAM_BUFFER_SIZE] __attribute__ ( ( aligned ( 32 ) ) );
 #define HTTP_LPC_JSON_STREAM 0x80000000U
-static unsigned httpLpcPage[ESP_MAX_HTTP_CONN];
-static uint32_t httpLpcJsonHash[ESP_MAX_HTTP_CONN];
-static uint32_t httpLpcChunkOffset[ESP_MAX_HTTP_CONN];
-SDRAM static char httpSensorBuff[ESP_MAX_HTTP_CONN][131072];
+static unsigned httpLpcPage[HTTP_SLOT_COUNT];
+static uint32_t httpLpcJsonHash[HTTP_SLOT_COUNT];
+static uint32_t httpLpcChunkOffset[HTTP_SLOT_COUNT];
+SDRAM static char httpSensorBuff[HTTP_SLOT_COUNT][131072];
 SDRAM static HTTP_RequestStream httpRequestStream;
-static char httpResponseHeader[ESP_MAX_HTTP_CONN][192];
-static char httpCleanAddress[ESP_MAX_HTTP_CONN][384];
-static char httpStorageNotice[ESP_MAX_HTTP_CONN][320];
-static unsigned httpSensorPort[ESP_MAX_HTTP_CONN];
-static const char *httpSensorNotice[ESP_MAX_HTTP_CONN];
-static int httpResponseStatus[ESP_MAX_HTTP_CONN];
-static const HTTP_SettingPage *httpSettingsPage[ESP_MAX_HTTP_CONN];
-static uint16_t httpSettingsInstance[ESP_MAX_HTTP_CONN];
-static const HTTP_LpcAsset *httpLpcAsset[ESP_MAX_HTTP_CONN];
+static char httpResponseHeader[HTTP_SLOT_COUNT][192];
+static char httpCleanAddress[HTTP_SLOT_COUNT][384];
+static char httpStorageNotice[HTTP_SLOT_COUNT][320];
+static unsigned httpSensorPort[HTTP_SLOT_COUNT];
+static const char *httpSensorNotice[HTTP_SLOT_COUNT];
+static int httpResponseStatus[HTTP_SLOT_COUNT];
+static const HTTP_SettingPage *httpSettingsPage[HTTP_SLOT_COUNT];
+static uint16_t httpSettingsInstance[HTTP_SLOT_COUNT];
+static const HTTP_LpcAsset *httpLpcAsset[HTTP_SLOT_COUNT];
 /* WiFi task owns all transmit state. 1=prompt pending, 2=SEND OK pending,
  * 3=close pending. Offset counts bytes, not issued CIPSEND commands. */
-static uint8_t httpTxPhase[ESP_MAX_HTTP_CONN];
+static uint8_t httpTxPhase[HTTP_SLOT_COUNT];
 /* Refresh jobs are coalesced; each TCP client retains its own response slot. */
-static uint8_t httpRefreshPage[ESP_MAX_HTTP_CONN];
-static uint8_t httpRefreshPrepared[ESP_MAX_HTTP_CONN];
-static uint8_t httpResponseStarted[ESP_MAX_HTTP_CONN];
-static uint32_t httpTxOffset[ESP_MAX_HTTP_CONN];
+static uint8_t httpRefreshPage[HTTP_SLOT_COUNT];
+static uint8_t httpRefreshPrepared[HTTP_SLOT_COUNT];
+static uint8_t httpResponseStarted[HTTP_SLOT_COUNT];
+static uint32_t httpTxOffset[HTTP_SLOT_COUNT];
 /* Milliseconds of actual request/TX progress, independently per queue slot.
  * Only the WiFi owner reads/writes these fields, never the timer callback. */
 #define HTTP_SLOT_IDLE_MS 20000u
-static uint32_t httpLastActivity[ESP_MAX_HTTP_CONN];
+static uint32_t httpLastActivity[HTTP_SLOT_COUNT];
 
 static inline void HTTP_ClearSlot ( unsigned slot )
 {
-	if ( slot >= ESP_MAX_HTTP_CONN )
+	if ( slot >= HTTP_SLOT_COUNT )
 		return;
 	if ( httpPar.que[slot] != 0xFF && httpPar.chnl == httpPar.que[slot] )
 		httpPar.chnl = 0xFF;
@@ -1298,7 +1303,7 @@ static char* HTTP_SetWeb(int channel, int nrWWW)
 		}
 		break;
 	case WWW_BOOT_UPDATE:
-		httpPar.web[channel][nrPartWWW] = httpSensorNotice[channel];
+		httpPar.web[channel][nrPartWWW] = (char *) httpSensorNotice[channel];
 		httpPar.siz[channel][nrPartWWW++] = mini_strlen(httpSensorNotice[channel]);
 		break;
 	case WWW_HTTP_ERROR:
@@ -1417,10 +1422,12 @@ static int HTTP_QueueResponse ( unsigned channel, int page, unsigned port,
 								const HTTP_SettingPage *settingsPage, uint16_t settingsInstance,
 								const HTTP_LpcAsset *asset )
 {
-	for ( int i = 0; i < ESP_MAX_HTTP_CONN; i++ )
+	const int first = channel == HTTP_LAN_SLOT ? HTTP_LAN_SLOT : 0;
+	const int end = channel == HTTP_LAN_SLOT ? HTTP_SLOT_COUNT : ESP_MAX_HTTP_CONN;
+	for ( int i = first; i < end; i++ )
 		if ( httpPar.que[i] == channel )
 			return -1;
-	for ( int i = 0; i < ESP_MAX_HTTP_CONN; i++ )
+	for ( int i = first; i < end; i++ )
 		if ( httpPar.que[i] == 0xFF )
 		{
 			httpPar.que[i] = (u8) channel;
@@ -1434,7 +1441,7 @@ static int HTTP_QueueResponse ( unsigned channel, int page, unsigned port,
 			httpTxPhase[i] = 0;
 			httpTxOffset[i] = 0;
 			httpLpcPage[i] = 0;
-			httpRefreshPage[i] = status == 200 && HTTP_IsRefreshPage ( page ) ? (uint8_t) page : 0;
+			httpRefreshPage[i] = channel != HTTP_LAN_SLOT && status == 200 && HTTP_IsRefreshPage ( page ) ? (uint8_t) page : 0;
 			httpRefreshPrepared[i] = 0;
 			httpResponseStarted[i] = 0;
 			/* A newer read, or a write handled before this response, invalidates
@@ -1474,11 +1481,11 @@ static void HTTP_HandleTarget ( unsigned channel, const char *target, size_t len
 	const HTTP_LpcAsset *asset = HTTP_LpcFindAsset ( target, length );
 	unsigned lpcPage = LPC_ResolvePage ( target, length ), lpcApi = LPC_ResolveSettingsApi ( target, length );
 	(void) context;
-	if ( channel >= ESP_MAX_HTTP_CONN )
+	if ( channel > HTTP_LAN_SLOT )
 		return;
 	/* Do not execute a write if its response cannot be queued. */
-	int freeSlot = 0;
-	for ( int i = 0; i < ESP_MAX_HTTP_CONN; i++ )
+	int freeSlot = channel == HTTP_LAN_SLOT && httpPar.que[HTTP_LAN_SLOT] == 0xFF;
+	for ( int i = 0; channel != HTTP_LAN_SLOT && i < ESP_MAX_HTTP_CONN; i++ )
 	{
 		if ( httpPar.que[i] == channel )
 			return;
@@ -1769,6 +1776,21 @@ int CheckReadyToSendChnl ( int chnlPrev )
 	return -1;
 }
 
+static size_t HTTP_ReadLpcPart ( unsigned slot, size_t length )
+{
+	unsigned part = httpPar.nrWeb[slot];
+	if ( httpLpcPage[slot] & HTTP_LPC_JSON_STREAM )
+	{
+		size_t total = 0;
+		uint32_t hash = 0;
+		size_t got = LPC_SettingsJsonWindow ( httpLpcPage[slot] & ~HTTP_LPC_JSON_STREAM,
+			httpLpcChunk[slot], length, httpTxOffset[slot], &total, &hash );
+		return total == httpPar.siz[slot][part] && hash == httpLpcJsonHash[slot] ? got : 0;
+	}
+	return LPC_StorageReadPageChunk ( httpLpcPage[slot], httpPar.siz[slot][part],
+		httpTxOffset[slot], httpLpcChunk[slot], length );
+}
+
 static void HTTP_SendCloseChnl ( ARCHIVING_TYPE archType, int prevChnl )
 {
 	int slot = CheckReadyToSendChnl ( prevChnl );
@@ -1810,17 +1832,7 @@ static void HTTP_SendCloseChnl ( ARCHIVING_TYPE archType, int prevChnl )
 	}
 	if ( httpLpcPage[slot] && part == 1 )
 	{
-		size_t got;
-		if ( httpLpcPage[slot] & HTTP_LPC_JSON_STREAM )
-		{
-			size_t total = 0;
-			uint32_t hash = 0;
-			got = LPC_SettingsJsonWindow ( httpLpcPage[slot] & ~HTTP_LPC_JSON_STREAM, httpLpcChunk[slot], length, httpTxOffset[slot], &total, &hash );
-			if ( total != httpPar.siz[slot][part] || hash != httpLpcJsonHash[slot] )
-				got = 0;
-		}
-		else
-			got = LPC_StorageReadPageChunk ( httpLpcPage[slot], httpPar.siz[slot][part], httpTxOffset[slot], httpLpcChunk[slot], length );
+		size_t got = HTTP_ReadLpcPart ( slot, length );
 		if ( got != length )
 		{
 			DbgVarDma ( 1, 160, "\r\nHTTP LPC: TCP=%u blad odczytu SD, zamykam odpowiedz\r\n", (unsigned) httpPar.chnl + 1u );
@@ -2093,6 +2105,187 @@ void HTTP_SensorLCDWake ( void )
 		xTaskNotify ( vtaskWifiHandle, BIT_ESP_SRV, eSetBits );
 }
 
+enum LanWebCommand { LAN_WEB_START, LAN_WEB_READ, LAN_WEB_FINISH, LAN_WEB_CANCEL };
+enum LanWebState { LAN_WEB_IDLE, LAN_WEB_PENDING, LAN_WEB_RUNNING, LAN_WEB_DONE, LAN_WEB_ABANDONED };
+static StaticSemaphore_t lanWebMutexStorage;
+static SemaphoreHandle_t lanWebMutex;
+SDRAM static struct
+{
+	char target[HTTP_REQUEST_STREAM_MAX_TARGET + 1u];
+	unsigned char chunk[ETH_PACKET_LEN];
+	size_t length;
+	enum LanWebCommand command;
+	int result;
+	int validTarget;
+} lanWeb;
+static enum LanWebState lanWebState;
+
+int NetworkWebLock ( void )
+{
+	return lanWebMutex && xSemaphoreTake ( lanWebMutex, pdMS_TO_TICKS ( 5000 ) ) == pdTRUE;
+}
+
+void NetworkWebUnlock ( void )
+{
+	xSemaphoreGive ( lanWebMutex );
+}
+
+/* Only the LAN holder submits commands. No caller-owned buffer is exposed to
+ * the Wi-Fi owner, so a timed-out socket can safely close. */
+static int HTTP_LanExchange ( enum LanWebCommand command )
+{
+	taskENTER_CRITICAL ();
+	if ( lanWebState != LAN_WEB_IDLE || !vtaskWifiHandle )
+	{
+		taskEXIT_CRITICAL ();
+		return -1;
+	}
+	lanWeb.command = command;
+	lanWebState = LAN_WEB_PENDING;
+	xTaskNotify ( vtaskWifiHandle, BIT_ETH_HTTP, eSetBits );
+	taskEXIT_CRITICAL ();
+
+	TickType_t start = xTaskGetTickCount ();
+	for ( ;; )
+	{
+		taskENTER_CRITICAL ();
+		if ( lanWebState == LAN_WEB_DONE )
+		{
+			int result = lanWeb.result;
+			lanWebState = LAN_WEB_IDLE;
+			taskEXIT_CRITICAL ();
+			return result;
+		}
+		if ( xTaskGetTickCount () - start >= pdMS_TO_TICKS ( 15000 ) )
+		{
+			lanWebState = lanWebState == LAN_WEB_RUNNING ? LAN_WEB_ABANDONED : LAN_WEB_IDLE;
+			taskEXIT_CRITICAL ();
+			return -1;
+		}
+		taskEXIT_CRITICAL ();
+		vTaskDelay ( 1 );
+	}
+}
+
+int NetworkWebStart ( const char *target, size_t length )
+{
+	taskENTER_CRITICAL ();
+	int idle = lanWebState == LAN_WEB_IDLE;
+	taskEXIT_CRITICAL ();
+	if ( !idle || length > HTTP_REQUEST_STREAM_MAX_TARGET )
+		return 0;
+	if ( target )
+		memcpy ( lanWeb.target, target, length );
+	lanWeb.target[length] = 0;
+	lanWeb.length = length;
+	lanWeb.validTarget = target != NULL;
+	return HTTP_LanExchange ( LAN_WEB_START ) == 0;
+}
+
+int NetworkWebRead ( unsigned char *out, size_t capacity )
+{
+	int result = HTTP_LanExchange ( LAN_WEB_READ );
+	if ( result > 0 )
+	{
+		if ( (size_t) result > capacity )
+			return -1;
+		memcpy ( out, lanWeb.chunk, (size_t) result );
+	}
+	return result;
+}
+
+void NetworkWebFinish ( int delivered )
+{
+	HTTP_LanExchange ( delivered ? LAN_WEB_FINISH : LAN_WEB_CANCEL );
+}
+
+static int HTTP_LanReadChunk ( void )
+{
+	unsigned slot = HTTP_LAN_SLOT;
+	if ( httpPar.que[slot] == 0xFF )
+		return -1;
+	httpLastActivity[slot] = HAL_GetTick ();
+	for ( ; httpPar.nrWeb[slot] < MAX_HTML_WEBs; ++httpPar.nrWeb[slot] )
+	{
+		unsigned part = httpPar.nrWeb[slot];
+		const char *data = httpPar.web[slot][part];
+		if ( !data )
+			break;
+		size_t length = httpPar.siz[slot][part] - httpTxOffset[slot];
+		if ( length )
+		{
+			if ( length > sizeof lanWeb.chunk )
+				length = sizeof lanWeb.chunk;
+			if ( httpLpcPage[slot] && part == 1 )
+			{
+				if ( HTTP_ReadLpcPart ( slot, length ) != length )
+					return -1;
+			}
+			else
+				data += httpTxOffset[slot];
+			memcpy ( lanWeb.chunk, data, length );
+			httpTxOffset[slot] += length;
+			return (int) length;
+		}
+		httpTxOffset[slot] = 0;
+	}
+	return 0;
+}
+
+static void HTTP_ServiceLan ( void )
+{
+	if ( httpPar.que[HTTP_LAN_SLOT] != 0xFF &&
+		 (uint32_t) ( HAL_GetTick () - httpLastActivity[HTTP_LAN_SLOT] ) >= HTTP_SLOT_IDLE_MS )
+		HTTP_ClearSlot ( HTTP_LAN_SLOT );
+	taskENTER_CRITICAL ();
+	if ( lanWebState != LAN_WEB_PENDING )
+	{
+		taskEXIT_CRITICAL ();
+		return;
+	}
+	lanWebState = LAN_WEB_RUNNING;
+	taskEXIT_CRITICAL ();
+
+	int result = 0;
+	switch ( lanWeb.command )
+	{
+	case LAN_WEB_START:
+		HTTP_ClearSlot ( HTTP_LAN_SLOT );
+		HTTP_HandleTarget ( HTTP_LAN_SLOT, lanWeb.validTarget ? lanWeb.target : NULL, lanWeb.length, NULL );
+		if ( httpPar.que[HTTP_LAN_SLOT] == 0xFF )
+			result = -1;
+		break;
+	case LAN_WEB_READ:
+		result = HTTP_LanReadChunk ();
+		break;
+	case LAN_WEB_FINISH:
+#ifdef H753_BOOT_UPDATE_KEY
+		if ( httpSensorNotice[HTTP_LAN_SLOT] == bootUpdateStarting )
+		{
+			vTaskDelay ( pdMS_TO_TICKS ( 300 ) );
+			HTTP_BootReset ();
+		}
+#endif
+		/* fall through */
+	case LAN_WEB_CANCEL:
+		HTTP_ClearSlot ( HTTP_LAN_SLOT );
+		break;
+	}
+
+	taskENTER_CRITICAL ();
+	if ( lanWebState == LAN_WEB_ABANDONED )
+	{
+		HTTP_ClearSlot ( HTTP_LAN_SLOT );
+		lanWebState = LAN_WEB_IDLE;
+	}
+	else
+	{
+		lanWeb.result = result;
+		lanWebState = LAN_WEB_DONE;
+	}
+	taskEXIT_CRITICAL ();
+}
+
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;
@@ -2118,6 +2311,7 @@ void vtaskWifi(void *argument)
 	HTTP_SettingsStorageInit ();
 	HTTP_SettingsBindingsApply ();
 	LPC_StorageInit ();
+	HTTP_ClearSlot ( HTTP_LAN_SLOT );
 	HTTP_RequestStreamInit ( &httpRequestStream, HTTP_HandleTarget, NULL );
 	InitStructRqstToSendChnl();
 	RcvTimeoutTimerInit();
@@ -2142,6 +2336,7 @@ void vtaskWifi(void *argument)
 
 	while(1)
 	{
+		HTTP_ServiceLan ();
 		HTTP_SensorLCDService ();
 		HTTP_LCDPanelService ( HttpRefr_sdram, strlen ( HttpRefr_sdram ), HAL_GetTick () );
 		/* Apply a timeout reset in the WiFi task before copying more data. */
@@ -2158,7 +2353,8 @@ void vtaskWifi(void *argument)
 		TickType_t wait = CLOUD_WaitTicks ();
 		if ( connectionType == HTTP_CONNECTION && IsActiveAnyRqstToSendChnl () && wait > pdMS_TO_TICKS ( 250 ) )
 			wait = pdMS_TO_TICKS ( 250 );
-		if ( HTTP_LCDPanelWanted () && wait > pdMS_TO_TICKS ( 250 ) ) wait = pdMS_TO_TICKS ( 250 );
+		if ( (HTTP_LCDPanelWanted () || httpPar.que[HTTP_LAN_SLOT] != 0xFF) && wait > pdMS_TO_TICKS ( 250 ) )
+			wait = pdMS_TO_TICKS ( 250 );
 		if ( xTaskNotifyWait ( 0, UINT32_MAX, &ulNotifiedValue, wait ) == pdPASS )
 		{
 			/*	if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) */ /* Czekaj na powiadomienie.  Dzięki pdTRUE w pierwszym argumencie, po wyjściu z funkcji wartość powiadomienia zostanie zresetowana do 0 */
@@ -3379,12 +3575,26 @@ void vtaskWifi(void *argument)
 
 void CreateWifiTask(void)
 {
+	if ( !lanWebMutex )
+		lanWebMutex = xSemaphoreCreateMutexStatic ( &lanWebMutexStorage );
 	xTaskCreate(vtaskWifi, "vtaskWifi", 1024, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
 }
 
 void CloseWifiTask(void)
 {
-	vTaskDelete(vtaskWifiHandle);	vtaskWifiHandle=NULL;
+	taskENTER_CRITICAL ();
+	TaskHandle_t old = vtaskWifiHandle;
+	vtaskWifiHandle = NULL;
+	if ( lanWebState == LAN_WEB_PENDING || lanWebState == LAN_WEB_RUNNING )
+	{
+		lanWeb.result = -1;
+		lanWebState = LAN_WEB_DONE;
+	}
+	else if ( lanWebState == LAN_WEB_ABANDONED )
+		lanWebState = LAN_WEB_IDLE;
+	if ( old )
+		vTaskDelete ( old );
+	taskEXIT_CRITICAL ();
 	ESP_OFF;
 	ChangeUartBuadRate(115200);
 }
