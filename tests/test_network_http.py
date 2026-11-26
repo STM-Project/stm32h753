@@ -30,6 +30,7 @@ void netconn_set_sendtimeout(struct netconn*,int);
 #define osWaitForever 0xffffffffU
 void *sys_thread_new(const char*,void (*)(void*),void*,int,int);
 void sys_msleep(unsigned);
+unsigned sys_now(void);
 void vTaskDelete(void*);
 ''',
 'ff.h':r'''
@@ -80,6 +81,8 @@ int netconn_write_partly(struct netconn *conn,const void *data,size_t size,int f
  *written=2;
  return ERR_OK;
 }
+unsigned sys_now(void){return 0;}
+void DbgDma(int on,const char *text){assert(on&&text);}
 void DbgVarDma(int on,unsigned capacity,const char *format,...){assert(on&&capacity&&format);}
 int main(void){
  struct netconn client={0};

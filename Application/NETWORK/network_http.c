@@ -92,8 +92,9 @@ static void capture_target ( unsigned channel, const char *target, size_t length
 	request->ready = 1;
 }
 
-static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name )
+static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name, unsigned lockMs )
 {
+	unsigned started = sys_now ();
 	struct LanRequest request = { 0 };
 	/* Only channel zero is used by the raw stream. */
 	HTTP_RequestStreamResetChannel ( &lanRequestStream, 0 );
@@ -109,7 +110,11 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 	{
 		int size = read_fn ( ctx, buffer, sizeof buffer );
 		if ( size <= 0 || (size_t) size > sizeof buffer )
+		{
+			if ( received )
+				DbgDma ( 1, "\r\nLAN: request ended before parsing completed" );
 			return 0;
+		}
 		if ( !received )
 			post = buffer[0] == 'P';
 		received += (size_t) size;
@@ -135,9 +140,11 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 	if ( !post && !strcmp ( request.target, "/aaa.htm" ) )
 		return serve_sd_page ( ctx, write_fn );
 
+	unsigned receivedAt = sys_now ();
 	if ( !NetworkWebStart ( request.target, request.length ) )
 		return message ( ctx, write_fn, 503, "Service Unavailable", "Application pages busy" );
 
+	unsigned renderedAt = sys_now ();
 	int count;
 	int ok = 1;
 	while ( (count = NetworkWebRead ( lanResponse, sizeof lanResponse )) > 0 )
@@ -149,15 +156,29 @@ static int serve_lan_request ( void *ctx, NetworkRead read_fn, NetworkWrite writ
 		}
 	}
 	ok = ok && count == 0;
+	if ( count < 0 )
+		DbgDma ( 1, "\r\nLAN: response producer stopped before the end" );
+	else if ( !ok )
+		DbgDma ( 1, "\r\nLAN: response write stopped before the end" );
+	unsigned sentAt = sys_now ();
+	if ( lockMs + sentAt - started >= 400u )
+	{
+		const char *kind = !strncmp ( request.target, "/assets/", 8 ) ? "asset" :
+						   !strncmp ( request.target, "/api/", 5 ) ? "api" : "page";
+		DbgVarDma ( 1, 144, "\r\n%s ETH slow %s: queue=%u rx=%u render=%u tx=%u ms",
+					tls_name ? "HTTPS" : "HTTP", kind, lockMs, receivedAt - started,
+					renderedAt - receivedAt, sentAt - renderedAt );
+	}
 	NetworkWebFinish ( ok );
 	return ok;
 }
 
 int NetworkHTTPServe ( void *ctx, NetworkRead read_fn, NetworkWrite write_fn, const char *tls_name )
 {
+	unsigned queuedAt = sys_now ();
 	if ( !NetworkWebLock () )
 		return message ( ctx, write_fn, 503, "Service Unavailable", "Application pages busy" );
-	int result = serve_lan_request ( ctx, read_fn, write_fn, tls_name );
+	int result = serve_lan_request ( ctx, read_fn, write_fn, tls_name, sys_now () - queuedAt );
 	NetworkWebUnlock ();
 	return result;
 }
@@ -237,8 +258,7 @@ static void http_thread ( void *arg )
 		netconn_set_recvtimeout ( client, 5000 );
 		netconn_set_sendtimeout ( client, 5000 );
 		struct PlainConnection c = { client, NULL, 0 };
-		if ( !NetworkHTTPServe ( &c, plain_read, plain_write, NULL ) )
-			DbgDma ( 1, "\r\nHTTP ETH: response incomplete" );
+		NetworkHTTPServe ( &c, plain_read, plain_write, NULL );
 		if ( c.buf )
 			netbuf_delete ( c.buf );
 		netconn_close ( client );

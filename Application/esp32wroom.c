@@ -2224,17 +2224,20 @@ static int HTTP_LanReadChunk ( void )
 	if ( httpPar.que[slot] == 0xFF )
 		return -1;
 	httpLastActivity[slot] = HAL_GetTick ();
-	for ( ; httpPar.nrWeb[slot] < MAX_HTML_WEBs; ++httpPar.nrWeb[slot] )
+	size_t used = 0;
+	while ( httpPar.nrWeb[slot] < MAX_HTML_WEBs && used < sizeof lanWeb.chunk )
 	{
 		unsigned part = httpPar.nrWeb[slot];
 		const char *data = httpPar.web[slot][part];
 		if ( !data )
 			break;
+		if ( httpTxOffset[slot] > httpPar.siz[slot][part] )
+			return -1;
 		size_t length = httpPar.siz[slot][part] - httpTxOffset[slot];
 		if ( length )
 		{
-			if ( length > sizeof lanWeb.chunk )
-				length = sizeof lanWeb.chunk;
+			if ( length > sizeof lanWeb.chunk - used )
+				length = sizeof lanWeb.chunk - used;
 			if ( httpLpcPage[slot] && part == 1 )
 			{
 				if ( length > sizeof httpLpcChunk[slot] )
@@ -2244,13 +2247,19 @@ static int HTTP_LanReadChunk ( void )
 			}
 			else
 				data += httpTxOffset[slot];
-			memcpy ( lanWeb.chunk, data, length );
+			memcpy ( lanWeb.chunk + used, data, length );
 			httpTxOffset[slot] += length;
-			return (int) length;
+			used += length;
+			if ( httpLpcPage[slot] )
+				break;
 		}
-		httpTxOffset[slot] = 0;
+		if ( httpTxOffset[slot] == httpPar.siz[slot][part] )
+		{
+			httpTxOffset[slot] = 0;
+			++httpPar.nrWeb[slot];
+		}
 	}
-	return 0;
+	return (int) used;
 }
 
 static void HTTP_ServiceLan ( void )

@@ -76,9 +76,10 @@ int main(void) {
     assert(HTTP_LanReadChunk()==-1);lpc_chunk_fail=0;
     clear_queue();static char lanAsset[13000];
     httpPar.que[HTTP_LAN_SLOT]=HTTP_LAN_SLOT;httpTxOffset[HTTP_LAN_SLOT]=0;
-    httpPar.web[HTTP_LAN_SLOT][0]=lanAsset;httpPar.siz[HTTP_LAN_SLOT][0]=sizeof lanAsset;
-    assert(HTTP_LanReadChunk()==8192);
-    assert(HTTP_LanReadChunk()==(int)sizeof lanAsset-8192);
+    httpPar.web[HTTP_LAN_SLOT][0]="header";httpPar.siz[HTTP_LAN_SLOT][0]=6;
+    httpPar.web[HTTP_LAN_SLOT][1]=lanAsset;httpPar.siz[HTTP_LAN_SLOT][1]=sizeof lanAsset;
+    assert(HTTP_LanReadChunk()==8192&&!memcmp(lanWeb.chunk,"header",6));
+    assert(HTTP_LanReadChunk()==(int)sizeof lanAsset+6-8192);
     assert(HTTP_LanReadChunk()==0);
     /* Old code could read NULL or underflow length after a delayed prompt. */
     for(unsigned bad=0;bad<5;bad++){

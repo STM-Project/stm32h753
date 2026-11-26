@@ -3,6 +3,7 @@
 #include "mbedtls.h"
 #include "threading_alt.h"
 #include "mbedtls/certs.h"
+#include "mbedtls/ssl_cache.h"
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/memory_buffer_alloc.h"
 #include "network_http.h"
@@ -15,6 +16,7 @@
 #include <string.h>
 static unsigned char tlsMemory[327680] __attribute__ ( ( section ( ".sdram" ), aligned ( 32 ) ) );
 static mbedtls_ssl_config config;
+static mbedtls_ssl_cache_context sessions;
 static mbedtls_x509_crt certificate;
 static mbedtls_pk_context key;
 static mbedtls_entropy_context entropy;
@@ -63,6 +65,10 @@ void MX_MBEDTLS_Init ( void )
 	}
 	mbedtls_ssl_conf_rng ( &config, mbedtls_ctr_drbg_random, &drbg );
 	mbedtls_ssl_conf_read_timeout ( &config, 5000 );
+	mbedtls_ssl_cache_init ( &sessions );
+	mbedtls_ssl_cache_set_max_entries ( &sessions, 4 );
+	mbedtls_ssl_cache_set_timeout ( &sessions, 300 );
+	mbedtls_ssl_conf_session_cache ( &config, &sessions, mbedtls_ssl_cache_get, mbedtls_ssl_cache_set );
 	tlsReady = 1;
 }
 static int tls_read ( void *ctx, unsigned char *data, size_t length )
@@ -104,10 +110,14 @@ static void https_thread ( void *arg )
 		if ( !ret )
 		{
 			mbedtls_ssl_set_bio ( &ssl, &client, mbedtls_net_send, mbedtls_net_recv, mbedtls_net_recv_timeout );
+			unsigned start = sys_now ();
 			do
 			{
 				ret = mbedtls_ssl_handshake ( &ssl );
 			} while ( ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE );
+			unsigned elapsed = sys_now () - start;
+			if ( elapsed >= 400u )
+				DbgVarDma ( 1, 96, "\r\nHTTPS ETH: TLS handshake %u ms", elapsed );
 			if ( !ret )
 			{
 				NetworkHTTPServe ( &ssl, tls_read, tls_write, mbedtls_ssl_get_ciphersuite ( &ssl ) );
