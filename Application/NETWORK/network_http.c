@@ -136,14 +136,16 @@ static int plain_read ( void *context, unsigned char *out, size_t capacity )
 static int plain_write ( void *context, const unsigned char *data, size_t size )
 {
 	struct PlainConnection *c = context;
-	err_t error = netconn_write ( c->conn, data, size, NETCONN_COPY );
+	size_t written = 0;
+	/* lwIP requires the byte count when a send timeout is configured. */
+	err_t error = netconn_write_partly ( c->conn, data, size, NETCONN_COPY, &written );
 	if ( error != ERR_OK )
 	{
-		DbgVarDma ( 1, 96, "\r\nHTTP ETH: netconn_write failed (%d), bytes=%u",
+		DbgVarDma ( 1, 96, "\r\nHTTP ETH: netconn_write_partly failed (%d), bytes=%u",
 					(int) error, (unsigned) size );
 		return -1;
 	}
-	return (int) size;
+	return (int) written;
 }
 static void http_thread ( void *arg )
 {

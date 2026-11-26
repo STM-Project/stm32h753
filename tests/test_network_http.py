@@ -16,7 +16,7 @@ int netconn_recv(struct netconn*,struct netbuf**);
 unsigned short netbuf_len(struct netbuf*);
 unsigned short netbuf_copy_partial(struct netbuf*,void*,unsigned short,unsigned short);
 void netbuf_delete(struct netbuf*);
-int netconn_write(struct netconn*,const void*,size_t,int);
+int netconn_write_partly(struct netconn*,const void*,size_t,int,size_t*);
 int netconn_bind(struct netconn*,void*,unsigned short);
 int netconn_listen(struct netconn*);
 int netconn_delete(struct netconn*);
@@ -60,7 +60,20 @@ int f_close(FIL *f){(void)f;assert(locked);closes++;return FR_OK;}
 static int read_fragment(void *context,unsigned char *data,size_t capacity){(void)context;assert(!locked);size_t n=strlen(request)-offset;if(n>7)n=7;if(n>capacity)n=capacity;memcpy(data,request+offset,n);offset+=n;return (int)n;}
 static int write_fragment(void *context,const unsigned char *data,size_t size){(void)context;assert(!locked);if(writeFailure)return -1;if(size>13)size=13;assert(outputSize+size<sizeof output);memcpy(output+outputSize,data,size);outputSize+=size;output[outputSize]=0;return (int)size;}
 static int serve(const char *text){request=text;offset=outputSize=readCount=closes=0;return NetworkHTTPServe(NULL,read_fragment,write_fragment,"TLS-test");}
+static int writeError;
+int netconn_write_partly(struct netconn *conn,const void *data,size_t size,int flags,size_t *written){
+ assert(conn&&data&&size==4&&flags==NETCONN_COPY&&written);
+ if(writeError)return writeError;
+ *written=2;
+ return ERR_OK;
+}
+void DbgVarDma(int on,unsigned capacity,const char *format,...){assert(on&&capacity&&format);}
 int main(void){
+ struct netconn client={0};
+ struct PlainConnection connection={.conn=&client};
+ assert(plain_write(&connection,(const unsigned char *)"test",4)==2);
+ writeError=-6;
+ assert(plain_write(&connection,(const unsigned char *)"test",4)==-1);
  assert(serve("GET /test HTTP/1.1\r\nHost: board\r\n\r\n"));assert(strstr(output,"200 OK")&&strstr(output,"TLS-test")&&!closes);
  request="GET /test HTTP/1.1\r\nHost: board\r\n\r\n";offset=outputSize=0;
  assert(NetworkHTTPServe(NULL,read_fragment,write_fragment,NULL));
