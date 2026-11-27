@@ -44,7 +44,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 /* Google Apps Script transport: GOOGLE_CLOUD_ETHERNET, GOOGLE_CLOUD_WIFI or GOOGLE_CLOUD_OFF. */
-#define GOOGLE_CLOUD_TRANSPORT GOOGLE_CLOUD_OFF
+#define GOOGLE_CLOUD_TRANSPORT GOOGLE_CLOUD_ETHERNET
 
 /* USER CODE END PD */
 
