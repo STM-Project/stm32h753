@@ -30,7 +30,8 @@ assert 'ProjectManager.DeletePrevious=false' in ioc
 for config in ET.parse(root/'.cproject').findall('.//configuration'):
  assert 'h753_update_key.mk prepare-key' in config.get('prebuildStep','')
  script=next(opt for opt in config.iter('option') if opt.get('name')=='Linker Script (-T)')
- assert script.get('value','').endswith('/Application/STM32H753_application.ld}')
+ assert script.get('value') == '../Application/STM32H753_application.ld'
+assert 'INCLUDE ../Application/STM32H753_application.ld' in (root/'STM32H753BITX_FLASH.ld').read_text()
 sd=(root/'FATFS/Target/sd_diskio.c').read_text()
 read=next(m.group(0) for m in pattern.finditer(sd) if m[2]=='beforeReadSection')
 assert 'DRESULT SD_read(' in read and '#if 0' in read

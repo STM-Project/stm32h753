@@ -32,8 +32,10 @@ sektorów aplikacji, aby zachować bootloader w pierwszym sektorze.
 Regeneruj istniejący projekt, z włączonym `Keep User Code`. Poprawki SD,
 TLS i ustawienia tablicy wektorów są w sekcjach `USER CODE`. Projekt używa
 linkera `Application/STM32H753_application.ld`, poza ścieżką linkera
-generowanego przez CubeMX. Ponownie wygenerowany `STM32H753BITX_FLASH.ld`
-nie jest potrzebny w tym projekcie.
+generowanego przez CubeMX. Wersjonowany plik `STM32H753BITX_FLASH.ld` jest odsyłaczem dla starszych
+plików Makefile. Debug i Release wskazują właściwy linker bezpośrednio.
+Jeśli CubeMX odtworzy standardowy plik o tej nazwie, odśwież projekt i
+przebuduj go z aktualną konfiguracją CubeIDE.
 
 Przed kompilacją sprawdź zmiany w `.cproject`, szczególnie po migracji lub
 utworzeniu projektu CubeIDE od zera. Wersjonowane konfiguracje Debug i Release
