@@ -78,7 +78,7 @@ static void PageNumber ( SensorPageWriter *writer, const char *field,
 	int magnitude = value < 0 ? -(int) value : (int) value;
 
 	PageAppend ( writer,
-				 "<input type=\"text\" class=\"textbox\" style=\"width:50px;\" "
+				 "<input type=\"text\" class=\"textbox h7-sensor-number\" "
 				 "name=\"n_s_Czujki_%s_%03u\" size=\"5\" maxlength=\"7\" "
 				 "value=\"%c%02d.%d\" "
 				 "onkeypress=\"return maskujKlawisze(event, '+-.0123456789');\">",
@@ -98,46 +98,46 @@ static void PageCard ( SensorPageWriter *writer, unsigned port, int humidity )
 		return;
 	}
 	PageAppend ( writer,
-				 "\r\n<div class=\"corner-radius2\" style=\"margin-left: 0px\">\r\n"
-				 "<div class=\"corner-radius\" style=\"margin-left: 10px\">\r\n"
-				 "<font class=\"css-font-style\" style=\"font-family: Courier\">"
-				 "<b>%s Port %u</b></font><br>\r\n"
-				 "<font size=\"3\" color=\"#eeeeee\">"
-				 "-- -- -- -- -- -- - T%u - -- -- -- -- -- </font><br>\r\n"
-				 "<input type=\"text\" class=\"textbox\" style=\"width:270px;\" "
+				 "\r\n"
+				 "<div class=\"corner-radius h7-sensor-card\">\r\n"
+				 "<font class=\"css-font-style h7-sensor-heading\" style=\"font-family: Courier\">"
+				 "<b>%s Port %u</b></font>\r\n"
+				 "<span class=\"h7-sensor-reference\">"
+				 "-- -- -- -- -- -- - T%u - -- -- -- -- -- </span>\r\n"
+				 "<div class=\"h7-sensor-fields\"><input type=\"text\" class=\"textbox h7-sensor-name\" "
 				 "name=\"n_s_Czujki_nazwa_%03u\" size=\"30\" maxlength=\"30\" value=\"",
 				 humidity ? "Wilgotnosc" : "Temperatura", port, sensor_id, sensor_id );
 	PageEscape ( writer, settings->name );
 	PageAppend ( writer,
-				 "\"><br>\r\n<font class=\"css-font-style2\">Prog max</font>" );
+				 "\">\r\n<div class=\"h7-sensor-row\"><font class=\"css-font-style2\">Prog max</font>" );
 	PageNumber ( writer, "prog_max1", sensor_id, settings->max1 );
 	PageAppend ( writer, " " );
 	PageNumber ( writer, "prog_max2", sensor_id, settings->max2 );
 	PageAppend ( writer,
-				 "<font class=\"css-font-style2\">%s</font><br>\r\n"
+				 "<font class=\"css-font-style2\">%s</font></div>\r\n<div class=\"h7-sensor-row\">"
 				 "<font class=\"css-font-style2\">Prog min </font>",
 				 unit );
 	PageNumber ( writer, "prog_min1", sensor_id, settings->min1 );
 	PageAppend ( writer, " " );
 	PageNumber ( writer, "prog_min2", sensor_id, settings->min2 );
 	PageAppend ( writer,
-				 "<font class=\"css-font-style2\">%s</font><br>\r\n"
-				 "<font class=\"css-font-style2\">Histereza &nbsp;</font>",
+				 "<font class=\"css-font-style2\">%s</font></div>\r\n<div class=\"h7-sensor-row\">"
+				 "<font class=\"css-font-style2\">Histereza</font>",
 				 unit );
 	PageNumber ( writer, "hist", sensor_id, settings->hysteresis );
 	PageAppend ( writer,
-				 "<font class=\"css-font-style2\">%s</font><br>\r\n"
-				 "<font class=\"css-font-style2\">Korekta &nbsp;&nbsp;&nbsp;</font>",
+				 "<font class=\"css-font-style2\">%s</font></div>\r\n<div class=\"h7-sensor-row\">"
+				 "<font class=\"css-font-style2\">Korekta</font>",
 				 unit );
 	PageNumber ( writer, "korekcja", sensor_id, settings->correction );
 	PageAppend ( writer,
-				 "<font class=\"css-font-style2\">%s</font><br>\r\n"
+				 "<font class=\"css-font-style2\">%s</font></div>\r\n<div class=\"h7-sensor-row\">"
 				 "<font class=\"css-font-style2\">Czas zwloki</font>"
-				 "<input type=\"text\" class=\"textbox\" style=\"width:50px;\" "
+				 "<input type=\"text\" class=\"textbox h7-sensor-number\" "
 				 "name=\"n_s_Czujki_czas_reak_%03u\" size=\"5\" maxlength=\"5\" "
 				 "value=\"%02u:%02u\" "
 				 "onkeypress=\"return maskujKlawisze(event, ':0123456789');\">"
-				 "<font class=\"css-font-style2\">m:s</font><br>\r\n"
+				 "<font class=\"css-font-style2\">m:s</font></div>\r\n"
 				 "</div></div>\r\n",
 				 unit, sensor_id, (unsigned) settings->delay_seconds / 60U,
 				 (unsigned) settings->delay_seconds % 60U );
@@ -161,16 +161,15 @@ size_t HTTP_SensorPageRender ( char *out, size_t capacity, unsigned port,
 		PageAppend ( &writer, "</p>\r\n" );
 	}
 	PageAppend ( &writer,
-				 "<form method=\"post\" action=\"/lpc.cgi/A117\" data-ajax=\"false\">\r\n" );
+				 "<form method=\"post\" action=\"/lpc.cgi/A117\" class=\"h7-sensor-form\" data-ajax=\"false\">\r\n" );
 	PageCard ( &writer, port, 0 );
 	if ( humidity_enabled )
 		PageCard ( &writer, port, 1 );
 	PageAppend ( &writer,
-				 "<div class=\"corner-radius2\" style=\"margin-left: 0px\">\r\n"
-				 "<div class=\"corner-radius\" style=\"margin-left: 10px\">\r\n"
-				 "<br>\r\n&nbsp;<button type=\"submit\" name=\"n_109_zapisz\" "
+				 "<div class=\"corner-radius h7-sensor-actions\">\r\n"
+				 "<button type=\"submit\" name=\"n_109_zapisz\" "
 				 "class=\"css_button\">Zapisz</button>\r\n"
-				 "<br><a href=\"/set\" class=\"n\">Wroc</a>\r\n</div></div>\r\n"
+				 "<a href=\"/set\" class=\"n\">Wroc</a>\r\n</div>\r\n"
 				 "</form>\r\n</body>\r\n<script>\r\n"
 				 "document.getElementById('tu_menu').innerHTML="
 				 "\"<li><a href='/'>Panel odczytowy</a></li>"

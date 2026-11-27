@@ -45,6 +45,18 @@ const assert = require('assert');
 	assert.equal((await config())[4][0],9);
 	assert.equal(await select.inputValue(),'09p005');
 	assert(await page.locator('[id="09p005"]').isVisible());
+	await open('/temp005', '.h7-sensor-card');
+	assert.equal(await page.locator('.h7-sensor-card').count(), 2);
+	const sensorRows = await page.locator('.h7-sensor-card').first().locator('.h7-sensor-row').evaluateAll(rows =>
+		rows.map(row => ({
+			top: row.getBoundingClientRect().top,
+			input: row.querySelector('input').getBoundingClientRect().height,
+			labelColor: getComputedStyle(row.querySelector('font')).color
+		}))
+	);
+	assert.equal(sensorRows.length, 5);
+	assert(sensorRows.every(row => row.input === 32 && row.labelColor === 'rgb(158, 223, 15)'));
+	assert(sensorRows.slice(1).every((row, index) => Math.abs(row.top - sensorRows[index].top - 46) < 1));
 	await open('/main', '#h7-read .y');
 	assert(await page.locator('#tu_temp005b').isVisible());
 	assert(await page.locator('#tu_temp005c').isVisible());

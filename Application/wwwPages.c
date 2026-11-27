@@ -1021,11 +1021,11 @@ label {\r\n\
 .corner-radius2,.corner-radius4{height:auto!important;min-height:0;display:flow-root;overflow:visible;padding-bottom:22px;max-width:100%;box-sizing:border-box;}\r\n\
 .corner-radius,.corner-radius3:not(.port-column){height:auto!important;min-height:0;overflow:visible;padding:12px 10px 22px;box-sizing:border-box;max-width:calc(100% - 20px);font:16px/1.5 Arial,Helvetica,sans-serif;color:#eee;}\r\n\
 .corner-radius .css-font-style,.corner-radius3 .css-font-style{font-size:18px;line-height:1.4;}\r\n\
-.corner-radius .css-font-style2,.corner-radius3 .css-font-style2{font-size:16px;line-height:1.5;}\r\n\
+.corner-radius .css-font-style2,.corner-radius3 .css-font-style2{font-size:20px;line-height:1.25;color:#9edf0f;}\r\n\
 .corner-radius table,.corner-radius3 table{font:15px/1.4 Arial,Helvetica,sans-serif;color:#eee;max-width:100%;margin:6px auto;border-spacing:4px;}\r\n\
 .corner-radius td,.corner-radius th{padding:3px 2px;vertical-align:middle;}\r\n\
 .corner-radius input:not([type=checkbox]):not([type=radio]),.corner-radius select,.corner-radius3 input:not([type=checkbox]):not([type=radio]){max-width:100%;box-sizing:border-box;}\r\n\
-.corner-radius .textbox,.corner-radius3 .textbox{height:30px;font-size:15px;margin-top:4px;margin-bottom:4px;}\r\n\
+.corner-radius .textbox,.corner-radius3 .textbox{height:32px;font-size:17px;margin:7px 0;color:#111;background:linear-gradient(#fff,#c4c4c4);}\r\n\
 .corner-radius .css_button,.corner-radius3 .css_button{font-size:17px;}\r\n\
 .corner-radius .regular-checkbox+label,.corner-radius3 .regular-checkbox+label{vertical-align:middle;}\r\n\
 .h7-read-grid{display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px 0;}.h7-read-grid>.y{float:none;padding-bottom:0;}\r\n\
@@ -1036,14 +1036,28 @@ label {\r\n\
 </style>\r\n\
 <style>\r\n\
 /* Consistent native H7 field rows; port configuration retains its row grid. */\r\n\
-.h7-field-row{display:grid;grid-template-columns:minmax(0,42%) minmax(0,58%);align-items:center;gap:0;margin:10px 0;text-align:left;}\r\n\
-.h7-field-label{padding-right:10px;overflow-wrap:normal;line-height:1.45;}\r\n\
-.h7-field-label .css-font-style2{font-size:15px;width:auto!important;}\r\n\
+.h7-field-row{display:grid;grid-template-columns:minmax(0,42%) minmax(0,58%);align-items:center;gap:0;min-height:32px;margin:0 0 14px;text-align:left;}\r\n\
+.h7-field-label{padding-right:10px;overflow-wrap:anywhere;line-height:1.45;}\r\n\
+.h7-field-label .css-font-style2{padding:0;width:auto!important;}\r\n\
 .h7-field-controls{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;}\r\n\
 .h7-field-controls>.textbox,.h7-field-controls>select,.h7-field-controls>textarea{max-width:100%!important;min-width:0;box-sizing:border-box;}\r\n\
+.h7-field-controls>.textbox,.port-column .textbox{margin:0;}\r\n\
+.h7-field-controls>select{min-height:32px;}\r\n\
 .h7-field-row+br{display:none;}\r\n\
 .corner-radius>table,.corner-radius3:not(.port-column)>table{border-spacing:6px 7px;}\r\n\
 .corner-radius textarea,.corner-radius select,.corner-radius3:not(.port-column) textarea,.corner-radius3:not(.port-column) select{vertical-align:middle;box-sizing:border-box;max-width:100%;}\r\n\
+.h7-sensor-form{display:flex;flex-wrap:wrap;align-items:stretch;gap:20px;}\r\n\
+.h7-sensor-form>.corner-radius{float:none;width:300px;max-width:100%;min-height:460px;padding:20px 6px 22px;margin:0;}\r\n\
+.h7-sensor-card .h7-sensor-heading{display:block;margin:0 0 22px;padding:0;}\r\n\
+.h7-sensor-card .h7-sensor-reference{display:block;margin-bottom:18px;color:#eee;}\r\n\
+.h7-sensor-fields{display:grid;row-gap:14px;}\r\n\
+.h7-sensor-fields .textbox{margin:0;}\r\n\
+.h7-sensor-name{width:100%;}\r\n\
+.h7-sensor-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;min-height:32px;}\r\n\
+.h7-sensor-row .css-font-style2{padding:0;}\r\n\
+.h7-sensor-row .h7-sensor-number{width:61px;}\r\n\
+.h7-sensor-actions{display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:50px!important;}\r\n\
+@media(max-width:600px){.h7-sensor-form>.corner-radius{margin:0!important;min-height:0;}.h7-sensor-actions{padding-top:20px!important;}}\r\n\
 .corner-radius .textbox,.corner-radius3:not(.port-column) .textbox{vertical-align:middle;}\r\n\
 </style>\r\n\
 <script>\r\n\
