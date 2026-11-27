@@ -9,6 +9,7 @@
 #include "lwip/apps/sntp.h"
 #include "lwip/tcpip.h"
 #include "lwip/sockets.h"
+#include "lwip/errno.h"
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/ssl.h"
 #include "FreeRTOS.h"
@@ -66,9 +67,19 @@ static int exchange ( const mbedtls_ssl_config *config, const char *host, size_t
 	error = mbedtls_net_connect ( &socket, host, "443", MBEDTLS_NET_PROTO_TCP );
 	if ( error )
 		goto done;
+#if LWIP_SO_SNDRCVTIMEO_NONSTANDARD
 	int timeout = (int) GOOGLE_CLOUD_TIMEOUT_MS;
+#else
+	struct timeval timeout = {
+		.tv_sec = GOOGLE_CLOUD_TIMEOUT_MS / 1000U,
+		.tv_usec = ( GOOGLE_CLOUD_TIMEOUT_MS % 1000U ) * 1000U
+	};
+#endif
 	if ( lwip_setsockopt ( socket.fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout ) != 0 )
+	{
+		DbgVarDma ( 1, 120, "\r\nGoogle ETH: SO_SNDTIMEO failed for %s (errno=%d)", host, errno );
 		goto done;
+	}
 	mbedtls_ssl_set_bio ( &ssl, &socket, mbedtls_net_send, mbedtls_net_recv, mbedtls_net_recv_timeout );
 	error = mbedtls_ssl_handshake ( &ssl );
 	if ( error )
