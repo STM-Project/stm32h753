@@ -4,3 +4,6 @@ Application/GOOGLE/google_cloud_config.local.h
 # Local ARM build artifacts.
 Debug/
 Release/
+
+# Default Flash script emitted by CubeMX; the application uses its own linker.
+/STM32H753BITX_FLASH.ld

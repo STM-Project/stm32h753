@@ -187,6 +187,9 @@ typedef enum
 #ifdef H753_BOOT_UPDATE_KEY
 #include "HTTP/h753_boot_request.h"
 
+/* The linker rejects relocated images built without update support. */
+__asm__ ( ".global __h753_update_key_present\n.set __h753_update_key_present, 1" );
+
 _Static_assert(sizeof H753_BOOT_UPDATE_KEY == H753_UPDATE_KEY_LENGTH + 1, "Update key length");
 static H753_BootRequest bootRequest;
 

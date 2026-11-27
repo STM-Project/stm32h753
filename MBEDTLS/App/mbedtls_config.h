@@ -213,7 +213,7 @@
  * platform function
  */
 //#define MBEDTLS_PLATFORM_EXIT_ALT
-#define MBEDTLS_PLATFORM_TIME_ALT
+//#define MBEDTLS_PLATFORM_TIME_ALT
 //#define MBEDTLS_PLATFORM_FPRINTF_ALT
 //#define MBEDTLS_PLATFORM_PRINTF_ALT
 //#define MBEDTLS_PLATFORM_SNPRINTF_ALT
@@ -3274,6 +3274,11 @@
 //#define YOTTA_CFG_MBEDTLS_TARGET_CONFIG_FILE "mbedtls/target_config.h"
 
 /* USER CODE BEGIN 1 */
+
+/* Ethernet SNTP supplies the clock needed for TLS certificate validation. */
+#ifndef MBEDTLS_PLATFORM_TIME_ALT
+#define MBEDTLS_PLATFORM_TIME_ALT
+#endif
 
 #if defined(TARGET_LIKE_MBED) && defined(YOTTA_CFG_MBEDTLS_TARGET_CONFIG_FILE)
     #include YOTTA_CFG_MBEDTLS_TARGET_CONFIG_FILE

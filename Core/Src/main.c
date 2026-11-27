@@ -80,6 +80,11 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	/* The custom linker exports the application vector base for both variants. */
+	extern const uint32_t __h753_app_vectors[];
+	SCB->VTOR = (uint32_t) __h753_app_vectors;
+	__DSB ();
+	__ISB ();
 	SCB_InvalidateICache ();
 	SCB_InvalidateDCache ();
 	/* USER CODE END 1 */

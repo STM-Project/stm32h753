@@ -67,6 +67,9 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
+  __h753_app_vectors = g_pfnVectors;
+  ASSERT(__app_flash_offset == 0 || DEFINED(__h753_update_key_present),
+         "Bootloader application requires generated update key and CubeIDE pre-build settings")
   ASSERT(g_pfnVectors == ORIGIN(FLASH), "Application vectors must start at the flash origin")
   ASSERT((g_pfnVectors & 0x3ff) == 0, "Application vectors must be 1 KiB aligned")
 

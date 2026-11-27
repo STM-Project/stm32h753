@@ -14,8 +14,8 @@ python3 tools/build_lcd.py --bootloader-app
 
 Plik `Debug/bootloader-app/firmware.bin` zaczyna się od tablicy wektorów
 aplikacji. Przy zapisie surowego BIN ustaw adres docelowy na `0x08020000`.
-W pliku `firmware.hex` adres jest zapisany w rekordach. `SystemInit` ustawia
-`SCB->VTOR` na adres wektorów wybrany przez linker.
+W pliku `firmware.hex` adres jest zapisany w rekordach. `main()` ustawia `SCB->VTOR` na adres wektorów wybrany
+przez linker, przed włączeniem cache i inicjalizacją HAL.
 
 Wariant bez `--bootloader-app` służy do samodzielnego uruchamiania aplikacji
 od `0x08000000` i zapisuje wyniki w `Debug/cloud`.
@@ -26,6 +26,20 @@ a następnie **Build Project**. Obie konfiguracje linkują aplikację od
 Windows PowerShell na Windows lub `python3` na Linuksie. Oba używają tego
 samego lokalnego klucza aktualizacji co skrypt. Do pierwszego wgrania użyj ST-LINK z kasowaniem wyłącznie
 sektorów aplikacji, aby zachować bootloader w pierwszym sektorze.
+
+## Regeneracja w CubeMX
+
+Regeneruj istniejący projekt, z włączonym `Keep User Code`. Poprawki SD,
+TLS i ustawienia tablicy wektorów są w sekcjach `USER CODE`. Projekt używa
+linkera `Application/STM32H753_application.ld`, poza ścieżką linkera
+generowanego przez CubeMX. Ponownie wygenerowany `STM32H753BITX_FLASH.ld`
+nie jest potrzebny w tym projekcie.
+
+Przed kompilacją sprawdź zmiany w `.cproject`, szczególnie po migracji lub
+utworzeniu projektu CubeIDE od zera. Wersjonowane konfiguracje Debug i Release
+wskazują linker aplikacji i krok wstępny `h753_update_key.mk`. Błąd linkera
+dotyczący wektorów lub klucza oznacza, że należy przywrócić te ustawienia
+z wersjonowanego `.cproject`.
 
 ## Aktualizacja z działającej aplikacji
 
