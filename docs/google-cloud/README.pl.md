@@ -4,9 +4,12 @@ Obsługa jest adaptacją protokołu z `STM-Project/Project_marafal`, commit
 `d571681d3b86cda6de2ce5b2840cc745851301e5`. Zachowuje Apps Script, temperaturę
 w dziesiątych stopnia, `relayAck`, losowy `nonce`, format odpowiedzi
 `STM32CLOUD1:<nonce>:<0|1>` oraz demonstracyjny stan przekaźnika w RAM.
-Tutaj wszystkie operacje sieciowe wykonuje istniejące `vtaskWifi()` przez
-`CASE_Service()` i `SendToEsp32()`. Nie ma dodatkowego zadania ani LwIP/mbedTLS
-na STM32; TLS obsługuje ESP32.
+W `Core/Src/freertos.c` ustaw `GOOGLE_CLOUD_TRANSPORT` na
+`GOOGLE_CLOUD_ETHERNET` (domyślnie), `GOOGLE_CLOUD_WIFI` albo `GOOGLE_CLOUD_OFF`.
+W trybie Ethernet osobne zadanie używa lwIP i mbedTLS na STM32. Czeka na link
+i synchronizację SNTP, sprawdza certyfikaty Google oraz nazwę serwera i
+przesyła pomiar do tego samego Apps Script. W trybie Wi-Fi zadanie `vtaskWifi()`
+obsługuje połączenie przez ESP32-AT.
 
 ## Użycie istniejącego arkusza Project_marafal
 
@@ -14,21 +17,19 @@ na STM32; TLS obsługuje ESP32.
    jest zgodny; nie trzeba tworzyć nowego konta ani zmieniać skryptu.
 2. Skopiuj `Application/GOOGLE/google_cloud_config.local.h.example` do
    `Application/GOOGLE/google_cloud_config.local.h`.
-3. Wpisz tam `GOOGLE_CLOUD_ENABLED 1`, identyfikator `DEVICE_ID` z dotychczasowego
+3. Wpisz tam identyfikator `DEVICE_ID` z dotychczasowego
    skryptu, jego `DEVICE_TOKEN` i ścieżkę `/macros/s/.../exec` z adresu wdrożenia.
    Istniejący projekt może używać `stm32f769-demo`: wpisz dokładnie ten sam
    identyfikator, mimo że fizycznym urządzeniem jest teraz H753.
-4. Ustawienia Wi-Fi, DNS i SNTP pozostają w dotychczasowej konfiguracji INIT.
-   Potrzebny jest tryb STA lub AP+STA i dostęp do internetu.
-5. Skompiluj i wgraj firmware. Co 60 sekund klient próbuje wysłać pomiar;
-   po poprzedniej próbie nie nadrabia zaległych transmisji. Jeśli WWW właśnie
-   wysyła stronę, klient poczeka na zwolnienie kolejki i krótką przerwę.
+4. Dla Ethernetu potrzebny jest dostęp do internetu przez skonfigurowaną
+   bramę oraz działające DNS i SNTP. Dla Wi-Fi wybierz STA lub AP+STA.
+5. Skompiluj i wgraj firmware. Klient wysyła pomiar co 60 sekund.
+   W trybie Wi-Fi klient czeka na wolną kolejkę WWW przed kolejną próbą.
 6. Na konsoli diagnostycznej wyślij tekst `cloud`: pokazuje konfigurację,
    gotowość TLS, ostatni kod błędu, liczniki, temperaturę i stan DEMO.
 
 Tokenu nie wklejaj do czatu, adresu URL ani publicznego repozytorium.
-Lokalny plik jest ignorowany przez Git. Domyślna konfiguracja repozytorium
-ma klienta wyłączonego i nie zawiera danych dostępu z Project_marafal.
+Lokalny plik jest ignorowany przez Git.
 Nie używa hasła Gmail ani klucza płatnej usługi Google Cloud.
 
 ## Nowy arkusz, jeśli dotychczasowego nie ma
@@ -44,7 +45,7 @@ Nie używa hasła Gmail ani klucza płatnej usługi Google Cloud.
 5. Ścieżkę z adresu wdrożenia kończącą się `/exec` oraz obie właściwości wpisz
    do lokalnego nagłówka. Nie używaj testowego adresu `/dev`.
 
-## Co wykonuje INIT
+## Co wykonuje INIT w trybie Wi-Fi
 
 Dotychczasowe kroki `INIT_CONNECTION` nadal ustawiają UART, tryb Wi-Fi,
 połączenie STA, DHCP/adresację, DNS, SNTP i serwer WWW. Po poprawnym odczycie

@@ -7,6 +7,8 @@
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/memory_buffer_alloc.h"
 #include "network_http.h"
+#include "network_tls_client.h"
+#include "mbedtls/platform.h"
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 #include "network_log.h"
@@ -33,6 +35,49 @@ static StaticTask_t httpsTaskControl __attribute__ ( ( section ( ".sdram" ), ali
 static TaskHandle_t httpsTaskHandle;
 static int tlsReady;
 osMutexId networkRngMutex;
+static uint32_t utcSeconds, utcAt;
+
+void NetworkSetSntpTime ( uint32_t seconds )
+{
+	/* Reject uninitialized timestamps; time remains mandatory for client TLS. */
+	if ( seconds < 1704067200u )
+		return;
+	taskENTER_CRITICAL ();
+	utcSeconds = seconds;
+	utcAt = sys_now ();
+	taskEXIT_CRITICAL ();
+}
+
+int NetworkTLSHasDate ( void )
+{
+	taskENTER_CRITICAL ();
+	int ready = utcSeconds != 0 && sys_now () - utcAt < 86400000u;
+	taskEXIT_CRITICAL ();
+	return ready;
+}
+
+static mbedtls_time_t network_tls_time ( mbedtls_time_t *out )
+{
+	taskENTER_CRITICAL ();
+	uint32_t now = sys_now ();
+	mbedtls_time_t result = utcSeconds ? (mbedtls_time_t) utcSeconds + (now - utcAt) / 1000u : now / 1000u;
+	taskEXIT_CRITICAL ();
+	if ( out )
+		*out = result;
+	return result;
+}
+
+int NetworkTLSReady ( void )
+{
+	return tlsReady;
+}
+
+int NetworkTLSRandom ( void *context, unsigned char *output, size_t length )
+{
+	(void) context;
+	return mbedtls_ctr_drbg_random ( &drbg, output, length );
+}
+
 void MX_MBEDTLS_Init ( void )
 {
 	/* CubeMX calls MX_MBEDTLS_Init before starting the scheduler too. */
@@ -44,6 +89,7 @@ void MX_MBEDTLS_Init ( void )
 		return;
 	mbedtls_threading_set_alt ( cmsis_os_mutex_init, cmsis_os_mutex_free, cmsis_os_mutex_lock, cmsis_os_mutex_unlock );
 	mbedtls_memory_buffer_alloc_init ( tlsMemory, sizeof tlsMemory );
+	mbedtls_platform_set_time ( network_tls_time );
 	mbedtls_ssl_config_init ( &config );
 	mbedtls_x509_crt_init ( &certificate );
 	mbedtls_pk_init ( &key );

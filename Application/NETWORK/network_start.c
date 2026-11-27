@@ -1,6 +1,7 @@
 #include "network_start.h"
 #include "network_log.h"
 #include "network_http.h"
+#include "google_cloud.h"
 #include "lwip.h"
 #include "mbedtls.h"
 #include "FreeRTOS.h"
@@ -15,6 +16,7 @@ static void start_network ( void *argument )
 		MX_MBEDTLS_Init ();
 		http_server_netconn_init ();
 		https_server_netconn_init ();
+		GoogleCloud_StartEthernet ();
 	}
 	vTaskDelete ( NULL );
 }

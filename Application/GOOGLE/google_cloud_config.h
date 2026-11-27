@@ -5,9 +5,6 @@
 #include "google_cloud_config.local.h"
 #endif
 #endif
-#ifndef GOOGLE_CLOUD_ENABLED
-#define GOOGLE_CLOUD_ENABLED 0
-#endif
 #ifndef GOOGLE_CLOUD_DEVICE
 #define GOOGLE_CLOUD_DEVICE "stm32f769-demo"
 #endif

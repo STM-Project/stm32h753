@@ -1995,9 +1995,15 @@ __attribute__ ( ( weak ) ) int GoogleCloud_ReadTemperature10 ( void )
 	const size_t offset = 73u + ( GOOGLE_CLOUD_TEMPERATURE_PORT - 1u ) * 12u;
 	char field[6], *end;
 	int sign = 1, value = 0;
-	if ( GOOGLE_CLOUD_TEMPERATURE_PORT < 1 || GOOGLE_CLOUD_TEMPERATURE_PORT > 20 || strlen ( HttpRefr_sdram ) < offset + 5 )
+	if ( GOOGLE_CLOUD_TEMPERATURE_PORT < 1 || GOOGLE_CLOUD_TEMPERATURE_PORT > 20 )
 		return -32768;
-	memcpy ( field, HttpRefr_sdram + offset, 5 );
+	taskENTER_CRITICAL ();
+	int valid = memchr ( HttpRefr_sdram, 0, offset + 5 ) == NULL;
+	if ( valid )
+		memcpy ( field, HttpRefr_sdram + offset, 5 );
+	taskEXIT_CRITICAL ();
+	if ( !valid )
+		return -32768;
 	field[5] = 0;
 	end = field;
 	while ( *end == ' ' )
@@ -2106,7 +2112,7 @@ static TickType_t CLOUD_WaitTicks ( void )
 {
 	if ( connectionType == GOOGLE_CLOUD_CONNECTION )
 		return pdMS_TO_TICKS ( 100 );
-	if ( !googleCloudStatus.configured )
+	if ( googleCloudTransport != GOOGLE_CLOUD_WIFI || !googleCloudStatus.configured )
 		return portMAX_DELAY;
 	if ( connectionType == INIT_CONNECTION )
 	{
@@ -2346,10 +2352,14 @@ void vtaskWifi(void *argument)
 	HTTP_RequestStreamInit ( &httpRequestStream, HTTP_HandleTarget, NULL );
 	InitStructRqstToSendChnl();
 	RcvTimeoutTimerInit();
-	memset ( (void *) &googleCloudStatus, 0, sizeof googleCloudStatus );
-	googleCloudStatus.configured = GOOGLE_CLOUD_ENABLED && CloudConfig_Valid ( GOOGLE_CLOUD_TOKEN, GOOGLE_CLOUD_DEVICE, GOOGLE_CLOUD_PATH );
-	googleCloudStatus.last_error = GOOGLE_CLOUD_ENABLED && !googleCloudStatus.configured ? -1 : 0;
-	DbgVarDma ( DBG, 160, "Google CONFIG: enabled=%d, poprawna=%d, okres=%u ms, port temperatury=%u\r\n", GOOGLE_CLOUD_ENABLED, googleCloudStatus.configured, (unsigned) GOOGLE_CLOUD_PERIOD_MS, (unsigned) GOOGLE_CLOUD_TEMPERATURE_PORT );
+	if ( googleCloudTransport == GOOGLE_CLOUD_WIFI )
+	{
+		memset ( (void *) &googleCloudStatus, 0, sizeof googleCloudStatus );
+		googleCloudStatus.configured = CloudConfig_Valid ( GOOGLE_CLOUD_TOKEN, GOOGLE_CLOUD_DEVICE, GOOGLE_CLOUD_PATH );
+		googleCloudStatus.last_error = googleCloudStatus.configured ? 0 : -1;
+		DbgVarDma ( DBG, 160, "Google CONFIG Wi-Fi: poprawna=%d, okres=%u ms, port temperatury=%u\r\n",
+					googleCloudStatus.configured, (unsigned) GOOGLE_CLOUD_PERIOD_MS, (unsigned) GOOGLE_CLOUD_TEMPERATURE_PORT );
+	}
 	cloudLastAttempt = xTaskGetTickCount ();
 	CloudAt_Reset ( &cloudAt );
 
@@ -2698,7 +2708,7 @@ void vtaskWifi(void *argument)
 										sntpTime->tm_min,
 										sntpTime->tm_sec);
 
-								if ( googleCloudStatus.configured )
+								if ( googleCloudTransport == GOOGLE_CLOUD_WIFI && googleCloudStatus.configured )
 								{
 									cloudCleanupTick = xTaskGetTickCount ();
 									DbgVarDma ( DBG, 120, "Google INIT: czas SNTP OK, certyfikat CA=%u, instalacja=%d\r\n", (unsigned) GOOGLE_CLOUD_CA_INDEX, GOOGLE_CLOUD_INSTALL_CA );
@@ -2731,7 +2741,7 @@ void vtaskWifi(void *argument)
 								vTaskDelay(2000);    //jezeli nie ma odpowiedzi sntp to trzeba cyklicznie co godzine np pytac
 								if(_GET_REP_CASE_ == SNTP_NMBR_QUERY)
 								{
-									if ( googleCloudStatus.configured )
+									if ( googleCloudTransport == GOOGLE_CLOUD_WIFI && googleCloudStatus.configured )
 									{
 										googleCloudStatus.last_error = -2;
 										DbgVarDma ( DBG, 100, "Google INIT BLAD: brak czasu SNTP (-2), wysylanie zablokowane\r\n" );
@@ -3489,7 +3499,7 @@ void vtaskWifi(void *argument)
 			  HTTP_SendCloseChnl ( noArch, -1 );
 		  }
 	  }
-	  if ( connectionType == INIT_CONNECTION && googleCloudStatus.configured &&
+	  if ( googleCloudTransport == GOOGLE_CLOUD_WIFI && connectionType == INIT_CONNECTION && googleCloudStatus.configured &&
 		   _GET_ACTUAL_CASE_ >= 22 && _GET_ACTUAL_CASE_ <= 27 &&
 		   xTaskGetTickCount () - cloudCleanupTick >= pdMS_TO_TICKS ( GOOGLE_CLOUD_TIMEOUT_MS ) )
 	  {
@@ -3557,7 +3567,7 @@ void vtaskWifi(void *argument)
 			  ESP_ON;
 		  }
 	  }
-	  else if ( connectionType == HTTP_CONNECTION && googleCloudStatus.ready &&
+	  else if ( googleCloudTransport == GOOGLE_CLOUD_WIFI && connectionType == HTTP_CONNECTION && googleCloudStatus.ready &&
 				( Const.wifiGeneral.mode == WIFI_MODE_STA || Const.wifiGeneral.mode == WIFI_MODE_AP_STA ) &&
 				!IsActiveAnyRqstToSendChnl () && xTaskGetTickCount () - tickCnt >= pdMS_TO_TICKS ( 250 ) &&
 				xTimerIsTimerActive ( xWaitOnSendTimeoutTimer ) == pdFALSE &&

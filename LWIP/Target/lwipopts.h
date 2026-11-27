@@ -139,11 +139,16 @@
 #define CHECKSUM_CHECK_ICMP6 0
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
+#include <stdint.h>
 extern unsigned char network_lwip_heap[];
 #undef LWIP_RAM_HEAP_POINTER
 #define LWIP_RAM_HEAP_POINTER network_lwip_heap
 #define LWIP_SO_RCVTIMEO 1
 #define LWIP_SO_SNDTIMEO 1
+#define SNTP_SERVER_DNS 1
+#define SNTP_CHECK_RESPONSE 2
+void NetworkSetSntpTime ( uint32_t seconds );
+#define SNTP_SET_SYSTEM_TIME(seconds) NetworkSetSntpTime(seconds)
 /* Allow four full TCP segments in flight when sending the panel templates. */
 #define TCP_SND_BUF (4 * TCP_MSS)
 #define LWIP_NETIF_API 1

@@ -25,6 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "google_cloud.h"
 #include "fatfs.h"
 #include "_debug.h"
 #include "sd_card.h"
@@ -42,6 +43,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+/* Google Apps Script transport: GOOGLE_CLOUD_ETHERNET, GOOGLE_CLOUD_WIFI or GOOGLE_CLOUD_OFF. */
+#define GOOGLE_CLOUD_TRANSPORT GOOGLE_CLOUD_ETHERNET
 
 /* USER CODE END PD */
 
@@ -52,6 +55,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+const int googleCloudTransport = GOOGLE_CLOUD_TRANSPORT;
  uint8_t ucHeap[ configTOTAL_HEAP_SIZE ] __attribute__ ((section(".sdram")));
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;

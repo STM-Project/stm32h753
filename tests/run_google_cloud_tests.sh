@@ -16,6 +16,8 @@ python3 - <<'PY'
 import ssl
 context=ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.load_verify_locations(cafile='cloud/google-apps-script/google_gts_roots.pem')
-assert context.cert_store_stats()['x509_ca']==4
+names = {value for cert in context.get_ca_certs() for rdn in cert['subject']
+         for field, value in rdn if field == 'commonName'}
+assert {f'GTS Root R{number}' for number in range(1, 5)} <= names
 print('PASS: GTS CA bundle loads all four trust anchors.')
 PY

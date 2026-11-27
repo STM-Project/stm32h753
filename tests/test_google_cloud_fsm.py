@@ -45,6 +45,9 @@ typedef int ARCHIVING_TYPE;
 enum{HTTP_CONNECTION,GOOGLE_CLOUD_CONNECTION,INIT_CONNECTION};
 static int connectionType;
 volatile GoogleCloudStatus googleCloudStatus;
+const int googleCloudTransport=GOOGLE_CLOUD_WIFI;
+#define taskENTER_CRITICAL() ((void)0)
+#define taskEXIT_CRITICAL() ((void)0)
 static CloudAt cloudAt;static CloudHttpResponse cloudResponse;
 static char cloudRequest[4096],cloudRedirect[2048],cloudNonce[33],sendBuff[2048];
 static size_t cloudRequestLength,cloudOffset,cloudPacketLength;
@@ -88,8 +91,8 @@ init_at=s.index('\t\t\t\t\telse if ( CASE_Service ( 22, ">", txt_ERR, noArch ) )
 init=s[init_at:s.index('\n\t\t\t\t\telse\n',init_at)]
 init=init.replace('else if ( CASE_Service ( 22,','if ( CASE_Service ( 22,',1)
 C+='\nstatic void init_step(const char *data){raw=data;'+init+'}\n'
-a=s.index('\t  if ( connectionType == INIT_CONNECTION && googleCloudStatus.configured &&')
-b=s.index('\t  }\n\t  else if ( connectionType == HTTP_CONNECTION && googleCloudStatus.ready &&',a)
+a=s.index('\t  if ( googleCloudTransport == GOOGLE_CLOUD_WIFI && connectionType == INIT_CONNECTION && googleCloudStatus.configured &&')
+b=s.index('\t  }\n\t  else if ( googleCloudTransport == GOOGLE_CLOUD_WIFI && connectionType == HTTP_CONNECTION && googleCloudStatus.ready &&',a)
 C+='\nstatic void periodic(void){int nrHTTPpacket=0;(void)nrHTTPpacket;'+s[a:b]+'}}\n'
 C+='\nstatic void step(const char *data){int nrHTTPpacket=0;for(;*data;data++){RecvBuffer[recvByteFromEsp_copy]=*data;recvByteFromEsp_copy=(recvByteFromEsp_copy+1)%4096;}switch(connectionType){'+case+'default:break;}}\n'
 C+=r'''
