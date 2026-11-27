@@ -5,7 +5,7 @@ Obsługa jest adaptacją protokołu z `STM-Project/Project_marafal`, commit
 w dziesiątych stopnia, `relayAck`, losowy `nonce`, format odpowiedzi
 `STM32CLOUD1:<nonce>:<0|1>` oraz demonstracyjny stan przekaźnika w RAM.
 W `Core/Src/freertos.c` ustaw `GOOGLE_CLOUD_TRANSPORT` na
-`GOOGLE_CLOUD_ETHERNET` (domyślnie), `GOOGLE_CLOUD_WIFI` albo `GOOGLE_CLOUD_OFF`.
+`GOOGLE_CLOUD_ETHERNET`, `GOOGLE_CLOUD_WIFI` albo `GOOGLE_CLOUD_OFF` (domyślnie).
 W trybie Ethernet osobne zadanie używa lwIP i mbedTLS na STM32. Czeka na link
 i synchronizację SNTP, sprawdza certyfikaty Google oraz nazwę serwera i
 przesyła pomiar do tego samego Apps Script. W trybie Wi-Fi zadanie `vtaskWifi()`
