@@ -17,6 +17,7 @@
 #include "HTTP/http_settings_bindings.h"
 #include "HTTP/http_request_stream.h"
 #include "NETWORK/network_http.h"
+#include "NETWORK/network_tls_client.h"
 #include "HTTP/http_output_control.h"
 #include "LPC2148/http_lpc_panel.h"
 #include "LPC2148/lpc_pages.h"
@@ -2702,6 +2703,8 @@ void vtaskWifi(void *argument)
 							{
 								gmtime_r(&getTime,sntpTime);			/* lepsze dla wielowatkowosci niz  sntpTime=gmtime(&getTime) */
 								Const.sntp.time = getTime;
+								if ( googleCloudTransport == GOOGLE_CLOUD_ETHERNET && NetworkTLSUseEsp32Time ( (uint32_t) getTime ) )
+									DbgDma ( DBG, "\r\nGoogle ETH: using ESP32 UTC for TLS\r\n" );
 								DbgVarDma(DBG,200,_S_"\r\nESP32 TIME LOADED %d: %02d-%02d-%02d  %02d:%02d:%02d"_E_,
 										Const.sntp.time,
 										sntpTime->tm_year-100,

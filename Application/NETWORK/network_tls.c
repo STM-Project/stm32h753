@@ -36,22 +36,43 @@ static TaskHandle_t httpsTaskHandle;
 static int tlsReady;
 osMutexId networkRngMutex;
 static uint32_t utcSeconds, utcAt;
+static int utcFromEthernet;
+enum { TLS_CLOCK_MAX_AGE_MS = 86400000 };
+#define TLS_CLOCK_MIN_EPOCH 1704067200u
 
 void NetworkSetSntpTime ( uint32_t seconds )
 {
 	/* Reject uninitialized timestamps; time remains mandatory for client TLS. */
-	if ( seconds < 1704067200u )
+	if ( seconds < TLS_CLOCK_MIN_EPOCH )
 		return;
 	taskENTER_CRITICAL ();
 	utcSeconds = seconds;
 	utcAt = sys_now ();
+	utcFromEthernet = 1;
 	taskEXIT_CRITICAL ();
+}
+
+int NetworkTLSUseEsp32Time ( uint32_t seconds )
+{
+	if ( seconds < TLS_CLOCK_MIN_EPOCH )
+		return 0;
+	taskENTER_CRITICAL ();
+	uint32_t now = sys_now ();
+	int useEsp32 = !utcFromEthernet || now - utcAt >= TLS_CLOCK_MAX_AGE_MS;
+	if ( useEsp32 )
+	{
+		utcSeconds = seconds;
+		utcAt = now;
+		utcFromEthernet = 0;
+	}
+	taskEXIT_CRITICAL ();
+	return useEsp32;
 }
 
 int NetworkTLSHasDate ( void )
 {
 	taskENTER_CRITICAL ();
-	int ready = utcSeconds != 0 && sys_now () - utcAt < 86400000u;
+	int ready = utcSeconds != 0 && sys_now () - utcAt < TLS_CLOCK_MAX_AGE_MS;
 	taskEXIT_CRITICAL ();
 	return ready;
 }
