@@ -161,8 +161,6 @@ static void cloud_ethernet ( void *arg )
 	if ( !error )
 		error = mbedtls_ssl_config_defaults ( &config, MBEDTLS_SSL_IS_CLIENT,
 			MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT );
-	if ( !error )
-		error = tcpip_callback ( start_sntp, NULL );
 	if ( error )
 	{
 		googleCloudStatus.last_error = -3;
@@ -179,21 +177,47 @@ static void cloud_ethernet ( void *arg )
 	mbedtls_ssl_conf_rng ( &config, NetworkTLSRandom, NULL );
 	mbedtls_ssl_conf_read_timeout ( &config, GOOGLE_CLOUD_TIMEOUT_MS );
 
-	DbgDma ( 1, "\r\nGoogle ETH: waiting for Ethernet link and SNTP" );
+	int sntpScheduled = 0;
+	int previousWait = 0;
+	TickType_t lastWaitLog = 0;
 	for ( ;; )
 	{
 		LOCK_TCPIP_CORE ();
 		int linked = netif_default && netif_is_up ( netif_default ) && netif_is_link_up ( netif_default );
 		UNLOCK_TCPIP_CORE ();
+		if ( linked && !sntpScheduled )
+			sntpScheduled = tcpip_callback ( start_sntp, NULL ) == ERR_OK;
+
 		googleCloudStatus.ready = linked && NetworkTLSHasDate ();
 		if ( !googleCloudStatus.ready )
 		{
-			googleCloudStatus.last_error = linked ? -2 : -10;
+			int wait = !linked ? -10 : !sntpScheduled ? -3 : -2;
+			googleCloudStatus.last_error = wait;
+			TickType_t now = xTaskGetTickCount ();
+			if ( wait != previousWait || now - lastWaitLog >= pdMS_TO_TICKS ( 30000 ) )
+			{
+				if ( wait == -10 )
+					DbgDma ( 1, "\r\nGoogle ETH: waiting for Ethernet link" );
+				else if ( wait == -3 )
+					DbgDma ( 1, "\r\nGoogle ETH: failed to schedule SNTP, retrying" );
+				else
+					DbgDma ( 1, "\r\nGoogle ETH: waiting for time.google.com (DNS, UDP 123)" );
+				previousWait = wait;
+				lastWaitLog = now;
+			}
 			vTaskDelay ( pdMS_TO_TICKS ( 1000 ) );
 			continue;
 		}
 
+		if ( previousWait )
+		{
+			DbgDma ( 1, "\r\nGoogle ETH: clock ready, starting publish cycle" );
+			previousWait = 0;
+		}
 		int result = publish ( &config );
+		if ( result == -18 )
+			DbgVarDma ( 1, 96, "\r\nGoogle ETH: no valid temperature on port %u",
+				(unsigned) GOOGLE_CLOUD_TEMPERATURE_PORT );
 		googleCloudStatus.last_error = result;
 		if ( result )
 			++googleCloudStatus.failures;
