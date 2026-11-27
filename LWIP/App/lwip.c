@@ -105,9 +105,11 @@ void MX_LWIP_Init(void)
 /* USER CODE END H7_OS_THREAD_DEF_CREATE_CMSIS_RTOS_V1 */
 
 /* USER CODE BEGIN 3 */
-  ip_addr_t primary,secondary;
-  IP_ADDR4(&primary,8,8,8,8);IP_ADDR4(&secondary,8,8,4,4);
-  dns_setserver(0,&primary);dns_setserver(1,&secondary);
+  ip_addr_t router_dns, public_dns;
+  IP_ADDR4(&router_dns, GATEWAY_ADDRESS[0], GATEWAY_ADDRESS[1], GATEWAY_ADDRESS[2], GATEWAY_ADDRESS[3]);
+  IP_ADDR4(&public_dns, 8, 8, 8, 8);
+  dns_setserver(0, &router_dns);
+  dns_setserver(1, &public_dns);
   networkEthernetReady=networkDriverReady;
   UNLOCK_TCPIP_CORE();
   NetworkLogEthernetStatus(networkEthernetReady);

@@ -102,7 +102,9 @@ static int exchange ( const mbedtls_ssl_config *config, const char *host, size_t
 done:
 	if ( error == MBEDTLS_ERR_SSL_TIMEOUT )
 		result = -4;
-	if ( result && error < 0 && error != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY )
+	if ( error == MBEDTLS_ERR_NET_UNKNOWN_HOST )
+		DbgVarDma ( 1, 120, "\r\nGoogle ETH: DNS lookup failed for %s (-0x0052)", host );
+	else if ( result && error < 0 && error != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY )
 		DbgVarDma ( 1, 100, "\r\nGoogle ETH: HTTPS %s failed -0x%04X", host, (unsigned) -error );
 	mbedtls_ssl_free ( &ssl );
 	mbedtls_net_free ( &socket );
