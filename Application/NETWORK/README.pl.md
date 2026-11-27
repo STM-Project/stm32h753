@@ -9,9 +9,9 @@ zgodnie z potwierdzeniem użytkownika; nie przeniesiono LAN8720A z FP70.
 ## Użycie
 
 - Ethernet RMII, ten sam pinout co dotychczasowa konfiguracja ETH H7.
-- IP `192.168.1.40`, maska `255.255.255.0`, brama `192.168.1.1`, DHCP wyłączony.
+- IP `192.168.137.40`, maska `255.255.255.0`, brama `192.168.137.1`, DHCP wyłączony.
 - DNS z adresu bramy Ethernet, zapasowy `8.8.8.8`.
-- `http://192.168.1.40/` i `https://192.168.1.40/` udostępniają te same
+- `http://192.168.137.40/` i `https://192.168.137.40/` udostępniają te same
   strony i formularze co serwer Wi-Fi. Zadanie aplikacji obsługuje wspólne
   trasy i ustawienia; odpowiedź Ethernet jest przesyłana fragmentami.
 - `/aaa.htm` udostępnia plik `0:/aaa.htm` z SD. Brak pliku daje HTTP 503.

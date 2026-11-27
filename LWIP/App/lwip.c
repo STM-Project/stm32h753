@@ -75,6 +75,9 @@ void MX_LWIP_Init(void)
   GATEWAY_ADDRESS[3] = 1;
 
 /* USER CODE BEGIN IP_ADDRESSES */
+    /* Windows Internet Connection Sharing on the laptop Ethernet port. */
+    IP_ADDRESS[2] = 137;
+    GATEWAY_ADDRESS[2] = 137;
     NetworkPrepareDmaMemory();
 /* USER CODE END IP_ADDRESSES */
 
