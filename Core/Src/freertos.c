@@ -44,7 +44,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 /* Google Apps Script transport: GOOGLE_CLOUD_ETHERNET, GOOGLE_CLOUD_WIFI or GOOGLE_CLOUD_OFF. */
-#define GOOGLE_CLOUD_TRANSPORT GOOGLE_CLOUD_ETHERNET
+#define GOOGLE_CLOUD_TRANSPORT GOOGLE_CLOUD_OFF
 
 /* USER CODE END PD */
 
@@ -197,7 +197,7 @@ void StartDefaultTask(void const * argument)
 	//	SDCARD_WriteReadTest("aaa.htm","test.htm",buff,sizeof(buff));
 
 	osDelay ( 500 );
-	CreateWifiTask ();
+	//CreateWifiTask ();
 	NetworkStartEthernet ();
 
 	/* Infinite loop */
