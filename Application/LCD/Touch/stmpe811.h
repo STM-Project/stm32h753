@@ -12,11 +12,11 @@ typedef struct
 
 extern TS_StateTypeDef  TS_State;
 
-/* Snapshot of controller startup and the latest touch poll. HAL error is captured before the
+/* Snapshot of the last startup attempt. HAL error is captured before the
  * existing I2C error handler reinitializes the peripheral. */
 struct STMPE811_InitDiagnostic {
     uint16_t id;
-    uint8_t stage,ctrl,irq,io_failed,operation,reg,status,sda,scl,address,fifo_size;
+    uint8_t stage,ctrl,irq,io_failed,operation,reg,status,sda,scl,address;
     uint32_t hal_error;
 };
 const struct STMPE811_InitDiagnostic *BSP_TS_GetInitDiagnostic(void);

@@ -7,76 +7,23 @@
 #include "TouchLcdTask.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include <string.h>
+#include <stdio.h>
 #include "touch.h"
-#include "stmpe811.h"
-#include "stm32h7xx_hal.h"
-#include "LCD_PortH7.h"
-#include "_debug.h"
 
 xTaskHandle vtask_TouchLcd_Handle;
 
-static void LogTouchFault(const char *phase)
-{
-	const struct STMPE811_InitDiagnostic *d = BSP_TS_GetInitDiagnostic();
-	DbgVarDma(1, 240, "\r\nLCD touch %s: addr=0x%02X ID=0x%04X stage=%u TSC=0x%02X op=%c reg=0x%02X HAL=%u err=0x%08X SDA(PB7)=%u SCL(PB8)=%u INT(PB4)=%u",
-		phase, (unsigned)d->address, (unsigned)d->id, (unsigned)d->stage,
-		(unsigned)d->ctrl, d->operation ? d->operation : '-',
-		(unsigned)d->reg, (unsigned)d->status, (unsigned)d->hal_error,
-		(unsigned)d->sda, (unsigned)d->scl,
-		(unsigned)HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4));
-}
-
 void vtask_TouchLcd(void *pvParameters)
 {
-	(void)pvParameters;
-	unsigned failedAttempts = 0;
-	unsigned polls = 0, samples = 0, penDown = 0;
-	TickType_t lastReport = xTaskGetTickCount ();
-	lcdH7Status.touch_available = 0;
-	DbgVarDma(1, 100, "\r\nLCD touch task started, init in 500 ms");
-	vTaskDelay(pdMS_TO_TICKS(500));
+	portTickType xLastExecutionTime;
 
-	for (;;)
+	xLastExecutionTime = xTaskGetTickCount();
+	vTaskDelayUntil(&xLastExecutionTime, 100);
+
+	while(1)
 	{
-		if (!lcdH7Status.touch_available)
-		{
-			if (BSP_TS_Init(800, 480) != 0)
-			{
-				if (failedAttempts++ % 10 == 0)
-					LogTouchFault("init failed");
-				vTaskDelay(pdMS_TO_TICKS(500));
-				continue;
-			}
-			failedAttempts = 0;
-			lcdH7Status.touch_available = 1;
-			DbgVarDma(1, 100, "\r\nLCD touch ready: STMPE811 at 0x%02X",
-				(unsigned)BSP_TS_GetInitDiagnostic()->address);
-		}
-
-		int detected = LCD_TOUCH_Service();
-		if (detected < 0)
-		{
-			LogTouchFault("read failed, retrying");
-			lcdH7Status.touch_available = 0;
-			vTaskDelay(pdMS_TO_TICKS(500));
-			continue;
-		}
-		const struct STMPE811_InitDiagnostic *d = BSP_TS_GetInitDiagnostic();
-		++polls;
-		if (d->ctrl & 0x80U) /* TSC_CTRL touch status bit */
-			++penDown;
-		if (detected)
-			++samples;
-
-		TickType_t now = xTaskGetTickCount();
-		if (now - lastReport >= pdMS_TO_TICKS(5000))
-		{
-			DbgVarDma(1, 160, "\r\nLCD touch poll: reads=%u pen=%u samples=%u TSC=0x%02X FIFO=%u INT(PB4)=%u",
-				polls, penDown, samples, (unsigned)d->ctrl, (unsigned)d->fifo_size,
-				(unsigned)HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4));
-			lastReport = now;
-		}
-		vTaskDelay(pdMS_TO_TICKS(SERVICE_TOUCH_PROB_TIME_MS));
+		LCD_TOUCH_Service();
+		vTaskDelayUntil(&xLastExecutionTime, SERVICE_TOUCH_PROB_TIME_MS);
 	}
 }
 
