@@ -30,7 +30,10 @@ void vtask_TouchLcd(void *pvParameters)
 {
 	(void)pvParameters;
 	unsigned failedAttempts = 0;
+	unsigned polls = 0, samples = 0, penDown = 0;
+	TickType_t lastReport = xTaskGetTickCount ();
 	lcdH7Status.touch_available = 0;
+	DbgVarDma(1, 100, "\r\nLCD touch task started, init in 500 ms");
 	vTaskDelay(pdMS_TO_TICKS(500));
 
 	for (;;)
@@ -50,12 +53,28 @@ void vtask_TouchLcd(void *pvParameters)
 				(unsigned)BSP_TS_GetInitDiagnostic()->address);
 		}
 
-		if (!LCD_TOUCH_Service())
+		int detected = LCD_TOUCH_Service();
+		if (detected < 0)
 		{
 			LogTouchFault("read failed, retrying");
 			lcdH7Status.touch_available = 0;
 			vTaskDelay(pdMS_TO_TICKS(500));
 			continue;
+		}
+		const struct STMPE811_InitDiagnostic *d = BSP_TS_GetInitDiagnostic();
+		++polls;
+		if (d->ctrl & 0x80U) /* TSC_CTRL touch status bit */
+			++penDown;
+		if (detected)
+			++samples;
+
+		TickType_t now = xTaskGetTickCount();
+		if (now - lastReport >= pdMS_TO_TICKS(5000))
+		{
+			DbgVarDma(1, 160, "\r\nLCD touch poll: reads=%u pen=%u samples=%u TSC=0x%02X FIFO=%u INT(PB4)=%u",
+				polls, penDown, samples, (unsigned)d->ctrl, (unsigned)d->fifo_size,
+				(unsigned)HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4));
+			lastReport = now;
 		}
 		vTaskDelay(pdMS_TO_TICKS(SERVICE_TOUCH_PROB_TIME_MS));
 	}

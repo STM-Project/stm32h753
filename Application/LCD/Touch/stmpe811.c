@@ -508,7 +508,9 @@ static uint8_t stmpe811_TS_DetectTouch(uint16_t DeviceAddr)
     return 0;
   }
 
-  if(IOE_Read(DeviceAddr, STMPE811_REG_FIFO_SIZE) == 0)
+  initDiagnostic.fifo_size = IOE_Read(DeviceAddr, STMPE811_REG_FIFO_SIZE);
+  if(io_failed) return 0;
+  if(initDiagnostic.fifo_size == 0)
   {
     if((control & STMPE811_TS_CTRL_STATUS) && (IOE_Read(DeviceAddr, STMPE811_REG_FIFO_STA) & 0x01))
       io_failed = 1;

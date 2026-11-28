@@ -112,6 +112,7 @@ extern XY_Touch_Struct  structXY_Zero;
 extern XY_Touch_Struct screenTouchPos;
 extern uint16_t 		  screenTouchState;
 
+/* Returns -1 on I2C failure, 0 when idle, or 1 for a touch sample. */
 int		LCD_TOUCH_Service					(void);
 uint16_t LCD_TOUCH_GetTypeAndPosition	(XY_Touch_Struct *posXY);
 void 		LCD_TOUCH_DeleteAllSetTouch	(void);

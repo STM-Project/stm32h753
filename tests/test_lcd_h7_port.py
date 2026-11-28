@@ -122,17 +122,19 @@ with tempfile.TemporaryDirectory(prefix='h7-touch-task-') as folder:
 #include <stddef.h>
 typedef void *xTaskHandle;
 typedef uint32_t portTickType;
+typedef uint32_t TickType_t;
 #define portBASE_TYPE long
 #define pdMS_TO_TICKS(ms) (ms)
 ''')
     (work/'task.h').write_text('''void vTaskDelay(portTickType);
+TickType_t xTaskGetTickCount(void);
 int xTaskCreate(void(*)(void*),char*,unsigned,void*,unsigned long,xTaskHandle*);
 void vTaskDelete(xTaskHandle);
 ''')
     (work/'touch.h').write_text('#define SERVICE_TOUCH_PROB_TIME_MS 20\nint LCD_TOUCH_Service(void);\n')
     (work/'LCD_PortH7.h').write_text('extern struct LCD_H7_Status { int touch_available; } lcdH7Status;\n')
     (work/'stmpe811.h').write_text('''struct STMPE811_InitDiagnostic {
- unsigned address, id, stage, ctrl, operation, reg, status, hal_error, sda, scl;
+ unsigned address, id, stage, ctrl, operation, reg, status, hal_error, sda, scl, fifo_size;
 };
 const struct STMPE811_InitDiagnostic *BSP_TS_GetInitDiagnostic(void);
 int BSP_TS_Init(unsigned x, unsigned y);
@@ -144,17 +146,21 @@ int BSP_TS_Init(unsigned x, unsigned y);
 #include "TouchLcdTask.c"
 #include <assert.h>
 #include <setjmp.h>
-static int creates,deletes,delays,inits,reads;
+#include <string.h>
+static int creates,deletes,delays,inits,reads,reports;
+static TickType_t tick;
 static jmp_buf stop;
 struct LCD_H7_Status lcdH7Status;
 static const struct STMPE811_InitDiagnostic diagnostic = { .address = 0x41 };
 const struct STMPE811_InitDiagnostic *BSP_TS_GetInitDiagnostic(void){return &diagnostic;}
-void DbgVarDma(int a,int b,const char *fmt,...){(void)a;(void)b;(void)fmt;}
+void DbgVarDma(int a,int b,const char *fmt,...){(void)a;(void)b;if(strstr(fmt,"LCD touch poll:"))++reports;}
 int HAL_GPIO_ReadPin(int port,int pin){assert(port==GPIOB&&pin==GPIO_PIN_4);return 1;}
 int BSP_TS_Init(unsigned x,unsigned y){assert(x==800&&y==480);return ++inits==1;}
-int LCD_TOUCH_Service(void){return ++reads>1;}
+int LCD_TOUCH_Service(void){return ++reads==1 ? -1 : 0;}
+TickType_t xTaskGetTickCount(void){return reads==2 ? 5000 : tick;}
 void vTaskDelay(portTickType n){
  assert(n == (delays < 3 ? 500 : 20));
+ tick+=n;
  if(++delays==4)longjmp(stop,1);
 }
 int xTaskCreate(void(*fn)(void*),char*name,unsigned stack,void*arg,unsigned long priority,xTaskHandle*out){
@@ -167,7 +173,7 @@ int main(void){
  Delete_TouchLcd_Task();Delete_TouchLcd_Task();assert(deletes==1&&!vtask_TouchLcd_Handle);
  Create_TouchLcd_Task();assert(creates==2);
  if(!setjmp(stop)) vtask_TouchLcd(NULL);
- assert(inits==3&&reads==2&&lcdH7Status.touch_available);
+ assert(inits==3&&reads==2&&lcdH7Status.touch_available&&reports==1);
 }
 ''')
     subprocess.run(['cc','-std=c11','-Wall',str(work/'test.c'),'-o',str(work/'test')],check=True)

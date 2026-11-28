@@ -469,7 +469,7 @@ int LCD_TOUCH_Service(void)
 	{
 		ServiceTouch.idx = 0;
 		ServiceTouch.press = release;
-		return 0;
+		return -1;
 	}
 	if(detected)
 	{
@@ -488,7 +488,7 @@ int LCD_TOUCH_Service(void)
 	}
 	else
 		ServiceTouch.press = release;
-	return 1;
+	return detected;
 }
 /* Poniższa funkcja jest wywoływana w drugim wątku i zapisuje też do zmiennej: ServiceTouch.idx  i .flags1 , ale tylko gdy jest PRESS  -> Wiec konfliktu nie ma */
 uint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct *posXY)
