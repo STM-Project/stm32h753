@@ -288,6 +288,6 @@ void FILE_NAME(main)(int argNmb, char **argVal)
 		   DisplayCoeffCalibration();
 	   }
 
-	   Create_TouchLcd_Task();
 	}
+	Create_TouchLcd_Task();
 }

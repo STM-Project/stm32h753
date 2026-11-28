@@ -112,7 +112,7 @@ extern XY_Touch_Struct  structXY_Zero;
 extern XY_Touch_Struct screenTouchPos;
 extern uint16_t 		  screenTouchState;
 
-void		LCD_TOUCH_Service					(void);
+int		LCD_TOUCH_Service					(void);
 uint16_t LCD_TOUCH_GetTypeAndPosition	(XY_Touch_Struct *posXY);
 void 		LCD_TOUCH_DeleteAllSetTouch	(void);
 int 		GetTouchToTemp						(uint16_t idx);

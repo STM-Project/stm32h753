@@ -179,7 +179,6 @@ typedef struct
 static TS_DrvTypeDef *ts_driver;
 static uint8_t ts_address = TS_I2C_ADDRESS;
 static uint8_t io_failed;
-static uint8_t diagnostic_active;
 static struct STMPE811_InitDiagnostic initDiagnostic;
 
 const struct STMPE811_InitDiagnostic *BSP_TS_GetInitDiagnostic(void)
@@ -189,11 +188,13 @@ const struct STMPE811_InitDiagnostic *BSP_TS_GetInitDiagnostic(void)
 
 static void RecordInitError(uint8_t operation,uint8_t reg,HAL_StatusTypeDef status)
 {
-  if(diagnostic_active && !initDiagnostic.operation){
+  if(!initDiagnostic.operation){
     initDiagnostic.operation=operation;
     initDiagnostic.reg=reg;
     initDiagnostic.status=(uint8_t)status;
     initDiagnostic.hal_error=HAL_I2C_GetError(&hi2c1);
+    initDiagnostic.sda=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_7)==GPIO_PIN_SET;
+    initDiagnostic.scl=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)==GPIO_PIN_SET;
   }
 }
 static uint16_t ts_x_boundary, ts_y_boundary;
@@ -500,6 +501,7 @@ static uint8_t stmpe811_TS_DetectTouch(uint16_t DeviceAddr)
 {
   uint8_t control = IOE_Read(DeviceAddr, STMPE811_REG_TSC_CTRL);
   if(io_failed) return 0;
+  initDiagnostic.ctrl = control;
   if(!(control & STMPE811_TS_CTRL_ENABLE))
   {
     io_failed = 1; /* Reconfigure a controller that lost its register state. */
@@ -582,7 +584,6 @@ uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
 {
   uint8_t ret = TS_ERROR;
   ts_driver = 0;
-  diagnostic_active = 1;
   const uint8_t addresses[] = {TS_I2C_ADDRESS, TS_I2C_ADDRESS_ALT};
   for(unsigned i = 0; i < sizeof addresses; ++i)
   {
@@ -614,17 +615,21 @@ uint8_t BSP_TS_Init(uint16_t xSize, uint16_t ySize)
     ts_driver->Start(ts_address);
     ts_driver->ClearIT(ts_address);
     ts_driver->EnableIT(ts_address);
-    /* Diagnostic readback only: preserve the original F7 startup decision. */
+    /* Confirm the touch engine and global interrupt are enabled. */
     uint8_t ctrl=IOE_Read(ts_address, STMPE811_REG_TSC_CTRL);
     uint8_t irq=IOE_Read(ts_address, STMPE811_REG_INT_CTRL);
     initDiagnostic.ctrl=ctrl;initDiagnostic.irq=irq;
+    if(io_failed || !(ctrl & STMPE811_TS_CTRL_ENABLE) || !(irq & STMPE811_GIT_EN))
+    {
+      ts_driver = 0;
+      ret = TS_ERROR;
+    }
   }
 
   initDiagnostic.io_failed=io_failed;
   initDiagnostic.sda=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_7)==GPIO_PIN_SET;
   initDiagnostic.scl=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_8)==GPIO_PIN_SET;
   if(ret==TS_OK)initDiagnostic.stage=3;
-  diagnostic_active=0;
   return ret;
 }
 
@@ -637,16 +642,7 @@ uint8_t BSP_TS_GetState(TS_StateTypeDef *TS_State)
   TS_State->TouchDetected = 0;
   if(!ts_driver) return TS_ERROR;
 
-  if(io_failed)
-  {
-    io_failed = 0;
-    /* Restore the controller, including a FIFO left in reset by a failed write. */
-    stmpe811_Reset(ts_address);
-    ts_driver->Start(ts_address);
-    ts_driver->ClearIT(ts_address);
-    ts_driver->EnableIT(ts_address);
-    if(io_failed) return TS_ERROR;
-  }
+  if(io_failed) return TS_ERROR;
 
   uint8_t detected = ts_driver->DetectTouch(ts_address);
   if(io_failed) return TS_ERROR;

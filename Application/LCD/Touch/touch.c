@@ -61,18 +61,28 @@ static int32_t aPhysY[2*AB_COEFF_TAB_SIZE]={0};
 
 volatile uint8_t touchDetect;
 
+static uint8_t ReadCalibrationTouch(TS_StateTypeDef *state)
+{
+	if(BSP_TS_GetState(state) == 0)
+		return 1;
+
+	HAL_Delay(500);
+	BSP_TS_Init(LCD_GetXSize(), LCD_GetYSize());
+	return 0;
+}
+
 void WaitForTouchState(uint8_t Pressed)
 {
 	int i=0;
 	TS_StateTypeDef  State;
 	do{
-	   BSP_TS_GetState(&State);
+	   if(!ReadCalibrationTouch(&State)) continue;
 	   HAL_Delay(10);
 	   if (State.TouchDetected == Pressed)
 	   {
 	   	i=0;
 	   	do {
-	   		BSP_TS_GetState(&State);
+			if(!ReadCalibrationTouch(&State)) break;
 	   		HAL_Delay(10);
 	   		if (State.TouchDetected != Pressed)
 	   			break;
@@ -208,14 +218,14 @@ void CalibrationWasDone(void)
 	Calibration_Done = 1;
 }
 
-static uint8_t GetTouchPos(XY_Touch_Struct *pos)
+static int GetTouchPos(XY_Touch_Struct *pos)
 {
   uint8_t pending = touchDetect || HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4) == GPIO_PIN_RESET;
 
   /* Sample independently of INT so a missed edge cannot stall touch. */
   touchDetect = 0;
   if(BSP_TS_GetState(&TS_State) != 0)
-    return 0;
+    return -1;
 
   /* Acknowledge after servicing the FIFO. */
   if(pending)
@@ -450,11 +460,18 @@ static uint16_t GetTouchType(int *param)
 	return 0;
 }
 /* Poniższa funkcja jest wywoływana w jednym wątku i zapisuje do zmiennej: ServiceTouch.idx i .flags1  ale tylko gdy jest RELEASE  -> Wiec konfliktu nie ma */
-void LCD_TOUCH_Service(void)
+int LCD_TOUCH_Service(void)
 {
 	XY_Touch_Struct pos = {0};
 
-	if(GetTouchPos(&pos))
+	int detected = GetTouchPos(&pos);
+	if(detected < 0)
+	{
+		ServiceTouch.idx = 0;
+		ServiceTouch.press = release;
+		return 0;
+	}
+	if(detected)
 	{
 		if(release == ServiceTouch.press){
 			ServiceTouch.press = press;
@@ -471,6 +488,7 @@ void LCD_TOUCH_Service(void)
 	}
 	else
 		ServiceTouch.press = release;
+	return 1;
 }
 /* Poniższa funkcja jest wywoływana w drugim wątku i zapisuje też do zmiennej: ServiceTouch.idx  i .flags1 , ale tylko gdy jest PRESS  -> Wiec konfliktu nie ma */
 uint16_t LCD_TOUCH_GetTypeAndPosition(XY_Touch_Struct *posXY)

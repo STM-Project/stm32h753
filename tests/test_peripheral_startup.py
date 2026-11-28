@@ -25,7 +25,6 @@ struct STMPE811_InitDiagnostic {
     uint32_t hal_error;
 };
 static struct STMPE811_InitDiagnostic initDiagnostic;
-static uint8_t diagnostic_active;
 typedef int HAL_StatusTypeDef;
 static int hi2c1;
 static uint32_t halError;
@@ -62,23 +61,23 @@ typedef struct {unsigned (*ReadID)(uint16_t);void (*Init)(uint16_t),(*Start)(uin
 static Driver stmpe811_ts_drv={readID,init,noop,noop,noop},*ts_driver;
 ''' + function('Application/LCD/Touch/stmpe811.c', 'static void RecordInitError(') + '\n' + function('Application/LCD/Touch/stmpe811.c', 'uint8_t BSP_TS_Init(') + r'''
 int main(void){
- diagnostic_active=1;halError=4;RecordInitError('R',0,3);
+ halError=4;RecordInitError('R',0,3);
  halError=0;RecordInitError('W',0x40,1);
  assert(initDiagnostic.operation=='R'&&initDiagnostic.reg==0&&initDiagnostic.status==3&&initDiagnostic.hal_error==4);
- diagnostic_active=0;RecordInitError('W',0x09,1);
+ RecordInitError('W',0x09,1);
  assert(initDiagnostic.operation=='R'&&initDiagnostic.hal_error==4);
  failure=FR_NOT_READY;failCount=2;SDCard_Init();assert(mounts==3&&delays==2&&!errors);
  mounts=delays=errors=0;failCount=5;SDCard_Init();assert(mounts==3&&delays==2&&errors==1);
  mounts=delays=errors=0;failure=FR_NO_PATH;SDCard_Init();assert(mounts==1&&!delays&&errors==1);
  assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&ts_x_boundary==800&&ts_y_boundary==480);
- assert(initDiagnostic.id==STMPE811_ID&&initDiagnostic.stage==3&&initDiagnostic.sda&&initDiagnostic.scl&&!diagnostic_active);
+ assert(initDiagnostic.id==STMPE811_ID&&initDiagnostic.stage==3&&initDiagnostic.sda&&initDiagnostic.scl);
  badID=1;assert(BSP_TS_Init(800,480)==TS_ERROR&&!ts_driver&&inits==1);assert(initDiagnostic.stage==1&&initDiagnostic.id==0);badID=0;
- badWrite=1;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver);assert(initDiagnostic.stage==3&&initDiagnostic.io_failed);badWrite=0;
- badCtrl=1;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&initDiagnostic.ctrl==0);badCtrl=0;
- badIRQ=1;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&initDiagnostic.irq==0);badIRQ=0;
+ badWrite=1;assert(BSP_TS_Init(800,480)==TS_ERROR&&!ts_driver);assert(initDiagnostic.stage==2&&initDiagnostic.io_failed);badWrite=0;
+ badCtrl=1;assert(BSP_TS_Init(800,480)==TS_ERROR&&!ts_driver&&initDiagnostic.ctrl==0);badCtrl=0;
+ badIRQ=1;assert(BSP_TS_Init(800,480)==TS_ERROR&&!ts_driver&&initDiagnostic.irq==0);badIRQ=0;
  assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&!io_failed);
  device_address=0x88;assert(BSP_TS_Init(800,480)==TS_OK&&ts_driver&&ts_address==0x88&&initDiagnostic.address==0x44);
- puts("Peripheral startup: bounded SD retries, permanent error handling, STMPE811 F7-compatible acceptance and retained diagnostics: PASS");
+ puts("Peripheral startup: bounded SD retries, permanent error handling, STMPE811 configuration validation and retained diagnostics: PASS");
 }
 '''
 with tempfile.TemporaryDirectory(prefix='peripheral-startup-') as directory:
