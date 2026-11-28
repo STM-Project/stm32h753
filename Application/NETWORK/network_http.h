@@ -8,6 +8,7 @@ int NetworkHTTPServe ( void *context, NetworkRead read_fn, NetworkWrite write_fn
 #define NETWORK_WEB_CHUNK_BYTES 8192u
 
 /* The web owner task runs the same routes and renderers for Wi-Fi and LAN. */
+int NetworkWebInit ( void );
 int NetworkWebLock ( void );
 void NetworkWebUnlock ( void );
 int NetworkWebStart ( const char *target, size_t length );

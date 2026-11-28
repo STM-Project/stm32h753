@@ -141,3 +141,64 @@ with tempfile.TemporaryDirectory(prefix='network-http-') as d:
  (p/'test.c').write_text(code)
  subprocess.run(['gcc','-std=c11','-O1','-g','-fsanitize=address,undefined','-ffunction-sections','-fdata-sections','-Wl,--gc-sections','-I'+str(p),'-I'+str(root/'Application/NETWORK'),'-I'+str(root/'Application/HTTP'),str(p/'test.c'),str(root/'Application/HTTP/http_request_stream.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)
+
+# The production startup selects a LAN page owner even with no Wi-Fi task.
+esp = (root/'Application/esp32wroom.c').read_text()
+init_start = esp.index('int NetworkWebInit ( void )')
+init = esp[init_start:esp.index('void vtaskWifi', init_start)]
+exchange_start = esp.index('static int HTTP_LanExchange (')
+exchange = esp[exchange_start:esp.index('int NetworkWebStart', exchange_start)]
+owner_test = r'''
+#include <assert.h>
+#include <stddef.h>
+typedef int StaticSemaphore_t, StaticTask_t, StackType_t;
+typedef void *TaskHandle_t;
+#define SDRAM
+#define BIT_ETH_HTTP 4
+#define eSetBits 0
+#define pdMS_TO_TICKS(ms) (ms)
+#define taskENTER_CRITICAL() ((void)0)
+#define taskEXIT_CRITICAL() ((void)0)
+enum LanWebCommand { LAN_WEB_START };
+enum LanWebState { LAN_WEB_IDLE, LAN_WEB_PENDING, LAN_WEB_RUNNING, LAN_WEB_DONE, LAN_WEB_ABANDONED };
+static enum LanWebState lanWebState;
+static struct { enum LanWebCommand command; int result; } lanWeb;
+static StaticSemaphore_t lanWebMutexStorage, lanWebDoneStorage;
+static void *lanWebMutex, *lanWebDone;
+static TaskHandle_t lanWebTask, vtaskWifiHandle, notified;
+static unsigned created;
+static void HTTP_LanTask(void *arg) { (void)arg; }
+static void *xSemaphoreCreateBinaryStatic(StaticSemaphore_t *storage) { return storage; }
+static void *xSemaphoreCreateMutexStatic(StaticSemaphore_t *storage) { return storage; }
+static TaskHandle_t xTaskCreateStatic(void (*fn)(void *), const char *name,
+ size_t words, void *arg, unsigned priority, StackType_t *stack, StaticTask_t *storage)
+{
+ assert(fn==HTTP_LanTask && name && words>=1024 && !arg && priority && stack);
+ ++created;
+ return storage;
+}
+static void xTaskNotify(TaskHandle_t owner, unsigned bits, int action)
+{
+ assert(owner && bits==BIT_ETH_HTTP && action==eSetBits && lanWebState==LAN_WEB_PENDING);
+ notified=owner;
+ lanWebState=LAN_WEB_DONE;
+}
+static void xSemaphoreTake(void *sem, unsigned time) { assert(sem==lanWebDone && (time==15000 || !time)); }
+''' + init + exchange + r'''
+int main(void)
+{
+ assert(NetworkWebInit() && lanWebTask && !vtaskWifiHandle && lanWebMutex && lanWebDone);
+ assert(NetworkWebInit() && created==1);
+ assert(HTTP_LanExchange(LAN_WEB_START)==0 && notified==lanWebTask);
+ lanWebTask=NULL;
+ vtaskWifiHandle=&created;
+ assert(NetworkWebInit() && created==1);
+ assert(HTTP_LanExchange(LAN_WEB_START)==0 && notified==vtaskWifiHandle);
+}
+'''
+with tempfile.TemporaryDirectory(prefix='network-web-owner-') as d:
+ p=Path(d)
+ (p/'test.c').write_text(owner_test)
+ subprocess.run(['gcc','-std=c11','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
+ subprocess.run([str(p/'test')],check=True)
+print('Ethernet page owner without Wi-Fi and with Wi-Fi: PASS')

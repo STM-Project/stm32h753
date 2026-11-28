@@ -2134,10 +2134,13 @@ static TickType_t CLOUD_WaitTicks ( void )
 	return portMAX_DELAY;
 }
 
+static TaskHandle_t lanWebTask;
+
 void HTTP_SensorLCDWake ( void )
 {
-	if ( vtaskWifiHandle )
-		xTaskNotify ( vtaskWifiHandle, BIT_ESP_SRV, eSetBits );
+	TaskHandle_t owner = lanWebTask ? lanWebTask : vtaskWifiHandle;
+	if ( owner )
+		xTaskNotify ( owner, BIT_ESP_SRV, eSetBits );
 }
 
 enum LanWebCommand { LAN_WEB_START, LAN_WEB_READ, LAN_WEB_FINISH, LAN_WEB_CANCEL };
@@ -2166,18 +2169,19 @@ void NetworkWebUnlock ( void )
 }
 
 /* Only the LAN holder submits commands. No caller-owned buffer is exposed to
- * the Wi-Fi owner, so a timed-out socket can safely close. */
+ * the page owner, so a timed-out socket can safely close. */
 static int HTTP_LanExchange ( enum LanWebCommand command )
 {
 	taskENTER_CRITICAL ();
-	if ( lanWebState != LAN_WEB_IDLE || !vtaskWifiHandle )
+	TaskHandle_t owner = lanWebTask ? lanWebTask : vtaskWifiHandle;
+	if ( lanWebState != LAN_WEB_IDLE || !owner )
 	{
 		taskEXIT_CRITICAL ();
 		return -1;
 	}
 	lanWeb.command = command;
 	lanWebState = LAN_WEB_PENDING;
-	xTaskNotify ( vtaskWifiHandle, BIT_ETH_HTTP, eSetBits );
+	xTaskNotify ( owner, BIT_ETH_HTTP, eSetBits );
 	taskEXIT_CRITICAL ();
 
 	xSemaphoreTake ( lanWebDone, pdMS_TO_TICKS ( 15000 ) );
@@ -2327,6 +2331,53 @@ static void HTTP_ServiceLan ( void )
 	taskEXIT_CRITICAL ();
 }
 
+static void HTTP_InitPageData ( void )
+{
+	DefaultSettingsWIFI();
+	DefaultSettingsEmail();
+	DefaultSettingsDNS();
+	DefaultSettingsSNTP();
+	HTTP_SensorStorageInit ();
+	HTTP_SettingsStorageInit ();
+	HTTP_SettingsBindingsApply ();
+	LPC_StorageInit ();
+	HTTP_ClearSlot ( HTTP_LAN_SLOT );
+	strcpy ( HttpRefr_sdram, HttpRefr );
+}
+
+static void HTTP_LanTask ( void *argument )
+{
+	(void) argument;
+	HTTP_InitPageData ();
+	DbgDma ( 1, "\r\nLAN: standalone page task ready" );
+
+	for ( ;; )
+	{
+		HTTP_ServiceLan ();
+		HTTP_SensorLCDService ();
+		HTTP_LCDPanelService ( HttpRefr_sdram, strlen ( HttpRefr_sdram ), HAL_GetTick () );
+		xTaskNotifyWait ( 0, UINT32_MAX, NULL, pdMS_TO_TICKS ( 250 ) );
+	}
+}
+
+int NetworkWebInit ( void )
+{
+	if ( !lanWebMutex )
+	{
+		lanWebDone = xSemaphoreCreateBinaryStatic ( &lanWebDoneStorage );
+		lanWebMutex = xSemaphoreCreateMutexStatic ( &lanWebMutexStorage );
+	}
+	if ( vtaskWifiHandle || lanWebTask )
+		return 1;
+
+	/* Keep one owner of the shared renderer. LAN-only uses no ESP32 I/O. */
+	static StaticTask_t taskStorage;
+	SDRAM static StackType_t stack[2048];
+	lanWebTask = xTaskCreateStatic ( HTTP_LanTask, "LanPages", sizeof stack / sizeof stack[0],
+		NULL, 2, stack, &taskStorage );
+	return lanWebTask != NULL;
+}
+
 void vtaskWifi(void *argument)
 {
 	char *pHttp,*pHttp2,  *ptr;
@@ -2344,15 +2395,7 @@ void vtaskWifi(void *argument)
 	ESP_ON;
 
 	EmailSendParam.start=0;
-	DefaultSettingsWIFI();
-	DefaultSettingsEmail();
-	DefaultSettingsDNS();
-	DefaultSettingsSNTP();
-	HTTP_SensorStorageInit ();
-	HTTP_SettingsStorageInit ();
-	HTTP_SettingsBindingsApply ();
-	LPC_StorageInit ();
-	HTTP_ClearSlot ( HTTP_LAN_SLOT );
+	HTTP_InitPageData ();
 	HTTP_RequestStreamInit ( &httpRequestStream, HTTP_HandleTarget, NULL );
 	InitStructRqstToSendChnl();
 	RcvTimeoutTimerInit();
@@ -2373,7 +2416,6 @@ void vtaskWifi(void *argument)
 //WYMUS CallbackTimeou np poprzez zamkniecie n agle przgladarki !!!!
 
 
-	strcpy(HttpRefr_sdram,HttpRefr);  //!!!!!!!!!!!!!!!
 
 
 
@@ -3622,11 +3664,8 @@ void vtaskWifi(void *argument)
 
 void CreateWifiTask(void)
 {
-	if ( !lanWebMutex )
-	{
-		lanWebDone = xSemaphoreCreateBinaryStatic ( &lanWebDoneStorage );
-		lanWebMutex = xSemaphoreCreateMutexStatic ( &lanWebMutexStorage );
-	}
+	if ( lanWebTask || vtaskWifiHandle )
+		return;
 	xTaskCreate(vtaskWifi, "vtaskWifi", 1024, NULL, (unsigned portBASE_TYPE ) 4, &vtaskWifiHandle);
 }
 
@@ -3634,6 +3673,11 @@ void CloseWifiTask(void)
 {
 	taskENTER_CRITICAL ();
 	TaskHandle_t old = vtaskWifiHandle;
+	if ( !old )
+	{
+		taskEXIT_CRITICAL ();
+		return;
+	}
 	vtaskWifiHandle = NULL;
 	if ( lanWebState == LAN_WEB_PENDING || lanWebState == LAN_WEB_RUNNING )
 	{
@@ -3643,8 +3687,7 @@ void CloseWifiTask(void)
 	}
 	else if ( lanWebState == LAN_WEB_ABANDONED )
 		lanWebState = LAN_WEB_IDLE;
-	if ( old )
-		vTaskDelete ( old );
+	vTaskDelete ( old );
 	taskEXIT_CRITICAL ();
 	ESP_OFF;
 	ChangeUartBuadRate(115200);
@@ -3652,6 +3695,8 @@ void CloseWifiTask(void)
 
 void RestartWifiTask(void)
 {
+	if ( !vtaskWifiHandle )
+		return;
 	CloseWifiTask();
 	vTaskDelay(200);
 	CreateWifiTask();

@@ -10,12 +10,18 @@
 static void start_network ( void *argument )
 {
 	(void) argument;
+	int pagesReady = NetworkWebInit ();
+	if ( !pagesReady )
+		DbgDma ( 1, "\r\nLAN: page task allocation failed" );
 	MX_LWIP_Init ();
 	if ( networkEthernetReady )
 	{
 		MX_MBEDTLS_Init ();
-		http_server_netconn_init ();
-		https_server_netconn_init ();
+		if ( pagesReady )
+		{
+			http_server_netconn_init ();
+			https_server_netconn_init ();
+		}
 		GoogleCloud_StartEthernet ();
 	}
 	vTaskDelete ( NULL );
